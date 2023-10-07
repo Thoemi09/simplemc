@@ -60,6 +60,7 @@ message(STATUS "Disable stricter compiler warnings: ${SIMPLEMC_DISABLE_WARNINGS}
 #########################
 # Build targets
 #########################
+add_subdirectory(deps)
 add_subdirectory(src)
 if(SIMPLEMC_BUILD_TESTS)
     add_subdirectory(tests)
