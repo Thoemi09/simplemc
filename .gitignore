@@ -1,32 +1,26 @@
-# Prerequisites
-*.d
+# CLion generated directory
+.idea
 
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
+# QtCreator stuff
+*.user*
+*.autosave*
 
-# Precompiled Headers
-*.gch
-*.pch
+# VS Code
+.vscode
+.devcontainer*
+cmake-variants.*
 
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
+# clangd
+.cache
 
-# Fortran module files
-*.mod
-*.smod
+# build directories
+build*/
 
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
+# build instructions
+BUILD.txt
 
-# Executables
-*.exe
-*.out
-*.app
+# compile commands
+compile_commands.json
+
+# apple stuff
+*.dSYM
