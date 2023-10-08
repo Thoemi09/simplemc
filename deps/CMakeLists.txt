@@ -41,3 +41,18 @@ else()
     get_target_property(RANGEV3_TMP range-v3::range-v3 INTERFACE_INCLUDE_DIRECTORIES)
     message(STATUS "range-v3 found: Include directories = ${RANGEV3_TMP}")
 endif()
+
+# json
+if(SIMPLEMC_FETCH_JSON)
+    FetchContent_Declare(json
+        GIT_REPOSITORY https://github.com/nlohmann/json.git
+        GIT_TAG origin/develop)
+    message(STATUS "Fetching json ...")
+    FetchContent_MakeAvailable(json)
+    message(STATUS "json_SOURCE_DIR: ${json_SOURCE_DIR}")
+else()
+    message(STATUS "Finding json: nlohmann_json_DIR = ${nlohmann_json_DIR}")
+    find_package(nlohmann_json REQUIRED)
+    get_target_property(JSON_TMP nlohmann_json::nlohmann_json INTERFACE_INCLUDE_DIRECTORIES)
+    message(STATUS "json found: Include directories = ${JSON_TMP}")
+endif()
