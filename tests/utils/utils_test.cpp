@@ -3,7 +3,7 @@
  * @brief Unit tests for utils library.
  */
 
-#include "simplemc/utils/generic_error.hpp"
+#include <simplemc/utils/simplemc_exception.hpp>
 #include <simplemc/config.h>
 
 #include <fmt/format.h>
@@ -19,6 +19,15 @@ TEST(SimplemcUtils, GenericError) {
     try {
         throw simplemc::generic_error("generic_error", "Test message", "test_function");
     } catch (const simplemc::generic_error& e) {
+        fmt::print("Caught exception: {}\n", e.what());
+    }
+}
+
+// Test simplemc_exception exception.
+TEST(SimplemcUtils, SimplemcException) {
+    try {
+        throw simplemc::simplemc_exception("Test message");
+    } catch (const simplemc::simplemc_exception& e) {
         fmt::print("Caught exception: {}\n", e.what());
     }
 }
