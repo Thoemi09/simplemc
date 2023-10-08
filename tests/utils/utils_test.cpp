@@ -5,10 +5,13 @@
 
 #include <simplemc/utils/format.h>
 #include <simplemc/utils/simplemc_exception.hpp>
+#include <simplemc/utils/timer.h>
 #include <simplemc/config.h>
 
 #include <fmt/format.h>
 #include <gtest/gtest.h>
+
+#include <thread>
 
 // Test if the config header is generated correctly.
 TEST(SimplemcUtils, ConfigHeader) {
@@ -37,4 +40,22 @@ TEST(SimplemcUtils, SimplemcException) {
 TEST(SimplemcUtils, ComplexFormatter) {
     std::complex<double> z(1.0, 2.0);
     fmt::print("z = {}\n", z);
+}
+
+// Test timer.
+TEST(SimplemcUtils, Timer) {
+    using millisec = simplemc::duration::millisec;
+    simplemc::timer timer;
+    timer.start();
+    std::this_thread::sleep_for(millisec(100));
+    timer.stop();
+    fmt::print("Time passed: {} ms\n", simplemc::time_passed(timer.start_time(), timer.stop_time(), millisec{}));
+    timer.start();
+    std::this_thread::sleep_for(millisec(100));
+    timer.stop();
+    fmt::print("Time passed: {} ms\n", simplemc::time_passed(timer.start_time(), timer.stop_time(), millisec{}));
+    timer.start();
+    std::this_thread::sleep_for(millisec(100));
+    timer.stop();
+    fmt::print("Time passed: {} ms\n", simplemc::time_passed(timer.start_time(), timer.stop_time(), millisec{}));
 }
