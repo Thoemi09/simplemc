@@ -5,7 +5,7 @@
 
 #include <simplemc/utils/generic_error.hpp>
 
-#include <sstream>
+#include <fmt/format.h>
 
 namespace simplemc {
 
@@ -14,13 +14,10 @@ generic_error::generic_error(const std::string& exc_name, const std::string& err
 
 std::string generic_error::make_msg(
     const std::string& exc_name, const std::string& err_msg, const std::string& func_name) const {
-    std::stringstream ss;
-    ss << exc_name << ": " << err_msg;
-    if (!func_name.empty()) {
-        ss << " in function " << func_name;
+    if (func_name.empty()) {
+        return fmt::format("{}: {}.", exc_name, err_msg);
     }
-    ss << ".";
-    return ss.str();
+    return fmt::format("{}: {} in function {}.", exc_name, err_msg, func_name);
 }
 
 } // namespace simplemc
