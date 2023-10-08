@@ -1,6 +1,6 @@
 /**
  * @file generic_error.cpp
- * @brief This file contains implementation details for the `generic_error` class.
+ * @brief Base class for more specific exceptions.
  */
 
 #include <simplemc/utils/generic_error.hpp>

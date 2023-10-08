@@ -1,6 +1,6 @@
 /**
  * @file generic_error.h
- * @brief This file defines the `generic_error` class, which is a base class for more specific exceptions.
+ * @brief Base class for more specific exceptions.
  */
 
 #ifndef SIMPLEMC_UTILS_GENERIC_ERROR_H

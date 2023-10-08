@@ -3,6 +3,7 @@
  * @brief Unit tests for utils library.
  */
 
+#include <simplemc/utils/format.h>
 #include <simplemc/utils/simplemc_exception.hpp>
 #include <simplemc/config.h>
 
@@ -30,4 +31,10 @@ TEST(SimplemcUtils, SimplemcException) {
     } catch (const simplemc::simplemc_exception& e) {
         fmt::print("Caught exception: {}\n", e.what());
     }
+}
+
+// Test specialized formatter for std::complex.
+TEST(SimplemcUtils, ComplexFormatter) {
+    std::complex<double> z(1.0, 2.0);
+    fmt::print("z = {}\n", z);
 }

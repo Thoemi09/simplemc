@@ -3,7 +3,8 @@
  * @brief General exception used in the simplemc library.
  */
 
-#pragma once
+#ifndef SIMPLEMC_UTILS_SIMPLEMC_EXCEPTION_H
+#define SIMPLEMC_UTILS_SIMPLEMC_EXCEPTION_H
 
 #include <simplemc/utils/generic_error.hpp>
 
@@ -25,3 +26,5 @@ public:
 };
 
 } // namespace simplemc
+
+#endif // SIMPLEMC_UTILS_SIMPLEMC_EXCEPTION_H
