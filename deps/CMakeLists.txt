@@ -26,3 +26,18 @@ else()
     get_target_property(FMT_TMP fmt::fmt INTERFACE_INCLUDE_DIRECTORIES)
     message(STATUS "fmt found: Include directories = ${FMT_TMP}")
 endif()
+
+# range-v3
+if(SIMPLEMC_FETCH_RANGEV3)
+    FetchContent_Declare(rangev3
+        GIT_REPOSITORY https://github.com/ericniebler/range-v3.git
+        GIT_TAG origin/master)
+    message(STATUS "Fetching range-v3 ...")
+    FetchContent_MakeAvailable(rangev3)
+    message(STATUS "rangev3_SOURCE_DIR: ${rangev3_SOURCE_DIR}")
+else()
+    message(STATUS "Finding range-v3: range-v3_DIR = ${range-v3_DIR}")
+    find_package(range-v3 REQUIRED)
+    get_target_property(RANGEV3_TMP range-v3::range-v3 INTERFACE_INCLUDE_DIRECTORIES)
+    message(STATUS "range-v3 found: Include directories = ${RANGEV3_TMP}")
+endif()

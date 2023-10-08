@@ -5,6 +5,7 @@
 # SIMPLEMC_BUILD_EXAMPLES: Build example code.
 # SIMPLEMC_FETCH_JSON: Fetch nlohmann_json library from github.
 # SIMPLEMC_FETCH_FMT: Fetch fmtlib library from github.
+# SIMPLEMC_FETCH_RANGEV3: Fetch range-v3 library from github.
 # SIMPLEMC_FETCH_EIGEN: Fetch eigen library from gitlab.
 # SIMPLEMC_DISABLE_WARNINGS: Stricter compilation flags.
 
@@ -41,6 +42,7 @@ option(SIMPLEMC_BUILD_TESTS "Build unit tests" ${SIMPLEMC_MASTER_PROJECT})
 option(SIMPLEMC_BUILD_EXAMPLES "Build examples" ${SIMPLEMC_MASTER_PROJECT})
 option(SIMPLEMC_FETCH_JSON "Fetch nlohmann_json from github" ON)
 option(SIMPLEMC_FETCH_FMT "Fetch fmtlib from github" ON)
+option(SIMPLEMC_FETCH_RANGEV3 "Fetch range-v3 from github" ON)
 option(SIMPLEMC_FETCH_EIGEN "Fetch eigen from gitlab" ON)
 option(SIMPLEMC_DISABLE_WARNINGS "Disable stricter compilation flags" OFF)
 
@@ -54,6 +56,7 @@ message(STATUS "Build unit tests: ${SIMPLEMC_BUILD_TESTS}")
 message(STATUS "Build examples: ${SIMPLEMC_BUILD_EXAMPLES}")
 message(STATUS "Fetch nlohmann-json: ${SIMPLEMC_FETCH_JSON}")
 message(STATUS "Fetch fmtlib: ${SIMPLEMC_FETCH_FMT}")
+message(STATUS "Fetch range-v3: ${SIMPLEMC_FETCH_RANGEV3}")
 message(STATUS "Fetch eigen: ${SIMPLEMC_FETCH_EIGEN}")
 message(STATUS "Disable stricter compiler warnings: ${SIMPLEMC_DISABLE_WARNINGS}")
 

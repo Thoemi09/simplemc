@@ -1,10 +1,19 @@
 #include <fmt/ranges.h>
-#include <vector>
-#include <span>
-#include <ranges>
+#include <range/v3/view/iota.hpp>
+#include <range/v3/view/transform.hpp>
+
+struct linspace {
+    double start, stop, step;
+    int num;
+    linspace(double start, double stop, int num) : start(start), stop(stop), num(num) {
+        step = (stop - start) / (num - 1);
+    }
+    double operator()(int i) const { return start + i * step; }
+};
 
 int main() {
-    std::vector<int> v { 1, 2, 3 };
-    fmt::print("{}\n", std::span(v));
-    fmt::print("{}\n", std::ranges::iota_view{1, 10});
+    auto view = ranges::views::iota(0, 10);
+    auto transformed = view | ranges::views::transform(linspace(0, 9, 10));
+    fmt::print("{}\n", view);
+    fmt::print("{}\n", transformed);
 }
