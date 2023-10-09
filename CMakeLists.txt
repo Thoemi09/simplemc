@@ -1,13 +1,13 @@
 # User options/variables:
 # ------------------------
-# SIMPLEMC_ENABLE_INSTALL: Enable install target.
+# SIMPLEMC_ENABLE_INSTALL: Enable install target (only if no dependencies are fetched).
 # SIMPLEMC_BUILD_TESTS: Build unit tests with googletest.
 # SIMPLEMC_BUILD_EXAMPLES: Build example code.
-# SIMPLEMC_FETCH_JSON: Fetch nlohmann_json library from github.
-# SIMPLEMC_FETCH_FMT: Fetch fmtlib library from github.
-# SIMPLEMC_FETCH_RANGEV3: Fetch range-v3 library from github.
-# SIMPLEMC_FETCH_EIGEN: Fetch eigen library from gitlab.
-# SIMPLEMC_DISABLE_WARNINGS: Stricter compilation flags.
+# SIMPLEMC_FETCH_JSON: Fetch json library from github.
+# SIMPLEMC_FETCH_FMT: Fetch fmtlib from github.
+# SIMPLEMC_FETCH_RANGEV3: Fetch range-v3 from github.
+# SIMPLEMC_FETCH_EIGEN: Fetch eigen from gitlab.
+# SIMPLEMC_DISABLE_WARNINGS: Disable stricter compilation warnings.
 
 cmake_minimum_required(VERSION 3.24)
 project(simplemc
@@ -40,11 +40,17 @@ endif()
 option(SIMPLEMC_ENABLE_INSTALL "Enable install target" ${SIMPLEMC_MASTER_PROJECT})
 option(SIMPLEMC_BUILD_TESTS "Build unit tests" ${SIMPLEMC_MASTER_PROJECT})
 option(SIMPLEMC_BUILD_EXAMPLES "Build examples" ${SIMPLEMC_MASTER_PROJECT})
-option(SIMPLEMC_FETCH_JSON "Fetch nlohmann_json from github" ON)
+option(SIMPLEMC_FETCH_JSON "Fetch json library from github" ON)
 option(SIMPLEMC_FETCH_FMT "Fetch fmtlib from github" ON)
 option(SIMPLEMC_FETCH_RANGEV3 "Fetch range-v3 from github" ON)
 option(SIMPLEMC_FETCH_EIGEN "Fetch eigen from gitlab" ON)
-option(SIMPLEMC_DISABLE_WARNINGS "Disable stricter compilation flags" OFF)
+option(SIMPLEMC_DISABLE_WARNINGS "Disable stricter compilation warnings" OFF)
+
+# disable install target if any dependencies are fetched
+if(SIMPLEMC_FETCH_JSON OR SIMPLEMC_FETCH_FMT OR SIMPLEMC_FETCH_RANGEV3 OR SIMPLEMC_FETCH_EIGEN)
+    message(STATUS "Disabling install target because dependencies are fetched")
+    set(SIMPLEMC_ENABLE_INSTALL OFF)
+endif()
 
 message(STATUS "Start configuring project ${PROJECT_NAME}")
 message(STATUS "Version: ${PROJECT_VERSION}")

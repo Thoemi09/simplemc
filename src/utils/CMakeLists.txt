@@ -2,15 +2,15 @@
 # 
 # The following targets are defined:
 # ---------------------------------
-# utils (simplemc::utils)
+# simplemc-utils (simplemc::simplemc-utils)
 
-add_library(utils)
-add_library(simplemc::utils ALIAS utils)
-target_sources(utils 
+add_library(simplemc-utils)
+add_library(simplemc::simplemc-utils ALIAS simplemc-utils)
+target_sources(simplemc-utils 
     PRIVATE 
         generic_error.cpp
         file_io.cpp)
-target_link_libraries(utils 
+target_link_libraries(simplemc-utils 
     PUBLIC 
-        simplemc::basic 
+        simplemc::simplemc-basic 
         fmt::fmt)

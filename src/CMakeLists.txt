@@ -2,21 +2,21 @@
 # 
 # The following targets are defined:
 # ---------------------------------
-# basic (simplemc::basic)
+# simplemc-basic (simplemc::simplemc-basic)
 
 # generate config.h header file
 configure_file(config.h.in ${PROJECT_BINARY_DIR}/include/simplemc/config.h)
 
 # add basic interface library
-add_library(basic INTERFACE)
-add_library(simplemc::basic ALIAS basic)
-target_compile_options(basic 
+add_library(simplemc-basic INTERFACE)
+add_library(simplemc::simplemc-basic ALIAS simplemc-basic)
+target_compile_options(simplemc-basic 
     INTERFACE
         -Wall
         -Wextra
         -Wfloat-conversion
         -Wpedantic)
-target_include_directories(basic
+target_include_directories(simplemc-basic
     INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../include>
