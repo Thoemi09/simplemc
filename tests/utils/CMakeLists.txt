@@ -1,1 +1,1 @@
-add_unittest(NAME utils-test SOURCES utils_test.cpp LIBS GTest::gtest_main simplemc::simplemc-utils)
+add_unittest(NAME utils-test SOURCES utils_test.cpp LIBS simplemc-test)

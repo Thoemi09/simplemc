@@ -23,5 +23,5 @@ target_include_directories(simplemc-basic
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 # build simplemc libraries
-add_subdirectory(json)
 add_subdirectory(utils)
+add_subdirectory(json)
