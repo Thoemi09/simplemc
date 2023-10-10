@@ -1,10 +1,10 @@
 /**
- * @file timer.h
+ * @file timer.hpp
  * @brief Timer built on std::chrono.
  */
 
-#ifndef SIMPLEMC_UTILS_TIMER_H
-#define SIMPLEMC_UTILS_TIMER_H
+#ifndef SIMPLEMC_UTILS_TIMER_HPP
+#define SIMPLEMC_UTILS_TIMER_HPP
 
 #include <chrono>
 
@@ -133,4 +133,4 @@ private:
 
 } // namespace simplemc
 
-#endif // SIMPLEMC_UTILS_TIMER_H
+#endif // SIMPLEMC_UTILS_TIMER_HPP

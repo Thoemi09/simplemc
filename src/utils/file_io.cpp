@@ -3,7 +3,7 @@
  * @brief Basic file input/output functions.
  */
 
-#include <simplemc/utils/file_io.h>
+#include <simplemc/utils/file_io.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
 #include <fmt/format.h>

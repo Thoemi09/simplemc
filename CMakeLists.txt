@@ -48,7 +48,7 @@ option(SIMPLEMC_DISABLE_WARNINGS "Disable stricter compilation warnings" OFF)
 
 # disable install target if any dependencies are fetched
 if(SIMPLEMC_FETCH_JSON OR SIMPLEMC_FETCH_FMT OR SIMPLEMC_FETCH_RANGEV3 OR SIMPLEMC_FETCH_EIGEN)
-    message(STATUS "Disabling install target because dependencies are fetched")
+    message(STATUS "Disabling install target because some dependencies are fetched")
     set(SIMPLEMC_ENABLE_INSTALL OFF)
 endif()
 

@@ -1,10 +1,10 @@
 /**
- * @file file_io.h
+ * @file file_io.hpp
  * @brief Basic file input/output functions.
  */
 
-#ifndef SIMPLEMC_UTILS_FILE_IO_H
-#define SIMPLEMC_UTILS_FILE_IO_H
+#ifndef SIMPLEMC_UTILS_FILE_IO_HPP
+#define SIMPLEMC_UTILS_FILE_IO_HPP
 
 #include <cstdio>
 #include <string>
@@ -30,4 +30,4 @@ void close_file(std::FILE* fp);
 
 } // namespace simplemc
 
-#endif // SIMPLEMC_UTILS_FILE_IO_H
+#endif // SIMPLEMC_UTILS_FILE_IO_HPP

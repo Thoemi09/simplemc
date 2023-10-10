@@ -5,7 +5,7 @@
 # simplemc-basic (simplemc::simplemc-basic)
 
 # generate config.h header file
-configure_file(config.h.in ${PROJECT_BINARY_DIR}/include/simplemc/config.h)
+configure_file(config.hpp.in ${PROJECT_BINARY_DIR}/include/simplemc/config.hpp)
 
 # add basic interface library
 add_library(simplemc-basic INTERFACE)
@@ -23,4 +23,5 @@ target_include_directories(simplemc-basic
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 # build simplemc libraries
+add_subdirectory(json)
 add_subdirectory(utils)

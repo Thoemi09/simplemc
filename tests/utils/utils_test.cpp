@@ -3,10 +3,10 @@
  * @brief Unit tests for utils library.
  */
 
-#include <simplemc/utils/format.h>
+#include <simplemc/utils/format.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
-#include <simplemc/utils/timer.h>
-#include <simplemc/config.h>
+#include <simplemc/utils/timer.hpp>
+#include <simplemc/config.hpp>
 
 #include <fmt/format.h>
 #include <gtest/gtest.h>

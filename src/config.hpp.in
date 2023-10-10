@@ -1,10 +1,10 @@
 /**
- * @file config.h
+ * @file config.hpp
  * @brief Library details, config and build options.
  */
 
-#ifndef SIMPLEMC_CONFIG_H
-#define SIMPLEMC_CONFIG_H
+#ifndef SIMPLEMC_CONFIG_HPP
+#define SIMPLEMC_CONFIG_HPP
 
 // Version
 #define SIMPLEMC_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
@@ -12,4 +12,4 @@
 #define SIMPLEMC_VERSION_PATCH @PROJECT_VERSION_PATCH@
 #define SIMPLEMC_VERSION "@PROJECT_VERSION@"
 
-#endif // SIMPLEMC_CONFIG_H
+#endif // SIMPLEMC_CONFIG_HPP

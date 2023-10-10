@@ -4,7 +4,7 @@ include(FetchContent)
 if(SIMPLEMC_BUILD_TESTS)
     FetchContent_Declare(googletest
         GIT_REPOSITORY https://github.com/google/googletest
-        GIT_TAG main)
+        GIT_TAG main) # 2dd1c13
     set(INSTALL_GTEST OFF CACHE BOOL "")
     set(BUILD_GMOCK OFF CACHE BOOL "")
     message(STATUS "Fetching googletest ...")
@@ -16,7 +16,7 @@ endif()
 if(SIMPLEMC_FETCH_FMT)
     FetchContent_Declare(fmtlib
         GIT_REPOSITORY https://github.com/fmtlib/fmt
-        GIT_TAG origin/master)
+        GIT_TAG origin/master) # 130cf54
     set(FMT_INSTALL OFF CACHE BOOL "")
     message(STATUS "Fetching fmtlib ...")
     FetchContent_MakeAvailable(fmtlib)
@@ -33,7 +33,8 @@ endif()
 if(SIMPLEMC_FETCH_RANGEV3)
     FetchContent_Declare(rangev3
         GIT_REPOSITORY https://github.com/ericniebler/range-v3.git
-        GIT_TAG origin/master)
+        GIT_TAG origin/master) # 9aa41d6
+    set(RANGES_BUILD_CALENDAR_EXAMPLE OFF CACHE BOOL "")
     message(STATUS "Fetching range-v3 ...")
     FetchContent_MakeAvailable(rangev3)
     message(STATUS "rangev3_SOURCE_DIR: ${rangev3_SOURCE_DIR}")
@@ -49,7 +50,7 @@ endif()
 if(SIMPLEMC_FETCH_JSON)
     FetchContent_Declare(json
         GIT_REPOSITORY https://github.com/nlohmann/json.git
-        GIT_TAG origin/develop)
+        GIT_TAG origin/develop) # edffad0
     message(STATUS "Fetching json ...")
     FetchContent_MakeAvailable(json)
     message(STATUS "json_SOURCE_DIR: ${json_SOURCE_DIR}")

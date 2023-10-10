@@ -1,10 +1,10 @@
 /**
- * @file simplemc_exception.h
+ * @file simplemc_exception.hpp
  * @brief General exception used in the simplemc library.
  */
 
-#ifndef SIMPLEMC_UTILS_SIMPLEMC_EXCEPTION_H
-#define SIMPLEMC_UTILS_SIMPLEMC_EXCEPTION_H
+#ifndef SIMPLEMC_UTILS_SIMPLEMC_EXCEPTION_HPP
+#define SIMPLEMC_UTILS_SIMPLEMC_EXCEPTION_HPP
 
 #include <simplemc/utils/generic_error.hpp>
 
@@ -27,4 +27,4 @@ public:
 
 } // namespace simplemc
 
-#endif // SIMPLEMC_UTILS_SIMPLEMC_EXCEPTION_H
+#endif // SIMPLEMC_UTILS_SIMPLEMC_EXCEPTION_HPP

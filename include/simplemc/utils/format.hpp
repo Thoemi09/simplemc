@@ -1,10 +1,10 @@
 /**
- * @file format.h
+ * @file format.hpp
  * @brief Some specialized formatter for fmtlib.
  */
 
-#ifndef SIMPLEMC_UTILS_FORMAT_H
-#define SIMPLEMC_UTILS_FORMAT_H
+#ifndef SIMPLEMC_UTILS_FORMAT_HPP
+#define SIMPLEMC_UTILS_FORMAT_HPP
 
 #include <fmt/format.h>
 
@@ -48,4 +48,4 @@ struct formatter<std::complex<T>, Char> : public formatter<T, Char> {
 
 } // namespace fmt
 
-#endif // SIMPLEMC_UTILS_FORMAT_H
+#endif // SIMPLEMC_UTILS_FORMAT_HPP

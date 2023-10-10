@@ -1,10 +1,10 @@
 /**
- * @file generic_error.h
+ * @file generic_error.hpp
  * @brief Base class for more specific exceptions.
  */
 
-#ifndef SIMPLEMC_UTILS_GENERIC_ERROR_H
-#define SIMPLEMC_UTILS_GENERIC_ERROR_H
+#ifndef SIMPLEMC_UTILS_GENERIC_ERROR_HPP
+#define SIMPLEMC_UTILS_GENERIC_ERROR_HPP
 
 #include <stdexcept>
 #include <string>
@@ -47,4 +47,4 @@ public:
 
 } // namespace simplemc
 
-#endif // SIMPLEMC_UTILS_GENERIC_ERROR_H
+#endif // SIMPLEMC_UTILS_GENERIC_ERROR_HPP
