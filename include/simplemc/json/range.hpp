@@ -6,7 +6,6 @@
 #ifndef SIMPLEMC_JSON_RANGE_HPP
 #define SIMPLEMC_JSON_RANGE_HPP
 
-#include "range/v3/range/primitives.hpp"
 #include <simplemc/json/json.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 

@@ -40,11 +40,13 @@ void check_file_io(const nlohmann::json j, const std::string& fname, simplemc::j
     ASSERT_EQ(j, j2);
 }
 
+// Test JSON serialization of complex types.
 TEST(SimplemcJson, ComplexSerialization) {
     std::complex<double> cdb { 1.0, 2.0 };
     check_json(cdb);
 }
 
+// Test JSON serialization of ranges.
 TEST(SimplemcJson, RangeSerialization) {
     nlohmann::json j;
     std::array<int, 3> arr { 1, 2, 3 }, arr_rev;
@@ -54,6 +56,7 @@ TEST(SimplemcJson, RangeSerialization) {
     check_range_equal(arr | ranges::views::reverse, arr_rev);
 }
 
+// Test JSON file IO.
 TEST(SimplemcJson, FileIO) {
     nlohmann::json j;
     j["int"] = 1;
@@ -69,6 +72,7 @@ TEST(SimplemcJson, FileIO) {
     check_file_io(j, "binary.ubjson", simplemc::json_binary_mode::ubjson);
 }
 
+// Test deriving from basic_json.
 TEST(SimplemcJson, BasicJson) {
     foo::bar b;
     b.x = 100;

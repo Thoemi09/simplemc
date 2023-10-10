@@ -25,9 +25,7 @@ struct formatter<std::complex<T>, Char> : public formatter<T, Char> {
      * @param ctx The format parse context.
      * @return The iterator to the end of the parsed range.
      */
-    constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
-        return base::parse(ctx);
-    }
+    constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return base::parse(ctx); }
 
     /**
      * @brief Formats the std::complex<T> type.
@@ -38,11 +36,11 @@ struct formatter<std::complex<T>, Char> : public formatter<T, Char> {
      */
     template <typename FormatContext>
     auto format(const std::complex<T>& z, FormatContext& ctx) const {
-        format_to(ctx.out(), "(");
+        fmt::format_to(ctx.out(), "(");
         base::format(z.real(), ctx);
-        format_to(ctx.out(), ",");
+        fmt::format_to(ctx.out(), ",");
         base::format(z.imag(), ctx);
-        return format_to(ctx.out(), ")");
+        return fmt::format_to(ctx.out(), ")");
     }
 };
 

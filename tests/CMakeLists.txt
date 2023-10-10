@@ -1,3 +1,9 @@
+# Build tests for simplemc.
+# 
+# The following targets are defined:
+# ---------------------------------
+# simplemc-test
+
 include(UnitTests)
 
 # create interface library for testing

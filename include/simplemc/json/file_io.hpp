@@ -12,7 +12,7 @@ namespace simplemc {
 
 /**
  * @brief Enumerate possible binary IO strategies for JSON files.
- * 
+ *
  * @details The following binary formats are supported: BSON (bson),
  * CBOR (cbor), MessagePack (msgpack) and UBJSON (ubjson).
  */

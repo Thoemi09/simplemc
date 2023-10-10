@@ -16,8 +16,7 @@ void write_json_file(const nlohmann::json& json, const std::string& fname, int w
     os << std::setw(width) << json;
 }
 
-void write_json_file(
-    const nlohmann::json& json, const std::string& fname, json_binary_mode mode) {
+void write_json_file(const nlohmann::json& json, const std::string& fname, json_binary_mode mode) {
     using nlohmann::detail::output_adapter;
     std::ofstream os(fname, std::ios_base::binary);
     if (mode == json_binary_mode::bson) {
@@ -36,8 +35,7 @@ void read_json_file(nlohmann::json& json, const std::string& fname) {
     is >> json;
 }
 
-void read_json_file(
-    nlohmann::json& json, const std::string& fname, json_binary_mode mode) {
+void read_json_file(nlohmann::json& json, const std::string& fname, json_binary_mode mode) {
     std::ifstream is(fname, std::ios_base::binary);
     if (mode == json_binary_mode::bson) {
         json = nlohmann::json::from_bson(is);

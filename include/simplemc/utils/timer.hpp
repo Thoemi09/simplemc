@@ -1,6 +1,6 @@
 /**
  * @file timer.hpp
- * @brief Timer built on std::chrono.
+ * @brief Timer built on top of std::chrono.
  */
 
 #ifndef SIMPLEMC_UTILS_TIMER_HPP
@@ -14,7 +14,6 @@ namespace simplemc {
  * @brief Type aliases for different std::chrono::duration types.
  */
 struct duration {
-public:
     using hour = std::chrono::duration<double, std::ratio<3600>>;
     using min = std::chrono::duration<double, std::ratio<60>>;
     using sec = std::chrono::duration<double, std::ratio<1>>;
@@ -35,14 +34,14 @@ public:
  * where the resulting duration type has to be given explictly as a template
  * parameter. This enables us to use a default duration (duration::sec).
  *
- * @tparam C Clock type
- * @tparam D1 Duration type of first point in time
- * @tparam D2 Duration type of second point in time
- * @tparam D Duration type of result (default: duration::sec)
+ * @tparam C Clock type.
+ * @tparam D1 Duration type of first point in time.
+ * @tparam D2 Duration type of second point in time.
+ * @tparam D Duration type of result (default: duration::sec).
  *
- * @param time_point1 First point in time
- * @param time_point2 Second point in time
- * @param to_duration Instance of the duration type of the result
+ * @param time_point1 First point in time.
+ * @param time_point2 Second point in time.
+ * @param to_duration Instance of the duration type of the result.
  * @return Time difference between the two points in time. If t1 > t2, then the
  * result is negative.
  */
@@ -67,7 +66,7 @@ auto time_passed(const std::chrono::time_point<C, D1>& time_point1, const std::c
  *     auto since_start_in_sec = time_passed(t.get_start(), t.get_stop());
  *     auto since_interim_in_min = time_passed(t.get_interim(), t.get_stop(), duration::min{});
  *
- * @tparam Clock Clock from std::chrono (default: std::chrono::steady_clock)
+ * @tparam Clock Clock from std::chrono (default: std::chrono::steady_clock).
  */
 template <typename Clock = std::chrono::steady_clock>
 class timer {
