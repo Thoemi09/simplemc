@@ -25,3 +25,4 @@ target_include_directories(simplemc-basic
 # build simplemc libraries
 add_subdirectory(utils)
 add_subdirectory(json)
+add_subdirectory(random)
