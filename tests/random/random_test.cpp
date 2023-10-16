@@ -5,13 +5,7 @@
 
 #include "../test_utils.hpp"
 
-#include <simplemc/random/discrete_alias_distribution.hpp>
-#include <simplemc/random/discrete_distribution.hpp>
-#include <simplemc/random/samples.hpp>
-#include <simplemc/random/seed_rng.hpp>
-#include <simplemc/random/splitmix64.hpp>
-#include <simplemc/random/uniform_real_distribution.hpp>
-#include <simplemc/random/xoshiro256.hpp>
+#include <simplemc/random.hpp>
 #include <simplemc/utils/timer.hpp>
 
 #include <fmt/ranges.h>
@@ -21,6 +15,7 @@
 #include <sstream>
 #include <vector>
 
+// Simple histogram class for testing.
 class histogram01 {
 public:
     explicit histogram01(int nbins) :
@@ -61,6 +56,7 @@ private:
     std::vector<double> hist_;
 };
 
+// Test uniform real distribution.
 TEST(SimplemcRandom, UniformRealDistribution) {
     std::mt19937_64 mt_std, mt_smc;
     std::uniform_real_distribution<double> std_urd;
@@ -70,6 +66,7 @@ TEST(SimplemcRandom, UniformRealDistribution) {
     }
 }
 
+// Test restoring a uniform real distribution.
 TEST(SimplemcRandom, RestoreUniformRealDistribution) {
     simplemc::uniform_real_distribution dist(-2.0, 5.0), dist2;
     ASSERT_NE(dist, dist2);
@@ -79,6 +76,7 @@ TEST(SimplemcRandom, RestoreUniformRealDistribution) {
     ASSERT_EQ(dist, dist2);
 }
 
+// Test splitmix64 RNG.
 TEST(SimplemcRandom, Splitmix64) {
     simplemc::splitmix64 eng;
     simplemc::uniform_real_distribution dist;
@@ -89,6 +87,7 @@ TEST(SimplemcRandom, Splitmix64) {
     ASSERT_TRUE(hist.check_bins(1e-2));
 }
 
+// Test restoring a splitmix64 RNG.
 TEST(SimplemcRandom, RestoreSplitmix64) {
     simplemc::splitmix64 eng;
     auto eng2 = eng;
@@ -101,6 +100,7 @@ TEST(SimplemcRandom, RestoreSplitmix64) {
     ASSERT_EQ(eng, eng2);
 }
 
+// Test xoshiro256 RNGs.
 TEST(SimplemcRandom, Xoshiro256) {
     using namespace simplemc;
     xoshiro256p xop;
@@ -118,6 +118,7 @@ TEST(SimplemcRandom, Xoshiro256) {
     ASSERT_TRUE(hist_ss.check_bins(1e-2));
 }
 
+// Test restoring a xoshiro256 RNG.
 TEST(SimplemcRandom, RestoreXoshiro256) {
     simplemc::xoshiro256p eng;
     auto eng2 = eng;
@@ -130,6 +131,7 @@ TEST(SimplemcRandom, RestoreXoshiro256) {
     ASSERT_EQ(eng, eng2);
 }
 
+// Test discrete distribution.
 TEST(SimplemcRandom, DiscreteDistribution) {
     simplemc::discrete_distribution<int> smc_dist { 1.0, 5.0, 4.0 };
     std::discrete_distribution<int> std_dist { 1.0, 5.0, 4.0 };
@@ -139,6 +141,7 @@ TEST(SimplemcRandom, DiscreteDistribution) {
     }
 }
 
+// Test restoring a discrete distribution.
 TEST(SimplemcRandom, RestoreDiscreteDistribution) {
     simplemc::discrete_distribution<std::uint64_t> dist1 { 1.23, 8.2912, 4.23 }, dist2;
     ASSERT_NE(dist1, dist2);
@@ -148,6 +151,7 @@ TEST(SimplemcRandom, RestoreDiscreteDistribution) {
     check_range_near(dist1.probabilities(), dist2.probabilities(), 1e-14);
 }
 
+// Test restoring a discrete alias distribution.
 TEST(SimplemcRandom, RestoreDiscreteAliasDistribution) {
     simplemc::discrete_distribution<long> dist1 { 1.23, 8.2912, 4.23 }, dist2;
     ASSERT_NE(dist1, dist2);
@@ -157,6 +161,7 @@ TEST(SimplemcRandom, RestoreDiscreteAliasDistribution) {
     check_range_near(dist1.probabilities(), dist2.probabilities(), 1e-14);
 }
 
+// Test speeds of different distributions.
 TEST(SimplemcRandom, SpeedDiscreteDistribution) {
     using namespace simplemc;
     //std::vector<double> weights { 1, 3, 5, 0, 2, 6, 18, 2, 11, 8 };
@@ -218,6 +223,7 @@ TEST(SimplemcRandom, ExclusiveUniformIntDistributionSamples) {
     }
 }
 
+// Test seeding RNGs.
 TEST(SimplemcRandom, SeedRng) {
     std::mt19937_64 mt1, mt2, mt3;
     simplemc::seed_rng(mt1, 0);

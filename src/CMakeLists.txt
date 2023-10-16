@@ -26,3 +26,4 @@ target_include_directories(simplemc-basic
 add_subdirectory(utils)
 add_subdirectory(json)
 add_subdirectory(random)
+add_subdirectory(grids)

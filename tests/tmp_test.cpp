@@ -1,13 +1,9 @@
-#include "simplemc/random/xoshiro256.hpp"
+#include "fmt/core.h"
 #include <fmt/ranges.h>
-#include <random>
-#include <simplemc/random/splitmix64.hpp>
+#include <simplemc/grids.hpp>
+#include <range/v3/all.hpp>
 
 int main() {
-    std::seed_seq seq;
-    simplemc::xoshiro256pp rng { seq };
-    fmt::print("{}\n", rng.internal_state());
-    for (int i = 0; i < 100; i++) {
-        fmt::print("{}\n", rng());
-    }
+    simplemc::power_grid pg { 1, 4, 3, 2 };
+    fmt::print("grid = {}\n", pg.view());
 }

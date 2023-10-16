@@ -2,6 +2,7 @@
  * @file utils_test.cpp
  * @brief Unit tests for utils library.
  */
+ 
 #include "../test_utils.hpp"
 
 #include <simplemc/config.hpp>

@@ -5,9 +5,7 @@
 
 #include "../test_utils.hpp"
 
-#include <simplemc/json/basic_json.hpp>
-#include <simplemc/json/file_io.hpp>
-#include <simplemc/json/range.hpp>
+#include <simplemc/json.hpp>
 
 #include <gtest/gtest.h>
 #include <range/v3/view/reverse.hpp>
@@ -16,6 +14,7 @@
 
 namespace foo {
 
+// Custom class for testing JSON serialization.
 struct bar : public simplemc::basic_json {
     int x = 10;
     void write_json(nlohmann::json& j) const override { j["x"] = x; }
@@ -24,6 +23,7 @@ struct bar : public simplemc::basic_json {
 
 } // namespace foo
 
+// Check if file IO in text mode works.
 void check_file_io(const nlohmann::json j, const std::string& fname, int w) {
     simplemc::write_json_file(j, fname, w);
     nlohmann::json j2;
@@ -32,6 +32,7 @@ void check_file_io(const nlohmann::json j, const std::string& fname, int w) {
     ASSERT_EQ(j, j2);
 }
 
+// Check if file IO in binary mode works.
 void check_file_io(const nlohmann::json j, const std::string& fname, simplemc::json_binary_mode m) {
     simplemc::write_json_file(j, fname, m);
     nlohmann::json j2;

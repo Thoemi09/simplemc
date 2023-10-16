@@ -15,6 +15,7 @@ target_link_libraries(simplemc-test INTERFACE GTest::gtest_main simplemc::simple
 add_subdirectory(utils)
 add_subdirectory(json)
 add_subdirectory(random)
+add_subdirectory(grids)
 
 # temporary test
-add_unittest(NAME tmp-test SOURCES tmp_test.cpp LIBS simplemc::simplemc-random)
+add_unittest(NAME tmp-test SOURCES tmp_test.cpp LIBS simplemc::simplemc-grids)
