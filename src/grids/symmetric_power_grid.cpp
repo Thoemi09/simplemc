@@ -3,7 +3,6 @@
  * @brief 1-dimensional, symmetric power grid.
  */
 
-#include "simplemc/grids/grid_base.hpp"
 #include <simplemc/grids/symmetric_power_grid.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 

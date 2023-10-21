@@ -9,8 +9,6 @@
 #ifndef SIMPLEMC_MPI_COLLECTIVES_HPP
 #define SIMPLEMC_MPI_COLLECTIVES_HPP
 
-#include "range/v3/range/primitives.hpp"
-#include "range/v3/range/traits.hpp"
 #include <simplemc/mpi/communicator.hpp>
 #include <simplemc/mpi/datatypes.hpp>
 #include <simplemc/mpi/utils.hpp>

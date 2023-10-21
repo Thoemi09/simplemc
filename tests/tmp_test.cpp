@@ -1,9 +1,7 @@
-#include "fmt/core.h"
 #include <fmt/ranges.h>
-#include <simplemc/grids.hpp>
-#include <range/v3/all.hpp>
+#include <Eigen/Dense>
 
 int main() {
-    simplemc::power_grid pg { 1, 4, 3, 2 };
-    fmt::print("grid = {}\n", pg.view());
+    Eigen::Vector3d v { 1, 2, 3 };
+    fmt::print("v = {}\n", v);
 }

@@ -67,3 +67,20 @@ message(STATUS "Finding MPI ...")
 find_package(MPI REQUIRED)
 set_target_properties(MPI::MPI_CXX PROPERTIES IMPORTED_GLOBAL TRUE)
 message(STATUS "MPI found: Include directories = ${MPI_CXX_INCLUDE_DIRS}")
+
+# Eigen
+if(SIMPLEMC_FETCH_EIGEN)
+    FetchContent_Declare(eigen3
+        GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+        GIT_TAG master) # aa6964b
+    set(EIGEN_BUILD_TESTING OFF CACHE BOOL "")
+    message(STATUS "Fetching eigen ...")
+    FetchContent_MakeAvailable(eigen3)
+    message(STATUS "eigen3_SOURCE_DIR: ${eigen3_SOURCE_DIR}")
+else()
+    message(STATUS "Finding Eigen3 ...")
+    find_package(Eigen3 REQUIRED)
+    set_target_properties(Eigen3::Eigen PROPERTIES IMPORTED_GLOBAL TRUE)
+    get_target_property(EIGEN_TMP Eigen3::Eigen INTERFACE_INCLUDE_DIRECTORIES)
+    message(STATUS "Eigen3 found: Include directories = ${EIGEN_TMP}")
+endif()

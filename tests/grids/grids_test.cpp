@@ -4,8 +4,6 @@
  */
 
 #include "../test_utils.hpp"
-#include "simplemc/grids/linear_grid.hpp"
-#include "simplemc/grids/nd_grid.hpp"
 
 #include <gtest/gtest.h>
 #include <simplemc/grids.hpp>
