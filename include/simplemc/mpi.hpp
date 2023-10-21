@@ -1,0 +1,14 @@
+/**
+ * @file mpi.hpp
+ * @brief Include all relevant header files from simplemc-mpi.
+ */
+
+#ifndef SIMPLEMC_MPI_HPP
+#define SIMPLEMC_MPI_HPP
+
+#include <simplemc/mpi/collectives.hpp>
+#include <simplemc/mpi/communicator.hpp>
+#include <simplemc/mpi/datatypes.hpp>
+#include <simplemc/mpi/environment.hpp>
+
+#endif // SIMPLEMC_MPI_HPP

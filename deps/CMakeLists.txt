@@ -61,3 +61,9 @@ else()
     get_target_property(JSON_TMP nlohmann_json::nlohmann_json INTERFACE_INCLUDE_DIRECTORIES)
     message(STATUS "json found: Include directories = ${JSON_TMP}")
 endif()
+
+# mpi
+message(STATUS "Finding MPI ...")
+find_package(MPI REQUIRED)
+set_target_properties(MPI::MPI_CXX PROPERTIES IMPORTED_GLOBAL TRUE)
+message(STATUS "MPI found: Include directories = ${MPI_CXX_INCLUDE_DIRS}")

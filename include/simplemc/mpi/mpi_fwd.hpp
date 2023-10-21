@@ -1,0 +1,20 @@
+/**
+ * @file mpi_fwd.hpp
+ * @brief Forward declarations for simplemc-mpi.
+ */
+
+#ifndef SIMPLEMC_MPI_MPI_FWD_HPP
+#define SIMPLEMC_MPI_MPI_FWD_HPP
+
+namespace simplemc {
+
+namespace mpi {
+
+class environment;
+class communicator;
+
+} // namespace mpi
+
+} // namespace simplemc
+
+#endif // SIMPLEMC_MPI_MPI_FWD_HPP
