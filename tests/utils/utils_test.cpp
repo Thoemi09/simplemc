@@ -3,17 +3,20 @@
  * @brief Unit tests for utils library.
  */
  
-#include "../test_utils.hpp"
+#include <gtest/gtest.h>
 
 #include <simplemc/config.hpp>
 #include <simplemc/utils/file_io.hpp>
 #include <simplemc/utils/format.hpp>
+#include <simplemc/utils/indexing.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 #include <simplemc/utils/timer.hpp>
 
-#include <fmt/format.h>
+#include <fmt/ranges.h>
+#include <range/v3/all.hpp>
 
 #include <thread>
+#include <vector>
 
 // Test if the config header is generated correctly.
 TEST(SimplemcUtils, ConfigHeader) {
@@ -67,4 +70,32 @@ TEST(SimplemcUtils, Timer) {
     std::this_thread::sleep_for(millisec(100));
     timer.stop();
     fmt::print("Time passed: {} ms\n", simplemc::time_passed(timer.start_time(), timer.stop_time(), millisec {}));
+}
+
+// Test calculating the size from a shape.
+TEST(SimplemcUtils, SizeFromShape) {
+    using namespace simplemc;
+    std::vector<int> shape;
+    ASSERT_EQ(size_from_shape(shape), 0);
+    shape = { 2, 3, 4 };
+    ASSERT_EQ(size_from_shape(shape), 24);
+    ASSERT_EQ(size_from_shape(ranges::views::repeat_n(5, 3)), 5 * 5 * 5);
+    ASSERT_EQ(size_from_shape(ranges::views::repeat_n(5, 0)), 0);
+    constexpr std::array<int, 2> shape_arr_cepr { 2, 3 };
+    constexpr auto size_cepr = size_from_shape(shape_arr_cepr);
+    ASSERT_EQ(size_cepr, 6);
+    std::array<long, 2> shape_arr { 2, 3 };
+    auto size = size_from_shape(shape_arr);
+    ASSERT_EQ(size, 6);
+}
+
+// Test converting a flat index to a multi-dimensional index.
+TEST(SimplemcUtils, MultiIndex) {
+    using namespace simplemc;
+    constexpr std::array<int, 2> shape_arr_cepr { 2, 3 };
+    constexpr auto idxs_cepr = multi_index(4, shape_arr_cepr);
+    fmt::print("idxs_cepr = {}\n", idxs_cepr);
+    std::array<long, 2> shape_arr { 2, 3 };
+    auto idxs = multi_index(4l, shape_arr, row_major {});
+    fmt::print("idxs = {}\n", idxs);
 }

@@ -14,5 +14,4 @@ target_sources(simplemc-grids
         symmetric_power_grid.cpp)
 target_link_libraries(simplemc-grids 
     PUBLIC 
-        simplemc::simplemc-utils
-        range-v3::range-v3)
+        simplemc::simplemc-utils)

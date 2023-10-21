@@ -14,5 +14,4 @@ target_sources(simplemc-mpi
 target_link_libraries(simplemc-mpi 
     PUBLIC 
         simplemc::simplemc-utils
-        range-v3::range-v3
         MPI::MPI_CXX)

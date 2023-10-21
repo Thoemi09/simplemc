@@ -20,7 +20,7 @@
 namespace simplemc {
 
 /* Forward declarations. */
-template <integer_for_random T>
+template <integer_only T>
 class discrete_distribution;
 
 namespace detail {
@@ -30,7 +30,7 @@ namespace detail {
  *
  * @tparam T Integral type.
  */
-template <integer_for_random T>
+template <integer_only T>
 class dd_param_type {
 public:
     /**
@@ -93,23 +93,23 @@ private:
     std::vector<double> accprobs_;
 };
 
-template <integer_for_random T>
+template <integer_only T>
 dd_param_type<T>::dd_param_type() : probs_(1, 1.0) {
     initialize();
 }
 
-template <integer_for_random T>
+template <integer_only T>
 template <typename InputIt>
 dd_param_type<T>::dd_param_type(InputIt first, InputIt last) : probs_(first, last) {
     initialize();
 }
 
-template <integer_for_random T>
+template <integer_only T>
 dd_param_type<T>::dd_param_type(std::initializer_list<double> list) : probs_(list) {
     initialize();
 }
 
-template <integer_for_random T>
+template <integer_only T>
 template <typename UnaryOp>
 dd_param_type<T>::dd_param_type(std::size_t n, double xmin, double xmax, UnaryOp unary_op) {
     std::size_t nw = (n == 0 ? 1 : n);
@@ -121,7 +121,7 @@ dd_param_type<T>::dd_param_type(std::size_t n, double xmin, double xmax, UnaryOp
     initialize();
 }
 
-template <integer_for_random T>
+template <integer_only T>
 void dd_param_type<T>::initialize() {
     if (probs_.size() < 2) {
         probs_.clear();
@@ -147,7 +147,7 @@ void dd_param_type<T>::initialize() {
  * @param param Parameters.
  * @return Reference to the std::ostream object.
  */
-template <integer_for_random T>
+template <integer_only T>
 std::ostream& operator<<(std::ostream& os, const dd_param_type<T>& param) {
     auto prec = os.precision();
     auto check_os = [](const std::ostream& os) {
@@ -173,7 +173,7 @@ std::ostream& operator<<(std::ostream& os, const dd_param_type<T>& param) {
  * @param param Parameters.
  * @return Reference to the std::istream object.
  */
-template <integer_for_random T>
+template <integer_only T>
 std::istream& operator>>(std::istream& is, dd_param_type<T>& param) {
     auto check_is = [](const std::istream& is) {
         if (!is) {
@@ -201,7 +201,7 @@ std::istream& operator>>(std::istream& is, dd_param_type<T>& param) {
  * @param rhs Parameters #2.
  * @return True if their probabilities are equal.
  */
-template <integer_for_random T>
+template <integer_only T>
 bool operator==(const dd_param_type<T>& lhs, const dd_param_type<T>& rhs) {
     return lhs.probabilities() == rhs.probabilities();
 }
@@ -214,7 +214,7 @@ bool operator==(const dd_param_type<T>& lhs, const dd_param_type<T>& rhs) {
  * @param rhs Parameters #2.
  * @return True if their probabilities are not equal.
  */
-template <integer_for_random T>
+template <integer_only T>
 bool operator!=(const dd_param_type<T>& lhs, const dd_param_type<T>& rhs) {
     return !(lhs == rhs);
 }
@@ -229,7 +229,7 @@ bool operator!=(const dd_param_type<T>& lhs, const dd_param_type<T>& rhs) {
  *
  * @tparam T Integral type.
  */
-template <integer_for_random T>
+template <integer_only T>
 class discrete_distribution {
 public:
     /**
@@ -364,7 +364,7 @@ private:
  * @param dd Distribution to be written.
  * @return Reference to ostream.
  */
-template <integer_for_random T>
+template <integer_only T>
 std::ostream& operator<<(std::ostream& os, const discrete_distribution<T>& dd) {
     if (!(os << dd.param())) {
         throw simplemc_exception("Error writing discrete_distribution to ostream");
@@ -381,7 +381,7 @@ std::ostream& operator<<(std::ostream& os, const discrete_distribution<T>& dd) {
  * @param dd Distribution to be read into.
  * @return Reference to istream.
  */
-template <integer_for_random T>
+template <integer_only T>
 std::istream& operator>>(std::istream& is, discrete_distribution<T>& dd) {
     typename discrete_distribution<T>::param_type parm;
     if (is >> parm) {
@@ -400,7 +400,7 @@ std::istream& operator>>(std::istream& is, discrete_distribution<T>& dd) {
  * @param rhs Distribution #2.
  * @return True if the parameters of the distributions are the same.
  */
-template <integer_for_random T>
+template <integer_only T>
 bool operator==(const discrete_distribution<T>& lhs, const discrete_distribution<T>& rhs) {
     return lhs.param() == rhs.param();
 }
@@ -413,7 +413,7 @@ bool operator==(const discrete_distribution<T>& lhs, const discrete_distribution
  * @param rhs Distribution #2.
  * @return True if the parameters of the distributions are distinct.
  */
-template <integer_for_random T>
+template <integer_only T>
 bool operator!=(const discrete_distribution<T>& lhs, const discrete_distribution<T>& rhs) {
     return !(lhs == rhs);
 }

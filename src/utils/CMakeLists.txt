@@ -13,4 +13,5 @@ target_sources(simplemc-utils
 target_link_libraries(simplemc-utils 
     PUBLIC 
         simplemc::simplemc-basic 
-        fmt::fmt)
+        fmt::fmt
+        range-v3::range-v3)

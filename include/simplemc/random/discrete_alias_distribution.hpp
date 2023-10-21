@@ -19,7 +19,7 @@
 namespace simplemc {
 
 /* Forward declarations. */
-template <integer_for_random T>
+template <integer_only T>
 class discrete_alias_distribution;
 
 namespace detail {
@@ -29,7 +29,7 @@ namespace detail {
  *
  * @tparam T Integral type.
  */
-template <integer_for_random T>
+template <integer_only T>
 class dad_param_type {
 public:
     /**
@@ -92,21 +92,21 @@ private:
     std::vector<double> probs_;
 };
 
-template <integer_for_random T>
+template <integer_only T>
 dad_param_type<T>::dad_param_type() : probs_(1, 1.0) {}
 
-template <integer_for_random T>
+template <integer_only T>
 template <typename InputIt>
 dad_param_type<T>::dad_param_type(InputIt first, InputIt last) : probs_(first, last) {
     normalize();
 }
 
-template <integer_for_random T>
+template <integer_only T>
 dad_param_type<T>::dad_param_type(std::initializer_list<double> list) : probs_(list) {
     normalize();
 }
 
-template <integer_for_random T>
+template <integer_only T>
 template <typename UnaryOp>
 dad_param_type<T>::dad_param_type(std::size_t n, double xmin, double xmax, UnaryOp unary_op) {
     std::size_t nw = n == 0 ? 1 : n;
@@ -118,7 +118,7 @@ dad_param_type<T>::dad_param_type(std::size_t n, double xmin, double xmax, Unary
     normalize();
 }
 
-template <integer_for_random T>
+template <integer_only T>
 void dad_param_type<T>::normalize() {
     if (probs_.size() < 2) {
         probs_.clear();
@@ -139,7 +139,7 @@ void dad_param_type<T>::normalize() {
  * @param param Parameters.
  * @return Reference to the std::ostream object.
  */
-template <integer_for_random T>
+template <integer_only T>
 std::ostream& operator<<(std::ostream& os, const dad_param_type<T>& param) {
     auto prec = os.precision();
     auto check_os = [](const std::ostream& os) {
@@ -165,7 +165,7 @@ std::ostream& operator<<(std::ostream& os, const dad_param_type<T>& param) {
  * @param param Parameters.
  * @return Reference to the std::istream object.
  */
-template <integer_for_random T>
+template <integer_only T>
 std::istream& operator>>(std::istream& is, dad_param_type<T>& param) {
     auto check_is = [](const std::istream& is) {
         if (!is) {
@@ -193,7 +193,7 @@ std::istream& operator>>(std::istream& is, dad_param_type<T>& param) {
  * @param rhs Parameters #2.
  * @return True if their probabilities are equal.
  */
-template <integer_for_random T>
+template <integer_only T>
 bool operator==(const dad_param_type<T>& lhs, const dad_param_type<T>& rhs) {
     return lhs.probabilities() == rhs.probabilities();
 }
@@ -206,7 +206,7 @@ bool operator==(const dad_param_type<T>& lhs, const dad_param_type<T>& rhs) {
  * @param rhs Parameters #2.
  * @return True if their probabilities are not equal.
  */
-template <integer_for_random T>
+template <integer_only T>
 bool operator!=(const dad_param_type<T>& lhs, const dad_param_type<T>& rhs) {
     return !(lhs == rhs);
 }
@@ -221,7 +221,7 @@ bool operator!=(const dad_param_type<T>& lhs, const dad_param_type<T>& rhs) {
  *
  * @tparam T Integral type.
  */
-template <integer_for_random T>
+template <integer_only T>
 class discrete_alias_distribution {
 public:
     /**
@@ -353,35 +353,35 @@ private:
     std::vector<int> alias_;
 };
 
-template <integer_for_random T>
+template <integer_only T>
 discrete_alias_distribution<T>::discrete_alias_distribution() : param_() {
     initialize();
 }
 
-template <integer_for_random T>
+template <integer_only T>
 template <typename InputIt>
 discrete_alias_distribution<T>::discrete_alias_distribution(InputIt first, InputIt last) : param_(first, last) {
     initialize();
 }
 
-template <integer_for_random T>
+template <integer_only T>
 discrete_alias_distribution<T>::discrete_alias_distribution(std::initializer_list<double> list) : param_(list) {
     initialize();
 }
 
-template <integer_for_random T>
+template <integer_only T>
 template <typename UnaryOp>
 discrete_alias_distribution<T>::discrete_alias_distribution(std::size_t n, double xmin, double xmax, UnaryOp unary_op) :
     param_(n, xmin, xmax, unary_op) {
     initialize();
 }
 
-template <integer_for_random T>
+template <integer_only T>
 discrete_alias_distribution<T>::discrete_alias_distribution(const param_type& param) : param_(param) {
     initialize();
 }
 
-template <integer_for_random T>
+template <integer_only T>
 void discrete_alias_distribution<T>::initialize() {
     auto size = param_.probs_.size();
     probs_ = param_.probs_;
@@ -421,7 +421,7 @@ void discrete_alias_distribution<T>::initialize() {
     }
 }
 
-template <integer_for_random T>
+template <integer_only T>
 template <typename Engine>
 discrete_alias_distribution<T>::result_type discrete_alias_distribution<T>::operator()(Engine& eng) const {
     auto j = std::uniform_int_distribution<std::size_t>(0, probs_.size() - 1)(eng);
@@ -429,7 +429,7 @@ discrete_alias_distribution<T>::result_type discrete_alias_distribution<T>::oper
     return (r2 <= probs_[j] ? j : alias_[j]);
 }
 
-template <integer_for_random T>
+template <integer_only T>
 template <typename Engine>
 discrete_alias_distribution<T>::result_type discrete_alias_distribution<T>::operator()(
     Engine& eng, const param_type& param) const {
@@ -449,7 +449,7 @@ discrete_alias_distribution<T>::result_type discrete_alias_distribution<T>::oper
  * @param dd Distribution to be written.
  * @return Reference to ostream.
  */
-template <integer_for_random T>
+template <integer_only T>
 std::ostream& operator<<(std::ostream& os, const discrete_alias_distribution<T>& dad) {
     if (!(os << dad.param())) {
         throw simplemc_exception("Error writing discrete_alias_distribution to ostream");
@@ -466,7 +466,7 @@ std::ostream& operator<<(std::ostream& os, const discrete_alias_distribution<T>&
  * @param dd Distribution to be read into.
  * @return Reference to istream.
  */
-template <integer_for_random T>
+template <integer_only T>
 std::istream& operator>>(std::istream& is, discrete_alias_distribution<T>& dad) {
     typename discrete_alias_distribution<T>::param_type parm;
     if (is >> parm) {
@@ -485,7 +485,7 @@ std::istream& operator>>(std::istream& is, discrete_alias_distribution<T>& dad) 
  * @param rhs Distribution #2.
  * @return True if the parameters of the distributions are the same.
  */
-template <integer_for_random T>
+template <integer_only T>
 bool operator==(const discrete_alias_distribution<T>& lhs, const discrete_alias_distribution<T>& rhs) {
     return lhs.param() == rhs.param();
 }
@@ -498,7 +498,7 @@ bool operator==(const discrete_alias_distribution<T>& lhs, const discrete_alias_
  * @param rhs Distribution #2.
  * @return True if the parameters of the distributions are distinct.
  */
-template <integer_for_random T>
+template <integer_only T>
 bool operator!=(const discrete_alias_distribution<T>& lhs, const discrete_alias_distribution<T>& rhs) {
     return !(lhs == rhs);
 }

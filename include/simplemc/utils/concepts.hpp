@@ -22,13 +22,13 @@ concept is_any_of = (std::same_as<T, U> || ...);
 
 
 /**
- * @brief A concept that checks if a type is an integer type that can be used for random number distributions.
+ * @brief A concept that checks if a type is an integer type except for bool, char, and wchar_t.
  * 
  * @tparam T The type to check.
- * @return True if T is an integer type that can be used for random number generation, false otherwise.
+ * @return True if T is an accepted integer type, false otherwise.
  */
 template <typename T>
-concept integer_for_random = is_any_of<T, short, int, long, long long, unsigned short, unsigned int, unsigned long, unsigned long long>;
+concept integer_only = is_any_of<T, short, int, long, long long, unsigned short, unsigned int, unsigned long, unsigned long long>;
 
 } // namespace simplemc
 
