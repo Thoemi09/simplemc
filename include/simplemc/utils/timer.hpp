@@ -63,8 +63,8 @@ auto time_passed(const std::chrono::time_point<C, D1>& time_point1, const std::c
  *     t.interim();
  *     ...
  *     t.stop();
- *     auto since_start_in_sec = time_passed(t.get_start(), t.get_stop());
- *     auto since_interim_in_min = time_passed(t.get_interim(), t.get_stop(), duration::min{});
+ *     auto since_start_in_sec = time_passed(t.start_time(), t.stop_time());
+ *     auto since_interim_in_min = time_passed(t.interim_time(), t.stop_time(), duration::min{});
  *
  * @tparam Clock Clock from std::chrono (default: std::chrono::steady_clock).
  */

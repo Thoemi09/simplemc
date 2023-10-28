@@ -113,10 +113,10 @@ template <integer_only T>
 template <typename UnaryOp>
 dd_param_type<T>::dd_param_type(std::size_t n, double xmin, double xmax, UnaryOp unary_op) {
     std::size_t nw = (n == 0 ? 1 : n);
-    double d = (xmax - xmin) / nw;
+    double d = (xmax - xmin) / static_cast<double>(nw);
     probs_.reserve(nw);
     for (std::size_t i = 0; i < nw; ++i) {
-        probs_.push_back(unary_op(xmin + i * d + 0.5 * d));
+        probs_.push_back(unary_op(xmin + static_cast<double>(i) * d + 0.5 * d));
     }
     initialize();
 }
@@ -180,12 +180,12 @@ std::istream& operator>>(std::istream& is, dd_param_type<T>& param) {
             throw simplemc_exception("Error reading dd_param_type from istream");
         }
     };
-    std::size_t size;
+    std::size_t size {};
     check_is(is >> size);
     std::vector<double> probs;
     probs.reserve(size);
     for (std::size_t i = 0; i < size; ++i) {
-        double p;
+        double p {};
         check_is(is >> std::ws >> p);
         probs.push_back(p);
     }

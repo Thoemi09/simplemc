@@ -18,11 +18,7 @@
 // Simple histogram class for testing.
 class histogram01 {
 public:
-    explicit histogram01(int nbins) :
-        nsamples_(0),
-        nbins_(nbins),
-        step_(1.0 / nbins),
-        hist_(nbins, 0.0) {}
+    explicit histogram01(int nbins) : nbins_(nbins), step_(1.0 / nbins), hist_(nbins, 0.0) {}
 
     void add(double value) {
         int idx = static_cast<int>(value / step_);
@@ -30,9 +26,7 @@ public:
         nsamples_ += 1;
     }
 
-    void print() const {
-        fmt::print("Histogram:\n{}\n", hist_);
-    }
+    void print() const { fmt::print("Histogram:\n{}\n", hist_); }
 
     bool check_bins(double tol) const {
         double exact = static_cast<double>(nsamples_) / nbins_;
@@ -50,7 +44,7 @@ public:
     }
 
 private:
-    long nsamples_;
+    long nsamples_ { 0 };
     int nbins_;
     double step_;
     std::vector<double> hist_;
@@ -164,7 +158,7 @@ TEST(SimplemcRandom, RestoreDiscreteAliasDistribution) {
 // Test speeds of different distributions.
 TEST(SimplemcRandom, SpeedDiscreteDistribution) {
     using namespace simplemc;
-    //std::vector<double> weights { 1, 3, 5, 0, 2, 6, 18, 2, 11, 8 };
+    // std::vector<double> weights { 1, 3, 5, 0, 2, 6, 18, 2, 11, 8 };
     std::vector<double> weights { 1, 6, 3 };
     std::vector<int> hist(weights.size(), 0);
     xoshiro256p xop;

@@ -135,7 +135,7 @@ public:
      *
      * @return Internal state.
      */
-    const state_type& internal_state() const { return state_; }
+    [[nodiscard]] const state_type& internal_state() const { return state_; }
 
     /**
      * @brief Generate a random number and advance internal state.
@@ -193,7 +193,7 @@ private:
      */
     void base_jump(const state_type& arr);
 
-    state_type state_;
+    state_type state_ {};
 };
 
 template <>

@@ -5,9 +5,9 @@
 
 #include "../test_utils.hpp"
 
-#include <gtest/gtest.h>
 #include <simplemc/grids.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
+
 #include <vector>
 
 // Test grid size.

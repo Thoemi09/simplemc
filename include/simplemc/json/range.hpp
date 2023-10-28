@@ -39,11 +39,11 @@ template <ranges::range R>
     requires ranges::output_range<R, ranges::range_value_t<R>>
 void range_from_json(const nlohmann::json& j, R&& rg) {
     if constexpr (ranges::sized_range<R>) {
-        if (j.size() != ranges::size(rg)) {
+        if (j.size() != ranges::size(std::forward<R>(rg))) {
             throw simplemc_exception("Range size mismatch", "range_from_json");
         }
     }
-    auto it = ranges::begin(rg);
+    auto it = ranges::begin(std::forward<R>(rg));
     for (const auto& el : j) {
         *it = el.get<ranges::range_value_t<R>>();
         ++it;

@@ -26,7 +26,7 @@ std::ostream& operator<<(std::ostream& os, const splitmix64& eng) {
 }
 
 std::istream& operator>>(std::istream& is, splitmix64& eng) {
-    std::uint64_t s;
+    std::uint64_t s {};
     if (is >> s) {
         eng.state_ = s;
     } else {

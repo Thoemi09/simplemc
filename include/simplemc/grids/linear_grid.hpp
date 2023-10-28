@@ -60,7 +60,7 @@ public:
      */
     [[nodiscard]] value_type at(size_type idx) const override {
         assert(idx >= 0 && idx < size_);
-        return first_ + step_ * idx;
+        return first_ + step_ * static_cast<double>(idx);
     }
 
     /**
@@ -93,7 +93,7 @@ public:
     [[nodiscard]] value_type step() const { return step_; }
 
 private:
-    value_type step_;
+    value_type step_ { 0.0 };
 };
 
 } // namespace simplemc

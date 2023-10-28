@@ -9,9 +9,7 @@
 #include <cstdint>
 #include <type_traits>
 
-namespace simplemc {
-
-namespace detail {
+namespace simplemc::detail {
 
 /**
  * @brief Generate a double value on the interval [min, max) given a random
@@ -29,8 +27,6 @@ inline double generate_uniform_real(Engine& eng, double min, double max) {
     return min + (max - min) * ((eng() >> 11) * 0x1.0p-53);
 }
 
-} // namespace detail
-
-} // namespace simplemc
+} // namespace simplemc::detail
 
 #endif // SIMPLEMC_RANDOM_GENERATE_UNIFORM_REAL_HPP

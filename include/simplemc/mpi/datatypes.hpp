@@ -13,9 +13,7 @@
 #include <cstddef>
 #include <type_traits>
 
-namespace simplemc {
-
-namespace mpi {
+namespace simplemc::mpi {
 
 /**
  * @brief Determine if there is a mapping between the C++ type T and a MPI datatype.
@@ -105,8 +103,6 @@ concept mpi_compatible = is_mpi_datatype_v<T>;
 template <typename R>
 concept mpi_range = ranges::contiguous_range<R> && mpi_compatible<ranges::range_value_t<R>> && ranges::sized_range<R>;
 
-} // namespace mpi
-
-} // namespace simplemc
+} // namespace simplemc::mpi
 
 #endif // SIMPLEMC_MPI_DATATYPES_HPP

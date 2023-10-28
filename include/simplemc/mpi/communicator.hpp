@@ -8,9 +8,7 @@
 
 #include <mpi.h>
 
-namespace simplemc {
-
-namespace mpi {
+namespace simplemc::mpi {
 
 /**
  * @brief A communicator that enables communication and synchronization among a
@@ -27,7 +25,7 @@ public:
      *
      * @details The given MPI_Comm is copied and stored in this communicator instance. Note that
      * no call to MPI_Comm_dup is made. If this is needed, it is the responsibility of the user
-     * to do so. The default constructor creates a copy of MPI_COMM_WORLD. Implicit conversions 
+     * to do so. The default constructor creates a copy of MPI_COMM_WORLD. Implicit conversions
      * from MPI_Comm objects to communicator objects are allowed.
      *
      * @param comm MPI_Comm object
@@ -39,14 +37,14 @@ public:
      *
      * @return Rank in the current communicator.
      */
-    int rank() const;
+    [[nodiscard]] int rank() const;
 
     /**
      * @brief Determine the size of the communicator.
      *
      * @return Number of processes in the current communicator.
      */
-    int size() const;
+    [[nodiscard]] int size() const;
 
     /**
      * @brief Wait for all processes within the communicator to reach this
@@ -63,8 +61,6 @@ private:
     MPI_Comm comm_;
 };
 
-} // namespace mpi
-
-} // namespace simplemc
+} // namespace simplemc::mpi
 
 #endif // SIMPLEMC_MPI_COMMUNICATOR_HPP

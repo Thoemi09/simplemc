@@ -8,9 +8,7 @@
 
 #include <mpi.h>
 
-namespace simplemc {
-
-namespace mpi {
+namespace simplemc::mpi {
 
 /**
  * @brief Initialize and finalize MPI execution environments.
@@ -87,8 +85,6 @@ private:
     bool abort_on_exception_;
 };
 
-} // namespace mpi
-
-} // namespace simplemc
+} // namespace simplemc::mpi
 
 #endif // SIMPLEMC_MPI_ENVIRONMENT_H

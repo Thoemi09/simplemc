@@ -8,9 +8,7 @@
 
 #include <string>
 
-namespace simplemc {
-
-namespace mpi {
+namespace simplemc::mpi {
 
 /**
  * @brief Check the success of a MPI call.
@@ -22,8 +20,6 @@ namespace mpi {
  */
 void check_mpi_call(int errcode, const std::string& mpi_routine = "");
 
-} // namespace mpi
-
-} // namespace simplemc
+} // namespace simplemc::mpi
 
 #endif // SIMPLEMC_MPI_UTILS_HPP

@@ -6,18 +6,16 @@
 #include <simplemc/mpi/environment.hpp>
 #include <simplemc/mpi/utils.hpp>
 
-namespace simplemc {
-
-namespace mpi {
+namespace simplemc::mpi {
 
 bool environment::initialized() {
-    int ini;
+    int ini {};
     check_mpi_call(MPI_Initialized(&ini), "MPI_Intialized");
     return ini != 0;
 }
 
 bool environment::is_finalized() {
-    int fin;
+    int fin {};
     check_mpi_call(MPI_Finalized(&fin), "MPI_Finalized");
     return fin != 0;
 }
@@ -53,6 +51,6 @@ environment::~environment() {
     }
 }
 
-} // namespace mpi
+} // namespace simplemc::mpi
 
-} // namespace simplemc
+

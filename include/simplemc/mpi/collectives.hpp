@@ -17,9 +17,7 @@
 #include <mpi.h>
 #include <range/v3/range/concepts.hpp>
 
-namespace simplemc {
-
-namespace mpi {
+namespace simplemc::mpi {
 
 /**
  * @brief Reduce a specific number of values (on all processes).
@@ -85,13 +83,13 @@ bool all_equal(const communicator& comm, const T& in_value) {
  */
 template <mpi_range R1, mpi_range R2>
 void all_reduce(const communicator& comm, R1&& in_values, R2&& out_values, MPI_Op op) {
-    if (!all_equal(comm, ranges::size(in_values))) {
+    if (!all_equal(comm, ranges::size(std::forward<R1>(in_values)))) {
         throw simplemc_exception("Range sizes are not equal across all processes", "mpi::all_reduce");
     }
-    if (ranges::size(in_values) != ranges::size(out_values)) {
+    if (ranges::size(std::forward<R1>(in_values)) != ranges::size(std::forward<R2>(out_values))) {
         throw simplemc_exception("Input and output range sizes are not equal", "mpi::all_reduce");
     }
-    all_reduce(comm, ranges::data(in_values), ranges::size(in_values), ranges::data(out_values), op);
+    all_reduce(comm, ranges::data(in_values), ranges::size(std::forward<R1>(in_values)), ranges::data(out_values), op);
 }
 
 /**
@@ -125,11 +123,12 @@ void all_gather(const communicator& comm, const T* in_values, int count, T* out_
  */
 template <mpi_range R>
 void all_gather(const communicator& comm, const ranges::range_value_t<R>& in_value, R&& out_values) {
-    if (comm.size() != static_cast<int>(ranges::size(out_values))) {
+    if (comm.size() != static_cast<int>(ranges::size(std::forward<R>(out_values)))) {
         throw simplemc_exception("Range size is not equal to communicator size", "mpi::all_gather");
     }
-    all_gather(comm, &in_value, 1, out_values.data());
+    all_gather(comm, &in_value, 1, ranges::data(out_values));
 }
+
 /**
  * @brief Gather a range (on all processes).
  *
@@ -141,13 +140,13 @@ void all_gather(const communicator& comm, const ranges::range_value_t<R>& in_val
  */
 template <mpi_range R1, mpi_range R2>
 void all_gather(const communicator& comm, R1&& in_values, R2&& out_values) {
-    if (!all_equal(comm, ranges::size(in_values))) {
+    if (!all_equal(comm, ranges::size(std::forward<R1>(in_values)))) {
         throw simplemc_exception("Input range sizes are not equal across all processes", "mpi::all_gather");
     }
-    if (comm.size() * ranges::size(in_values) != ranges::size(out_values)) {
+    if (comm.size() * ranges::size(std::forward<R1>(in_values)) != ranges::size(std::forward<R2>(out_values))) {
         throw simplemc_exception("Output range size has incorrect size", "mpi::all_gather");
     }
-    all_gather(comm, ranges::data(in_values), ranges::size(in_values), ranges::data(out_values));
+    all_gather(comm, ranges::data(in_values), ranges::size(std::forward<R1>(in_values)), ranges::data(out_values));
 }
 
 /**
@@ -203,15 +202,15 @@ void reduce(const communicator& comm, const T& in_value, T& out_value, MPI_Op op
  */
 template <mpi_range R1, mpi_range R2>
 void reduce(const communicator& comm, R1&& in_values, R2&& out_values, MPI_Op op, int root) {
-    if (!all_equal(comm, ranges::size(in_values))) {
+    if (!all_equal(comm, ranges::size(std::forward<R1>(in_values)))) {
         throw simplemc_exception("Range sizes are not equal across all processes", "mpi::reduce");
     }
     if (comm.rank() == root) {
-        if (ranges::size(in_values) != ranges::size(out_values)) {
+        if (ranges::size(std::forward<R1>(in_values)) != ranges::size(std::forward<R2>(out_values))) {
             throw simplemc_exception("Input and output range sizes are not equal", "mpi::all_reduce");
         }
     }
-    reduce(comm, ranges::data(in_values), ranges::size(in_values), ranges::data(out_values), op, root);
+    reduce(comm, ranges::data(in_values), ranges::size(std::forward<R1>(in_values)), ranges::data(out_values), op, root);
 }
 
 /**
@@ -251,7 +250,7 @@ void gather(const communicator& comm, const T* in_values, int count, T* out_valu
 template <mpi_range R>
 void gather(const communicator& comm, const ranges::range_value_t<R>& in_value, R&& out_values, int root) {
     if (comm.rank() == root) {
-        if (comm.size() != static_cast<int>(ranges::size(out_values))) {
+        if (comm.size() != static_cast<int>(ranges::size(std::forward<R>(out_values)))) {
             throw simplemc_exception("Range size is not equal to communicator size", "mpi::gather");
         }
     }
@@ -270,15 +269,15 @@ void gather(const communicator& comm, const ranges::range_value_t<R>& in_value, 
  */
 template <mpi_range R1, mpi_range R2>
 void gather(const communicator& comm, R1&& in_values, R2&& out_values, int root) {
-    if (!all_equal(comm, ranges::size(in_values))) {
+    if (!all_equal(comm, ranges::size(std::forward<R1>(in_values)))) {
         throw simplemc_exception("Range sizes are not equal across all processes", "mpi::gather");
     }
     if (comm.rank() == root) {
-        if (comm.size() * ranges::size(in_values) != ranges::size(out_values)) {
+        if (comm.size() * ranges::size(std::forward<R1>(in_values)) != ranges::size(std::forward<R2>(out_values))) {
             throw simplemc_exception("Output range size has incorrect size", "mpi::gather");
         }
     }
-    gather(comm, ranges::data(in_values), ranges::size(in_values), ranges::data(out_values), root);
+    gather(comm, ranges::data(in_values), ranges::size(std::forward<R1>(in_values)), ranges::data(out_values), root);
 }
 
 /**
@@ -327,10 +326,10 @@ void broadcast(const communicator& comm, T& value, int root) {
  */
 template <mpi_range R>
 void broadcast(const communicator& comm, R&& rg, int root) {
-    if (!all_equal(comm, ranges::size(rg))) {
+    if (!all_equal(comm, ranges::size(std::forward<R>(rg)))) {
         throw simplemc_exception("Range sizes are not equal across all processes", "mpi::broadcast");
     }
-    broadcast(comm, ranges::data(rg), ranges::size(rg), root);
+    broadcast(comm, ranges::data(rg), ranges::size(std::forward<R>(rg)), root);
 }
 
 /**
@@ -370,7 +369,7 @@ void scatter(const communicator& comm, const T* in_values, int count, T* out_val
 template <mpi_range R>
 void scatter(const communicator& comm, R&& in_values, ranges::range_value_t<R>& out_value, int root) {
     if (comm.rank() == root) {
-        if (comm.size() != static_cast<int>(ranges::size(in_values))) {
+        if (comm.size() != static_cast<int>(ranges::size(std::forward<R>(in_values)))) {
             throw simplemc_exception("Range size is not equal to communicator size", "mpi::scatter");
         }
     }
@@ -389,7 +388,7 @@ void scatter(const communicator& comm, R&& in_values, ranges::range_value_t<R>& 
  */
 template <mpi_range R1, mpi_range R2>
 void scatter(const communicator& comm, R1&& in_values, R2&& out_values, int root) {
-    auto in_size = ranges::size(in_values);
+    auto in_size = ranges::size(std::forward<R1>(in_values));
     auto chunk_size = in_size / comm.size();
     if (comm.rank() == root) {
         if (in_size != comm.size() * chunk_size) {
@@ -397,14 +396,12 @@ void scatter(const communicator& comm, R1&& in_values, R2&& out_values, int root
         }
     }
     broadcast(comm, chunk_size, root);
-    if (chunk_size != ranges::size(out_values)) {
+    if (chunk_size != ranges::size(std::forward<R2>(out_values))) {
         throw simplemc_exception("Output range size is incorrect", "mpi::scatter");
     }
     scatter(comm, ranges::data(in_values), chunk_size, ranges::data(out_values), root);
 }
 
-} // namespace mpi
-
-} // namespace simplemc
+} // namespace simplemc::mpi
 
 #endif // SIMPLEMC_MPI_COLLECTIVES_HPP

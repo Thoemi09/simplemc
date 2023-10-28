@@ -8,7 +8,7 @@
 
 #include <simplemc/mpi.hpp>
 
-#include <fmt/core.h>
+#include <fmt/ranges.h>
 
 #include <numeric>
 
@@ -94,22 +94,22 @@ void reduce_check(const simplemc::mpi::communicator& comm, const T& in, const T&
 // Fixture class for testing the collective communications.
 class SimplemcMPI : public ::testing::Test {
 protected:
-    char char_val() const { return 'x'; }
-    signed char schar_val() const { return 'u'; }
-    unsigned char uchar_val() const { return 'P'; }
-    short short_val() const { return -1234; }
-    unsigned short ushort_val() const { return 1234; }
-    int int_val() const { return -123456; }
-    unsigned int uint_val() const { return 123456; }
-    long long_val() const { return -123456789012; }
-    unsigned long ulong_val() const { return 123456789012; }
-    long long llong_val() const { return -123456789012; }
-    unsigned long long ullong_val() const { return 123456789012; }
-    float float_val() const { return 12.3456789; }
-    double double_val() const { return 12.3456789012; }
-    bool bool_val() const { return true; }
-    std::complex<double> cdouble_val() const { return { 1.2345, 6.7890 }; }
-    std::string str_val() const { return "my test string"; }
+    [[nodiscard]] char char_val() const { return 'x'; }
+    [[nodiscard]] signed char schar_val() const { return 'u'; }
+    [[nodiscard]] unsigned char uchar_val() const { return 'P'; }
+    [[nodiscard]] short short_val() const { return -1234; }
+    [[nodiscard]] unsigned short ushort_val() const { return 1234; }
+    [[nodiscard]] int int_val() const { return -123456; }
+    [[nodiscard]] unsigned int uint_val() const { return 123456; }
+    [[nodiscard]] long long_val() const { return -123456789012; }
+    [[nodiscard]] unsigned long ulong_val() const { return 123456789012; }
+    [[nodiscard]] long long llong_val() const { return -123456789012; }
+    [[nodiscard]] unsigned long long ullong_val() const { return 123456789012; }
+    [[nodiscard]] float float_val() const { return 12.3456789; }
+    [[nodiscard]] double double_val() const { return 12.3456789012; }
+    [[nodiscard]] bool bool_val() const { return true; }
+    [[nodiscard]] std::complex<double> cdouble_val() const { return { 1.2345, 6.7890 }; }
+    [[nodiscard]] std::string str_val() const { return "my test string"; }
 
     template <typename T>
     std::vector<T> make_vec(int size, T t) {
@@ -213,7 +213,7 @@ TEST_F(SimplemcMPI, ReduceSingleValues) {
     int fac = size - 1;
     reduce_check<int>(comm, 5, 5 * size, MPI_SUM, root);
     reduce_check<double>(comm, 1.2, 1.2 * size, MPI_SUM, root);
-    reduce_check<float>(comm, 2.3 * rank, 2.3 * fac, MPI_MAX, root);
+    reduce_check<float>(comm, 2.3f * static_cast<float>(rank), 2.3f * static_cast<float>(fac), MPI_MAX, root);
     std::complex<double> cval { 1.0, 1.0 };
     auto cexp = cval * static_cast<double>(size);
     reduce_check<std::complex<double>>(comm, cval, cexp, MPI_SUM, root);
@@ -250,11 +250,11 @@ TEST_F(SimplemcMPI, ScatterVectors) {
     if (rank == root) {
         std::iota(vec.begin(), vec.end(), 0);
     }
-    int res;
+    int res {};
     simplemc::mpi::scatter(comm, vec, res, root);
     ASSERT_EQ(res, comm.rank());
     if (rank == root) {
-        vec.resize(comm.size() * num_el);
+        vec.resize(static_cast<std::size_t>(comm.size()) * num_el);
         std::iota(vec.begin(), vec.end(), 0);
     }
     std::vector<int> res_vec(num_el);

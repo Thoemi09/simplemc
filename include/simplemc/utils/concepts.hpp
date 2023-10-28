@@ -30,6 +30,22 @@ concept is_any_of = (std::same_as<T, U> || ...);
 template <typename T>
 concept integer_only = is_any_of<T, short, int, long, long long, unsigned short, unsigned int, unsigned long, unsigned long long>;
 
+/**
+ * @brief Indicating column-major order.
+ */
+struct column_major {};
+
+/**
+ * @brief Indicating row-major order.
+ */
+struct row_major {};
+
+/**
+ * @brief Concept describing the order of a multi-dimensional array.
+ */
+template <typename T>
+concept nd_order = is_any_of<T, column_major, row_major>;
+
 } // namespace simplemc
 
 #endif // SIMPLEMC_UTILS_CONCEPTS_HPP

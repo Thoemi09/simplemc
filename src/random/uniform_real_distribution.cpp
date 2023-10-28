@@ -31,7 +31,7 @@ std::ostream& operator<<(std::ostream& os, const urd_param_type& param) {
 }
 
 std::istream& operator>>(std::istream& is, urd_param_type& param) {
-    double min, max;
+    double min = 0, max = 0;
     if (is >> min >> std::ws >> max) {
         if (min < max) {
             param = urd_param_type { min, max };

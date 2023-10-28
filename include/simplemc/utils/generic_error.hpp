@@ -41,7 +41,7 @@ public:
      * @param err_msg Specific error message.
      * @param func_name Name of the function which throws.
      */
-    virtual std::string make_msg(
+    [[nodiscard]] virtual std::string make_msg(
         const std::string& exc_name, const std::string& err_msg, const std::string& func_name) const;
 };
 

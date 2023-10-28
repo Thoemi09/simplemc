@@ -7,7 +7,6 @@
 
 #include <simplemc/json.hpp>
 
-#include <gtest/gtest.h>
 #include <range/v3/view/reverse.hpp>
 
 #include <span>
@@ -50,7 +49,7 @@ TEST(SimplemcJson, ComplexSerialization) {
 // Test JSON serialization of ranges.
 TEST(SimplemcJson, RangeSerialization) {
     nlohmann::json j;
-    std::array<int, 3> arr { 1, 2, 3 }, arr_rev;
+    std::array<int, 3> arr { 1, 2, 3 }, arr_rev {};
     auto arr_span = std::span(arr);
     simplemc::range_to_json(j["arr"], arr_span);
     simplemc::range_from_json(j["arr"], arr_rev | ranges::views::reverse);

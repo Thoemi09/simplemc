@@ -91,8 +91,8 @@ public:
     [[nodiscard]] value_type scale() const { return scale_; }
 
 private:
-    value_type power_;
-    value_type scale_;
+    value_type power_ { 0.0 };
+    value_type scale_ { 0.0 };
 };
 
 } // namespace simplemc

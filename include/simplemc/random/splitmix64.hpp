@@ -62,7 +62,7 @@ public:
      * @param seq Seed sequence.
      */
     template <typename SeedSeq>
-        requires (!std::is_same_v<SeedSeq, splitmix64> && !std::is_arithmetic_v<SeedSeq>)
+        requires(!std::is_same_v<SeedSeq, splitmix64> && !std::is_arithmetic_v<SeedSeq>)
     explicit splitmix64(SeedSeq& seq) {
         seed(seq);
     }
@@ -81,10 +81,10 @@ public:
      * @param seq Seed sequence.
      */
     template <typename SeedSeq>
-        requires (!std::is_same_v<SeedSeq, splitmix64> && !std::is_arithmetic_v<SeedSeq>)
+        requires(!std::is_same_v<SeedSeq, splitmix64> && !std::is_arithmetic_v<SeedSeq>)
     void seed(SeedSeq& seq) {
         // hack to fill 64-bits with two 32-bit numbers
-        std::array<std::uint32_t, 2> seeds;
+        std::array<std::uint32_t, 2> seeds {};
         seq.generate(seeds.begin(), seeds.end());
         state_ = static_cast<std::uint64_t>(seeds[0]) << 32;
         state_ += seeds[1];
@@ -95,7 +95,7 @@ public:
      *
      * @return Internal state.
      */
-    std::uint64_t internal_state() const { return state_; }
+    [[nodiscard]] std::uint64_t internal_state() const { return state_; }
 
     /**
      * @brief Generate a random number and advance internal state.
@@ -123,7 +123,7 @@ public:
     friend bool operator!=(const splitmix64&, const splitmix64&);
 
 private:
-    std::uint64_t state_;
+    std::uint64_t state_ { default_seed };
 };
 
 /**

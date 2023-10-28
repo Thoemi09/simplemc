@@ -11,9 +11,7 @@
 #include <random>
 #include <vector>
 
-namespace simplemc {
-
-namespace detail {
+namespace simplemc::detail {
 
 /**
  * @brief Generate a discrete random int using a linear search.
@@ -52,8 +50,6 @@ inline IntType generate_discrete_lb(Engine& eng, const std::vector<double>& vec)
     return static_cast<IntType>(pos - vec.begin());
 }
 
-} // namespace detail
-
-} // namespace simplemc
+} // namespace simplemc::detail
 
 #endif // SIMPLEMC_RANDOM_GENERATE_DISCRETE_HPP

@@ -9,9 +9,7 @@
 #include <fmt/format.h>
 #include <mpi.h>
 
-namespace simplemc {
-
-namespace mpi {
+namespace simplemc::mpi {
 
 void check_mpi_call(int errcode, const std::string& mpi_routine) {
     if (errcode != MPI_SUCCESS) {
@@ -19,6 +17,4 @@ void check_mpi_call(int errcode, const std::string& mpi_routine) {
     }
 }
 
-} // namespace mpi
-
-} // namespace simplemc
+} // namespace simplemc::mpi
