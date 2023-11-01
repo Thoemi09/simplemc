@@ -21,7 +21,7 @@ add_subdirectory(numeric)
 
 # temporary tests
 add_executable(tmp-test tmp_test.cpp)
-target_link_libraries(tmp-test PRIVATE simplemc::simplemc-numeric)
+target_link_libraries(tmp-test PRIVATE simplemc::simplemc-numeric simplemc::simplemc-json)
 
 add_executable(tmp-mpi-test tmp_mpi_test.cpp)
 target_link_libraries(tmp-mpi-test PRIVATE simplemc::simplemc-mpi)

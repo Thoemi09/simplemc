@@ -3,11 +3,10 @@
  * @brief Unit tests for simplemc-numeric.
  */
 
-#include <gtest/gtest.h>
+#include "../test_utils.hpp"
 
 #include <simplemc/numeric/utils.hpp>
-
-#include <Eigen/Dense>
+#include <simplemc/numeric/eigen.hpp>
 
 #include <numbers>
 
@@ -96,4 +95,13 @@ TEST(SimplemcNumeric, WithinBounds) {
     ASSERT_TRUE(simplemc::within_bounds(val_in1, low, up, min_diff));
     ASSERT_FALSE(simplemc::within_bounds(val_in2, low, up, min_diff));
     ASSERT_FALSE(simplemc::within_bounds(val_in3, low, up, min_diff));
+}
+
+TEST(SimplemcNumerics, PolarCartesianConversion) {
+    simplemc::vector<3>::type vec { 1.0, 0.0, 0.0 };
+    simplemc::vector<3>::type exp { 1.0, std::numbers::pi / 2, 0.0 };
+    check_range_near(simplemc::cartesian_to_polar(vec), exp);
+    simplemc::vector<2>::type vec2 { std::numbers::sqrt2, std::numbers::pi / 4 };
+    simplemc::vector<2>::type exp2 { 1.0, 1.0 };
+    check_range_near(simplemc::polar_to_cartesian(vec2), exp2);
 }

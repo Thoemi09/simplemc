@@ -3,8 +3,8 @@
  * @brief Utility functions for simplemc-numeric.
  */
 
-#ifndef SIMPLEMC_NUMERICS_UTILS_HPP
-#define SIMPLEMC_NUMERICS_UTILS_HPP
+#ifndef SIMPLEMC_NUMERIC_UTILS_HPP
+#define SIMPLEMC_NUMERIC_UTILS_HPP
 
 #include <algorithm>
 #include <cassert>
@@ -166,4 +166,4 @@ inline constexpr bool within_bounds(double val, double lower_bound, double upper
 
 } // namespace simplemc
 
-#endif // SIMPLEMC_NUMERICS_UTILS_HPP
+#endif // SIMPLEMC_NUMERIC_UTILS_HPP
