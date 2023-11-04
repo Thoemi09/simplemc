@@ -127,7 +127,7 @@ template <std::integral T>
 inline constexpr auto index_of_subset(T l, T n, T m) {
     assert(l >= 0 && l < n);
     assert(m > 0 && m <= n);
-    return std::clamp(l - m / 2, 0, std::max(0, n - m));
+    return std::clamp(static_cast<T>(l - m / 2), T { 0 }, std::max(T { 0 }, n - m));
 }
 
 /**

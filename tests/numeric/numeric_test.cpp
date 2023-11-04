@@ -5,9 +5,10 @@
 
 #include "../test_utils.hpp"
 
-#include <simplemc/numeric/bravais_lattice.hpp>
-#include <simplemc/numeric/utils.hpp>
-#include <simplemc/numeric/eigen.hpp>
+#include <simplemc/grids.hpp>
+#include <simplemc/numeric.hpp>
+
+#include <unsupported/Eigen/CXX11/Tensor>
 
 #include <numbers>
 
@@ -17,6 +18,35 @@ using std::numbers::pi;
 const matrix_type unit_matrix_1d = matrix_type::Identity(1, 1);
 const matrix_type unit_matrix_2d = matrix_type::Identity(2, 2);
 const matrix_type unit_matrix_3d = matrix_type::Identity(3, 3);
+
+inline double line(double x, double a = 0.0, double k = 1.0) {
+    return a + x * k;
+}
+
+inline double plane(double x, double y, double a = 0.0, double kx = 1.0, double ky = 1.0) {
+    return a + x * kx + y * ky;
+}
+
+inline double hyperplane(
+    double x, double y, double z, double a = 0.0, double kx = 1.0, double ky = 1.0, double kz = 1.0) {
+    return a + x * kx + y * ky + z * kz;
+}
+
+inline double quadratic_poly(double x, double a, double b, double c) {
+    return a * x * x + b * x + c;
+}
+
+inline double cubic_poly(double x, double a, double b, double c, double d) {
+    return a * x * x * x + b * x * x + c * x + d;
+}
+
+inline double biquadratic_poly(double x, double y, double a, double b) {
+    return a * x * x + b * y * y;
+}
+
+inline double tricubic_poly(double x, double y, double z, double a, double b, double c) {
+    return a * x * x * x + b * x * y + z * z + c;
+}
 
 // Test utilty functions.
 TEST(SimplemcNumeric, UtilityFunctions) {
@@ -136,7 +166,7 @@ TEST(SimplemcNumeric, MakeSpan) {
 }
 
 // Test 1d linear lattice.
-TEST(SimpleNumeric, LinearLattice) {
+TEST(SimplemcNumeric, LinearLattice) {
     double tol = 1e-7;
     auto lat = make_linear_lattice(2);
     auto lat_copy = make_linear_lattice(1);
@@ -158,7 +188,7 @@ TEST(SimpleNumeric, LinearLattice) {
 }
 
 // Test 2d square lattice.
-TEST(SimpleNumeric, SquareLattice) {
+TEST(SimplemcNumeric, SquareLattice) {
     double tol = 1e-7;
     auto lat = make_square_lattice(2);
     auto lat_copy = make_square_lattice(1);
@@ -180,7 +210,7 @@ TEST(SimpleNumeric, SquareLattice) {
 }
 
 // Test 2d hexagonal lattice.
-TEST(SimpleNumeric, Hexagonal2dLattice) {
+TEST(SimplemcNumeric, Hexagonal2dLattice) {
     double tol = 1e-7;
     auto lat = make_hexagonal_lattice(2);
     auto lat_copy = make_hexagonal_lattice(1);
@@ -202,7 +232,7 @@ TEST(SimpleNumeric, Hexagonal2dLattice) {
 }
 
 // Test 2d rectangular lattice.
-TEST(SimpleNumeric, RectangularLattice) {
+TEST(SimplemcNumeric, RectangularLattice) {
     double tol = 1e-7;
     auto lat = make_rectangular_lattice(2, 4);
     auto lat_copy = make_rectangular_lattice(1, 1);
@@ -224,7 +254,7 @@ TEST(SimpleNumeric, RectangularLattice) {
 }
 
 // Test 2d rectangular-centered lattice.
-TEST(SimpleNumeric, RectangularCenteredLattice) {
+TEST(SimplemcNumeric, RectangularCenteredLattice) {
     double tol = 1e-7;
     auto lat = make_rectangular_centered_lattice(2, 4);
     auto lat_copy = make_rectangular_centered_lattice(1, 1);
@@ -247,7 +277,7 @@ TEST(SimpleNumeric, RectangularCenteredLattice) {
 }
 
 // Test 2d oblique lattice.
-TEST(SimpleNumeric, ObliqueLattice) {
+TEST(SimplemcNumeric, ObliqueLattice) {
     double tol = 1e-7;
     auto lat = make_oblique_lattice(2, 4, 0.5);
     auto lat_copy = make_oblique_lattice(1, 1, 1);
@@ -578,4 +608,82 @@ TEST(SimplemcNumeric, Triclinic_lattice) {
     check_range_near(make_span(unit_matrix_3d), make_span(trans_lat), tol);
     ASSERT_EQ(std::string("triclinic_3d"), std::string(lattice_tag_to_string(lat.get_lattice_parameters().tag)));
     ASSERT_EQ(bravais_lattice::lattice_tag::triclinic_3d, string_to_lattice_tag("triclinic_3d"));
+}
+
+TEST(SimplemcNumeric, LinearInterpolation) {
+    double a = 2.0;
+    double k = 0.5;
+    long nx = 100;
+    simplemc::power_grid xgrid(-5.0, 5.0, nx, 2.0);
+    Eigen::VectorXd f(nx);
+    for (long i = 0; i < nx; ++i) {
+        f[i] = line(xgrid.at(i), a, k);
+    }
+    simplemc::linear_interpolation li(xgrid, f);
+    long num = 1233;
+    simplemc::linear_grid pts(-5.0, 5.0, num);
+    for (long i = 0; i < num; ++i) {
+        double x = pts.at(i);
+        ASSERT_NEAR(li.interpolate(x), line(x, a, k), 1e-10);
+    }
+}
+
+TEST(SimplemcNumeric, BilinearInterpolation) {
+    double a = 3.123;
+    double kx = 1.2345;
+    double ky = -0.89823;
+    long nx = 20;
+    long ny = 50;
+    simplemc::linear_grid xgrid(-1.0, 1.0, nx);
+    simplemc::linear_grid ygrid(-1.0, 1.0, ny);
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> f(nx, ny);
+    for (long i = 0; i < nx; ++i) {
+        for (long j = 0; j < ny; ++j) {
+            f(i, j) = plane(xgrid.at(i), ygrid.at(j), a, kx, ky);
+        }
+    }
+    simplemc::bilinear_interpolation bi(xgrid, ygrid, make_span(f));
+    long num = 37;
+    simplemc::linear_grid pts(-1.0, 1.0, num);
+    for (long i = 0; i < num; ++i) {
+        for (long j = 0; j < num; ++j) {
+            double x = pts.at(i);
+            double y = pts.at(j);
+            ASSERT_NEAR(bi.interpolate(x, y), plane(x, y, a, kx, ky), 1e-10);
+        }
+    }
+}
+
+TEST(SimplemcNumeric, TrilinearInterpolation) {
+    double a = 3.123;
+    double kx = 1.2345;
+    double ky = -0.89823;
+    double kz = 4.98123;
+    long nx = 50;
+    long ny = 30;
+    long nz = 40;
+    simplemc::linear_grid xgrid(-2.0, 10.0, nx);
+    simplemc::linear_grid ygrid(-2.0, 10.0, ny);
+    simplemc::power_grid zgrid(-2.0, 10.0, nz, 2);
+    Eigen::Tensor<double, 3, Eigen::RowMajor> f(nx, ny, nz);
+    for (long i = 0; i < nx; ++i) {
+        for (long j = 0; j < ny; ++j) {
+            for (long k = 0; k < nz; ++k) {
+                f(i, j, k) = hyperplane(xgrid.at(i), ygrid.at(j), zgrid.at(k), a, kx, ky, kz);
+            }
+        }
+    }
+    simplemc::trilinear_interpolation tri(xgrid, ygrid, zgrid, std::span<double>(f.data(), f.size()));
+    long num = 37;
+    simplemc::linear_grid pts(-2.0, 10.0, num);
+    for (long i = 0; i < num; ++i) {
+        for (long j = 0; j < num; ++j) {
+            for (long k = 0; k < num; ++k) {
+                double x = pts.at(i);
+                double y = pts.at(j);
+                double z = pts.at(k);
+                ASSERT_NEAR(tri.interpolate(x, y, z), hyperplane(x, y, z, a, kx, ky, kz), 1e-10);
+            }
+        }
+    }
 }

@@ -101,6 +101,15 @@ public:
     }
 
     /**
+     * @brief Get shape of the grid.
+     *
+     * @return Array containing the size in each dimension.
+     */
+    [[nodiscard]] nd_size_type shape() const {
+        return std::apply([](const auto&... gs) { return nd_size_type { gs.size()... }; }, grids_);
+    }
+
+    /**
      * @brief Get grid point at a certain index array.
      *
      * @param idx_arr Index array.

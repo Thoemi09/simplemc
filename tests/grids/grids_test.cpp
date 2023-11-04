@@ -129,6 +129,7 @@ TEST(SimplemcGrids, TwoDimensionalLinearGrid) {
     using nd_value_type = decltype(grid)::nd_value_type;
     ASSERT_EQ(grid.dim(), 2);
     ASSERT_EQ(grid.size(), lg.size() * lg.size());
+    check_range_equal(grid.shape(), nd_size_type { lg.size(), lg.size() });
     check_range_near(grid.first(), nd_value_type { 0, 0 });
     check_range_near(grid.last(), nd_value_type { 10, 10 });
     for (int i = 0; i < lg.size(); ++i) {

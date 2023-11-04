@@ -1,14 +1,18 @@
 #include <fmt/ranges.h>
-#include <simplemc/json.hpp>
-#include <simplemc/numeric/eigen.hpp>
-#include <range/v3/all.hpp>
+#include <simplemc/numeric.hpp>
+#include <concepts>
+
+template <typename T, std::convertible_to<T>... Ts>
+constexpr std::array<T, sizeof...(Ts) + 1> make_array(T t, Ts... ts) {
+    return { t, static_cast<T>(ts)... };
+}
+
+struct foo {
+    int x { 10 };
+    operator int() const { return x; }
+};
 
 int main() {
-    Eigen::Vector3d v = Eigen::Vector3d::Random();
-    //auto sp = std::span<const double> { &v[0], static_cast<std::size_t>(v.size()) };
-    auto sp = simplemc::make_span(v);
-    fmt::print("v = {}\n", sp);
-    nlohmann::json j;
-    simplemc::range_to_json(j, simplemc::make_span(v));
-    fmt::print("j = {}\n", j.dump());
+    auto arr = make_array(1, 2.0f, 3l, foo());
+    fmt::print("v = {}\n", arr);
 }
