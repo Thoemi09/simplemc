@@ -9,6 +9,7 @@
 #include <Eigen/Dense>
 
 #include <limits>
+#include <span>
 
 namespace simplemc {
 
@@ -33,10 +34,27 @@ struct matrix {
 };
 
 /**
- * @brief Checks if an Eigen::DenseBase object is finite.
+ * @brief Create a span from a Eigen::PlainObjectBase object.
  *
  * @tparam Derived Derived type.
- * @param t Eigen::VectorXd object.
+ * @param t Eigen::PlainObjectBase object.
+ * @return Span of the object.
+ */
+template <typename Derived>
+inline auto make_span(const Eigen::PlainObjectBase<Derived>& t) {
+    return std::span<std::remove_reference_t<decltype(t(0, 0))>>(&t(0, 0), static_cast<std::size_t>(t.size()));
+}
+
+template <typename Derived>
+inline auto make_span(Eigen::PlainObjectBase<Derived>& t) {
+    return std::span<std::remove_reference_t<decltype(t(0, 0))>>(&t(0, 0), static_cast<std::size_t>(t.size()));
+}
+
+/**
+ * @brief Checks if an Eigen::MatrixBase object is finite.
+ *
+ * @tparam Derived Derived type.
+ * @param t Eigen::MatrixBase object.
  * @return True if any element is inf or nan.
  */
 template <typename Derived>
