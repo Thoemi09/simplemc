@@ -30,7 +30,7 @@ void symmetric_power_grid::reset(value_type first, value_type last, size_type si
     grid_base::reset(first, last, size);
     midpoint_ = (first_ + last_) / 2;
     g1_.reset(first_, midpoint_, static_cast<size_type>(size_ / 2) + 1, power);
-    g2_.reset(midpoint_, last_, static_cast<size_type>(size_ / 2) + 1, power);
+    g2_.reset(last_, midpoint_, static_cast<size_type>(size_ / 2) + 1, power);
 }
 
 } // namespace simplemc

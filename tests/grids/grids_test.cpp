@@ -119,6 +119,10 @@ TEST(SimplemcGrids, SymmetricPowerGrid) {
     ASSERT_DOUBLE_EQ(grid.bin_volume(9), g1.bin_volume(9));
     ASSERT_DOUBLE_EQ(grid.bin_volume(19), g2.bin_volume(0));
     ASSERT_DOUBLE_EQ(grid.bin_volume(2), grid.bin_volume(17));
+    simplemc::symmetric_power_grid grid2 { 3, 5, 11, 1.0 };
+    grid2.reset(begin, end, size, power);
+    check_range_near(grid2.grid1().view(), g1.view());
+    check_range_near(grid2.grid2().view(), g2.view());
 }
 
 // Test 2-dimensional linear grid.
