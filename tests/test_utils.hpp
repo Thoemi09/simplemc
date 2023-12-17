@@ -9,10 +9,9 @@
 #include <gtest/gtest.h>
 #include <simplemc/json/json.hpp>
 
-#include <range/v3/range/concepts.hpp>
-#include <range/v3/view/zip.hpp>
+#include <range/v3/all.hpp>
 
-// Check JSON serialization of an object.
+// Check JSON serialization/deserialization of an object.
 template <typename T1, typename T2>
 void check_json(const T1& orig, T2& copy) {
     nlohmann::json j;
@@ -22,15 +21,21 @@ void check_json(const T1& orig, T2& copy) {
     ASSERT_EQ(j["orig"], j["copy"]);
 }
 
-// Check JSON serialization of an object (needs to be default constructible).
+// Check JSON serialization/deserialization of an object (needs to be default constructible).
 template <typename T>
 void check_json(const T& orig) {
     T copy;
     check_json(orig, copy);
 }
 
-// Check complex numbers.
-inline void check_complex(std::complex<double> lhs, std::complex<double> rhs) {
+// Check complex numbers for nearness.
+inline void check_complex_near(std::complex<double> lhs, std::complex<double> rhs, double eps = 1e-14) {
+    ASSERT_NEAR(std::real(lhs), std::real(rhs), eps);
+    ASSERT_NEAR(std::imag(lhs), std::imag(rhs), eps);
+}
+
+// Check complex numbers for double equality.
+inline void check_complex_equal(std::complex<double> lhs, std::complex<double> rhs) {
     ASSERT_DOUBLE_EQ(std::real(lhs), std::real(rhs));
     ASSERT_DOUBLE_EQ(std::imag(lhs), std::imag(rhs));
 }

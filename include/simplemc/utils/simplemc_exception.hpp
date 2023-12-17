@@ -11,7 +11,7 @@
 namespace simplemc {
 
 /**
- * @brief Exception class for simplemc library.
+ * @brief Exception class for the simplemc library.
  */
 class simplemc_exception : public generic_error {
 public:

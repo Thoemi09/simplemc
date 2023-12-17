@@ -17,7 +17,7 @@ std::string generic_error::make_msg(
     if (func_name.empty()) {
         return fmt::format("{}: {}.", exc_name, err_msg);
     }
-    return fmt::format("{}: {} in function {}.", exc_name, err_msg, func_name);
+    return fmt::format("{} in function {}: {}", exc_name, func_name, err_msg);
 }
 
 } // namespace simplemc

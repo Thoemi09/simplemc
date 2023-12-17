@@ -35,7 +35,7 @@ public:
     virtual ~generic_error() = default;
 
     /**
-     * @brief Construct error message.
+     * @brief Make an error message.
      *
      * @param exc_name Name of exception.
      * @param err_msg Specific error message.

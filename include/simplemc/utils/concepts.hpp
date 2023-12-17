@@ -11,37 +11,39 @@
 namespace simplemc {
 
 /**
- * @brief A concept that checks if a type is any of the given types. Taken from cppreference.com.
- * 
- * @tparam T The type to check.
- * @tparam U The types to compare against.
- * @return True if T is any of the types in U, false otherwise.
+ * @brief A concept that checks if a type is any of the given types.
+ *
+ * @details Taken from cppreference.com.
+ *
+ * @tparam T Type to check.
+ * @tparam U Types to compare against.
  */
 template <typename T, typename... U>
 concept is_any_of = (std::same_as<T, U> || ...);
 
-
 /**
  * @brief A concept that checks if a type is an integer type except for bool, char, and wchar_t.
- * 
- * @tparam T The type to check.
- * @return True if T is an accepted integer type, false otherwise.
+ *
+ * @tparam T Type to check.
  */
 template <typename T>
-concept integer_only = is_any_of<T, short, int, long, long long, unsigned short, unsigned int, unsigned long, unsigned long long>;
+concept integer_only =
+    is_any_of<T, short, int, long, long long, unsigned short, unsigned int, unsigned long, unsigned long long>;
 
 /**
- * @brief Indicating column-major order.
+ * @brief Tag indicating column-major order.
  */
 struct column_major {};
 
 /**
- * @brief Indicating row-major order.
+ * @brief Tag indicating row-major order.
  */
 struct row_major {};
 
 /**
- * @brief Concept describing the order of a multi-dimensional array.
+ * @brief A concept that checks if a given type is either simplemc::column_major or simplemc::row_major.
+ *
+ * @tparam T Type to check.
  */
 template <typename T>
 concept nd_order = is_any_of<T, column_major, row_major>;

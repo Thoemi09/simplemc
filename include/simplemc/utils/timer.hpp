@@ -46,8 +46,8 @@ struct duration {
  * result is negative.
  */
 template <typename C, typename D1, typename D2, typename D = duration::sec>
-auto time_passed(const std::chrono::time_point<C, D1>& time_point1, const std::chrono::time_point<C, D2>& time_point2,
-    [[maybe_unused]] const D& to_duration = D {}) {
+[[nodiscard]] auto time_passed(const std::chrono::time_point<C, D1>& time_point1,
+    const std::chrono::time_point<C, D2>& time_point2, [[maybe_unused]] const D& to_duration = D {}) {
     return std::chrono::duration_cast<D>(time_point2 - time_point1).count();
 }
 
@@ -81,10 +81,12 @@ public:
      *
      * @return Time point representing the current time.
      */
-    static std::chrono::time_point<clock_type> now() { return clock_type::now(); }
+    [[nodiscard]] static std::chrono::time_point<clock_type> now() { return clock_type::now(); }
 
     /**
-     * @brief Default constructor. All three members are set to the current time point.
+     * @brief Default constructor.
+     *
+     * @details All three members are set to the current time point.
      */
     timer() : start_(now()), stop_(start_), interim_(start_) {}
 
@@ -93,21 +95,21 @@ public:
      *
      * @return Starting time point.
      */
-    std::chrono::time_point<clock_type> start_time() const { return start_; }
+    [[nodiscard]] std::chrono::time_point<clock_type> start_time() const { return start_; }
 
     /**
      * @brief Get stopping time point.
      *
      * @return Stopping time point.
      */
-    std::chrono::time_point<clock_type> stop_time() const { return stop_; }
+    [[nodiscard]] std::chrono::time_point<clock_type> stop_time() const { return stop_; }
 
     /**
      * @brief Get interim time point.
      *
      * @return Interim time point.
      */
-    std::chrono::time_point<clock_type> interim_time() const { return interim_; }
+    [[nodiscard]] std::chrono::time_point<clock_type> interim_time() const { return interim_; }
 
     /**
      * @brief Set starting time point to now().

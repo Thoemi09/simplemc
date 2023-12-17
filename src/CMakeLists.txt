@@ -4,7 +4,7 @@
 # ---------------------------------
 # simplemc-basic (simplemc::simplemc-basic)
 
-# generate config.h header file
+# generate config.hpp header file
 configure_file(config.hpp.in ${PROJECT_BINARY_DIR}/include/simplemc/config.hpp)
 
 # add basic interface library
@@ -26,6 +26,6 @@ target_include_directories(simplemc-basic
 add_subdirectory(utils)
 add_subdirectory(json)
 add_subdirectory(random)
-# add_subdirectory(grids)
+add_subdirectory(grids)
 # add_subdirectory(mpi)
 # add_subdirectory(numeric)

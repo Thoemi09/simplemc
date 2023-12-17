@@ -1,6 +1,6 @@
 /**
  * @file utils_test.cpp
- * @brief Unit tests for utils library.
+ * @brief Unit tests for simplemc-utils library.
  */
 
 #include <gtest/gtest.h>
@@ -92,10 +92,10 @@ TEST(SimplemcUtils, SizeFromShape) {
     shape = { 2, 3, 4 };
     ASSERT_EQ(size_from_shape(shape), 24);
     constexpr std::array<int, 2> shape_arr_cepr { 2, 3 };
-    constexpr auto size_cepr = size_from_shape_array(shape_arr_cepr);
+    constexpr auto size_cepr = size_from_shape(shape_arr_cepr);
     ASSERT_EQ(size_cepr, 6);
     std::array<long, 2> shape_arr { 2, 3 };
-    auto size = size_from_shape_array(shape_arr);
+    auto size = size_from_shape(shape_arr);
     ASSERT_EQ(size, 6);
 }
 
@@ -103,24 +103,24 @@ TEST(SimplemcUtils, SizeFromShape) {
 TEST(SimplemcUtils, ConstexprIndexing) {
     using namespace simplemc;
     constexpr std::array<int, 3> shape { 2, 3, 4 };
-    constexpr auto size = size_from_shape_array(shape);
+    constexpr auto size = size_from_shape(shape);
     ASSERT_EQ(size, 24);
     constexpr std::array<int, 3> exp_idxs1 { 0, 0, 0 };
     constexpr int exp_fidx1 = 0;
-    constexpr auto cfidx1 = flat_index_array(exp_idxs1, shape);
-    constexpr auto cidxs1 = multi_index_array(exp_fidx1, shape);
-    constexpr auto rfidx1 = flat_index_array(exp_idxs1, shape, row_major {});
-    constexpr auto ridxs1 = multi_index_array(exp_fidx1, shape, row_major {});
+    constexpr auto cfidx1 = flat_index(exp_idxs1, shape);
+    constexpr auto cidxs1 = multi_index(exp_fidx1, shape);
+    constexpr auto rfidx1 = flat_index(exp_idxs1, shape, row_major {});
+    constexpr auto ridxs1 = multi_index(exp_fidx1, shape, row_major {});
     ASSERT_EQ(cfidx1, exp_fidx1);
     ASSERT_EQ(cidxs1, exp_idxs1);
     ASSERT_EQ(rfidx1, exp_fidx1);
     ASSERT_EQ(ridxs1, exp_idxs1);
     constexpr std::array<int, 3> exp_idxs2 { 1, 2, 3 };
     constexpr int exp_fidx2 = 23;
-    constexpr auto cfidx2 = flat_index_array(exp_idxs2, shape);
-    constexpr auto cidxs2 = multi_index_array(exp_fidx2, shape);
-    constexpr auto rfidx2 = flat_index_array(exp_idxs2, shape, row_major {});
-    constexpr auto ridxs2 = multi_index_array(exp_fidx2, shape, row_major {});
+    constexpr auto cfidx2 = flat_index(exp_idxs2, shape);
+    constexpr auto cidxs2 = multi_index(exp_fidx2, shape);
+    constexpr auto rfidx2 = flat_index(exp_idxs2, shape, row_major {});
+    constexpr auto ridxs2 = multi_index(exp_fidx2, shape, row_major {});
     ASSERT_EQ(cfidx2, exp_fidx2);
     ASSERT_EQ(cidxs2, exp_idxs2);
     ASSERT_EQ(rfidx2, exp_fidx2);
@@ -128,10 +128,10 @@ TEST(SimplemcUtils, ConstexprIndexing) {
     constexpr std::array<int, 3> exp_idxs3 { 1, 1, 1 };
     constexpr int exp_cfidx3 = 9;
     constexpr int exp_rfidx3 = 17;
-    constexpr auto cfidx3 = flat_index_array(exp_idxs3, shape);
-    constexpr auto cidxs3 = multi_index_array(exp_cfidx3, shape);
-    constexpr auto rfidx3 = flat_index_array(exp_idxs3, shape, row_major {});
-    constexpr auto ridxs3 = multi_index_array(exp_rfidx3, shape, row_major {});
+    constexpr auto cfidx3 = flat_index(exp_idxs3, shape);
+    constexpr auto cidxs3 = multi_index(exp_cfidx3, shape);
+    constexpr auto rfidx3 = flat_index(exp_idxs3, shape, row_major {});
+    constexpr auto ridxs3 = multi_index(exp_rfidx3, shape, row_major {});
     ASSERT_EQ(cfidx3, exp_cfidx3);
     ASSERT_EQ(cidxs3, exp_idxs3);
     ASSERT_EQ(rfidx3, exp_rfidx3);

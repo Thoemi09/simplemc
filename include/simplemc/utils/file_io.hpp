@@ -20,7 +20,7 @@ namespace simplemc {
  * @param mode File mode.
  * @return File pointer.
  */
-std::FILE* open_file(const std::string& name, const std::string& mode);
+[[nodiscard]] std::FILE* open_file(const std::string& name, const std::string& mode);
 
 /**
  * @brief Close file.
