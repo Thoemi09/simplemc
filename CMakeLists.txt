@@ -8,6 +8,11 @@
 # SIMPLEMC_FETCH_RANGEV3: Fetch range-v3 from github.
 # SIMPLEMC_FETCH_EIGEN: Fetch eigen from gitlab.
 # SIMPLEMC_DISABLE_WARNINGS: Disable stricter compilation warnings.
+# FETCHCONTENT_SOURCE_DIR_GOOGLETEST: Fetch googletest from local directory.
+# FETCHCONTENT_SOURCE_DIR_JSON: Fetch json from local directory.
+# FETCHCONTENT_SOURCE_DIR_FMTLIB: Fetch fmtlib from local directory.
+# FETCHCONTENT_SOURCE_DIR_RANGEV3: Fetch range-v3 from local directory.
+# FETCHCONTENT_SOURCE_DIR_EIGEN3: Fetch eigen from local directory.
 
 cmake_minimum_required(VERSION 3.24)
 project(simplemc

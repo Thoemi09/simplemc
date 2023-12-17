@@ -41,7 +41,7 @@ struct duration {
  *
  * @param time_point1 First point in time.
  * @param time_point2 Second point in time.
- * @param to_duration Instance of the duration type of the result.
+ * @param to_duration Instance of the duration type of the result (used for type deduction).
  * @return Time difference between the two points in time. If t1 > t2, then the
  * result is negative.
  */
@@ -98,7 +98,7 @@ public:
     /**
      * @brief Get stopping time point.
      *
-     * @return Stopping ime point.
+     * @return Stopping time point.
      */
     std::chrono::time_point<clock_type> stop_time() const { return stop_; }
 

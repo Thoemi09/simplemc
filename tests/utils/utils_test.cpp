@@ -24,12 +24,15 @@ TEST(SimplemcUtils, ConfigHeader) {
     fmt::print("VERSION: {}\n", SIMPLEMC_VERSION);
 }
 
-// Test if the config header is generated correctly.
+// Test concepts.
 TEST(SimplemcUtils, Concepts) {
     ASSERT_TRUE(simplemc::integer_only<int>);
     ASSERT_FALSE(simplemc::integer_only<char>);
     ASSERT_TRUE(simplemc::integer_only<std::uint64_t>);
     ASSERT_FALSE(simplemc::integer_only<std::int8_t>);
+    ASSERT_TRUE(simplemc::nd_order<simplemc::row_major>);
+    ASSERT_TRUE(simplemc::nd_order<simplemc::column_major>);
+    ASSERT_FALSE(simplemc::nd_order<int>);
 }
 
 // Test generic_error exception.

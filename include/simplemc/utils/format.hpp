@@ -1,6 +1,6 @@
 /**
  * @file format.hpp
- * @brief Some specialized formatter for fmtlib.
+ * @brief Some specialized formatters for fmtlib.
  */
 
 #ifndef SIMPLEMC_UTILS_FORMAT_HPP
@@ -14,6 +14,9 @@ namespace fmt {
 
 /**
  * @brief Specalized formatter for std::complex.
+ * 
+ * @tparam T Values type of std::complex.
+ * @tparam Char Character type.
  */
 template <typename T, typename Char>
 struct formatter<std::complex<T>, Char> : public formatter<T, Char> {
@@ -29,7 +32,8 @@ struct formatter<std::complex<T>, Char> : public formatter<T, Char> {
 
     /**
      * @brief Formats the std::complex<T> type.
-
+     * 
+     * @tparam FormatContext The format context type of fmtlib.
      * @param z The std::complex<T> value to format.
      * @param ctx The format context.
      * @return The iterator to the end of the formatted range.

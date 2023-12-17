@@ -15,16 +15,15 @@
 namespace simplemc {
 
 /**
- * @brief Calculate size of an multi-dimensional array given its shape as a std::vector.
+ * @brief Calculate size of a multi-dimensional array given its shape as a std::vector.
  *
  * @tparam T Integral type.
- * @tparam N Number of dimensions.
  * @param shape Shape of multi-dimensional array.
- * @return Number of elements of the array.
+ * @return Number of elements in the array.
  */
 template <std::integral T>
 constexpr auto size_from_shape(const std::vector<T>& shape) {
-    using return_type = std::vector<T>::value_type;
+    using return_type = T;
     if (shape.empty()) {
         return return_type { 0 };
     }
@@ -32,12 +31,12 @@ constexpr auto size_from_shape(const std::vector<T>& shape) {
 }
 
 /**
- * @brief Calculate size of an multi-dimensional array given its shape as a std::array.
+ * @brief Calculate size of a multi-dimensional array given its shape as a std::array.
  *
  * @tparam T Integral type.
  * @tparam N Number of dimensions.
  * @param shape Shape of multi-dimensional array.
- * @return Number of elements of the array.
+ * @return Number of elements in the array.
  */
 template <std::integral T, std::size_t N>
 constexpr auto size_from_shape_array(const std::array<T, N>& shape) {
@@ -55,7 +54,7 @@ constexpr auto size_from_shape_array(const std::array<T, N>& shape) {
  * @tparam Order Order of the multi-dimensional array.
  * @param flat_idx Flat index.
  * @param shape Shape of underlying multi-dimensional array.
- * @param order Order of the multi-dimensional array.
+ * @param order Order of the multi-dimensional array (used only for type deduction).
  * @return Multi-dimensional index as a std::vector.
  */
 template <std::integral T, nd_order Order = column_major>
@@ -93,7 +92,7 @@ constexpr std::vector<T> multi_index(
  * @tparam Order Order of the multi-dimensional array.
  * @param flat_idx Flat index.
  * @param shape Shape of underlying multi-dimensional array.
- * @param order Order of the multi-dimensional array.
+ * @param order Order of the multi-dimensional array (used only for type deduction).
  * @return Multi-dimensional index as a std::array.
  */
 template <std::integral T, std::size_t N, nd_order Order = column_major>
@@ -124,15 +123,13 @@ constexpr std::array<T, N> multi_index_array(
 
 /**
  * @brief Convert a multi-dimensional index to a flat index w.r.t. to a given shape.
- * The multi-index as well as the shape are given as std::arrays.
- *
+ * 
  * @tparam T1 Integer type.
  * @tparam T2 Integer type.
- * @tparam N Number of dimensions.
  * @tparam Order Order of the multi-dimensional array.
  * @param idxs Multi-dimensional index.
  * @param shape Shape of underlying multi-dimensional array.
- * @param order Order of the multi-dimensional array.
+ * @param order Order of the multi-dimensional array (used only for type deduction).
  * @return Flat index.
  */
 template <std::integral T1, std::integral T2, nd_order Order = column_major>
@@ -157,7 +154,6 @@ constexpr auto flat_index(
 
 /**
  * @brief Convert a multi-dimensional index to a flat index w.r.t. to a given shape.
- * The multi-index as well as the shape are given as std::arrays.
  *
  * @tparam T1 Integer type.
  * @tparam T2 Integer type.
@@ -165,7 +161,7 @@ constexpr auto flat_index(
  * @tparam Order Order of the multi-dimensional array.
  * @param idxs Multi-dimensional index.
  * @param shape Shape of underlying multi-dimensional array.
- * @param order Order of the multi-dimensional array.
+ * @param order Order of the multi-dimensional array (used only for type deduction).
  * @return Flat index.
  */
 template <std::integral T1, std::integral T2, std::size_t N, nd_order Order = column_major>
