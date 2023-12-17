@@ -33,7 +33,7 @@ void range_to_json(nlohmann::json& j, ranges::input_range auto&& rg) {
  * do not match.
  *
  * @param j nlohmann::json object.
- * @param rg output_range.
+ * @param rg output_range to deserialize into.
  */
 template <ranges::range R>
     requires ranges::output_range<R, ranges::range_value_t<R>>

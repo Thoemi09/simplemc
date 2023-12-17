@@ -52,40 +52,40 @@ public:
 };
 
 /**
- * @brief Polymorphic call to basic_json::write_json.
+ * @brief Polymorphic call to simplemc::basic_json::write_json.
  *
  * @param j nlohmann::json object.
- * @param bj basic_json object.
+ * @param bj simplemc::basic_json object.
  */
 inline void to_json(nlohmann::json& j, const basic_json& bj) {
     bj.write_json(j);
 }
 
 /**
- * @brief Polymorphic call to basic_json::read_json.
+ * @brief Polymorphic call to simplemc::basic_json::read_json.
  *
  * @param j nlohmann::json object.
- * @param bj basic_json object.
+ * @param bj simplemc::basic_json object.
  */
 inline void from_json(const nlohmann::json& j, basic_json& bj) {
     bj.read_json(j);
 }
 
 /**
- * @brief Polymorphic call to basic_json::write_input_json.
+ * @brief Polymorphic call to simplemc::basic_json::write_input_json.
  *
  * @param j nlohmann::json object.
- * @param bj basic_json object.
+ * @param bj simplemc::basic_json object.
  */
 inline void to_input_json(nlohmann::json& j, const basic_json& bj) {
     bj.write_input_json(j);
 }
 
 /**
- * @brief Polymorphic call to basic_json::read_input_json.
+ * @brief Polymorphic call to simplemc::basic_json::read_input_json.
  *
  * @param j nlohmann::json object.
- * @param bj basic_json object.
+ * @param bj simplemc::basic_json object.
  */
 inline void from_input_json(const nlohmann::json& j, basic_json& bj) {
     bj.read_input_json(j);

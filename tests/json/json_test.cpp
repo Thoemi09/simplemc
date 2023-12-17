@@ -7,8 +7,6 @@
 
 #include <simplemc/json.hpp>
 
-#include <range/v3/view/reverse.hpp>
-
 #include <span>
 
 namespace foo {
