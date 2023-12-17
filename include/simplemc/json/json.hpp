@@ -1,6 +1,6 @@
 /**
  * @file json.hpp
- * @brief Additional serializer for the nlohmann-json library.
+ * @brief Additional serializers for the nlohmann-json library.
  */
 
 #ifndef SIMPLEMC_JSON_JSON_HPP
@@ -15,7 +15,7 @@ namespace nlohmann {
 /**
  * @brief Serialize/Deserialize std::complex<T> to/from JSON.
  *
- * @tparam T Scalar type of std::complex<T>.
+ * @tparam T Value type of std::complex<T>.
  */
 template <typename T>
 struct adl_serializer<std::complex<T>> {

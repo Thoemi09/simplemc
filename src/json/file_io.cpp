@@ -1,6 +1,6 @@
 /**
  * @file file_io.cpp
- * @brief Implementation of JSON file IO operations.
+ * @brief JSON file IO operations.
  */
 
 #include <simplemc/json/file_io.hpp>

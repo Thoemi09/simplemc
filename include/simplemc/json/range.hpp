@@ -17,7 +17,7 @@ namespace simplemc {
  * @brief Serialize a range to JSON.
  *
  * @param j nlohmann::json object.
- * @param rg input_range.
+ * @param rg input_range to serialize.
  */
 void range_to_json(nlohmann::json& j, ranges::input_range auto&& rg) {
     for (auto&& x : rg) {
@@ -37,13 +37,13 @@ void range_to_json(nlohmann::json& j, ranges::input_range auto&& rg) {
  */
 template <ranges::range R>
     requires ranges::output_range<R, ranges::range_value_t<R>>
-void range_from_json(const nlohmann::json& j, R&& rg) {
+void range_from_json(const nlohmann::json& j, R&& rg) { // NOLINT (we don't want to forward ranges)
     if constexpr (ranges::sized_range<R>) {
-        if (j.size() != ranges::size(std::forward<R>(rg))) {
+        if (j.size() != ranges::size(rg)) {
             throw simplemc_exception("Range size mismatch", "range_from_json");
         }
     }
-    auto it = ranges::begin(std::forward<R>(rg));
+    auto it = ranges::begin(rg);
     for (const auto& el : j) {
         *it = el.get<ranges::range_value_t<R>>();
         ++it;

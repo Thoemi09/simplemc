@@ -52,7 +52,7 @@ public:
 };
 
 /**
- * @brief Polymorphic call to write_json.
+ * @brief Polymorphic call to basic_json::write_json.
  *
  * @param j nlohmann::json object.
  * @param bj basic_json object.
@@ -62,7 +62,7 @@ inline void to_json(nlohmann::json& j, const basic_json& bj) {
 }
 
 /**
- * @brief Polymorphic call to read_json.
+ * @brief Polymorphic call to basic_json::read_json.
  *
  * @param j nlohmann::json object.
  * @param bj basic_json object.
@@ -72,7 +72,7 @@ inline void from_json(const nlohmann::json& j, basic_json& bj) {
 }
 
 /**
- * @brief Polymorphic call to write_input_json.
+ * @brief Polymorphic call to basic_json::write_input_json.
  *
  * @param j nlohmann::json object.
  * @param bj basic_json object.
@@ -82,7 +82,7 @@ inline void to_input_json(nlohmann::json& j, const basic_json& bj) {
 }
 
 /**
- * @brief Polymorphic call to read_input_json.
+ * @brief Polymorphic call to basic_json::read_input_json.
  *
  * @param j nlohmann::json object.
  * @param bj basic_json object.
