@@ -72,6 +72,9 @@ public:
     /**
      * @brief Construct a xoshiro256 RNG from a single std::uint64_t seed.
      *
+     * @details The value is used to seed a splitmix64 RNG, which in turn is used to seed
+     * the internal state of the xoshiro256 RNG.
+     *
      * @param s 64-bit unsigned integer seed.
      */
     explicit xoshiro256(std::uint64_t s = default_seed);
@@ -99,8 +102,10 @@ public:
     }
 
     /**
-     * @brief Set the internal state using a single std::uint64_t. The value is used to seed a
-     * splitmix64 RNG, which in turn is used to seed the internal state of the xoshiro256 RNG.
+     * @brief Set the internal state using a single std::uint64_t.
+     *
+     * @details The value is used to seed a splitmix64 RNG, which in turn is used to seed
+     * the internal state of the xoshiro256 RNG.
      *
      * @param s 64-bit unsigned integer.
      */
@@ -126,8 +131,8 @@ public:
         requires(!std::is_same_v<SeedSeq, xoshiro256<X>> && !std::is_arithmetic_v<SeedSeq>)
     void seed(SeedSeq& seq) {
         // low level hack to seed the state array
-        seq.generate(
-            reinterpret_cast<std::uint32_t*>(state_.data()), reinterpret_cast<std::uint32_t*>(state_.data() + 4));
+        seq.generate(reinterpret_cast<std::uint32_t*>(state_.data()), // NOLINT (reinterpret_cast is needed here)
+            reinterpret_cast<std::uint32_t*>(state_.data() + 4)); // NOLINT (reinterpret_cast is needed here)
     }
 
     /**

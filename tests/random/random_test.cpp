@@ -28,7 +28,7 @@ public:
 
     void print() const { fmt::print("Histogram:\n{}\n", hist_); }
 
-    bool check_bins(double tol) const {
+    [[nodiscard]] bool check_bins(double tol) const {
         double exact = static_cast<double>(nsamples_) / nbins_;
         double err = tol * exact;
         double lower = exact - err;
@@ -147,7 +147,7 @@ TEST(SimplemcRandom, RestoreDiscreteDistribution) {
 
 // Test restoring a discrete alias distribution.
 TEST(SimplemcRandom, RestoreDiscreteAliasDistribution) {
-    simplemc::discrete_distribution<long> dist1 { 1.23, 8.2912, 4.23 }, dist2;
+    simplemc::discrete_alias_distribution<long> dist1 { 1.23, 8.2912, 4.23 }, dist2;
     ASSERT_NE(dist1, dist2);
     std::stringstream ss;
     ss << dist1;
@@ -192,6 +192,7 @@ TEST(SimplemcRandom, SpeedDiscreteDistribution) {
     fmt::print("{}\n", hist3);
 }
 
+// Test exclusive uniform int distribution.
 TEST(SimplemcRandom, ExclusiveUniformIntDistributionSamples) {
     simplemc::xoshiro256ss eng;
     int min = 0;

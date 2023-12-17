@@ -78,7 +78,7 @@ public:
      *
      * @return Probability vector.
      */
-    const std::vector<double>& probabilities() const { return probs_; }
+    [[nodiscard]] const std::vector<double>& probabilities() const { return probs_; }
 
     /* Friend declarations. */
     friend class simplemc::discrete_alias_distribution<T>;
@@ -132,8 +132,9 @@ void dad_param_type<T>::normalize() {
 }
 
 /**
- * @brief Write textual representation of dad_param_type to ostream. Throws an exception, if
- * writing to ostream fails.
+ * @brief Write textual representation of dad_param_type to ostream.
+ *
+ * @details Throws an exception, if writing to ostream fails.
  *
  * @param os std::ostream.
  * @param param Parameters.
@@ -157,8 +158,9 @@ std::ostream& operator<<(std::ostream& os, const dad_param_type<T>& param) {
 }
 
 /**
- * @brief Read textual representation of dad_param_type from istream. Throws an exception, if
- * reading from istream fails.
+ * @brief Read textual representation of dad_param_type from istream.
+ *
+ * @details Throws an exception, if reading from istream fails.
  *
  * @tparam T Integral type.
  * @param is std::istream.
@@ -282,28 +284,28 @@ public:
      *
      * @return 0.
      */
-    result_type min() const { return 0; }
+    [[nodiscard]] result_type min() const { return 0; }
 
     /**
      * @brief Upper bound of the distribution.
      *
      * @return Number of weights/probabilities given at construction.
      */
-    result_type max() const { return static_cast<result_type>(param_.probs_.size() - 1); }
+    [[nodiscard]] result_type max() const { return static_cast<result_type>(param_.probs_.size() - 1); }
 
     /**
      * @brief Get probabilities.
      *
      * @return Probability vector.
      */
-    const std::vector<double>& probabilities() const { return param_.probabilities(); }
+    [[nodiscard]] const std::vector<double>& probabilities() const { return param_.probabilities(); }
 
     /**
      * @brief Get parameter set of the distribution.
      *
      * @return Parameters.
      */
-    const param_type& param() const { return param_; }
+    [[nodiscard]] const param_type& param() const { return param_; }
 
     /**
      * @brief Set the parameters for this distribution.
@@ -441,8 +443,9 @@ discrete_alias_distribution<T>::result_type discrete_alias_distribution<T>::oper
 }
 
 /**
- * @brief Write a textual representation of a discrete_alias_distribution to ostream. Throws an
- * exception, if writing to ostream fails.
+ * @brief Write a textual representation of a discrete_alias_distribution to ostream.
+ *
+ * @details Throws an exception, if writing to ostream fails.
  *
  * @tparam T Integral type.
  * @param os Reference to ostream.
@@ -458,8 +461,9 @@ std::ostream& operator<<(std::ostream& os, const discrete_alias_distribution<T>&
 }
 
 /**
- * @brief Restore discrete_alias_distribution from istream. Throws an exception, if reading from
- * istream fails.
+ * @brief Restore discrete_alias_distribution from istream.
+ *
+ * @details Throws an exception, if reading from istream fails.
  *
  * @tparam T Integral type.
  * @param is Reference to istream.

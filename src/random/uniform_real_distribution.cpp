@@ -14,9 +14,7 @@ namespace simplemc {
 
 namespace detail {
 
-urd_param_type::urd_param_type(double min_arg, double max_arg) :
-    min_(min_arg),
-    max_(max_arg) {
+urd_param_type::urd_param_type(double min_arg, double max_arg) : min_(min_arg), max_(max_arg) {
     assert(min_ < max_);
 }
 
@@ -54,11 +52,9 @@ bool operator!=(const urd_param_type& lhs, const urd_param_type& rhs) {
 
 } // namespace detail
 
-uniform_real_distribution::uniform_real_distribution(double min_arg, double max_arg) :
-    param_(min_arg, max_arg) {}
+uniform_real_distribution::uniform_real_distribution(double min_arg, double max_arg) : param_(min_arg, max_arg) {}
 
-uniform_real_distribution::uniform_real_distribution(const param_type& param) :
-    param_(param) {}
+uniform_real_distribution::uniform_real_distribution(const param_type& param) : param_(param) {}
 
 std::ostream& operator<<(std::ostream& os, const uniform_real_distribution& ud) {
     if (!(os << ud.param())) {
@@ -77,13 +73,11 @@ std::istream& operator>>(std::istream& is, uniform_real_distribution& ud) {
     return is;
 }
 
-bool operator==(
-    const uniform_real_distribution& lhs, const uniform_real_distribution& rhs) {
+bool operator==(const uniform_real_distribution& lhs, const uniform_real_distribution& rhs) {
     return (lhs.param() == rhs.param());
 }
 
-bool operator!=(
-    const uniform_real_distribution& lhs, const uniform_real_distribution& rhs) {
+bool operator!=(const uniform_real_distribution& lhs, const uniform_real_distribution& rhs) {
     return !(lhs == rhs);
 }
 
