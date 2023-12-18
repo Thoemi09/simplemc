@@ -13,8 +13,8 @@ power_grid::power_grid(value_type first, value_type last, size_type size, value_
 }
 
 void power_grid::reset(value_type first, value_type last, size_type size, value_type power) {
-    if (power <= 0) {
-        throw simplemc_exception("Power parameter must be > 0.", "power_grid::reset");
+    if (power <= 0.0) {
+        throw simplemc_exception("Power parameter must be > 0", "power_grid::reset");
     }
     grid_base::reset(first, last, size);
     power_ = power;

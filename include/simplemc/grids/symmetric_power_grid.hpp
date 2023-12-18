@@ -36,7 +36,7 @@ public:
     using size_type = grid_base::size_type;
 
     /**
-     * @brief Constructor for the power_grid.
+     * @brief Constructor for the symmetric_power_grid.
      *
      * @param first First value of the grid.
      * @param last Last value of the grid.

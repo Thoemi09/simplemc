@@ -12,6 +12,7 @@ class grid_base;
 class linear_grid;
 class power_grid;
 class symmetric_power_grid;
+
 template <typename...>
 class nd_grid;
 

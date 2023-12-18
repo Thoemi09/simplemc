@@ -30,7 +30,7 @@ public:
     using value_type = grid_base::value_type;
 
     /**
-     * @brief Difference type of the grid.
+     * @brief Size type of the grid.
      */
     using size_type = grid_base::size_type;
 

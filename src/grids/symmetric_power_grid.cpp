@@ -25,7 +25,7 @@ void symmetric_power_grid::reset(value_type first, value_type last, size_type si
             "Number of grid points needs to be odd in symmetric_power_grid", "symmetric_power_grid::check_odd_size");
     }
     if (power <= 0) {
-        throw simplemc_exception("Power parameter must be > 0.", "symmetric_power_grid::reset");
+        throw simplemc_exception("Power parameter must be > 0", "symmetric_power_grid::reset");
     }
     grid_base::reset(first, last, size);
     midpoint_ = (first_ + last_) / 2;

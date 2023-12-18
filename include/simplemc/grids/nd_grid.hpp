@@ -9,6 +9,7 @@
 #include <simplemc/grids/grid_base.hpp>
 
 #include <range/v3/view/cartesian_product.hpp>
+#include <range/v3/view/transform.hpp>
 
 #include <array>
 #include <tuple>
@@ -18,7 +19,9 @@ namespace simplemc {
 /**
  * @brief N-dimensional grid consisting of N 1-dimensional grids.
  *
- * @tparam Grids N grid types.
+ * @details The grids need not be of the same type.
+ *
+ * @tparam Grids Grid types.
  */
 template <typename... Grids>
 class nd_grid {
@@ -48,7 +51,7 @@ public:
     using size_type = grid_base::size_type;
 
     /**
-     * @brief Array of indices/sizes.
+     * @brief N-dimensional size type.
      */
     using nd_size_type = std::array<size_type, dim()>;
 
@@ -67,10 +70,11 @@ public:
     /**
      * @brief Get all grids.
      *
-     * @return Refernce to tuple of grids.
+     * @return Reference to tuple of grids.
      */
     tuple_type& grids() { return grids_; }
 
+    /// See nd_grid::grids().
     const tuple_type& grids() const { return grids_; }
 
     /**
@@ -94,7 +98,7 @@ public:
     /**
      * @brief Get size of nd-grid.
      *
-     * @return Total number of gridpoints.
+     * @return Total number of grid points.
      */
     [[nodiscard]] size_type size() const {
         return std::apply([](const auto&... gs) { return (1 * ... * gs.size()); }, grids_);
@@ -113,7 +117,7 @@ public:
      * @brief Get grid point at a certain index array.
      *
      * @param idx_arr Index array.
-     * @return Value array at that index array.
+     * @return Grid point at that index array.
      */
     [[nodiscard]] nd_value_type at(const nd_size_type& idx_arr) const {
         return std::apply([this](const auto&... args) { return this->at(args...); }, idx_arr);
@@ -124,7 +128,7 @@ public:
      *
      * @tparam Idxs Index types.
      * @param idxs Indices.
-     * @return Value array at those indices.
+     * @return Grid point at those indices.
      */
     template <typename... Idxs>
     [[nodiscard]] nd_value_type at(Idxs... idxs) const {
@@ -200,30 +204,57 @@ public:
     /**
      * @brief Get a view on the grid.
      *
-     * @return View on the grid.
+     * @details The grid is traversed in row-major order, i.e. the last dimension is the fastest varying one and
+     * the first dimension is the slowest varying one.
+     *
+     * @return View on the N-dimensional grid.
      */
     [[nodiscard]] auto view() const {
-        return std::apply([](const auto&... gs) { return ranges::views::cartesian_product(gs.view()...); }, grids_);
+        return std::apply(
+            [](const auto&... gs) {
+                return ranges::views::cartesian_product(gs.view()...) | ranges::views::transform([](const auto& tup) {
+                    return std::apply([](const auto&... vals) { return nd_value_type { vals... }; }, tup);
+                });
+            },
+            grids_);
     }
 
     /**
      * @brief Get a view on the centered grid.
      *
-     * @return View on the centered grid.
+     * @details The grid is traversed in row-major order, i.e. the last dimension is the fastest varying one and
+     * the first dimension is the slowest varying one.
+     *
+     * @return View on the N-dimensional centered grid.
      */
     [[nodiscard]] auto view_center() const {
         return std::apply(
-            [](const auto&... gs) { return ranges::views::cartesian_product(gs.view_center()...); }, grids_);
+            [](const auto&... gs) {
+                return ranges::views::cartesian_product(gs.view_center()...) |
+                    ranges::views::transform([](const auto& tup) {
+                        return std::apply([](const auto&... vals) { return nd_value_type { vals... }; }, tup);
+                    });
+            },
+            grids_);
     }
 
     /**
      * @brief Get a view on the bin volumes.
      *
+     * @details The grid is traversed in row-major order, i.e. the last dimension is the fastest varying one and
+     * the first dimension is the slowest varying one.
+     *
      * @return View on the bin volumes.
      */
     [[nodiscard]] auto view_bin_volumes() const {
         return std::apply(
-            [](const auto&... gs) { return ranges::views::cartesian_product(gs.view_bin_volumes()...); }, grids_);
+            [](const auto&... gs) {
+                return ranges::views::cartesian_product(gs.view_bin_volumes()...) |
+                    ranges::views::transform([](const auto& tup) {
+                        return std::apply([](const auto&... vols) { return (1 * ... * vols); }, tup);
+                    });
+            },
+            grids_);
     }
 
 private:

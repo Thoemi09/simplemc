@@ -45,6 +45,7 @@ inline void check_complex_equal(std::complex<double> lhs, std::complex<double> r
 
 // Check two ranges for nearness.
 void check_range_near(ranges::input_range auto&& rg, ranges::input_range auto&& exp_rg, double eps = 1e-14) {
+    ASSERT_EQ(ranges::size(rg), ranges::size(exp_rg));
     for (auto&& [x, y] : ranges::views::zip(rg, exp_rg)) {
         ASSERT_NEAR(x, y, eps);
     }
@@ -52,6 +53,7 @@ void check_range_near(ranges::input_range auto&& rg, ranges::input_range auto&& 
 
 // Check two ranges for equality.
 void check_range_equal(ranges::input_range auto&& rg, ranges::input_range auto&& exp_rg) {
+    ASSERT_EQ(ranges::size(rg), ranges::size(exp_rg));
     for (auto&& [x, y] : ranges::views::zip(rg, exp_rg)) {
         ASSERT_EQ(x, y);
     }
