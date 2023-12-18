@@ -193,10 +193,10 @@ std::istream& operator>>(std::istream& is, dad_param_type<T>& param) {
  * @tparam T Integral type.
  * @param lhs Parameters #1.
  * @param rhs Parameters #2.
- * @return True if their probabilities are equal.
+ * @return `true` if their probabilities are equal.
  */
 template <integer_only T>
-bool operator==(const dad_param_type<T>& lhs, const dad_param_type<T>& rhs) {
+[[nodiscard]] bool operator==(const dad_param_type<T>& lhs, const dad_param_type<T>& rhs) {
     return lhs.probabilities() == rhs.probabilities();
 }
 
@@ -206,18 +206,18 @@ bool operator==(const dad_param_type<T>& lhs, const dad_param_type<T>& rhs) {
  * @tparam T Integral type.
  * @param lhs Parameters #1.
  * @param rhs Parameters #2.
- * @return True if their probabilities are not equal.
+ * @return `true` if their probabilities are not equal.
  */
 template <integer_only T>
-bool operator!=(const dad_param_type<T>& lhs, const dad_param_type<T>& rhs) {
+[[nodiscard]] bool operator!=(const dad_param_type<T>& lhs, const dad_param_type<T>& rhs) {
     return !(lhs == rhs);
 }
 
 } // namespace detail
 
 /**
- * @brief Discrete distribution using the Walker-Alias-Algorithm based on std::discrete_distribution
- * and boost::discrete_distribution.
+ * @brief Discrete distribution using the Walker-Alias-Algorithm based on
+ * std::discrete_distribution and boost::discrete_distribution.
  *
  * @details Satisfies the requirements for a C++ RandomNumberDistribution.
  *
@@ -237,12 +237,12 @@ public:
     using param_type = detail::dad_param_type<T>;
 
     /**
-     * @brief Default constructor for a discrete distribution.
+     * @brief Default constructor for a discrete_alias_distribution.
      */
     discrete_alias_distribution();
 
     /**
-     * @brief Construct a discrete distribution from a range of weights.
+     * @brief Construct a discrete_alias_distribution from a range of weights.
      *
      * @tparam InputIt Iterator type.
      * @param first Beginning of range.
@@ -252,7 +252,7 @@ public:
     discrete_alias_distribution(InputIt first, InputIt last);
 
     /**
-     * @brief Construct a discrete distribution from a list of weights.
+     * @brief Construct a discrete_alias_distribution from a list of weights.
      *
      * @param list Initializer list of weights.
      */
@@ -273,7 +273,7 @@ public:
     discrete_alias_distribution(std::size_t n, double xmin, double xmax, UnaryOp unary_op);
 
     /**
-     * @brief Construct a discrete distribution from a given param_type.
+     * @brief Construct a discrete_alias_distribution from a given param_type.
      *
      * @param param Parameter specifying the weights.
      */
@@ -282,7 +282,7 @@ public:
     /**
      * @brief Lower bound of the distribution.
      *
-     * @return 0.
+     * @return Zero.
      */
     [[nodiscard]] result_type min() const { return 0; }
 
@@ -325,24 +325,25 @@ public:
     /**
      * @brief Generate random integer.
      *
-     * @tparam Engine RNG.
-     * @param eng RNG.
+     * @tparam RNG Random number generator.
+     * @param rng RNG object.
      * @return Random int distributed according to weights/probabilities.
      */
-    template <typename Engine>
-    result_type operator()(Engine& eng) const;
+    template <typename RNG>
+    result_type operator()(RNG& rng) const;
 
     /**
-     * @brief Generate random integer distributed according to param. Uses a
-     * linear search instead of Walker-Alias.
+     * @brief Generate random integer distributed according to param.
      *
-     * @tparam Engine 64-bit RNG.
-     * @param eng Random number generator.
+     * @details Uses a linear search instead of Walker-Alias.
+     *
+     * @tparam RNG Random number generator.
+     * @param rng RNG object.
      * @param param Parameter object specifying probabilities.
      * @return Random int distributed according to param.
      */
-    template <typename Engine>
-    result_type operator()(Engine& eng, const param_type& param) const;
+    template <typename RNG>
+    result_type operator()(RNG& rng, const param_type& param) const;
 
 private:
     /**
@@ -487,10 +488,10 @@ std::istream& operator>>(std::istream& is, discrete_alias_distribution<T>& dad) 
  * @tparam T Integral type.
  * @param lhs Distribution #1.
  * @param rhs Distribution #2.
- * @return True if the parameters of the distributions are the same.
+ * @return `true` if the parameters of the distributions are the same.
  */
 template <integer_only T>
-bool operator==(const discrete_alias_distribution<T>& lhs, const discrete_alias_distribution<T>& rhs) {
+[[nodiscard]] bool operator==(const discrete_alias_distribution<T>& lhs, const discrete_alias_distribution<T>& rhs) {
     return lhs.param() == rhs.param();
 }
 
@@ -500,10 +501,10 @@ bool operator==(const discrete_alias_distribution<T>& lhs, const discrete_alias_
  * @tparam T Integral type.
  * @param lhs Distribution #1.
  * @param rhs Distribution #2.
- * @return True if the parameters of the distributions are distinct.
+ * @return `true` if the parameters of the distributions are distinct.
  */
 template <integer_only T>
-bool operator!=(const discrete_alias_distribution<T>& lhs, const discrete_alias_distribution<T>& rhs) {
+[[nodiscard]] bool operator!=(const discrete_alias_distribution<T>& lhs, const discrete_alias_distribution<T>& rhs) {
     return !(lhs == rhs);
 }
 

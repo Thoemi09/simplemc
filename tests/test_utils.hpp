@@ -9,7 +9,10 @@
 #include <gtest/gtest.h>
 #include <simplemc/json/json.hpp>
 
+#include <fmt/ranges.h>
 #include <range/v3/all.hpp>
+
+#include <vector>
 
 // Check JSON serialization/deserialization of an object.
 template <typename T1, typename T2>
@@ -53,5 +56,44 @@ void check_range_equal(ranges::input_range auto&& rg, ranges::input_range auto&&
         ASSERT_EQ(x, y);
     }
 }
+
+// Simple histogram class for testing.
+class histogram01 {
+public:
+    // Constructor.
+    explicit histogram01(int nbins) : nbins_(nbins), step_(1.0 / nbins), hist_(nbins, 0.0) {}
+
+    // Add a value to the histogram.
+    void add(double value) {
+        int idx = static_cast<int>(value / step_);
+        hist_[idx] += 1.0;
+        nsamples_ += 1;
+    }
+
+    // Print the histogram.
+    void print() const { fmt::print("Histogram:\n{}\n", hist_); }
+
+    // Check that the histogram is uniform within some tolerance.
+    [[nodiscard]] bool check_uniform(double tol) const {
+        double exact = static_cast<double>(nsamples_) / nbins_;
+        double err = tol * exact;
+        double lower = exact - err;
+        double upper = exact + err;
+        bool res = true;
+        for (int i = 0; i < nbins_; i++) {
+            if (hist_[i] < lower || hist_[i] > upper) {
+                res = false;
+                break;
+            }
+        }
+        return res;
+    }
+
+private:
+    long nsamples_ { 0 };
+    int nbins_;
+    double step_;
+    std::vector<double> hist_;
+};
 
 #endif // SIMPLEMC_TESTS_TEST_UTILS_HPP

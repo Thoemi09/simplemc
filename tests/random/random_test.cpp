@@ -8,47 +8,10 @@
 #include <simplemc/random.hpp>
 #include <simplemc/utils/timer.hpp>
 
-#include <fmt/ranges.h>
-
 #include <cstdint>
 #include <random>
 #include <sstream>
 #include <vector>
-
-// Simple histogram class for testing.
-class histogram01 {
-public:
-    explicit histogram01(int nbins) : nbins_(nbins), step_(1.0 / nbins), hist_(nbins, 0.0) {}
-
-    void add(double value) {
-        int idx = static_cast<int>(value / step_);
-        hist_[idx] += 1.0;
-        nsamples_ += 1;
-    }
-
-    void print() const { fmt::print("Histogram:\n{}\n", hist_); }
-
-    [[nodiscard]] bool check_bins(double tol) const {
-        double exact = static_cast<double>(nsamples_) / nbins_;
-        double err = tol * exact;
-        double lower = exact - err;
-        double upper = exact + err;
-        bool res = true;
-        for (int i = 0; i < nbins_; i++) {
-            if (hist_[i] < lower || hist_[i] > upper) {
-                res = false;
-                break;
-            }
-        }
-        return res;
-    }
-
-private:
-    long nsamples_ { 0 };
-    int nbins_;
-    double step_;
-    std::vector<double> hist_;
-};
 
 // Test uniform real distribution.
 TEST(SimplemcRandom, UniformRealDistribution) {
@@ -78,7 +41,7 @@ TEST(SimplemcRandom, Splitmix64) {
     for (int i = 0; i < 1000000; ++i) {
         hist.add(dist(eng));
     }
-    ASSERT_TRUE(hist.check_bins(1e-2));
+    ASSERT_TRUE(hist.check_uniform(1e-2));
 }
 
 // Test restoring a splitmix64 RNG.
@@ -107,9 +70,9 @@ TEST(SimplemcRandom, Xoshiro256) {
         hist_pp.add(urd(xopp));
         hist_ss.add(urd(xoss));
     }
-    ASSERT_TRUE(hist_p.check_bins(1e-2));
-    ASSERT_TRUE(hist_pp.check_bins(1e-2));
-    ASSERT_TRUE(hist_ss.check_bins(1e-2));
+    ASSERT_TRUE(hist_p.check_uniform(1e-2));
+    ASSERT_TRUE(hist_pp.check_uniform(1e-2));
+    ASSERT_TRUE(hist_ss.check_uniform(1e-2));
 }
 
 // Test restoring a xoshiro256 RNG.
@@ -220,16 +183,19 @@ TEST(SimplemcRandom, ExclusiveUniformIntDistributionSamples) {
 
 // Test seeding RNGs.
 TEST(SimplemcRandom, SeedRng) {
-    std::mt19937_64 mt1, mt2, mt3;
+    std::mt19937_64 mt1, mt2, mt3, mt4;
     simplemc::seed_rng(mt1, 0);
     simplemc::seed_rng(mt2, 0);
-    simplemc::seed_rng(mt3, 2);
+    simplemc::seed_rng(mt3, 0, 10);
+    simplemc::seed_rng(mt4, 2);
     for (int i = 0; i < 1000000; ++i) {
         auto res1 = mt1();
         auto res2 = mt2();
         auto res3 = mt3();
+        auto res4 = mt4();
         ASSERT_EQ(res1, res2);
         ASSERT_NE(res1, res3);
+        ASSERT_NE(res1, res4);
     }
     simplemc::xoshiro256pp xop1, xop2;
     simplemc::seed_rng(xop1, 0);

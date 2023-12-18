@@ -18,7 +18,9 @@ class uniform_real_distribution;
 namespace detail {
 
 /**
- * @brief Parameter type of the uniform_real_distribution. Models an interval [min, max).
+ * @brief Parameter type of the simplemc::uniform_real_distribution.
+ *
+ * @details Models an interval [min, max).
  */
 class urd_param_type {
 public:
@@ -57,6 +59,8 @@ private:
 /**
  * @brief Write textual representation of urd_param_type to ostream.
  *
+ * @details Throws an exception, if writing to ostream fails.
+ *
  * @param os std::ostream.
  * @param param Parameters.
  * @return Reference to the std::ostream object.
@@ -66,7 +70,7 @@ std::ostream& operator<<(std::ostream& os, const urd_param_type& param);
 /**
  * @brief Read textual representation of urd_param_type from istream.
  *
- * @details Throws an exception if reading fails.
+ * @details Throws an exception, if reading from istream fails.
  *
  * @param is std::istream.
  * @param param Parameters.
@@ -79,29 +83,31 @@ std::istream& operator>>(std::istream& is, urd_param_type& param);
  *
  * @param lhs Parameters #1.
  * @param rhs Parameters #2.
- * @return True if both their `min_` and `max_` values are equal.
+ * @return `true` if both their `min_` and `max_` values are equal.
  */
-bool operator==(const urd_param_type& lhs, const urd_param_type& rhs);
+[[nodiscard]] bool operator==(const urd_param_type& lhs, const urd_param_type& rhs);
 
 /**
  * @brief Compare two urd_param_type objects for inequality.
  *
  * @param lhs Parameters #1.
  * @param rhs Parameters #2.
- * @return True if either their `min_` or `max_` values are not equal.
+ * @return `true` if either their `min_` or `max_` values are not equal.
  */
-bool operator!=(const urd_param_type& lhs, const urd_param_type& rhs);
+[[nodiscard]] bool operator!=(const urd_param_type& lhs, const urd_param_type& rhs);
 
 } // namespace detail
 
 /**
- * @brief Uniform real distribution on the interval [min, max). Only to be used with 64-bit RNGs.
+ * @brief Uniform real distribution on the interval [min, max).
  *
- * @details Satisfies the requirements for a C++ RandomNumberDistribution and is similar to
- * boost::random::uniform_real_distribution<double> or std::uniform_real_distribution<double>.
- * The major difference is how floating-point numbers are generated. Floating-point number generation is
- * taken from http://prng.di.unimi.it/ and it is intended to be used with xoshrio256 generators
- * (although any other 64-bit engine can be used as well if it generates std::uint64_t numbers).
+ * @details Only to be used with 64-bit RNGs. Satisfies the requirements for a C++
+ * RandomNumberDistribution and is similar to boost::random::uniform_real_distribution<double>
+ * or std::uniform_real_distribution<double>. The major difference is how floating-point numbers
+ * are generated. Floating-point number generation is taken from http://prng.di.unimi.it/ and it
+ * is intended to be used with xoshrio256 generators (although any other 64-bit engine can be
+ * used as well if it generates std::uint64_t numbers).
+ *
  * On each vocation it generates a random double uniformly distributed between [min, max).
  */
 class uniform_real_distribution {
@@ -165,28 +171,30 @@ public:
     void reset() {}
 
     /**
-     * @brief Generate random number. RNG has to produce 64-bit values.
+     * @brief Generate random number.
      *
-     * @tparam Engine 64-bit RNG.
-     * @param eng RNG.
-     * @return Random double on the current interval [min_, max_).
+     * @details The RNG has to produce 64-bit values.
+     *
+     * @tparam RNG 64-bit Random number generator.
+     * @param rng RNG object.
+     * @return Random double on the current interval [min, max).
      */
-    template <typename Engine>
-    double operator()(Engine& eng) const {
-        return detail::generate_uniform_real(eng, param_.min(), param_.max());
+    template <typename RNG>
+    double operator()(RNG& rng) const {
+        return detail::generate_uniform_real(rng, param_.min(), param_.max());
     }
 
     /**
      * @brief Generate random number on the interval specified by param.
      *
-     * @tparam Engine 64-bit RNG.
-     * @param eng Random number generator.
+     * @tparam RNG 64-bit Random number generator.
+     * @param rng RNG object.
      * @param param Interval bounds.
      * @return Random double on the specified interval.
      */
-    template <typename Engine>
-    double operator()(Engine& eng, const param_type& param) const {
-        return detail::generate_uniform_real(eng, param.min(), param.max());
+    template <typename RNG>
+    double operator()(RNG& rng, const param_type& param) const {
+        return detail::generate_uniform_real(rng, param.min(), param.max());
     }
 
 private:
@@ -196,6 +204,8 @@ private:
 /**
  * @brief Write a textual representation of a uniform_real_distribution to ostream.
  *
+ * @details Throws an exception, if writing to ostream fails.
+ *
  * @param os Reference to ostream.
  * @param ud Distribution to be written.
  * @return Reference to ostream.
@@ -203,9 +213,9 @@ private:
 std::ostream& operator<<(std::ostream& os, const uniform_real_distribution& ud);
 
 /**
- * @brief Restore uniform_real_distribution from istream. 
- * 
- * @details If reading from istream fails, the state is left unchanged.
+ * @brief Restore uniform_real_distribution from istream.
+ *
+ * @details If reading from istream fails, the state is left unchanged and an exception is thrown.
  *
  * @param is Reference to istream.
  * @param ud Distribution to be read into.
@@ -218,18 +228,18 @@ std::istream& operator>>(std::istream& is, uniform_real_distribution& ud);
  *
  * @param lhs Distribution #1.
  * @param rhs Distribution #2.
- * @return True if the parameters of the distributions are the same.
+ * @return `true` if the parameters of the distributions are the same.
  */
-bool operator==(const uniform_real_distribution& lhs, const uniform_real_distribution& rhs);
+[[nodiscard]] bool operator==(const uniform_real_distribution& lhs, const uniform_real_distribution& rhs);
 
 /**
  * @brief Compare two uniform_real_distributions for inequality.
  *
  * @param lhs Distribution #1.
  * @param rhs Distribution #2.
- * @return True if the parameters of the distributions are distinct.
+ * @return `true` if the parameters of the distributions are distinct.
  */
-bool operator!=(const uniform_real_distribution& lhs, const uniform_real_distribution& rhs);
+[[nodiscard]] bool operator!=(const uniform_real_distribution& lhs, const uniform_real_distribution& rhs);
 
 } // namespace simplemc
 

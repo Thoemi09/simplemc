@@ -8,21 +8,28 @@
 
 #include <simplemc/random/splitmix64.hpp>
 
+#include <cstddef>
 #include <random>
+#include <vector>
 
 namespace simplemc {
 
 /**
  * @brief Seed RNG with a seed sequence depending on an input parameter (useful for parallelization).
  *
- * @tparam RNG Random number generator type.
- * @param rng Random number generator.
+ * @tparam RNG Random number generator.
+ * @param rng RNG object.
  * @param rank Rank of the process.
+ * @param num Number of integers consumed by the std::seed_seq.
  */
 template <typename RNG> 
-void seed_rng(RNG& rng, int rank = 0) {
+void seed_rng(RNG& rng, int rank = 0, std::size_t num = 4) {
     splitmix64 sm64 { splitmix64::default_seed + 0x2544382c71ac491b * rank };
-    std::seed_seq seq { sm64(), sm64(), sm64(), sm64() };
+    std::vector<splitmix64::result_type> ints(num);
+    for (auto& i : ints) {
+        i = sm64();
+    }
+    std::seed_seq seq(ints.begin(), ints.end());
     rng.seed(seq);
 }
 

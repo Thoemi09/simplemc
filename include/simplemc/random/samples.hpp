@@ -7,6 +7,7 @@
 #define SIMPLEMC_RANDOM_SAMPLES_HPP
 
 #include <cassert>
+#include <cmath>
 #include <numbers>
 #include <random>
 
@@ -30,7 +31,7 @@ inline double uniform_sample(double r, double min, double max) {
  *
  * @param min Lower limit.
  * @param max Upper limit.
- * @return Value of distribution.
+ * @return Value of the distribution.
  */
 inline double uniform_pdf(double min, double max) {
     assert(max > min);
@@ -41,7 +42,7 @@ inline double uniform_pdf(double min, double max) {
  * @brief Random sample from an exponential distribution defined on [min, inf).
  *
  * @param r Uniform random number from [0, 1).
- * @param lambda Parameter of distribution.
+ * @param lambda Parameter of the distribution.
  * @param min Lower limit.
  * @return Exponential random sample from [min, inf).
  */
@@ -54,9 +55,9 @@ inline double exponential_sample(double r, double lambda, double min = 0) {
  * @brief Value of the exponential distribution defined on [min, inf).
  *
  * @param x Input variable.
- * @param lambda Parameter of distribution.
+ * @param lambda Parameter of the distribution.
  * @param min Lower limit.
- * @return Value of distribution.
+ * @return Value of the distribution.
  */
 inline double exponential_pdf(double x, double lambda, double min = 0) {
     assert(lambda > 0);
@@ -67,7 +68,7 @@ inline double exponential_pdf(double x, double lambda, double min = 0) {
  * @brief Random sample from an exponential distribution defined on [min, max).
  *
  * @param r Uniform random number from [0, 1).
- * @param lambda Parameter of distribution.
+ * @param lambda Parameter of the distribution.
  * @param min Lower limit.
  * @param max Upper limit.
  * @return Exponential random sample from [min, max).
@@ -82,10 +83,10 @@ inline double exponential_sample(double r, double lambda, double min, double max
  * @brief Value of the exponential distribution defined on [min, max).
  *
  * @param x Input variable.
- * @param lambda Parameter of distribution.
+ * @param lambda Parameter of the distribution.
  * @param min Lower limit.
  * @param max Upper limit.
- * @return Value of distribution.
+ * @return Value of the distribution.
  */
 inline double exponential_pdf(double x, double lambda, double min, double max) {
     assert(lambda != 0.0);
@@ -98,7 +99,7 @@ inline double exponential_pdf(double x, double lambda, double min, double max) {
  * safety measures depending on the given lambda parameter.
  *
  * @param r Uniform random number from [0, 1).
- * @param lambda Parameter of distribution.
+ * @param lambda Parameter of the distribution.
  * @param min Lower limit.
  * @param max Upper limit.
  * @return Exponential random sample from [min, max).
@@ -118,10 +119,10 @@ inline double safe_exponential_sample(double r, double lambda, double min, doubl
  * measures depending on the given lambda parameter.
  *
  * @param x Input variable.
- * @param lambda Parameter of distribution.
+ * @param lambda Parameter of the distribution.
  * @param min Lower limit.
  * @param max Upper limit.
- * @return Value of distribution.
+ * @return Value of the distribution.
  */
 inline double safe_exponential_pdf(double x, double lambda, double min, double max) {
     if (lambda > 0) {
@@ -137,9 +138,9 @@ inline double safe_exponential_pdf(double x, double lambda, double min, double m
  * @brief Random sample from a normal distribution.
  *
  * @tparam RNG Random number generator.
- * @param rng Random number generator object.
- * @param mu Mean parameter of distribution.
- * @param sigma Stddev parameter of distribution.
+ * @param rng RNG object.
+ * @param mu Mean parameter of the distribution.
+ * @param sigma Stddev parameter of the distribution.
  * @return Normal random sample.
  */
 template <typename RNG>
@@ -152,9 +153,9 @@ inline double normal_sample(RNG& rng, double mu, double sigma) {
  * @brief Value of the normal distribution.
  *
  * @param x Input variable.
- * @param mu Mean parameter of distribution.
- * @param sigma Stddev parameter of distribution.
- * @return Value of distribution.
+ * @param mu Mean parameter of the distribution.
+ * @param sigma Stddev parameter of the distribution.
+ * @return Value of the distribution.
  */
 inline double normal_pdf(double x, double mu, double sigma) {
     assert(sigma > 0);
@@ -167,7 +168,7 @@ inline double normal_pdf(double x, double mu, double sigma) {
  * @brief Random sample from a Cauchy distribution.
  *
  * @param r Uniform random number from [0, 1).
- * @param x0 Location of peak.
+ * @param x0 Location of the peak.
  * @param gamma Scale parameter.
  * @return Cauchy random sample.
  */
@@ -181,9 +182,9 @@ inline double cauchy_sample(double r, double x0, double gamma) {
  * @brief Value of the Cauchy distribution.
  *
  * @param x Input variable.
- * @param x0 Location of peak.
+ * @param x0 Location of the peak.
  * @param gamma Scale parameter.
- * @return Value of distribution.
+ * @return Value of the distribution.
  */
 inline double cauchy_pdf(double x, double x0, double gamma) {
     assert(gamma > 0);
@@ -196,7 +197,7 @@ inline double cauchy_pdf(double x, double x0, double gamma) {
  *
  * @tparam T Integer type.
  * @tparam RNG Random number generator.
- * @param rng Random number generator object.
+ * @param rng RNG object.
  * @param min Lower limit.
  * @param max Upper limit.
  * @return Uniform random integer sample from [min, max].
@@ -213,7 +214,7 @@ inline T uniform_int_sample(RNG& rng, T min, T max) {
  * @tparam T Integer type.
  * @param min Lower limit.
  * @param max Upper limit.
- * @return Value of distribution.
+ * @return Value of the distribution.
  */
 template <typename T>
 inline double uniform_int_pdf(T min, T max) {
@@ -227,7 +228,7 @@ inline double uniform_int_pdf(T min, T max) {
  *
  * @tparam T Integer type.
  * @tparam RNG Random number generator.
- * @param rng Random number generator object.
+ * @param rng RNG object.
  * @param min Lower limit.
  * @param max Upper limit.
  * @param exclude Value to be excluded.
@@ -247,7 +248,7 @@ inline T exclusive_uniform_int_sample(RNG& rng, T min, T max, T exclude) {
  * @param x Input variable.
  * @param min Lower limit.
  * @param max Upper limit.
- * @return Value of distribution.
+ * @return Value of the distribution.
  */
 template <typename T>
 inline double exclusive_uniform_int_pdf(T min, T max) {

@@ -41,12 +41,12 @@ public:
     /**
      * @brief Lower bound of generated random numbers.
      */
-    static constexpr result_type min() { return 0; }
+    [[nodiscard]] static constexpr result_type min() { return 0; }
 
     /**
      * @brief Upper bound of generated random numbers.
      */
-    static constexpr result_type max() { return std::numeric_limits<result_type>::max(); }
+    [[nodiscard]] static constexpr result_type max() { return std::numeric_limits<result_type>::max(); }
 
     /**
      * @brief Construct a splitmix64 RNG from a single std::uint64_t seed.
@@ -127,8 +127,9 @@ private:
 };
 
 /**
- * @brief Write textual representation of splitmix64 to ostream. Throws an exception, if writing to
- * ostream fails.
+ * @brief Write textual representation of splitmix64 to ostream.
+ *
+ * @details Throws an exception, if writing to ostream fails.
  *
  * @param os Reference to ostream.
  * @param eng splitmix64 RNG.
@@ -137,7 +138,9 @@ private:
 std::ostream& operator<<(std::ostream& os, const splitmix64& eng);
 
 /**
- * @brief Restore splitmix64 from istream. Throws an exception, if reading from istream fails.
+ * @brief Restore splitmix64 from istream.
+ *
+ * @details Throws an exception, if reading from istream fails.
  *
  * @param is Reference to istream.
  * @param eng splitmix64 RNG.
@@ -150,18 +153,18 @@ std::istream& operator>>(std::istream& is, splitmix64& eng);
  *
  * @param lhs splitmix64 #1
  * @param rhs splitmix64 #2
- * @return True if the internal states are equal.
+ * @return `true` if the internal states are equal.
  */
-bool operator==(const splitmix64& lhs, const splitmix64& rhs);
+[[nodiscard]] bool operator==(const splitmix64& lhs, const splitmix64& rhs);
 
 /**
  * @brief Compare two splitmix64 RNGs for inequality.
  *
  * @param lhs splitmix64 #1
  * @param rhs splitmix64 #2
- * @return True if the internal states are unequal.
+ * @return `true` if the internal states are unequal.
  */
-bool operator!=(const splitmix64& lhs, const splitmix64& rhs);
+[[nodiscard]] bool operator!=(const splitmix64& lhs, const splitmix64& rhs);
 
 } // namespace simplemc
 

@@ -201,10 +201,10 @@ std::istream& operator>>(std::istream& is, dd_param_type<T>& param) {
  * @tparam T Integral type.
  * @param lhs Parameters #1.
  * @param rhs Parameters #2.
- * @return True if their probabilities are equal.
+ * @return `true` if their probabilities are equal.
  */
 template <integer_only T>
-bool operator==(const dd_param_type<T>& lhs, const dd_param_type<T>& rhs) {
+[[nodiscard]] bool operator==(const dd_param_type<T>& lhs, const dd_param_type<T>& rhs) {
     return lhs.probabilities() == rhs.probabilities();
 }
 
@@ -214,10 +214,10 @@ bool operator==(const dd_param_type<T>& lhs, const dd_param_type<T>& rhs) {
  * @tparam T Integral type.
  * @param lhs Parameters #1.
  * @param rhs Parameters #2.
- * @return True if their probabilities are not equal.
+ * @return `true` if their probabilities are not equal.
  */
 template <integer_only T>
-bool operator!=(const dd_param_type<T>& lhs, const dd_param_type<T>& rhs) {
+[[nodiscard]] bool operator!=(const dd_param_type<T>& lhs, const dd_param_type<T>& rhs) {
     return !(lhs == rhs);
 }
 
@@ -225,7 +225,7 @@ bool operator!=(const dd_param_type<T>& lhs, const dd_param_type<T>& rhs) {
 
 /**
  * @brief Discrete distribution based on std::discrete_distribution and
- * boost::discrete_distribution. Only to be used with 64-bit RNGs.
+ * boost::discrete_distribution. 
  *
  * @details Satisfies the requirements for a C++ RandomNumberDistribution.
  *
@@ -245,12 +245,12 @@ public:
     using param_type = detail::dd_param_type<T>;
 
     /**
-     * @brief Default constructor for a discrete distribution.
+     * @brief Default constructor for a discrete_distribution.
      */
     discrete_distribution() = default;
 
     /**
-     * @brief Construct a discrete distribution from a range of weights.
+     * @brief Construct a discrete_distribution from a range of weights.
      *
      * @tparam InputIt Iterator type.
      * @param first Beginning of range.
@@ -260,7 +260,7 @@ public:
     discrete_distribution(InputIt first, InputIt last) : param_(first, last) {}
 
     /**
-     * @brief Construct a discrete distribution from a list of weights.
+     * @brief Construct a discrete_distribution from a list of weights.
      *
      * @param list Initializer list of weights.
      */
@@ -282,7 +282,7 @@ public:
         param_(n, xmin, xmax, unary_op) {}
 
     /**
-     * @brief Construct a discrete distribution from a given param_type.
+     * @brief Construct a discrete_distribution from a given param_type.
      *
      * @param param Parameter specifying the weights.
      */
@@ -331,26 +331,26 @@ public:
     /**
      * @brief Generate random integer.
      *
-     * @tparam Engine RNG.
-     * @param eng RNG.
+     * @tparam RNG Random number generator.
+     * @param rng RNG object.
      * @return Random integer distributed according to weights/probabilities.
      */
-    template <typename Engine>
-    result_type operator()(Engine& eng) const {
-        return detail::generate_discrete_ls<result_type>(eng, param_.accprobs_);
+    template <typename RNG>
+    result_type operator()(RNG& rng) const {
+        return detail::generate_discrete_ls<result_type>(rng, param_.accprobs_);
     }
 
     /**
      * @brief Generate random integer distributed according to param.
      *
-     * @tparam Engine RNG.
-     * @param eng RNG.
+     * @tparam RNG Random number generator.
+     * @param rng RNG object.
      * @param param Parameter object specifying probabilities.
      * @return Random integer distributed according to param.
      */
-    template <typename Engine>
-    result_type operator()(Engine& eng, const param_type& param) const {
-        return detail::generate_discrete_ls<result_type>(eng, param.accprobs_);
+    template <typename RNG>
+    result_type operator()(RNG& rng, const param_type& param) const {
+        return detail::generate_discrete_ls<result_type>(rng, param.accprobs_);
     }
 
 private:
@@ -358,8 +358,8 @@ private:
 };
 
 /**
- * @brief Write a textual representation of a discrete_distribution to ostream. 
- * 
+ * @brief Write a textual representation of a discrete_distribution to ostream.
+ *
  * @details Throws an exception, if writing to ostream fails.
  *
  * @tparam T Integral type.
@@ -376,8 +376,8 @@ std::ostream& operator<<(std::ostream& os, const discrete_distribution<T>& dd) {
 }
 
 /**
- * @brief Restore discrete_distribution from istream. 
- * 
+ * @brief Restore discrete_distribution from istream.
+ *
  * @details Throws an exception, if reading from istream fails.
  *
  * @tparam T Integral type.
@@ -402,10 +402,10 @@ std::istream& operator>>(std::istream& is, discrete_distribution<T>& dd) {
  * @tparam T Integral type.
  * @param lhs Distribution #1.
  * @param rhs Distribution #2.
- * @return True if the parameters of the distributions are the same.
+ * @return `true` if the parameters of the distributions are the same.
  */
 template <integer_only T>
-bool operator==(const discrete_distribution<T>& lhs, const discrete_distribution<T>& rhs) {
+[[nodiscard]] bool operator==(const discrete_distribution<T>& lhs, const discrete_distribution<T>& rhs) {
     return lhs.param() == rhs.param();
 }
 
@@ -415,10 +415,10 @@ bool operator==(const discrete_distribution<T>& lhs, const discrete_distribution
  * @tparam T Integral type.
  * @param lhs Distribution #1.
  * @param rhs Distribution #2.
- * @return True if the parameters of the distributions are distinct.
+ * @return `true` if the parameters of the distributions are distinct.
  */
 template <integer_only T>
-bool operator!=(const discrete_distribution<T>& lhs, const discrete_distribution<T>& rhs) {
+[[nodiscard]] bool operator!=(const discrete_distribution<T>& lhs, const discrete_distribution<T>& rhs) {
     return !(lhs == rhs);
 }
 

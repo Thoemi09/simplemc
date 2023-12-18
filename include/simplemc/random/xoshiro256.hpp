@@ -62,12 +62,12 @@ public:
     /**
      * @brief Lower bound of generated random numbers.
      */
-    static constexpr result_type min() { return 0; }
+    [[nodiscard]] static constexpr result_type min() { return 0; }
 
     /**
      * @brief Upper bound of generated random numbers.
      */
-    static constexpr result_type max() { return std::numeric_limits<result_type>::max(); }
+    [[nodiscard]] static constexpr result_type max() { return std::numeric_limits<result_type>::max(); }
 
     /**
      * @brief Construct a xoshiro256 RNG from a single std::uint64_t seed.
@@ -186,12 +186,12 @@ private:
     /**
      * @brief Perform a left rotation.
      */
-    std::uint64_t rotl(std::uint64_t x, int k) { return (x << k) | (x >> (64 - k)); }
+    [[nodiscard]] std::uint64_t rotl(std::uint64_t x, int k) { return (x << k) | (x >> (64 - k)); }
 
     /**
      * @brief Operation dependent on the xoshiro256_type.
      */
-    std::uint64_t type_specific();
+    [[nodiscard]] std::uint64_t type_specific();
 
     /**
      * @brief Perform the actual jump.
@@ -217,8 +217,9 @@ inline std::uint64_t xoshiro256<xoshiro256_type::starstar>::type_specific() {
 }
 
 /**
- * @brief Write textual representation of splitmix64 to ostream. Throws an exception, if writing to
- * ostream fails.
+ * @brief Write textual representation of splitmix64 to ostream. 
+ * 
+ * @details Throws an exception, if writing to ostream fails.
  *
  * @tparam X xoshiro256 type.
  * @param os Reference to ostream.
@@ -229,7 +230,9 @@ template <xoshiro256_type X>
 std::ostream& operator<<(std::ostream& os, const xoshiro256<X>& eng);
 
 /**
- * @brief Restore splitmix64 from istream. Throws an exception, if reading from istream fails.
+ * @brief Restore splitmix64 from istream. 
+ * 
+ * @details Throws an exception, if reading from istream fails.
  *
  * @tparam X xoshiro256 type.
  * @param is Reference to istream.
@@ -243,23 +246,23 @@ std::istream& operator>>(std::istream& is, xoshiro256<X>& eng);
  * @brief Compare two xoshiro256 RNGs for equality.
  *
  * @tparam X xoshiro256 type.
- * @param lhs xoshiro256 #1
- * @param rhs xoshiro256 #2
- * @return True if the internal states are equal.
+ * @param lhs xoshiro256 #1.
+ * @param rhs xoshiro256 #2.
+ * @return `true` if the internal states are equal.
  */
 template <xoshiro256_type X>
-bool operator==(const xoshiro256<X>& lhs, const xoshiro256<X>& rhs);
+[[nodiscard]] bool operator==(const xoshiro256<X>& lhs, const xoshiro256<X>& rhs);
 
 /**
  * @brief Compare two xoshiro256 RNGs for inequality.
  *
  * @tparam X xoshiro256 type.
- * @param lhs xoshiro256 #1
- * @param rhs xoshiro256 #2
- * @return True if the internal states are unequal.
+ * @param lhs xoshiro256 #1.
+ * @param rhs xoshiro256 #2.
+ * @return `true` if the internal states are unequal.
  */
 template <xoshiro256_type X>
-bool operator!=(const xoshiro256<X>& lhs, const xoshiro256<X>& rhs);
+[[nodiscard]] bool operator!=(const xoshiro256<X>& lhs, const xoshiro256<X>& rhs);
 
 /**
  * @brief xoshiro256+. Use only for floating-point generation.

@@ -15,16 +15,16 @@ namespace simplemc::detail {
  * @brief Generate a double value on the interval [min, max) given a random
  * 64-bit unsigned integer RNG (see http://prng.di.unimi.it/).
  *
- * @tparam Engine 64-bit RNG.
- * @param eng RNG.
+ * @tparam RNG 64-bit RNG.
+ * @param rng rng object.
  * @param min Lower bound.
  * @param max Upper bound.
  * @return Double value on the specified interval.
  */
-template <typename Engine>
-    requires std::is_same_v<typename Engine::result_type, std::uint64_t>
-inline double generate_uniform_real(Engine& eng, double min, double max) {
-    return min + (max - min) * ((eng() >> 11) * 0x1.0p-53);
+template <typename RNG>
+    requires std::is_same_v<typename RNG::result_type, std::uint64_t>
+[[nodiscard]] inline double generate_uniform_real(RNG& rng, double min, double max) {
+    return min + (max - min) * ((rng() >> 11) * 0x1.0p-53);
 }
 
 } // namespace simplemc::detail
