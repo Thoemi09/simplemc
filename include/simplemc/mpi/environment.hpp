@@ -17,11 +17,14 @@ namespace simplemc::mpi {
  * used in the main() function of a program, where it calls MPI_Init on construction and MPI_Finalize
  * on destruction:
  *
- *     int main(int argc, char** argv) {
- *         ...
- *         simplemc::mpi::environment env(argc, argv);
- *         ...
- *     }
+ * @code{.cpp}
+ * int main(int argc, char** argv) {
+ *     ...
+ *     // initialize MPI
+ *     simplemc::mpi::environment env(argc, argv);
+ *     ...
+ * }
+ * @endcode
  *
  * Only very basic MPI calls are supported. If more sophisticated functionality is needed,
  * e.g like threading, then the user is advised to call the MPI C library directly.
@@ -31,36 +34,36 @@ public:
     /**
      * @brief Check if the MPI environment is initialized.
      *
-     * @return True if MPI_Init has been called.
+     * @return `true`, if MPI_Init has been called.
      */
-    static bool initialized();
+    [[nodiscard]] static bool initialized();
 
     /**
      * @brief Check if the MPI environment is finalized.
      *
-     * @return True if MPI_Finalize has been called.
+     * @return `true`, if MPI_Finalize has been called.
      */
-    static bool is_finalized();
+    [[nodiscard]] static bool is_finalized();
 
     /**
-     * @brief Abort all MPI processes on MPI_COMM_WORLD.
+     * @brief Abort all MPI processes on `MPI_COMM_WORLD`.
      *
-     * @param errcode Error code which will be passed to the environment.
+     * @param errcode Error code that will be passed to the `MPI_Abort` function.
      */
     static void abort(int errcode = 0);
 
     /**
-     * @brief Clean up all MPI processes with a call to MPI_Finalize.
+     * @brief Clean up all MPI processes with a call to `MPI_Finalize`.
      */
     static void finalize();
 
     /**
      * @brief Constructor to initialize the MPI environment.
      *
-     * @param argc The number of arguments passed to main() through argv.
-     * @param argv The arguments passed to main() as an array of strings.
-     * @param abort_on_exception If the environment is destroyed due to an uncaught exception, 
-     * it will call MPI_Abort instead of MPI_Finalize in its destructor.
+     * @param argc The number of arguments passed to `main()` through argv.
+     * @param argv The arguments passed to `main()` as an array of strings.
+     * @param abort_on_exception If the environment is destroyed due to an uncaught exception,
+     * it will call `MPI_Abort` instead of `MPI_Finalize` in its destructor.
      */
     environment(int& argc, char**& argv, bool abort_on_exception = true);
 
@@ -75,8 +78,8 @@ public:
     environment& operator=(const environment&) = delete;
 
     /**
-     * @brief Clean up the MPI environment, either by calling MPI_Abort due to an uncaught exception
-     * or by calling MPI_Finalize.
+     * @brief Clean up the MPI environment, either by calling `MPI_Abort` due to an uncaught exception
+     * or by calling `MPI_Finalize`.
      */
     ~environment();
 
@@ -87,4 +90,4 @@ private:
 
 } // namespace simplemc::mpi
 
-#endif // SIMPLEMC_MPI_ENVIRONMENT_H
+#endif // SIMPLEMC_MPI_ENVIRONMENT_HPP

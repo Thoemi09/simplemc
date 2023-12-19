@@ -3,7 +3,6 @@
  * @brief Unit tests for the simplemc-mpi library.
  */
 
-#include <gtest/gtest.h>
 #include "../gtest-mpi-listener.hpp"
 
 #include <simplemc/mpi.hpp>
@@ -23,7 +22,7 @@ void broadcast_check(const simplemc::mpi::communicator& comm, const T& t, int ro
         simplemc::mpi::broadcast(comm, value, root);
     } else {
         value.resize(t.size());
-        simplemc::mpi::broadcast(comm, std::span { value }, root);
+        simplemc::mpi::broadcast(comm, value, root);
     }
     ASSERT_EQ(value, t);
 }
@@ -35,10 +34,10 @@ void gather_check(const simplemc::mpi::communicator& comm, const T& in, int root
         std::vector<T> res, exp;
         exp.resize(comm.size(), in);
         res.resize(comm.size());
-        simplemc::mpi::all_gather(comm, in, std::span { res });
+        simplemc::mpi::all_gather(comm, in, res);
         ASSERT_EQ(res, exp);
         res.assign(res.size(), T {});
-        simplemc::mpi::gather(comm, in, std::span { res }, root);
+        simplemc::mpi::gather(comm, in, res, root);
         if (comm.rank() == root) {
             ASSERT_EQ(res, exp);
         } else {
@@ -50,10 +49,10 @@ void gather_check(const simplemc::mpi::communicator& comm, const T& in, int root
             exp.insert(exp.end(), in.begin(), in.end());
         }
         res.resize(comm.size() * in.size());
-        simplemc::mpi::all_gather(comm, std::span { in }, std::span { res });
+        simplemc::mpi::all_gather(comm, in, res);
         ASSERT_EQ(res, exp);
         res.assign(res.size(), typename T::value_type());
-        simplemc::mpi::gather(comm, std::span { in }, std::span { res }, root);
+        simplemc::mpi::gather(comm, in, res, root);
         if (comm.rank() == root) {
             ASSERT_EQ(res, exp);
         } else {
@@ -79,10 +78,10 @@ void reduce_check(const simplemc::mpi::communicator& comm, const T& in, const T&
     } else {
         T res;
         res.resize(in.size());
-        simplemc::mpi::all_reduce(comm, std::span { in }, std::span { res }, op);
+        simplemc::mpi::all_reduce(comm, in, res, op);
         ASSERT_EQ(res, exp);
         res.assign(res.size(), typename T::value_type());
-        simplemc::mpi::reduce(comm, std::span { in }, std::span { res }, op, root);
+        simplemc::mpi::reduce(comm, in, res, op, root);
         if (comm.rank() == root) {
             ASSERT_EQ(res, exp);
         } else {
@@ -119,7 +118,7 @@ protected:
     simplemc::mpi::communicator comm;
 };
 
-// Test mpi.
+// Test MPI.
 TEST_F(SimplemcMPI, HelloWorldWithMPI) {
     fmt::print("Hello world, from {} of {} processes.\n", comm.rank(), comm.size());
 }
@@ -263,26 +262,27 @@ TEST_F(SimplemcMPI, ScatterVectors) {
     ASSERT_EQ(res_vec, exp);
 }
 
+// Custom main function for MPI.
 int main(int argc, char** argv) {
-    // Filter out Google Test arguments
+    // filter out Google Test arguments
     ::testing::InitGoogleTest(&argc, argv);
 
-    // Initialize MPI
+    // initialize MPI
     MPI_Init(&argc, &argv);
 
-    // Add object that will finalize MPI on exit; Google Test owns this pointer
+    // add object that will finalize MPI on exit; Google Test owns this pointer
     ::testing::AddGlobalTestEnvironment(new GTestMPIListener::MPIEnvironment);
 
-    // Get the event listener list.
+    // get the event listener list.
     ::testing::TestEventListeners& listeners = ::testing::UnitTest::GetInstance()->listeners();
 
-    // Remove default listener: the default printer and the default XML printer
+    // remove default listener: the default printer and the default XML printer
     ::testing::TestEventListener* l = listeners.Release(listeners.default_result_printer());
 
-    // Adds MPI listener; Google Test owns this pointer
+    // adds MPI listener; Google Test owns this pointer
     listeners.Append(new GTestMPIListener::MPIWrapperPrinter(l, MPI_COMM_WORLD));
 
-    // Run tests, then clean up and exit. RUN_ALL_TESTS() returns 0 if all tests
+    // run tests, then clean up and exit. RUN_ALL_TESTS() returns 0 if all tests
     // pass and 1 if some test fails.
     int result = RUN_ALL_TESTS();
 

@@ -52,5 +52,3 @@ environment::~environment() {
 }
 
 } // namespace simplemc::mpi
-
-
