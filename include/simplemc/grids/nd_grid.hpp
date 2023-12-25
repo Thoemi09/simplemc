@@ -180,6 +180,30 @@ public:
     }
 
     /**
+     * @brief Call grid_base::index_subrange for each grid.
+     *
+     * @param m Size of subrange.
+     * @param val_array Value array.
+     * @return Index array.
+     */
+    [[nodiscard]] nd_size_type index_subrange(size_type m, const nd_value_type& val_arr) const {
+        return std::apply([m, this](const auto&... args) { return this->index_subrange(m, args...); }, val_arr);
+    }
+
+    /**
+     * @brief Call grid_base::index_subrange for each grid.
+     *
+     * @tparam Vals Value types.
+     * @param m Size of subrange.
+     * @param vals Values.
+     * @return Index array.
+     */
+    template <typename... Vals>
+    [[nodiscard]] nd_size_type index_subrange(size_type m, Vals... vals) const {
+        return std::apply([m, vals...](const auto&... gs) { return nd_size_type { gs.index_subrange(m, vals)... }; }, grids_);
+    }
+
+    /**
      * @brief Get bin volume at a certain index array.
      *
      * @param idx_arr Index array

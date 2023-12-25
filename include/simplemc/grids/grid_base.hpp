@@ -6,6 +6,8 @@
 #ifndef SIMPLEMC_GRIDS_GRID_BASE_HPP
 #define SIMPLEMC_GRIDS_GRID_BASE_HPP
 
+#include <simplemc/utils/indexing.hpp>
+
 #include <range/v3/view/iota.hpp>
 #include <range/v3/view/transform.hpp>
 
@@ -23,6 +25,13 @@ namespace simplemc {
  */
 class grid_base {
 public:
+    /**
+     * @brief Get number of dimensions.
+     *
+     * @return Number of dimensions.
+     */
+    static constexpr std::size_t dim() { return 1; }
+
     /**
      * @brief Value type of the grid.
      */
@@ -97,6 +106,17 @@ public:
      * @return Index of bin, which contains the supplied value.
      */
     [[nodiscard]] virtual size_type index(value_type value) const = 0;
+
+    /**
+     * @brief Calls simplemc::integer_subrange on the result of grid_base::index.
+     *
+     * @param m Size of wanted subrange.
+     * @param value Input value.
+     * @return Index of bin.
+     */
+    [[nodiscard]] virtual size_type index_subrange(size_type m, value_type value) const {
+        return integer_subrange(index(value), size(), m);
+    }
 
     /**
      * @brief Get volume of the bin at a certain index.

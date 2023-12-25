@@ -16,7 +16,7 @@ namespace simplemc {
 void bravais_lattice::check_lattice_vector_dims(const matrix_type& mat) {
     if (mat.rows() != mat.cols() || mat.rows() == 0 || mat.rows() > 3) {
         throw simplemc_exception(
-            "Lattice vector matrix dimensions not supported", "bravais_lattice::check_lattice_vector");
+            "Lattice vector matrix dimensions not supported", "bravais_lattice::check_lattice_vector_dims");
     }
 }
 

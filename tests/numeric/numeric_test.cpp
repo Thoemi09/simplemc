@@ -4,17 +4,17 @@
  */
 
 #include "../test_utils.hpp"
+#include "./spline.h"
 
 #include <simplemc/grids.hpp>
 #include <simplemc/numeric.hpp>
-
-#include <unsupported/Eigen/CXX11/Tensor>
+#include <simplemc/utils/timer.hpp>
 
 #include <numbers>
 
 using namespace simplemc;
-using matrix_type = bravais_lattice::matrix_type;
 using std::numbers::pi;
+using matrix_type = bravais_lattice::matrix_type;
 const matrix_type unit_matrix_1d = matrix_type::Identity(1, 1);
 const matrix_type unit_matrix_2d = matrix_type::Identity(2, 2);
 const matrix_type unit_matrix_3d = matrix_type::Identity(3, 3);
@@ -48,31 +48,25 @@ inline double tricubic_poly(double x, double y, double z, double a, double b, do
     return a * x * x * x + b * x * y + z * z + c;
 }
 
-// Test utilty functions.
+void check_map(const simplemc::linear_map& map, std::array<double, 2> int1, std::array<double, 2> int2) {
+    ASSERT_EQ(int2[0], map.map(int1[0]));
+    ASSERT_EQ(int2[1], map.map(int1[1]));
+    ASSERT_EQ(int1[0], map.inverse_map(int2[0]));
+    ASSERT_EQ(int1[1], map.inverse_map(int2[1]));
+}
+
+// Test some utilty functions.
 TEST(SimplemcNumeric, UtilityFunctions) {
+    // abs_diff and rel_diff
     ASSERT_DOUBLE_EQ(abs_diff(1e-5, 1e-5), 0);
     ASSERT_DOUBLE_EQ(rel_diff(1e-5, 1e-5), 0);
     ASSERT_DOUBLE_EQ(abs_diff(1e-5, 2e-5), 1e-5);
     ASSERT_DOUBLE_EQ(rel_diff(1e-5, 2e-5), 1);
+
+    // isfinite
     ASSERT_FALSE(simplemc::isfinite(1.0 / 0.0));
     std::complex<double> c1 { 1.0, std::log(-1) };
     ASSERT_FALSE(isfinite(c1));
-    ASSERT_EQ(index_of_subset(4, 9, 1), 4);
-    ASSERT_EQ(index_of_subset(4, 9, 2), 3);
-    ASSERT_EQ(index_of_subset(4, 9, 3), 3);
-    ASSERT_EQ(index_of_subset(4, 9, 6), 1);
-    ASSERT_EQ(index_of_subset(4, 9, 8), 0);
-    ASSERT_EQ(index_of_subset(4, 9, 9), 0);
-    ASSERT_EQ(index_of_subset(7, 9, 1), 7);
-    ASSERT_EQ(index_of_subset(7, 9, 2), 6);
-    ASSERT_EQ(index_of_subset(7, 9, 3), 6);
-    ASSERT_EQ(index_of_subset(7, 9, 4), 5);
-    ASSERT_EQ(index_of_subset(7, 9, 7), 2);
-    ASSERT_EQ(index_of_subset(1, 9, 1), 1);
-    ASSERT_EQ(index_of_subset(1, 9, 2), 0);
-    ASSERT_EQ(index_of_subset(1, 9, 3), 0);
-    ASSERT_EQ(index_of_subset(1, 9, 4), 0);
-    ASSERT_EQ(index_of_subset(1, 9, 9), 0);
 }
 
 // Test map_to_interval and map_to_interval_lb functions.
@@ -135,16 +129,6 @@ TEST(SimplemcNumeric, WithinBounds) {
     ASSERT_FALSE(within_bounds(val_in3, low, up, min_diff));
 }
 
-// Test conversion between cartesian and polar coordinates.
-TEST(SimplemcNumeric, PolarCartesianConversion) {
-    vector<3>::type vec { 1.0, 0.0, 0.0 };
-    vector<3>::type exp { 1.0, std::numbers::pi / 2, 0.0 };
-    check_range_near(cartesian_to_polar(vec), exp);
-    vector<2>::type vec2 { std::numbers::sqrt2, std::numbers::pi / 4 };
-    vector<2>::type exp2 { 1.0, 1.0 };
-    check_range_near(polar_to_cartesian(vec2), exp2);
-}
-
 // Test the make_span function for Eigen types.
 TEST(SimplemcNumeric, MakeSpan) {
     Eigen::Vector3d v3 = Eigen::Vector3d::Random();
@@ -163,6 +147,20 @@ TEST(SimplemcNumeric, MakeSpan) {
     auto sp_mn = make_span(mn);
     ASSERT_EQ(sp_mn.size(), mn.size());
     ASSERT_EQ(sp_mn.data(), &mn(0, 0));
+    Eigen::Array44f a44 = Eigen::Array44f::Random();
+    auto sp_a44 = make_span(a44);
+    ASSERT_EQ(sp_a44.size(), a44.size());
+    ASSERT_EQ(sp_a44.data(), &a44(0, 0));
+}
+
+// Test conversion between cartesian and polar coordinates.
+TEST(SimplemcNumeric, PolarCartesianConversion) {
+    vector<3>::type vec { 1.0, 0.0, 0.0 };
+    vector<3>::type exp { 1.0, std::numbers::pi / 2, 0.0 };
+    check_range_near(cartesian_to_polar(vec), exp);
+    vector<2>::type vec2 { std::numbers::sqrt2, std::numbers::pi / 4 };
+    vector<2>::type exp2 { 1.0, 1.0 };
+    check_range_near(polar_to_cartesian(vec2), exp2);
 }
 
 // Test 1d linear lattice.
@@ -253,7 +251,7 @@ TEST(SimplemcNumeric, RectangularLattice) {
     ASSERT_EQ(bravais_lattice::lattice_tag::rectangular_2d, string_to_lattice_tag("rectangular_2d"));
 }
 
-// Test 2d rectangular-centered lattice.
+// Test 2d rectangular centered lattice.
 TEST(SimplemcNumeric, RectangularCenteredLattice) {
     double tol = 1e-7;
     auto lat = make_rectangular_centered_lattice(2, 4);
@@ -430,7 +428,7 @@ TEST(SimplemcNumeric, TetragonalLattice) {
     ASSERT_EQ(bravais_lattice::lattice_tag::tetragonal_3d, string_to_lattice_tag("tetragonal_3d"));
 }
 
-// Test 3d tetragonal-BC lattice.
+// Test 3d tetragonal BC lattice.
 TEST(SimplemcNumeric, TetragonalBCLattice) {
     double tol = 1e-7;
     auto lat = make_tetragonal_bc_lattice(2, 4);
@@ -474,7 +472,7 @@ TEST(SimplemcNumeric, OrthorhombicLattice) {
     ASSERT_EQ(bravais_lattice::lattice_tag::orthorhombic_3d, string_to_lattice_tag("orthorhombic_3d"));
 }
 
-// Test 3d orthorhombic-FC lattice.
+// Test 3d orthorhombic FC lattice.
 TEST(SimplemcNumeric, OrthorhombicFCLattice) {
     double tol = 1e-7;
     auto lat = make_orthorhombic_fc_lattice(2, 3, 4);
@@ -496,7 +494,7 @@ TEST(SimplemcNumeric, OrthorhombicFCLattice) {
     ASSERT_EQ(bravais_lattice::lattice_tag::orthorhombic_fc_3d, string_to_lattice_tag("orthorhombic_fc_3d"));
 }
 
-// Test 3d orthorhombic-BC lattice.
+// Test 3d orthorhombic BC lattice.
 TEST(SimplemcNumeric, OrthorhombicBCLattice) {
     double tol = 1e-7;
     auto lat = make_orthorhombic_bc_lattice(2, 3, 4);
@@ -518,7 +516,7 @@ TEST(SimplemcNumeric, OrthorhombicBCLattice) {
     ASSERT_EQ(bravais_lattice::lattice_tag::orthorhombic_bc_3d, string_to_lattice_tag("orthorhombic_bc_3d"));
 }
 
-// Test 3d orthorhombic-base-centered lattice.
+// Test 3d orthorhombic base-centered lattice.
 TEST(SimplemcNumeric, OrthorhombicBaseCenteredLattice) {
     double tol = 1e-7;
     auto lat = make_orthorhombic_base_centered_lattice(2, 3, 4);
@@ -543,7 +541,7 @@ TEST(SimplemcNumeric, OrthorhombicBaseCenteredLattice) {
 }
 
 // Test 3d monoclinic lattice.
-TEST(SimplemcNumeric, Monoclinic_lattice) {
+TEST(SimplemcNumeric, MonoclinicLattice) {
     double tol = 1e-7;
     auto lat = make_monoclinic_lattice(2, 3, 4, 0.5);
     auto lat_copy = make_monoclinic_lattice(1, 1, 1, 1);
@@ -564,8 +562,8 @@ TEST(SimplemcNumeric, Monoclinic_lattice) {
     ASSERT_EQ(bravais_lattice::lattice_tag::monoclinic_3d, string_to_lattice_tag("monoclinic_3d"));
 }
 
-// Test 3d monoclinic-base-centered lattice.
-TEST(SimplemcNumeric, Monoclinic_base_centered_lattice) {
+// Test 3d monoclinic base-centered lattice.
+TEST(SimplemcNumeric, MonoclinicBaseCenteredLattice) {
     double tol = 1e-7;
     auto lat = make_monoclinic_base_centered_lattice(2, 3, 4, 0.5);
     auto lat_copy = make_monoclinic_base_centered_lattice(1, 1, 1, 1);
@@ -589,7 +587,7 @@ TEST(SimplemcNumeric, Monoclinic_base_centered_lattice) {
 }
 
 // Test 3d triclinic lattice.
-TEST(SimplemcNumeric, Triclinic_lattice) {
+TEST(SimplemcNumeric, TriclinicLattice) {
     double tol = 1e-7;
     auto lat = make_triclinic_lattice(2, 3, 4, 0.5, 1, 1.5);
     auto lat_copy = make_triclinic_lattice(1, 1, 1, 1, 1, 1);
@@ -610,6 +608,7 @@ TEST(SimplemcNumeric, Triclinic_lattice) {
     ASSERT_EQ(bravais_lattice::lattice_tag::triclinic_3d, string_to_lattice_tag("triclinic_3d"));
 }
 
+// Test linear interpolation.
 TEST(SimplemcNumeric, LinearInterpolation) {
     double a = 2.0;
     double k = 0.5;
@@ -619,15 +618,18 @@ TEST(SimplemcNumeric, LinearInterpolation) {
     for (long i = 0; i < nx; ++i) {
         f[i] = line(xgrid.at(i), a, k);
     }
-    simplemc::linear_interpolation li(xgrid, f);
+    simplemc::linear_interpolation li(xgrid, simplemc::make_span(f));
+    simplemc::linear_interpolation_nd nli(simplemc::nd_grid(xgrid), simplemc::make_span(f));
     long num = 1233;
     simplemc::linear_grid pts(-5.0, 5.0, num);
     for (long i = 0; i < num; ++i) {
         double x = pts.at(i);
-        ASSERT_NEAR(li.interpolate(x), line(x, a, k), 1e-10);
+        ASSERT_NEAR(li(x), line(x, a, k), 1e-10);
+        ASSERT_NEAR(nli(x), line(x, a, k), 1e-10);
     }
 }
 
+// Test bilinear interpolation.
 TEST(SimplemcNumeric, BilinearInterpolation) {
     double a = 3.123;
     double kx = 1.2345;
@@ -642,18 +644,19 @@ TEST(SimplemcNumeric, BilinearInterpolation) {
             f(i, j) = plane(xgrid.at(i), ygrid.at(j), a, kx, ky);
         }
     }
-    simplemc::bilinear_interpolation bi(xgrid, ygrid, make_span(f));
+    simplemc::linear_interpolation_nd bi(simplemc::nd_grid(xgrid, ygrid), make_span(f), simplemc::row_major {});
     long num = 37;
     simplemc::linear_grid pts(-1.0, 1.0, num);
     for (long i = 0; i < num; ++i) {
         for (long j = 0; j < num; ++j) {
             double x = pts.at(i);
             double y = pts.at(j);
-            ASSERT_NEAR(bi.interpolate(x, y), plane(x, y, a, kx, ky), 1e-10);
+            ASSERT_NEAR(bi(x, y), plane(x, y, a, kx, ky), 1e-10);
         }
     }
 }
 
+// Test trilinear interpolation.
 TEST(SimplemcNumeric, TrilinearInterpolation) {
     double a = 3.123;
     double kx = 1.2345;
@@ -665,15 +668,17 @@ TEST(SimplemcNumeric, TrilinearInterpolation) {
     simplemc::linear_grid xgrid(-2.0, 10.0, nx);
     simplemc::linear_grid ygrid(-2.0, 10.0, ny);
     simplemc::power_grid zgrid(-2.0, 10.0, nz, 2);
-    Eigen::Tensor<double, 3, Eigen::RowMajor> f(nx, ny, nz);
-    for (long i = 0; i < nx; ++i) {
+    std::array<long, 3> shape = { nx, ny, nz };
+    std::vector<double> f(simplemc::size_from_shape(shape));
+    for (long k = 0; k < nz; ++k) {
         for (long j = 0; j < ny; ++j) {
-            for (long k = 0; k < nz; ++k) {
-                f(i, j, k) = hyperplane(xgrid.at(i), ygrid.at(j), zgrid.at(k), a, kx, ky, kz);
+            for (long i = 0; i < nx; ++i) {
+                auto idx = simplemc::flat_index(std::array<long, 3> { i, j, k }, shape);
+                f[idx] = hyperplane(xgrid.at(i), ygrid.at(j), zgrid.at(k), a, kx, ky, kz);
             }
         }
     }
-    simplemc::trilinear_interpolation tri(xgrid, ygrid, zgrid, std::span<double>(f.data(), f.size()));
+    simplemc::linear_interpolation_nd tri(simplemc::nd_grid(xgrid, ygrid, zgrid), f);
     long num = 37;
     simplemc::linear_grid pts(-2.0, 10.0, num);
     for (long i = 0; i < num; ++i) {
@@ -682,8 +687,279 @@ TEST(SimplemcNumeric, TrilinearInterpolation) {
                 double x = pts.at(i);
                 double y = pts.at(j);
                 double z = pts.at(k);
-                ASSERT_NEAR(tri.interpolate(x, y, z), hyperplane(x, y, z, a, kx, ky, kz), 1e-10);
+                ASSERT_NEAR(tri(x, y, z), hyperplane(x, y, z, a, kx, ky, kz), 1e-10);
             }
         }
+    }
+}
+
+// Test polynomial interpolation in 1D.
+TEST(SimplemcNumeric, PolynomialInterpolation1D) {
+    double a = 3.123;
+    double b = -0.8146;
+    double c = 1.0;
+    double d = 5.91243;
+    long nx = 100;
+    simplemc::power_grid xgrid(-3.0, 1.0, nx, 3.0);
+    std::vector<double> fq(nx);
+    std::vector<double> fc(nx);
+    for (long i = 0; i < nx; ++i) {
+        fq[i] = quadratic_poly(xgrid.at(i), a, b, c);
+        fc[i] = cubic_poly(xgrid.at(i), a, b, c, d);
+    }
+    simplemc::linear_interpolation li(xgrid, fq);
+    simplemc::polynomial_interpolation lpi(xgrid, fq, 1);
+    simplemc::polynomial_interpolation qi(xgrid, fq, 2);
+    simplemc::polynomial_interpolation ci(xgrid, fc, 3);
+    simplemc::polynomial_interpolation_nd nqi(simplemc::nd_grid(xgrid), fq, 2);
+    long num = 500;
+    simplemc::linear_grid pts(-3.0, 1.0, num);
+    for (long i = 0; i < num; ++i) {
+        double x = pts.at(i);
+        ASSERT_NEAR(qi(x), quadratic_poly(x, a, b, c), 1e-10);
+        ASSERT_NEAR(ci(x), cubic_poly(x, a, b, c, d), 1e-10);
+        ASSERT_DOUBLE_EQ(nqi(x), qi(x));
+        ASSERT_DOUBLE_EQ(li(x), lpi(x));
+    }
+}
+
+// Test polynomial interpolation in 2D.
+TEST(SimplemcNumeric, PolynomialInterpolation2D) {
+    double a = 3.123;
+    double b = -9.43;
+    long nx = 20;
+    long ny = 50;
+    simplemc::linear_grid xgrid(-1.0, 1.0, nx);
+    simplemc::power_grid ygrid(-3.0, 2.0, ny, 2.0);
+    std::array<long, 2> shape = { nx, ny };
+    std::vector<double> f(nx * ny);
+    for (long i = 0; i < nx; ++i) {
+        for (long j = 0; j < ny; ++j) {
+            auto idx = simplemc::flat_index(std::array<long, 2> { i, j }, shape, simplemc::row_major {});
+            f[idx] = biquadratic_poly(xgrid.at(i), ygrid.at(j), a, b);
+        }
+    }
+    simplemc::polynomial_interpolation_nd bi(simplemc::nd_grid(xgrid, ygrid), f, 2, simplemc::row_major {});
+    long num = 37;
+    simplemc::linear_grid ptsx(-1.0, 1.0, num);
+    simplemc::linear_grid ptsy(-3.0, 2.0, num);
+    for (long i = 0; i < num; ++i) {
+        for (long j = 0; j < num; ++j) {
+            double x = ptsx.at(i);
+            double y = ptsy.at(j);
+            ASSERT_NEAR(bi(x, y), biquadratic_poly(x, y, a, b), 1e-10);
+        }
+    }
+}
+
+// Test polynomial interpolation in 3D.
+TEST(SimplemcNumeric, PolynomialInterpolation3D) {
+    double a = 3.123;
+    double b = 1.2345;
+    double c = -0.89823;
+    long nx = 50;
+    long ny = 30;
+    long nz = 40;
+    simplemc::linear_grid xgrid(-2.0, 10.0, nx);
+    simplemc::linear_grid ygrid(-2.0, 10.0, ny);
+    simplemc::power_grid zgrid(-2.0, 10.0, nz, 2.0);
+    std::array<long, 3> shape = { nx, ny, nz };
+    std::vector<double> f(nx * ny * nz);
+    for (long k = 0; k < nz; ++k) {
+        for (long j = 0; j < ny; ++j) {
+            for (long i = 0; i < nx; ++i) {
+                auto idx = simplemc::flat_index(std::array<long, 3> { i, j, k }, shape);
+                f[idx] = tricubic_poly(xgrid.at(i), ygrid.at(j), zgrid.at(k), a, b, c);
+            }
+        }
+    }
+    simplemc::polynomial_interpolation_nd tri(simplemc::nd_grid(xgrid, ygrid, zgrid), f, 3);
+    long num = 37;
+    simplemc::linear_grid pts(-2.0, 10.0, num);
+    for (long i = 0; i < num; ++i) {
+        for (long j = 0; j < num; ++j) {
+            for (long k = 0; k < num; ++k) {
+                double x = pts.at(i);
+                double y = pts.at(j);
+                double z = pts.at(k);
+                ASSERT_NEAR(tri(x, y, z), tricubic_poly(x, y, z, a, b, c), 1e-10);
+            }
+        }
+    }
+}
+
+// Test cubic spline interpolation in 1D.
+TEST(SimplemcNumeric, CubicSplineInterpolation) {
+    double a = 3.123;
+    double b = -0.8146;
+    double c = 1.0;
+    double d = 5.91243;
+    long nx = 100;
+    simplemc::power_grid xgrid(-3.0, 1.0, nx, 3.0);
+    std::vector<double> f(nx);
+    for (long i = 0; i < nx; ++i) {
+        f[i] = cubic_poly(xgrid.at(i), a, b, c, d);
+    }
+    double yp_0 = 27 * a - 6 * b + c;
+    double yp_n = 3 * a - 2 * b + c;
+    simplemc::cubic_spline_interpolation ci(xgrid, f);
+    simplemc::cubic_spline_interpolation ci_wf(xgrid, f, yp_0, yp_n);
+    auto xvals = xgrid.view() | ranges::to_vector;
+    tk::spline tki(xvals, f);
+    tk::spline tki_wf(
+        xvals, f, tk::spline::cspline, false, tk::spline::first_deriv, yp_0, tk::spline::first_deriv, yp_n);
+    long num = 500;
+    simplemc::linear_grid pts(-3.0, 1.0, num);
+    for (long i = 0; i < num; ++i) {
+        double x = pts.at(i);
+        ASSERT_NEAR(ci(x), cubic_poly(x, a, b, c, d), 1e-1);
+        ASSERT_NEAR(ci(x), tki(x), 1e-5);
+        ASSERT_NEAR(ci_wf(x), cubic_poly(x, a, b, c, d), 1e-1);
+        ASSERT_NEAR(ci_wf(x), tki_wf(x), 1e-5);
+    }
+}
+
+// Test basic quadrature routine.
+TEST(SimplemcNumeric, BasicQuadrature) {
+    auto integrand = [](double x) { return std::sin(x); };
+    simplemc::basic_quadrature bq(0, std::numbers::pi);
+    for (int i = 0; i < 20; ++i) {
+        bq.next(integrand);
+    }
+    ASSERT_NEAR(bq.current(), 2.0, 1e-10);
+}
+
+// Test trapezoidal quadrature.
+TEST(SimplemcNumeric, TrapzoidalQuadrature) {
+    double res = simplemc::trapez_quadrature([](double x) { return std::sin(x); }, 0, std::numbers::pi, 1e-10);
+    ASSERT_NEAR(res, 2.0, 2.0 * 1e-10);
+}
+
+// Test Simpson quadrature.
+TEST(SimplemcNumeric, SimpsonQuadrature) {
+    double res = simplemc::simpson_quadrature([](double x) { return std::sin(x); }, 0, std::numbers::pi, 1e-10);
+    ASSERT_NEAR(res, 2.0, 2.0 * 1e-10);
+}
+
+// Test a combination of interpolation and quadrature.
+TEST(SimplemcNumeric, InterpolationWithQuadrature) {
+    long nx = 50;
+    simplemc::linear_grid grid(0.0, std::numbers::pi, nx);
+    std::vector<double> fvals(nx);
+    for (long i = 0; i < nx; ++i) {
+        fvals[i] = std::sin(grid.at(i));
+    }
+    simplemc::polynomial_interpolation pi(grid, fvals, 2);
+    auto func = [&pi](double x) { return pi(x); };
+    double res = simplemc::simpson_quadrature(func, grid.first(), grid.last());
+    ASSERT_NEAR(res, 2.0, 1e-6);
+}
+
+// Test linear maps.
+TEST(SimplemcNumeric, LinearMap) {
+    constexpr auto inf = std::numeric_limits<double>::infinity();
+    constexpr auto minus_inf = -inf;
+    using lm = simplemc::linear_map;
+    check_map(lm { { -1, 1 }, { 0, 80 } }, { -1, 1 }, { 0, 80 });
+    check_map(lm { { minus_inf, 1 }, { minus_inf, 80 } }, { minus_inf, 1 }, { minus_inf, 80 });
+    check_map(lm { { -1, inf }, { 0, inf } }, { -1, inf }, { 0, inf });
+    check_map(lm { { minus_inf, 1 }, { minus_inf, 80 } }, { minus_inf, 1 }, { minus_inf, 80 });
+    check_map(lm { { minus_inf, inf }, { minus_inf, inf } }, { minus_inf, inf }, { minus_inf, inf });
+}
+
+// Test Legendre polynomials.
+TEST(SimplemcNumeric, LegendrePolynomialsFunctionValues) {
+    int niter = 10;
+    double x = 0.75;
+    double tol = 1e-9;
+    std::vector<double> boost_l { 1, 0.75, 0.34375, -0.0703125, -0.3500976562, -0.4163818359, -0.2807769775,
+        -0.0341835022, 0.1976093054, 0.3103318512 };
+    std::vector<double> boost_p { 0, 1, 2.25, 2.71875, 1.7578125, -0.4321289062, -2.822387695, -4.082229614,
+        -3.335140228, -0.7228714228 };
+    simplemc::legendre_polynomial leg(x);
+    for (int i = 0; i < niter; ++i) {
+        ASSERT_NEAR(boost_p[i], leg.current_derivative(), tol);
+        ASSERT_NEAR(boost_l[i], leg.next(), tol);
+        ASSERT_NEAR(boost_p[i], leg.last_derivative(), tol);
+        ASSERT_NEAR(boost_l[i], simplemc::legendre_polynomial().value(i, x), tol);
+        ASSERT_NEAR(boost_p[i], simplemc::legendre_polynomial().derivative(i, x), tol);
+    }
+}
+
+// Test Chebyshev polynomials.
+TEST(SimplemcNumeric, ChebyshevPolynomialsFunctionValues) {
+    int niter = 10;
+    double x = 0.25;
+    double tol = 1e-10;
+    std::vector<double> boost_t { 1, 0.25, -0.875, -0.6875, 0.53125, 0.953125, -0.0546875, -0.98046875, -0.435546875,
+        0.7626953125 };
+    std::vector<double> boost_u { 1, 0.5, -0.75, -0.875, 0.3125, 1.03125, 0.203125, -0.9296875, -0.66796875,
+        0.595703125 };
+    std::vector<double> boost_tp { 0, 1, 1, -2.25, -3.5, 1.5625, 6.1875, 1.421875, -7.4375, -6.01171875 };
+    simplemc::chebyshev_polynomial_first cheb1(x);
+    simplemc::chebyshev_polynomial_second cheb2(x);
+    for (int i = 0; i < niter; ++i) {
+        ASSERT_NEAR(boost_tp[i], cheb1.current_derivative(), tol);
+        ASSERT_NEAR(boost_t[i], cheb1.next(), tol);
+        ASSERT_NEAR(boost_tp[i], cheb1.last_derivative(), tol);
+        ASSERT_NEAR(boost_t[i], simplemc::chebyshev_polynomial_first().value(i, x), tol);
+        ASSERT_NEAR(boost_tp[i], simplemc::chebyshev_polynomial_first().derivative(i, x), tol);
+        ASSERT_NEAR(boost_u[i], cheb2.next(), tol);
+    }
+}
+
+// Test Laguerre polynomials.
+TEST(SimplemcNumeric, LaguerrePolynomialsFunctionValues) {
+    int niter = 10;
+    double x = 17;
+    double tol = 1e-6;
+    std::vector<double> boost_l { 1, -16, 111.5, -435.3333333, 1004.708333, -1259.266667, 422.0097222, 838.2230159,
+        -578.8142609, -745.0871252 };
+    simplemc::laguerre_polynomial lag(x);
+    for (int i = 0; i < niter; i++) {
+        ASSERT_NEAR(boost_l[i], lag.next(), tol);
+        ASSERT_NEAR(boost_l[i], simplemc::laguerre_polynomial().value(i, x), tol);
+    }
+}
+
+// Test Hermite polynomials.
+TEST(SimplemcNumeric, HermitePolynomialsFunctionValues) {
+    int niter = 10;
+    double x = -1;
+    double tol = 1e-10;
+    std::vector<double> boost_h { 1, -2, 2, 4, -20, 8, 184, -464, -1648, 10720 };
+    simplemc::hermite_polynomial her(x);
+    for (int i = 0; i < niter; ++i) {
+        ASSERT_NEAR(boost_h[i], her.next(), tol);
+        ASSERT_NEAR(boost_h[i], simplemc::hermite_polynomial().value(i, x), tol);
+    }
+}
+
+// Test cosine polynomials.
+TEST(SimplemcNumeric, CosineFunctionValues) {
+    int niter = 10;
+    double x = 2.345;
+    double tol = 1e-10;
+    simplemc::cosine cosine(x);
+    for (int i = 0; i < niter; ++i) {
+        auto j = static_cast<double>(i);
+        ASSERT_NEAR(-j * std::sin(j * x), cosine.current_derivative(), tol);
+        ASSERT_NEAR(std::cos(j * x), cosine.next(), tol);
+        ASSERT_NEAR(-j * std::sin(j * x), cosine.last_derivative(), tol);
+        ASSERT_NEAR(std::cos(j * x), simplemc::cosine().value(i, x), tol);
+    }
+}
+
+// Test sine polynomials.
+TEST(SimplemcNumeric, SineFunctionValues) {
+    int niter = 10;
+    double x = 2.345;
+    double tol = 1e-10;
+    simplemc::sine sine(x);
+    for (int i = 0; i < niter; ++i) {
+        ASSERT_NEAR(i * std::cos(i * x), sine.current_derivative(), tol);
+        ASSERT_NEAR(std::sin(i * x), sine.next(), tol);
+        ASSERT_NEAR(i * std::cos(i * x), sine.last_derivative(), tol);
+        ASSERT_NEAR(std::sin(i * x), simplemc::sine().value(i, x), tol);
     }
 }

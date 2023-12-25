@@ -7,14 +7,15 @@
 #define SIMPLEMC_NUMERIC_UTILS_HPP
 
 #include <algorithm>
-#include <cassert>
 #include <cmath>
 #include <complex>
 
 namespace simplemc {
 
 /**
- * @brief Checks if an arithmetic value is finite. Simply calls std::isfinite.
+ * @brief Check if an arithmetic value is finite. 
+ * 
+ * @details Simply calls std::isfinite.
  *
  * @tparam T Value type.
  * @param t Arithmetic value.
@@ -26,7 +27,9 @@ inline constexpr bool isfinite(T t) {
 }
 
 /**
- * @brief Checks if a complex number is finite.
+ * @brief Check if a complex number is finite.
+ * 
+ * @details Simply calls std::isfinite on the real and imaginary part.
  *
  * @tparam T Value type.
  * @param t std::complex<T> object.
@@ -108,30 +111,7 @@ inline constexpr auto rel_diff(const std::complex<T>& t1, const std::complex<T>&
 }
 
 /**
- * @brief Calculates the index of a subset such that the current position lies in the
- * middle of it.
- *
- * @details Let I = {0, 1, ..., n-1}. Given the current position l in the set, we want
- * to find the position j of the subset {j, j+1, ..., j+m-1} such that l lies in the
- * middle of this subset (insofar as this is possible considering the boundaries, i.e. j
- * >= 0 and j <= n-1). If m is even, the smaller possible j value is chosen, e.g. if m = 2,
- * then j = l - 1.
- *
- * @tparam T Integral type.
- * @param l Current position.
- * @param n Length/Size of the array/grid.
- * @param m Size of the subinterval.
- * @return Index j such that l lies in the middle of {j, j+1, ..., j+m-1}.
- */
-template <std::integral T>
-inline constexpr auto index_of_subset(T l, T n, T m) {
-    assert(l >= 0 && l < n);
-    assert(m > 0 && m <= n);
-    return std::clamp(static_cast<T>(l - m / 2), T { 0 }, std::max(T { 0 }, n - m));
-}
-
-/**
- * @brief Map the given value to its principle interval (lower_bound, upper_bound].
+ * @brief Map the given value to its principle interval `(lower_bound, upper_bound]`.
  *
  * @param val Value to be mapped.
  * @param lower_bound Lower bound of interval.
@@ -141,7 +121,7 @@ inline constexpr auto index_of_subset(T l, T n, T m) {
 double map_to_interval(double val, double lower_bound, double upper_bound);
 
 /**
- * @brief Map the given value to its principle interval [lower_bound, upper_bound).
+ * @brief Map the given value to its principle interval `[lower_bound, upper_bound)`.
  *
  * @param val Value to be mapped.
  * @param lower_bound Lower bound of interval.
@@ -152,13 +132,13 @@ double map_to_interval_lb(double val, double lower_bound, double upper_bound);
 
 /**
  * @brief Check if a value lies within certain bounds, i.e. in the interval
- * (lower_bound + min_diff, upper_bound - min_diff).
+ * `(lower_bound + min_diff, upper_bound - min_diff)`.
  *
  * @param val Value to be checked.
  * @param lower_bound Lower bound.
  * @param upper_bound Upper bound.
  * @param min_diff Minimum distance to bounds.
- * @return True, if value lies within (lower_bound + min_diff, upper_bound - min_diff).
+ * @return `true`, if value lies within `(lower_bound + min_diff, upper_bound - min_diff)`.
  */
 inline constexpr bool within_bounds(double val, double lower_bound, double upper_bound, double min_diff) {
     return val > lower_bound + min_diff && val < upper_bound - min_diff && isfinite(val);

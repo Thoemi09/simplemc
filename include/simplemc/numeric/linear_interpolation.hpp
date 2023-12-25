@@ -1,95 +1,119 @@
 /**
  * @file linear_interpolation.hpp
- * @brief Linear interpolation in 1D, 2D and 3D.
+ * @brief Linear interpolation in arbitrary dimensions.
  */
 
 #ifndef SIMPLEMC_NUMERIC_LINEAR_INTERPOLATION_HPP
 #define SIMPLEMC_NUMERIC_LINEAR_INTERPOLATION_HPP
 
-#include <simplemc/numeric/utils.hpp>
+#include <simplemc/utils/concepts.hpp>
+#include <simplemc/utils/indexing.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
-#include <range/v3/range/concepts.hpp>
-
-#include <vector>
+#include <cstddef>
+#include <span>
+#include <utility>
 
 namespace simplemc {
 
+namespace detail {
+
 /**
- * @brief Perform linear interpolation between two points f(x0) and f(x1).
+ * @brief Perform linear interpolation in 1-dimension at point x.
  *
- * @param xd Ratio of distance in x-direction, i.e. (x - x0) / (x0 - x1).
+ * @details The value x lies between x0 and x1 with the corresponding function
+ * values f0 and f1.
+ *
+ * @param xd Ratio of distance in x-direction, i.e. (x - x0) / (x1 - x0).
  * @param f0 Function value at x0, i.e. f(x0).
  * @param f1 Function value at x1, i.e. f(x1).
  * @return Interpolated value.
  */
-double interpolate_linear(double xd, double f0, double f1);
+inline double interp_linear_1d(double xd, double f0, double f1) {
+    return f0 * (1 - xd) + f1 * xd;
+}
 
 /**
- * @brief Perform bilinear interpolation on a square between four points f(x0, y0),
- * f(x1, y0), f(x0, y1) and f(x1, y1).
+ * @brief Perform linear interpolation in n-dimensions.
  *
- * @param xd Ratio of distance in x-direction, i.e. (x - x0) / (x0 - x1).
- * @param yd Ratio of distance in y-direction, i.e. (y - y0) / (y0 - y1).
- * @param f00 Function value at (x0, y0), i.e. f(x0, y0).
- * @param f10 Function value at (x1, y0), i.e. f(x1, y0).
- * @param f01 Function value at (x0, y1), i.e. f(x0, y1).
- * @param f11 Function value at (x1, y1), i.e. f(x1, y1).
+ * @tparam N Current dimension.
+ * @tparam Grid n-dimensional grid.
+ * @tparam Order Index order.
+ * @param idx_arr Index array of the lower left corner of the hypercube in which we interpolate.
+ * @param xd_arr Array of ratios of the distances in each direction.
+ * @param fvals Span containing the function values.
+ * @param shape_arr Shape of the grid (used for indexing the correct function values).
+ * @param order Order of the multi-dimensional array containing the function values.
  * @return Interpolated value.
  */
-double interpolate_bilinear(double xd, double yd, double f00, double f10, double f01, double f11);
+template <int N, typename Grid, nd_order Order = column_major>
+inline double interp_linear_nd(const typename Grid::nd_size_type& idx_arr, const typename Grid::nd_value_type& xd_arr,
+    const std::span<double>& fvals, const typename Grid::nd_size_type& shape_arr,
+    [[maybe_unused]] Order order = Order {}) {
+    static_assert(N >= 0 && N < Grid::dim(), "Invalid template parameter in interp_linear_nd.");
+    auto idx_p1_arr = idx_arr;
+    idx_p1_arr[N] += 1;
+    if constexpr (N == 0) {
+        // perform simple linear interpolation in the first dimension
+        const auto f0 = fvals[flat_index(idx_arr, shape_arr, order)];
+        const auto f1 = fvals[flat_index(idx_p1_arr, shape_arr, order)];
+        return interp_linear_1d(xd_arr[N], f0, f1);
+    } else {
+        // perform linear interpolation in n-1 dimensions
+        const auto f0 = interp_linear_nd<N - 1, Grid>(idx_arr, xd_arr, fvals, shape_arr, order);
+        const auto f1 = interp_linear_nd<N - 1, Grid>(idx_p1_arr, xd_arr, fvals, shape_arr, order);
+        return interp_linear_1d(xd_arr[N], f0, f1);
+    }
+}
 
 /**
- * @brief Perform trilinear interpolation on a cube between eight points f(x0, y0, z0),
- * f(x1, y0, z0), f(x0, y1, z0), f(x1, y1, z0), f(x0, y0, z1), f(x1, y0, z1), f(x0, y1,
- * z1) and f(x1, y1, z1).
+ * @brief Get ratios of the distances in each direction, i.e. (x[i] - x0[i]) / (x1[i] - x0[i]).
  *
- * @param xd Ratio of distance in x-direction, i.e. (x - x0) / (x0 - x1).
- * @param yd Ratio of distance in y-direction, i.e. (y - y0) / (y0 - y1).
- * @param zd Ratio of distance in z-direction, i.e. (z - z0) / (z0 - z1).
- * @param f000 Function value at (x0, y0, z0), i.e. f(x0, y0, z0).
- * @param f100 Function value at (x1, y0, z0), i.e. f(x1, y0, z0).
- * @param f010 Function value at (x0, y1, z0), i.e. f(x0, y1, z0).
- * @param f110 Function value at (x1, y1, z0), i.e. f(x1, y1, z0).
- * @param f001 Function value at (x0, y0, z1), i.e. f(x0, y0, z1).
- * @param f101 Function value at (x1, y0, z1), i.e. f(x1, y0, z1).
- * @param f011 Function value at (x0, y1, z1), i.e. f(x0, y1, z1).
- * @param f111 Function value at (x1, y1, z1), i.e. f(x1, y1, z1).
- * @return Interpolated value.
+ * @tparam NDGrid n-dimensional grid.
+ * @param idx_arr Index array.
+ * @param x_arr Value array.
+ * @param grid n-dimensional grid.
+ * @return Array containing the ratios of the distances.
  */
-double interpolate_trilinear(double xd, double yd, double zd, double f000, double f100, double f010, double f110,
-    double f001, double f101, double f011, double f111);
+template <typename Grid, std::size_t... Is>
+inline auto distance_ratios(const typename Grid::nd_size_type& idx_arr, const typename Grid::nd_value_type& x_arr,
+    const Grid& grid, std::index_sequence<Is...>) {
+    return typename Grid::nd_value_type { (x_arr[Is] - std::get<Is>(grid.grids()).at(idx_arr[Is])) /
+        (std::get<Is>(grid.grids()).at(idx_arr[Is] + 1) - std::get<Is>(grid.grids()).at(idx_arr[Is]))... };
+}
+
+} // namespace detail
 
 /**
  * @brief 1D linear interpolation.
  *
- * @details The function values and the grid are copied into the interpolation class. The XGrid
- * is required to implement the following methods/type aliases:
+ * @details The function values are not owned by the interpolation class. Only a span
+ * to the original data is stored.
  *
- * - `XGrid::size_type`
- * - `size() -> std::integral`
- * - `index(double) -> std::integral`
- * - `at(std::integral) -> double`
- *
- * @tparam XGrid Type of grid in x direction.
+ * @tparam Grid Type of grid in x direction.
  */
-template <typename XGrid>
+template <typename Grid>
 class linear_interpolation {
 public:
     /**
      * @brief Grid type.
      */
-    using xgrid_type = XGrid;
+    using grid_type = Grid;
 
     /**
-     * @brief Construct linear interpolation on a given grid with given function values.
+     * @brief Get number of dimensions.
      *
-     * @tparam R Range type.
+     * @return Number of dimensions.
+     */
+    static constexpr std::size_t dim() { return 1; }
+
+    /**
+     * @brief Construct a linear interpolation object on a given grid with given function values.
+     *
      * @param grid Grid in x direction.
      * @param fvals Function values at grid points.
      */
-    template <ranges::range R>
-    linear_interpolation(const xgrid_type& grid, R&& fvals);
+    linear_interpolation(const grid_type& grid, const std::span<double>& fvals);
 
     /**
      * @brief Perform interpolation.
@@ -97,12 +121,12 @@ public:
      * @param x Value at which we seek the function value.
      * @return Interpolated value.
      */
-    [[nodiscard]] double interpolate(double x) const;
+    [[nodiscard]] double operator()(double x) const;
 
     /**
      * @brief Get grid in x direction.
      */
-    [[nodiscard]] const auto& xgrid() const { return xgrid_; }
+    [[nodiscard]] const auto& grid() const { return grid_; }
 
     /**
      * @brief Get function values.
@@ -110,85 +134,83 @@ public:
     [[nodiscard]] const auto& function_values() const { return fvals_; }
 
 private:
-    xgrid_type xgrid_;
-    std::vector<double> fvals_;
+    grid_type grid_;
+    std::span<double> fvals_;
 };
 
-template <typename XGrid>
-template <ranges::range R>
-linear_interpolation<XGrid>::linear_interpolation(const xgrid_type& grid, R&& fvals) : // NOLINT
-    xgrid_(grid),
-    fvals_(std::begin(fvals), std::end(fvals)) {
-    if (grid.size() != static_cast<xgrid_type::size_type>(fvals_.size())) {
+template <typename Grid>
+linear_interpolation<Grid>::linear_interpolation(const grid_type& grid, const std::span<double>& fvals) :
+    grid_(grid),
+    fvals_(fvals) {
+    if (grid.size() != static_cast<grid_type::size_type>(fvals_.size())) {
         throw simplemc_exception(
             "Number of grid points not equal to number of y values.", "linear_interpolation::linear_interplation");
     }
 }
 
-template <typename XGrid>
-double linear_interpolation<XGrid>::interpolate(double x) const {
-    const auto idx = index_of_subset(xgrid_.index(x), xgrid_.size(), static_cast<XGrid::size_type>(2));
-    const auto xd = (x - xgrid_.at(idx)) / (xgrid_.at(idx + 1) - xgrid_.at(idx));
-    return interpolate_linear(xd, fvals_[idx], fvals_[idx + 1]);
+template <typename Grid>
+double linear_interpolation<Grid>::operator()(double x) const {
+    const auto idx = grid_.index_subrange(2, x);
+    const auto xd = (x - grid_.at(idx)) / (grid_.at(idx + 1) - grid_.at(idx));
+    return detail::interp_linear_1d(xd, fvals_[idx], fvals_[idx + 1]);
 }
 
 /**
- * @brief 2D bilinear interpolation.
+ * @brief n-dimensional linear interpolation.
  *
- * @details The function values and the grids are copied into the interpolation class.
- * The XGrid/YGrid is required to implement the following methods/type aliases:
- * - `XGrid::size_type`
- * - `size() -> std::integral`
- * - `index(double) -> std::integral`
- * - `at(std::integral) -> double`
+ * @details The function values are not owned by the interpolation class. Only a span
+ * to the original data is stored.
  *
- * @tparam XGrid Type of grid in x direction.
- * @tparam YGrid Type of grid in y direction.
+ * @tparam Grid Type of n-dimensional grid.
+ * @tparam Order Index order.
  */
-template <typename XGrid, typename YGrid>
-class bilinear_interpolation {
+template <typename Grid, nd_order Order = column_major>
+class linear_interpolation_nd {
 public:
     /**
-     * @brief Grid type in x direction.
+     * @brief n-dimensional grid type.
      */
-    using xgrid_type = XGrid;
+    using grid_type = Grid;
 
     /**
-     * @brief Grid type in y direction.
-     */
-    using ygrid_type = YGrid;
-
-    /**
-     * @brief Construct bilinear interpolation on 2 given grids with given function values.
-     * The function values are assumed to be in row-major order with the y-grid values as
-     * the fastest index.
+     * @brief Get number of dimensions.
      *
-     * @tparam R Range type.
-     * @param xgrid Grid of x values.
-     * @param ygrid Grid of y values.
-     * @param fvals Function values at grid points.
+     * @return Number of dimensions.
      */
-    template <ranges::range R>
-    bilinear_interpolation(const xgrid_type& xgrid, const ygrid_type& ygrid, R&& fvals);
+    static constexpr std::size_t dim() { return grid_type::dim(); }
+
+    /**
+     * @brief Construct a linear interpolation object on a given grid with given function values.
+     *
+     * @param grid n-dimensional grid.
+     * @param fvals Function values at grid points.
+     * @param order Order of the multi-dimensional array containing the function values.
+     */
+    linear_interpolation_nd(
+        const grid_type& grid, const std::span<double>& fvals, [[maybe_unused]] Order order = Order {});
 
     /**
      * @brief Perform interpolation.
      *
-     * @param x x-value at which we seek the function value.
-     * @param y y-value at which we seek the function value.
+     * @param x_arr Value array at which we seek the function value.
      * @return Interpolated value.
      */
-    [[nodiscard]] double interpolate(double x, double y) const;
+    [[nodiscard]] double operator()(const grid_type::nd_value_type& x_arr) const;
 
     /**
-     * @brief Get grid in x direction.
+     * @brief Perform interpolation.
+     *
+     * @tparam Vals Value types.
+     * @param xs Values at which we seek the function value.
+     * @return Interpolated value.
      */
-    [[nodiscard]] const auto& xgrid() const { return xgrid_; }
+    template <typename... Vals>
+    [[nodiscard]] double operator()(Vals... xs) const;
 
     /**
-     * @brief Get grid in y direction.
+     * @brief Get n-dimensional grid.
      */
-    [[nodiscard]] const auto& ygrid() const { return ygrid_; }
+    [[nodiscard]] const auto& grid() const { return grid_; }
 
     /**
      * @brief Get function values.
@@ -196,146 +218,32 @@ public:
     [[nodiscard]] const auto& function_values() const { return fvals_; }
 
 private:
-    xgrid_type xgrid_;
-    ygrid_type ygrid_;
-    std::vector<double> fvals_;
+    grid_type grid_;
+    std::span<double> fvals_;
 };
 
-template <typename XGrid, typename YGrid>
-template <ranges::range R>
-bilinear_interpolation<XGrid, YGrid>::bilinear_interpolation(
-    const xgrid_type& xgrid, const ygrid_type& ygrid, R&& fvals) : // NOLINT
-    xgrid_(xgrid),
-    ygrid_(ygrid),
-    fvals_(std::begin(fvals), std::end(fvals)) {
-    if (xgrid_.size() * ygrid_.size() != static_cast<xgrid_type::size_type>(fvals_.size())) {
-        throw simplemc_exception(
-            "Number of grid points not equal to number of y values.", "bilinear_interpolation::bilinear_interplation");
-    }
-}
-
-template <typename XGrid, typename YGrid>
-double bilinear_interpolation<XGrid, YGrid>::interpolate(double x, double y) const {
-    const auto ix = index_of_subset(xgrid_.index(x), xgrid_.size(), static_cast<XGrid::size_type>(2));
-    const auto iy = index_of_subset(ygrid_.index(y), ygrid_.size(), static_cast<YGrid::size_type>(2));
-    const auto xd = (x - xgrid_.at(ix)) / (xgrid_.at(ix + 1) - xgrid_.at(ix));
-    const auto yd = (y - ygrid_.at(iy)) / (ygrid_.at(iy + 1) - ygrid_.at(iy));
-    const auto n = ygrid_.size();
-    return interpolate_bilinear(
-        xd, yd, fvals_[ix * n + iy], fvals_[(ix + 1) * n + iy], fvals_[ix * n + iy + 1], fvals_[(ix + 1) * n + iy + 1]);
-}
-
-/**
- * @brief 3D trilinear interpolation.
- *
- * @details The function values and the grids are copied into the interpolation class.
- * The XGrid/YGrid/ZGrid is required to implement the following methods/type aliases:
- * - `XGrid::size_type`
- * - `size() -> std::integral`
- * - `index(double) -> std::integral`
- * - `at(std::integral) -> double`
- *
- * @tparam XGrid Type of grid in x direction.
- * @tparam YGrid Type of grid in y direction.
- * @tparam ZGrid Type of grid in z direction.
- */
-template <typename XGrid, typename YGrid, typename ZGrid>
-class trilinear_interpolation {
-public:
-    /**
-     * @brief Grid type in x direction.
-     */
-    using xgrid_type = XGrid;
-
-    /**
-     * @brief Grid type in y direction.
-     */
-    using ygrid_type = YGrid;
-
-    /**
-     * @brief Grid type in z direction.
-     */
-    using zgrid_type = ZGrid;
-
-    /**
-     * @brief Construct trilinear interpolation on 3 given grids with given function values.
-     * The function values are assumed to be in row-major order with the z-grid values as
-     * the fastest index.
-     *
-     * @tparam R Range type.
-     * @param xgrid Grid of x values.
-     * @param ygrid Grid of y values.
-     * @param zgrid Grid of z values.
-     * @param fvals Function values at grid points.
-     */
-    template <ranges::range R>
-    trilinear_interpolation(const xgrid_type& xgrid, const ygrid_type& ygrid, const zgrid_type& zgrid, R&& fvals);
-
-    /**
-     * @brief Perform interpolation.
-     *
-     * @param x x-value at which we seek the function value.
-     * @param y y-value at which we seek the function value.
-     * @param z z-value at which we seek the function value.
-     * @return Interpolated value.
-     */
-    [[nodiscard]] double interpolate(double x, double y, double z) const;
-
-    /**
-     * @brief Get grid in x direction.
-     */
-    [[nodiscard]] const auto& xgrid() const { return xgrid_; }
-
-    /**
-     * @brief Get grid in y direction.
-     */
-    [[nodiscard]] const auto& ygrid() const { return ygrid_; }
-
-    /**
-     * @brief Get grid in z direction.
-     */
-    [[nodiscard]] const auto& zgrid() const { return zgrid_; }
-
-    /**
-     * @brief Get function values.
-     */
-    [[nodiscard]] const auto& function_values() const { return fvals_; }
-
-private:
-    xgrid_type xgrid_;
-    ygrid_type ygrid_;
-    zgrid_type zgrid_;
-    std::vector<double> fvals_;
-};
-
-template <typename XGrid, typename YGrid, typename ZGrid>
-template <ranges::range R>
-trilinear_interpolation<XGrid, YGrid, ZGrid>::trilinear_interpolation(
-    const xgrid_type& xgrid, const ygrid_type& ygrid, const zgrid_type& zgrid, R&& fvals) : // NOLINT
-    xgrid_(xgrid),
-    ygrid_(ygrid),
-    zgrid_(zgrid),
-    fvals_(std::begin(fvals), std::end(fvals)) {
-    if (xgrid_.size() * ygrid_.size() * zgrid_.size() != static_cast<xgrid_type::size_type>(fvals_.size())) {
+template <typename Grid, nd_order Order>
+linear_interpolation_nd<Grid, Order>::linear_interpolation_nd(
+    const grid_type& grid, const std::span<double>& fvals, [[maybe_unused]] Order order) :
+    grid_(grid),
+    fvals_(fvals) {
+    if (grid.size() != static_cast<grid_type::size_type>(fvals_.size())) {
         throw simplemc_exception("Number of grid points not equal to number of y values.",
-            "trilinear_interpolation::trilinear_interplation");
+            "linear_interpolation_nd::linear_interplation_nd");
     }
 }
 
-template <typename XGrid, typename YGrid, typename ZGrid>
-double trilinear_interpolation<XGrid, YGrid, ZGrid>::interpolate(double x, double y, double z) const {
-    const auto ix = index_of_subset(xgrid_.index(x), xgrid_.size(), static_cast<XGrid::size_type>(2));
-    const auto iy = index_of_subset(ygrid_.index(y), ygrid_.size(), static_cast<XGrid::size_type>(2));
-    const auto iz = index_of_subset(zgrid_.index(z), zgrid_.size(), static_cast<XGrid::size_type>(2));
-    const auto xd = (x - xgrid_.at(ix)) / (xgrid_.at(ix + 1) - xgrid_.at(ix));
-    const auto yd = (y - ygrid_.at(iy)) / (ygrid_.at(iy + 1) - ygrid_.at(iy));
-    const auto zd = (z - zgrid_.at(iz)) / (zgrid_.at(iz + 1) - zgrid_.at(iz));
-    const auto ny = ygrid_.size();
-    const auto nz = zgrid_.size();
-    return interpolate_trilinear(xd, yd, zd, fvals_[(ix * ny + iy) * nz + iz], fvals_[((ix + 1) * ny + iy) * nz + iz],
-        fvals_[(ix * ny + (iy + 1)) * nz + iz], fvals_[((ix + 1) * ny + (iy + 1)) * nz + iz],
-        fvals_[(ix * ny + iy) * nz + iz + 1], fvals_[((ix + 1) * ny + iy) * nz + iz + 1],
-        fvals_[(ix * ny + (iy + 1)) * nz + iz + 1], fvals_[((ix + 1) * ny + (iy + 1)) * nz + iz + 1]);
+template <typename Grid, nd_order Order>
+double linear_interpolation_nd<Grid, Order>::operator()(const grid_type::nd_value_type& x_arr) const {
+    const auto idxs = grid_.index_subrange(2, x_arr);
+    const auto xds = detail::distance_ratios(idxs, x_arr, grid_, std::make_index_sequence<dim()>());
+    return detail::interp_linear_nd<dim() - 1, grid_type>(idxs, xds, fvals_, grid_.shape(), Order {});
+}
+
+template <typename Grid, nd_order Order>
+template <typename... Vals>
+double linear_interpolation_nd<Grid, Order>::operator()(Vals... xs) const {
+    return this->operator()(typename grid_type::nd_value_type { xs... });
 }
 
 } // namespace simplemc

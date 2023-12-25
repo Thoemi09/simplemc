@@ -22,7 +22,7 @@ namespace simplemc {
  * The lattice can be in 1, 2 or 3 dimensions. Other dimensions are not supported.
  *
  * It is assumed that the lattice vectors are linearly independent and that the lattice
- * parameters are correctly set. It is recommended to use the make_*_lattice functions
+ * parameters are correctly set. It is recommended to use the make_***_lattice functions
  * instead of manually creating a lattice.
  */
 class bravais_lattice {
@@ -69,13 +69,13 @@ public:
      *
      * @details The following parameters are stored:
      *
-     *     - a: Lattice constant in direction #1.
-     *     - b: Lattice constant in direction #2 (only in 2d and 3d).
-     *     - c: Lattice constant in direction #3 (only in 3d).
-     *     - alpha: Angle between b and c (only in 3d).
-     *     - beta: Angle between a and c (only in 3d).
-     *     - gamma: Angle between a and b (only in 2d and 3d).
-     *     - tag: Tag for the lattice.
+     * - a: Lattice constant in direction #1.
+     * - b: Lattice constant in direction #2 (only in 2d and 3d).
+     * - c: Lattice constant in direction #3 (only in 3d).
+     * - alpha: Angle between b and c (only in 3d).
+     * - beta: Angle between a and c (only in 3d).
+     * - gamma: Angle between a and b (only in 2d and 3d).
+     * - tag: Tag for the lattice.
      */
     struct params {
         double a { 0.0 };
@@ -134,7 +134,7 @@ public:
     bravais_lattice() = default;
 
     /**
-     * @brief Construct a bravais lattice with lattice vectors and parameters.
+     * @brief Construct a Bravais lattice with lattice vectors and parameters.
      *
      * @param mat Matrix with lattice vectors in columns.
      * @param p Bravais lattice parameters.
@@ -144,7 +144,7 @@ public:
     /**
      * @brief Number of dimensions.
      */
-    auto dim() const { return real_lat_.rows(); };
+    [[nodiscard]] auto dim() const { return real_lat_.rows(); };
 
     /**
      * @brief Set lattice vectors.
@@ -161,7 +161,7 @@ public:
     void set_lattice_parameters(const params& p);
 
     /**
-     * @brief Get bravais lattice parameters.
+     * @brief Get Bravais lattice parameters.
      *
      * @return Bravais lattice parameters.
      */
@@ -195,7 +195,7 @@ public:
      */
     [[nodiscard]] double reciprocal_cell_volume() const { return rec_vol_; }
 
-protected:
+private:
     params params_;
     matrix_type real_lat_;
     matrix_type rec_lat_;
@@ -344,11 +344,11 @@ bravais_lattice make_rhombohedral_lattice(double a, double c);
 bravais_lattice make_tetragonal_lattice(double a, double c);
 
 /**
- * @brief Make tetragonal body centered lattice.
+ * @brief Make tetragonal body-centered lattice.
  *
  * @param a Lattice constant.
  * @param c Lattice constant.
- * @return Tetragonal body centered lattice.
+ * @return Tetragonal body-centered lattice.
  */
 bravais_lattice make_tetragonal_bc_lattice(double a, double c);
 
@@ -363,37 +363,37 @@ bravais_lattice make_tetragonal_bc_lattice(double a, double c);
 bravais_lattice make_orthorhombic_lattice(double a, double b, double c);
 
 /**
- * @brief Make orthorombic body centered lattice.
+ * @brief Make orthorombic body-centered lattice.
  *
  * @param a Lattice constant.
  * @param b Lattice constant.
  * @param c Lattice constant.
- * @return Orthorhombic body centered lattice.
+ * @return Orthorhombic body-centered lattice.
  */
 bravais_lattice make_orthorhombic_bc_lattice(double a, double b, double c);
 
 /**
- * @brief Make orthorombic face centered lattice.
+ * @brief Make orthorombic face-centered lattice.
  *
  * @param a Lattice constant.
  * @param b Lattice constant.
  * @param c Lattice constant.
- * @return Orthorhombic face centered lattice.
+ * @return Orthorhombic face-centered lattice.
  */
 bravais_lattice make_orthorhombic_fc_lattice(double a, double b, double c);
 
 /**
- * @brief Make orthorombic base centered lattice.
+ * @brief Make orthorombic base-centered lattice.
  *
  * @param a Lattice constant.
  * @param b Lattice constant.
  * @param c Lattice constant.
- * @return Orthorhombic base centered lattice.
+ * @return Orthorhombic base-centered lattice.
  */
 bravais_lattice make_orthorhombic_base_centered_lattice(double a, double b, double c);
 
 /**
- * @brief Make orthorhombic lattice.
+ * @brief Make monoclinic lattice.
  *
  * @param a Lattice constant.
  * @param b Lattice constant.
@@ -404,18 +404,18 @@ bravais_lattice make_orthorhombic_base_centered_lattice(double a, double b, doub
 bravais_lattice make_monoclinic_lattice(double a, double b, double c, double beta);
 
 /**
- * @brief Make orthorhombic lattice.
+ * @brief Make monoclinic base-centered lattice.
  *
  * @param a Lattice constant.
  * @param b Lattice constant.
  * @param c Lattice constant.
  * @param beta Angle between a-c.
- * @return Monoclinic base centered lattice.
+ * @return Monoclinic base-centered lattice.
  */
 bravais_lattice make_monoclinic_base_centered_lattice(double a, double b, double c, double beta);
 
 /**
- * @brief Make orthorhombic lattice.
+ * @brief Make triclinic lattice.
  *
  * @param a Lattice constant.
  * @param b Lattice constant.

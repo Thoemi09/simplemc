@@ -9,6 +9,7 @@
 #include <simplemc/utils/concepts.hpp>
 
 #include <array>
+#include <cassert>
 #include <numeric>
 #include <vector>
 
@@ -180,6 +181,29 @@ template <std::integral T1, std::integral T2, std::size_t N, nd_order Order = co
         }
         return idx;
     }
+}
+
+/**
+ * @brief Find the integer range of a given size such that a given integer lies in the center
+ * restricted by the boundaries of a larger integer range.
+ *
+ * @details Let `R = (0, 1, ..., n-1)` be the larger integer range of size `n`. Given the integer `l`,
+ * we want to find the integer range `(j, j+1, ..., j+m-1)` such that `l` lies in the center of it
+ * (insofar as this is possible considering the boundaries, i.e. `j >= 0` and `j <= n-1`). `m` is the
+ * size of the wanted subrange. If `m` is even, the larger possible `j` value is chosen, e.g. if m = 2,
+ * then j = l.
+ *
+ * @tparam T Integral type.
+ * @param l Center of the subrange.
+ * @param n Size of the larger range.
+ * @param m Size of the wanted subrange.
+ * @return Index `j` such that `l` lies in the middle of `(j, j+1, ..., j+m-1)`.
+ */
+template <std::integral T>
+inline constexpr auto integer_subrange(T l, T n, T m) {
+    assert(l >= 0 && l < n);
+    assert(m > 0 && m <= n);
+    return std::clamp(static_cast<T>(m % 2 == 0 ? l + 1 - m / 2 : l - m / 2), T { 0 }, n - m);
 }
 
 } // namespace simplemc

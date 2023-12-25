@@ -10,7 +10,8 @@ target_sources(simplemc-numeric
     PRIVATE
         utils.cpp
         bravais_lattice.cpp
-        linear_interpolation.cpp)
+        linear_map.cpp
+        orthogonal_polynomials.cpp)
 target_link_libraries(simplemc-numeric 
     PUBLIC 
         simplemc::simplemc-grids 

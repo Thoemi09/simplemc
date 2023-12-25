@@ -5,6 +5,8 @@
 
 #include <simplemc/numeric/utils.hpp>
 
+#include <cassert>
+
 namespace simplemc {
 
 double map_to_interval(double val, double lower_bound, double upper_bound) {

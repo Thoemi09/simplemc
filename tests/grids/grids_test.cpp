@@ -167,13 +167,15 @@ TEST(SimplemcGrids, TwoDimensionalLinearGrid) {
             if (i < lg.size() - 1 && j < lg.size() - 1) {
                 check_range_near(grid.center(idx_arr), nd_value_type { i * 2.0 + 1.0, j * 2.0 + 1.0 });
                 check_range_near(*(view_center_it++), nd_value_type { i * 2.0 + 1.0, j * 2.0 + 1.0 });
-                check_range_near(grid.index(val_arr), nd_size_type { i, j });
+                check_range_equal(grid.index(val_arr), nd_size_type { i, j });
                 ASSERT_DOUBLE_EQ(grid.bin_volume(idx_arr), lg.bin_volume(i) * lg.bin_volume(j));
                 ASSERT_DOUBLE_EQ(*(view_bin_volumes_it++), lg.bin_volume(i) * lg.bin_volume(j));
             }
         }
     }
-    check_range_near(grid.index(1.2, 3.2), nd_size_type { 0, 1 });
-    check_range_near(grid.index(0.0, 0.0), nd_size_type { 0, 0 });
-    check_range_near(grid.index(5.0, 8.9999), nd_size_type { 2, 4 });
+    check_range_equal(grid.index(1.2, 3.2), nd_size_type { 0, 1 });
+    check_range_equal(grid.index(0.0, 0.0), nd_size_type { 0, 0 });
+    check_range_equal(grid.index(5.0, 8.9999), nd_size_type { 2, 4 });
+    check_range_equal(grid.index_subrange(5, 2.2, 8.2), nd_size_type { 0, 2 });
+    check_range_equal(grid.index_subrange(2, 10.5, 11.5), nd_size_type { 5, 5 });
 }

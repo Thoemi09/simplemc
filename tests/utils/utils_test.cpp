@@ -164,3 +164,24 @@ TEST(SimplemcUtils, Indexing) {
     ASSERT_EQ(flat_index(exp_idxs, shape, row_major {}), exp_fidx);
     ASSERT_EQ(multi_index(exp_fidx, shape, row_major {}), exp_idxs);
 }
+
+// Test integer subrange.
+TEST(SimplemcUtils, IntegerSubrange) {
+    using namespace simplemc;
+    ASSERT_EQ(integer_subrange(4, 9, 1), 4);
+    ASSERT_EQ(integer_subrange(4, 9, 2), 4);
+    ASSERT_EQ(integer_subrange(4, 9, 3), 3);
+    ASSERT_EQ(integer_subrange(4, 9, 6), 2);
+    ASSERT_EQ(integer_subrange(4, 9, 8), 1);
+    ASSERT_EQ(integer_subrange(4, 9, 9), 0);
+    ASSERT_EQ(integer_subrange(7, 9, 1), 7);
+    ASSERT_EQ(integer_subrange(7, 9, 2), 7);
+    ASSERT_EQ(integer_subrange(7, 9, 3), 6);
+    ASSERT_EQ(integer_subrange(7, 9, 4), 5);
+    ASSERT_EQ(integer_subrange(7, 9, 7), 2);
+    ASSERT_EQ(integer_subrange(1, 9, 1), 1);
+    ASSERT_EQ(integer_subrange(1, 9, 2), 1);
+    ASSERT_EQ(integer_subrange(1, 9, 3), 0);
+    ASSERT_EQ(integer_subrange(1, 9, 4), 0);
+    ASSERT_EQ(integer_subrange(1, 9, 9), 0);
+}

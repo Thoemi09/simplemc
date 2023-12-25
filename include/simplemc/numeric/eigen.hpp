@@ -1,6 +1,6 @@
 /**
  * @file eigen.hpp
- * @brief Include Eigen library with some usefule extensions.
+ * @brief Include Eigen library with some useful extensions.
  */
 
 #ifndef SIMPLEMC_NUMERIC_EIGEN_HPP
@@ -34,7 +34,7 @@ struct matrix {
 };
 
 /**
- * @brief Create a span from a Eigen::PlainObjectBase object.
+ * @brief Create a span from an Eigen::PlainObjectBase object.
  *
  * @tparam Derived Derived type.
  * @param t Eigen::PlainObjectBase object.
@@ -55,7 +55,7 @@ inline auto make_span(Eigen::PlainObjectBase<Derived>& t) {
  *
  * @tparam Derived Derived type.
  * @param t Eigen::MatrixBase object.
- * @return True if any element is inf or nan.
+ * @return `true`, if any element is inf or nan.
  */
 template <typename Derived>
 inline bool isfinite(const Eigen::MatrixBase<Derived>& t) {
@@ -67,9 +67,9 @@ inline bool isfinite(const Eigen::MatrixBase<Derived>& t) {
  * and the Frobenius norm for matrices.
  *
  * @tparam Derived Derived type.
- * @param t1 Vector #1.
- * @param t2 Vector #2.
- * @return 2-norm of their difference.
+ * @param t1 Vector/Matrix #1.
+ * @param t2 Vector/Matrix #2.
+ * @return 2-norm/Frobenius norm of their difference.
  */
 template <typename Derived>
 inline double abs_diff(const Eigen::MatrixBase<Derived>& t1, const Eigen::MatrixBase<Derived>& t2) {
@@ -115,12 +115,14 @@ inline typename vector<1>::type polar_to_cartesian(const typename vector<1>::typ
     return vec;
 }
 
+/// See simplemc::polar_to_cartesian.
 inline typename vector<2>::type polar_to_cartesian(const typename vector<2>::type& vec) {
     typename vector<2>::type res;
     res << vec[0] * std::cos(vec[1]), vec[0] * std::sin(vec[1]);
     return res;
 }
 
+/// See simplemc::polar_to_cartesian.
 inline typename vector<3>::type polar_to_cartesian(const typename vector<3>::type& vec) {
     typename vector<3>::type res;
     const auto sin2 = std::sin(vec[2]);
@@ -130,7 +132,7 @@ inline typename vector<3>::type polar_to_cartesian(const typename vector<3>::typ
 
 /**
  * @brief Transform cartesian to polar coordinates.
- * 
+ *
  * @details It performs the following transformations:
  *
  * - 1D: (x) -> (x)
@@ -144,12 +146,14 @@ inline typename vector<1>::type cartesian_to_polar(const typename vector<1>::typ
     return vec;
 }
 
+/// See simplemc::cartesian_to_polar.
 inline typename vector<2>::type cartesian_to_polar(const typename vector<2>::type& vec) {
     typename vector<2>::type res;
     res << vec.norm(), std::atan2(vec[1], vec[0]);
     return res;
 }
 
+/// See simplemc::cartesian_to_polar.
 inline typename vector<3>::type cartesian_to_polar(const typename vector<3>::type& vec) {
     typename vector<3>::type res;
     const auto norm = vec.norm();

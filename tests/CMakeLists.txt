@@ -17,11 +17,11 @@ add_subdirectory(json)
 add_subdirectory(random)
 add_subdirectory(grids)
 add_subdirectory(mpi)
-# add_subdirectory(numeric)
+add_subdirectory(numeric)
 
 # temporary tests
 add_executable(tmp-test tmp_test.cpp)
-target_link_libraries(tmp-test PRIVATE simplemc::simplemc-json)
+target_link_libraries(tmp-test PRIVATE simplemc::simplemc-numeric)
 
 add_executable(tmp-mpi-test tmp_mpi_test.cpp)
 target_link_libraries(tmp-mpi-test PRIVATE simplemc::simplemc-mpi)
