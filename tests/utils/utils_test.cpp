@@ -33,6 +33,10 @@ TEST(SimplemcUtils, Concepts) {
     ASSERT_TRUE(simplemc::nd_order<simplemc::row_major>);
     ASSERT_TRUE(simplemc::nd_order<simplemc::column_major>);
     ASSERT_FALSE(simplemc::nd_order<int>);
+    ASSERT_TRUE(simplemc::double_or_complex<double>);
+    ASSERT_TRUE(simplemc::double_or_complex<std::complex<double>>);
+    ASSERT_FALSE(simplemc::double_or_complex<float>);
+    ASSERT_FALSE(simplemc::double_or_complex<std::complex<float>>);
 }
 
 // Test generic_error exception.

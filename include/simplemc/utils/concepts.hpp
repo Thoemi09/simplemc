@@ -6,6 +6,7 @@
 #ifndef SIMPLEMC_UTILS_CONCEPTS_HPP
 #define SIMPLEMC_UTILS_CONCEPTS_HPP
 
+#include <complex>
 #include <concepts>
 
 namespace simplemc {
@@ -29,6 +30,14 @@ concept is_any_of = (std::same_as<T, U> || ...);
 template <typename T>
 concept integer_only =
     is_any_of<T, short, int, long, long long, unsigned short, unsigned int, unsigned long, unsigned long long>;
+
+/**
+ * @brief A concept that checks if a type is either a double or a std::complex<double>.
+ * 
+ * @tparam T Type to check.
+ */
+template <typename T>
+concept double_or_complex = is_any_of<T, double, std::complex<double>>;
 
 /**
  * @brief Tag indicating column-major order.

@@ -18,6 +18,7 @@ add_subdirectory(random)
 add_subdirectory(grids)
 add_subdirectory(mpi)
 add_subdirectory(numeric)
+add_subdirectory(accs)
 
 # temporary tests
 add_executable(tmp-test tmp_test.cpp)
