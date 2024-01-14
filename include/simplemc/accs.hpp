@@ -6,7 +6,10 @@
 #ifndef SIMPLEMC_ACCS_HPP
 #define SIMPLEMC_ACCS_HPP
 
-// traits
-#include <simplemc/accs/traits.hpp>
+// utilities
+#include <simplemc/accs/utils.hpp>
+
+// accumulators
+#include <simplemc/accs/mean_acc.hpp>
 
 #endif // SIMPLEMC_ACCS_HPP
