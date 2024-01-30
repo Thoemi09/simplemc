@@ -1,10 +1,10 @@
 /**
- * @file mean_acc.hpp
- * @brief Mean accumulator for calculating arithmetic means.
+ * @file var_acc.hpp
+ * @brief Variance accumulator for calculating arithmetic means and variances.
  */
 
-#ifndef SIMPLEMC_ACCS_MEAN_ACC_HPP
-#define SIMPLEMC_ACCS_MEAN_ACC_HPP
+#ifndef SIMPLEMC_ACCS_VAR_ACC_HPP
+#define SIMPLEMC_ACCS_VAR_ACC_HPP
 
 #include <simplemc/accs/utils.hpp>
 
@@ -15,10 +15,19 @@
 namespace simplemc {
 
 /**
- * @brief Mean accumulator for calculating arithmetic means.
+ * @brief Variance accumulator for calculating arithmetic means and variances.
+ * 
+ * @tparam T Type of accumulated values (either double or std::complex<double>).
+ * @tparam A Algorithm used to calculate the mean/variance.
+ */
+template <double_or_complex T, accs::varalg A = accs::varalg::standard>
+class var_acc;
+
+/**
+ * @brief Variance accumulator specialized for accumulating double values.
  *
- * @details No error estimation is available. The accumulator stores the sum of the accumulated
- * data as well as the number of samples.
+ * @details Use this accumulator for calculating means and variances/standard deviations.
+ * No blocking/batching, covariance or estimation of the autocorrelation time is available. 
  *
  * If the size of the accumulator is 1, then values can be added with the stream operator:
  *
@@ -47,16 +56,15 @@ namespace simplemc {
  *
  *     auto mean = acc.mean()[0];
  *
- * @tparam T Type of accumulated values (either double or std::complex<double>).
- * @tparam A Algorithm used to calculate the mean.
+ * @tparam A Algorithm used to calculate the mean/variance.
  */
-template <double_or_complex T, accs::varalg A = accs::varalg::standard>
-class mean_acc {
+template <accs::varalg A>
+class var_acc<double, A> {
 public:
     /**
      * @brief Type of accumulated value.
      */
-    using value_type = T;
+    using value_type = double;
 
     /**
      * @brief Type for counting the number of samples.
@@ -74,26 +82,26 @@ public:
     using storage_type = Eigen::ArrayX<value_type>;
 
     /**
-     * @brief Get algorithm used to calculate the mean.
+     * @brief Get algorithm used to calculate the mean/variance.
      */
     static constexpr auto varalg() { return A; }
 
 private:
     /**
-     * @brief Multi value accumulator for mean_acc.
+     * @brief Multi value accumulator for var_acc.
      *
-     * @details It holds a reference to a mean accumulator. It can be used to add multiple data points
+     * @details It holds a reference to a variance accumulator. It can be used to add multiple data points
      * to the accumulator but only increase the count once (when it goes out of scope).
      */
-    class mean_mva {
+    class var_mva {
     public:
         /**
-         * @brief Construct a mean_mva for a given mean_acc and a given index.
+         * @brief Construct a var_mva for a given var_acc and a given index.
          *
-         * @param acc Mean accumulator associated with this mean_mva.
+         * @param acc Variance accumulator associated with this var_mva.
          * @param idx Index.
          */
-        mean_mva(mean_acc& acc, size_type idx) : acc_(acc), idx_(idx) { assert(idx_ >= 0 && idx_ < acc_.size()); }
+        var_mva(var_acc& acc, size_type idx) : acc_(acc), idx_(idx) { assert(idx_ >= 0 && idx_ < acc_.size()); }
 
         /**
          * @brief Set index and return this object.
@@ -101,7 +109,7 @@ private:
          * @param idx Index.
          * @return Reference to this object.
          */
-        mean_mva& operator[](std::size_t idx) {
+        var_mva& operator[](std::size_t idx) {
             assert(idx >= 0 && idx < acc_.size());
             idx_ = idx;
             return *this;
@@ -113,11 +121,14 @@ private:
          * @param val Value to be accumulated.
          * @return Reference to this object.
          */
-        mean_mva& operator<<(value_type val) {
+        var_mva& operator<<(value_type val) {
             if constexpr (varalg() == accs::varalg::standard) {
                 acc_.data_[idx_] += (val - acc_.shift_);
+                acc_.data2_[idx_] += (val - acc_.shift_) * (val - acc_.shift_);
             } else {
+                const auto tmp = acc_.data_[idx_];
                 acc_.data_[idx_] += (val - acc_.shift_ - acc_.data_[idx_]) / static_cast<value_type>(acc_.count_ + 1);
+                acc_.data2_[idx_] += (val - acc_.shift_ - tmp) * (val - acc_.shift_ - acc_.data_[idx_]);
             }
             return *this;
         }
@@ -125,39 +136,41 @@ private:
         /**
          * @brief Destructor increases the count.
          */
-        ~mean_mva() { acc_.count_ += 1; }
+        ~var_mva() { acc_.count_ += 1; }
 
     private:
-        mean_acc& acc_; // NOLINT (reference is wanted here)
+        var_acc& acc_; // NOLINT (reference is wanted here)
         std::size_t idx_;
     };
 
 public:
     /**
-     * @brief Construct a mean accumulator with a given number of elements and a constant shift.
+     * @brief Construct a variance accumulator with a given number of elements and a constant shift.
      *
      * @param size Number of elements.
      * @param shift Constant shift applied to the accumulated samples.
      */
-    mean_acc(size_type size = 1, value_type shift = 0.0);
+    var_acc(size_type size = 1, value_type shift = 0.0);
 
     /**
-     * @brief Construct a mean accumulator with a given data storage, count and constant shift.
+     * @brief Construct a variance accumulator with given data storages, a count and constant shift.
      *
      * @param data Accumulated data.
+     * @param data2 Accumulated squared data.
      * @param count Number of accumulated samples.
      * @param shift Constant shift applied to the accumulated samples.
      */
-    mean_acc(const storage_type& data, count_type count, value_type shift = 0.0);
+    var_acc(const storage_type& data, const storage_type& data2, count_type count, value_type shift = 0.0);
 
     /**
-     * @brief Set the data storage, count and shift.
+     * @brief Set the data storages, count and shift.
      *
      * @param data Accumulated data.
+     * @param data2 Accumulated squared data.
      * @param count Number of accumulated samples.
      * @param shift Constant shift applied to the accumulated samples.
      */
-    void set(const storage_type& data, count_type count, value_type shift = 0.0);
+    void set(const storage_type& data, const storage_type& data2, count_type count, value_type shift = 0.0);
 
     /**
      * @brief Reset the current accumulator by setting everything to zero and resizing the number of
@@ -174,7 +187,7 @@ public:
      * @param idx Index.
      * @return Reference to this object.
      */
-    mean_acc& operator[](size_type idx) {
+    var_acc& operator[](size_type idx) {
         assert(idx >= 0 && idx < size());
         idx_ = idx;
         return *this;
@@ -188,25 +201,28 @@ public:
      * @param val Value to be accumulated.
      * @return Reference to this object.
      */
-    mean_acc& operator<<(value_type val) {
+    var_acc& operator<<(value_type val) {
         ++count_;
         if constexpr (varalg() == accs::varalg::standard) {
             data_[idx_] += (val - shift_);
+            data2_[idx_] += (val - shift_) * (val - shift_);
         } else {
+            const auto tmp = data_[idx_];
             data_[idx_] += (val - shift_ - data_[idx_]) / static_cast<value_type>(count_);
+            data2_[idx_] += (val - shift_ - tmp) * (val - shift_ - data_[idx_]);
         }
         return *this;
     }
 
     /**
-     * @brief Stream operator for incorporating the data from another mean_acc.
+     * @brief Stream operator for incorporating the data from another var_acc.
      *
      * @details It simply adds the (reshifted) data and the count of the other accumulator to this one.
      *
-     * @param acc Mean accumulator to be incorporated.
+     * @param acc Variance accumulator to be incorporated.
      * @return Reference to this object.
      */
-    mean_acc& operator<<(const mean_acc& acc);
+    var_acc& operator<<(const var_acc& acc);
 
     /**
      * @brief Accumulate a range of values.
@@ -224,8 +240,11 @@ public:
         for (auto val : rg) {
             if constexpr (varalg() == accs::varalg::standard) {
                 data_[idx] += (val - shift_);
+                data2_[idx] += (val - shift_) * (val - shift_);
             } else {
+                const auto tmp = data_[idx];
                 data_[idx] += (val - shift_ - data_[idx]) / static_cast<value_type>(count_);
+                data2_[idx] += (val - shift_ - tmp) * (val - shift_ - data_[idx]);
             }
             ++idx;
         }
@@ -235,9 +254,9 @@ public:
      * @brief Create a multi value accumulator for a given index.
      *
      * @param idx Index.
-     * @return Multi value accumulator mean_mva.
+     * @return Multi value accumulator var_mva.
      */
-    mean_mva make_mva(std::size_t idx = 0) { return mean_mva(*this, idx); }
+    var_mva make_mva(std::size_t idx = 0) { return var_mva(*this, idx); }
 
     /**
      * @brief Get the size of the accumulator.
@@ -268,6 +287,13 @@ public:
     [[nodiscard]] const storage_type& data() const { return data_; }
 
     /**
+     * @brief Get accumulated squared data.
+     *
+     * @return Data storage.
+     */
+    [[nodiscard]] const storage_type& data2() const { return data2_; }
+
+    /**
      * @brief Calculate the mean from the accumulated data.
      *
      * @return Data storage with mean values.
@@ -278,6 +304,7 @@ public:
 
 private:
     storage_type data_;
+    storage_type data2_;
     count_type count_;
     size_type idx_;
     value_type shift_;
@@ -285,4 +312,4 @@ private:
 
 } // namespace simplemc
 
-#endif // SIMPLEMC_ACCS_MEAN_ACC_HPP
+#endif // SIMPLEMC_ACCS_VAR_ACC_HPP

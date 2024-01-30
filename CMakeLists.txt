@@ -2,7 +2,7 @@
 # ------------------------
 # SIMPLEMC_ENABLE_INSTALL: Enable install target (only if no dependencies are fetched).
 # SIMPLEMC_BUILD_TESTS: Build unit tests with googletest.
-# SIMPLEMC_BUILD_EXAMPLES: Build example code.
+# SIMPLEMC_BUILD_EXAMPLES: Build examples.
 # SIMPLEMC_FETCH_JSON: Fetch json library from github.
 # SIMPLEMC_FETCH_FMT: Fetch fmtlib from github.
 # SIMPLEMC_FETCH_RANGEV3: Fetch range-v3 from github.
