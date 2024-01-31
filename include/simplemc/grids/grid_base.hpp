@@ -12,6 +12,7 @@
 #include <range/v3/view/transform.hpp>
 
 #include <cassert>
+#include <cstddef>
 #include <cmath>
 
 namespace simplemc {

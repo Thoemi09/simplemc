@@ -9,7 +9,9 @@
 
 #include <fmt/format.h>
 
+#include <cmath>
 #include <numbers>
+#include <utility>
 
 namespace simplemc {
 

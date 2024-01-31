@@ -5,23 +5,24 @@
 
 #include <gtest/gtest.h>
 
-#include <simplemc/mpi/environment.hpp>
-#include <simplemc/mpi/communicator.hpp>
-#include <simplemc/mpi/utils.hpp>
+#include <simplemc/mpi.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
 #include <fmt/core.h>
 
+// Test check_mpi_call function.
 TEST(SimplemcMPI, CheckMPICall) {
     ASSERT_NO_THROW(simplemc::mpi::check_mpi_call(MPI_SUCCESS, "test_check_mpi_call"));
     ASSERT_THROW(simplemc::mpi::check_mpi_call(MPI_SUCCESS + 1, "test_check_mpi_call"), simplemc::simplemc_exception);
 }
 
+// Test rank and size of communicator.
 TEST(SimplemcMPI, HelloWorldWithMPIEnvironment) {
     simplemc::mpi::communicator comm;
     fmt::print("Hello world, from {} of {} processes.\n", comm.rank(), comm.size());
 }
 
+// Test throwing and catching an exception on some process.
 TEST(SimplemcMPI, ThrowException) {
     simplemc::mpi::communicator comm;
     try {

@@ -32,21 +32,25 @@ public:
     virtual void read_json([[maybe_unused]] const nlohmann::json& j) {}
 
     /**
-     * @brief User input in JSON format. Can be used to write default input files.
+     * @brief User input in JSON format. 
+     * 
+     * @details Can be used to write default input files.
      *
      * @param j nlohmann::json object.
      */
     virtual void write_input_json([[maybe_unused]] nlohmann::json& j) const {}
 
     /**
-     * @brief User input in JSON format. Can be used to read in user input.
+     * @brief User input in JSON format. 
+     * 
+     * @details Can be used to read in user input.
      *
      * @param j nlohmann::json object.
      */
     virtual void read_input_json([[maybe_unused]] const nlohmann::json& j) {}
 
     /**
-     * @brief Virtual dtor.
+     * @brief Virtual destructor.
      */
     virtual ~basic_json() = default;
 };

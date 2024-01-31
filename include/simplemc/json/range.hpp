@@ -29,7 +29,7 @@ void range_to_json(nlohmann::json& j, ranges::input_range auto&& rg) {
  * @brief Deserialize a range from JSON.
  *
  * @details The size of the output_range and the input JSON array are only checked
- * if the output_range is a sized_range. Throws a simplemc_exception if the sizes
+ * if the output_range is a sized_range. Throws a simplemc::simplemc_exception if the sizes
  * do not match.
  *
  * @param j nlohmann::json object.

@@ -14,11 +14,9 @@ namespace simplemc {
  * @brief Lazy, 1-dimensional linear grid.
  *
  * @details The grid is defined by the value of the first grid point, the value of the
- * last grid point (!= first) and its size (>= 2). The grid points y(i) are generated
- * according to:
- *
- *     y(i) = first + step * i, where i in [0, 1, ..., size - 1] and
- *     step = (last - first) / (size - 1).
+ * last grid point (!= first) and its size (>= 2). The grid points `y(i)` are generated
+ * according to `y(i) = first + step * i`, where `i in [0, 1, ..., size - 1]` and
+ * `step = (last - first) / (size - 1)`.
  *
  * If last < first, then the grid is descending.
  */
@@ -35,7 +33,7 @@ public:
     using size_type = grid_base::size_type;
 
     /**
-     * @brief Constructor for the linear_grid.
+     * @brief Constructor for a linear grid.
      *
      * @param first First value of the grid.
      * @param last Last value of the grid.
@@ -83,6 +81,17 @@ public:
     [[nodiscard]] value_type bin_volume([[maybe_unused]] size_type idx) const override {
         assert(idx >= 0 && idx + 1 < size_);
         return std::abs(step_);
+    }
+
+    /**
+     * @brief Get the center of the bin at a certain index.
+     *
+     * @param idx Index of bin.
+     * @return Center of bin at that index.
+     */
+    [[nodiscard]] value_type center(size_type idx) const override {
+        assert(idx >= 0 && idx + 1 < size_);
+        return at(idx) + step_ / 2.;
     }
 
     /**

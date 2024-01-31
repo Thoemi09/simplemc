@@ -61,9 +61,9 @@ public:
     using nd_value_type = std::array<value_type, dim()>;
 
     /**
-     * @brief Constructor for an nd-grid.
+     * @brief Constructor for an N-dimensional grid.
      *
-     * @param gs N grids.
+     * @param gs 1-dimensional grids.
      */
     nd_grid(const Grids&... gs) : grids_(gs...) {}
 
@@ -96,7 +96,7 @@ public:
     }
 
     /**
-     * @brief Get size of nd-grid.
+     * @brief Get size of N-dimensional grid.
      *
      * @return Total number of grid points.
      */
@@ -114,7 +114,7 @@ public:
     }
 
     /**
-     * @brief Get grid point at a certain index array.
+     * @brief Get grid point at a given index array.
      *
      * @param idx_arr Index array.
      * @return Grid point at that index array.
@@ -124,10 +124,10 @@ public:
     }
 
     /**
-     * @brief Get grid point at certain indices.
+     * @brief Get grid point at the given indices.
      *
      * @tparam Idxs Index types.
-     * @param idxs Indices.
+     * @param idxs Indices for each dimension.
      * @return Grid point at those indices.
      */
     template <typename... Idxs>
@@ -136,7 +136,7 @@ public:
     }
 
     /**
-     * @brief Center of a certain bin volume.
+     * @brief Center of a given bin volume.
      *
      * @param idx_arr Index array.
      * @return Center of bin specified by index array.
@@ -146,10 +146,10 @@ public:
     }
 
     /**
-     * @brief Center of a certain bin volume.
+     * @brief Center of a given bin volume.
      *
      * @tparam Idxs Index types.
-     * @param idxs Indices.
+     * @param idxs Indices for each dimension.
      * @return Center of bin specified by indices.
      */
     template <typename... Idxs>
@@ -158,7 +158,7 @@ public:
     }
 
     /**
-     * @brief Get index array of the bin to which the value array belongs.
+     * @brief Get index array of the bin to which a given value array belongs.
      *
      * @param val_arr Value array.
      * @return Index array.
@@ -168,10 +168,10 @@ public:
     }
 
     /**
-     * @brief Get index array of bin to which certain values belong.
+     * @brief Get index array of bin to which the given values belong.
      *
      * @tparam Vals Value types.
-     * @param vals Values.
+     * @param vals Values for each dimension.
      * @return Index array.
      */
     template <typename... Vals>
@@ -180,7 +180,7 @@ public:
     }
 
     /**
-     * @brief Call grid_base::index_subrange for each grid.
+     * @brief Call grid_base::index_subrange for each grid for a given value array.
      *
      * @param m Size of subrange.
      * @param val_array Value array.
@@ -191,20 +191,21 @@ public:
     }
 
     /**
-     * @brief Call grid_base::index_subrange for each grid.
+     * @brief Call grid_base::index_subrange for each grid for the given values.
      *
      * @tparam Vals Value types.
      * @param m Size of subrange.
-     * @param vals Values.
+     * @param vals Values for each dimension.
      * @return Index array.
      */
     template <typename... Vals>
     [[nodiscard]] nd_size_type index_subrange(size_type m, Vals... vals) const {
-        return std::apply([m, vals...](const auto&... gs) { return nd_size_type { gs.index_subrange(m, vals)... }; }, grids_);
+        return std::apply(
+            [m, vals...](const auto&... gs) { return nd_size_type { gs.index_subrange(m, vals)... }; }, grids_);
     }
 
     /**
-     * @brief Get bin volume at a certain index array.
+     * @brief Get bin volume at a given index array.
      *
      * @param idx_arr Index array
      * @return Volume of bin.
@@ -214,10 +215,10 @@ public:
     }
 
     /**
-     * @brief Get bin size at a certain indices.
+     * @brief Get bin volume at the given indices.
      *
      * @tparam Idxs Index types.
-     * @param idxs Indices.
+     * @param idxs Indices for each dimension.
      * @return Volume of bin.
      */
     template <typename... Idxs>

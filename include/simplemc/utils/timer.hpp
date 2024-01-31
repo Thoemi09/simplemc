@@ -28,7 +28,9 @@ struct duration {
  * @details The third parameter specifies the type of resulting duration.
  * It is only used for type deduction.
  *
- *     auto measured_time = time_passed(tp1, tp2, duration::millisec{});
+ * @code{.cpp}
+ * auto measured_time = time_passed(tp1, tp2, duration::millisec{});
+ * @endcode
  *
  * Note that this implementation is different from std::chrono::duration_cast,
  * where the resulting duration type has to be given explictly as a template
@@ -58,13 +60,16 @@ template <typename C, typename D1, typename D2, typename D = duration::sec>
  * specified via the template parameter. It can store three different points in
  * time (std::chrono::time_point): start, stop and interim.
  *
- *     timer t;
- *     ...
- *     t.interim();
- *     ...
- *     t.stop();
- *     auto since_start_in_sec = time_passed(t.start_time(), t.stop_time());
- *     auto since_interim_in_min = time_passed(t.interim_time(), t.stop_time(), duration::min{});
+ * @code{.cpp}
+ * timer t;
+ * // code segment to be measured
+ * t.interim();
+ * // code segment to be measured
+ * t.stop();
+ * auto until_interim_in_millisec = time_passed(t.start_time(), t.interim_time(), duration::millisec{});
+ * auto since_interim_in_min = time_passed(t.interim_time(), t.stop_time(), duration::min{});
+ * auto since_start_in_sec = time_passed(t.start_time(), t.stop_time());
+ * @endcode
  *
  * @tparam Clock Clock from std::chrono (default: std::chrono::steady_clock).
  */

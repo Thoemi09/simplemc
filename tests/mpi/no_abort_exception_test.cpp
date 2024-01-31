@@ -1,3 +1,8 @@
+/**
+ * @file no_abort_exception_test.cpp
+ * @brief Test to not abort MPI program on exception.
+ */
+
 #include <simplemc/mpi.hpp>
 
 #include <chrono>
@@ -9,11 +14,11 @@ int main(int argc, char** argv) {
         simplemc::mpi::environment env(argc, argv, false);
         simplemc::mpi::communicator comm;
         int rank = comm.rank();
-        if (rank != 0) {
-            std::this_thread::sleep_for(std::chrono::seconds(3));
-        } else {
+        if (rank == 0) {
             throw simplemc::simplemc_exception("This is a test exception");
         }
+        std::this_thread::sleep_for(std::chrono::seconds(3));
+        std::cout << "Hello from rank " << rank << std::endl;
     } catch(const simplemc::simplemc_exception& e) {
         std::cerr << "Caught exception: " << e.what() << std::endl;
     }

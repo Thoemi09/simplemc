@@ -9,9 +9,13 @@
 
 #include <fmt/ranges.h>
 
+#include <array>
+#include <list>
 #include <numeric>
+#include <span>
+#include <vector>
 
-// Broadcast a single value or a span of values.
+// Broadcast a single value or a range of values.
 template <typename T>
 void broadcast_check(const simplemc::mpi::communicator& comm, const T& t, int root) {
     T value;
@@ -27,7 +31,7 @@ void broadcast_check(const simplemc::mpi::communicator& comm, const T& t, int ro
     ASSERT_EQ(value, t);
 }
 
-// Gather/Allgather a single value or a span of values.
+// Gather/Allgather a single value or a range of values.
 template <typename T>
 void gather_check(const simplemc::mpi::communicator& comm, const T& in, int root) {
     if constexpr (simplemc::mpi::is_mpi_datatype_v<T>) {
@@ -61,7 +65,7 @@ void gather_check(const simplemc::mpi::communicator& comm, const T& in, int root
     }
 }
 
-// Reduce/Allreduce a single value or a span of values.
+// Reduce/Allreduce a single value or a range of values.
 template <typename T>
 void reduce_check(const simplemc::mpi::communicator& comm, const T& in, const T& exp, MPI_Op op, int root) {
     if constexpr (simplemc::mpi::is_mpi_datatype_v<T>) {
@@ -118,9 +122,27 @@ protected:
     simplemc::mpi::communicator comm;
 };
 
-// Test MPI.
+// Custom type for testing MPI datatypes.
+struct foo {
+    int x;
+};
+
+// Test MPI with a hello world program.
 TEST_F(SimplemcMPI, HelloWorldWithMPI) {
     fmt::print("Hello world, from {} of {} processes.\n", comm.rank(), comm.size());
+}
+
+// Test concepts and traits involving MPI datatypes.
+TEST_F(SimplemcMPI, ConceptsAndTraits) {
+    using darray_type = std::array<double, 10>;
+    using farray_type = std::array<foo, 10>;
+    ASSERT_TRUE(simplemc::mpi::mpi_range<std::vector<double>>);
+    ASSERT_FALSE(simplemc::mpi::mpi_range<std::vector<foo>>);
+    ASSERT_TRUE(simplemc::mpi::mpi_range<darray_type>);
+    ASSERT_FALSE(simplemc::mpi::mpi_range<farray_type>);
+    ASSERT_FALSE(simplemc::mpi::mpi_range<std::list<double>>);
+    ASSERT_TRUE(simplemc::mpi::mpi_range<std::span<double>>);
+    ASSERT_FALSE(simplemc::mpi::mpi_range<std::span<foo>>);
 }
 
 // Test broadcasting a single value.

@@ -30,7 +30,7 @@ public:
     using distribution_type = uniform_real_distribution;
 
     /**
-     * @brief Construct a urd_param_type with values for [min, max).
+     * @brief Construct distribution parameters with values for [min, max).
      *
      * @param min_arg Lower bound.
      * @param max_arg Upper bound.
@@ -57,42 +57,42 @@ private:
 };
 
 /**
- * @brief Write textual representation of urd_param_type to ostream.
+ * @brief Write a textual representation of distribution parameters to std::ostream.
  *
- * @details Throws an exception, if writing to ostream fails.
+ * @details Throws an exception, if writing to std::ostream fails.
  *
- * @param os std::ostream.
- * @param param Parameters.
+ * @param os std::ostream to write to.
+ * @param param Distribution parameters to be written.
  * @return Reference to the std::ostream object.
  */
 std::ostream& operator<<(std::ostream& os, const urd_param_type& param);
 
 /**
- * @brief Read textual representation of urd_param_type from istream.
+ * @brief Read a textual representation of distribution parameters from std::istream.
  *
- * @details Throws an exception, if reading from istream fails.
+ * @details Throws an exception, if reading from std::istream fails.
  *
- * @param is std::istream.
- * @param param Parameters.
+ * @param is std::istream to read from.
+ * @param param Distribution parameters to read into.
  * @return Reference to the std::istream object.
  */
 std::istream& operator>>(std::istream& is, urd_param_type& param);
 
 /**
- * @brief Compare two urd_param_type objects for equality.
+ * @brief Compare two distribution parameters for equality.
  *
- * @param lhs Parameters #1.
- * @param rhs Parameters #2.
- * @return `true` if both their `min_` and `max_` values are equal.
+ * @param lhs Left-hand side distribution parameters.
+ * @param rhs Right-hand side distribution parameters.
+ * @return True if they represent the same interval.
  */
 [[nodiscard]] bool operator==(const urd_param_type& lhs, const urd_param_type& rhs);
 
 /**
- * @brief Compare two urd_param_type objects for inequality.
+ * @brief Compare two distribution parameters for inequality.
  *
- * @param lhs Parameters #1.
- * @param rhs Parameters #2.
- * @return `true` if either their `min_` or `max_` values are not equal.
+ * @param lhs Left-hand side distribution parameters.
+ * @param rhs Right-hand side distribution parameters.
+ * @return True if they represent distinct intervals.
  */
 [[nodiscard]] bool operator!=(const urd_param_type& lhs, const urd_param_type& rhs);
 
@@ -123,7 +123,7 @@ public:
     using param_type = detail::urd_param_type;
 
     /**
-     * @brief Construct a uniform_real_distribution on the interval [min_arg, max_arg).
+     * @brief Construct a distribution on the interval [min, max).
      *
      * @param min_arg Lower bound.
      * @param max_arg Upper bound.
@@ -131,9 +131,9 @@ public:
     explicit uniform_real_distribution(double min_arg = 0.0, double max_arg = 1.0);
 
     /**
-     * @brief Construct a uniform_real_distribution from a given param_type.
+     * @brief Construct a distribution from given distribution parameters.
      *
-     * @param param Parameter specifying [min, max).
+     * @param param Parameters specifying [min, max).
      */
     explicit uniform_real_distribution(const param_type& param);
 
@@ -152,16 +152,16 @@ public:
     [[nodiscard]] double max() const { return param_.max(); }
 
     /**
-     * @brief Get interval [min, max) as a param_type object.
+     * @brief Get the distribution parameters, i.e. the interval on which the distribution is defined.
      *
-     * @return Interval on which the current distribution is defined.
+     * @return Distribution parameters.
      */
     [[nodiscard]] param_type param() const { return param_; }
 
     /**
-     * @brief Set interval [min, max) on which the distribution is defined.
+     * @brief Set the distribution parameters, i.e. the interval on which the distribution is defined.
      *
-     * @param param New bounds for the distribution.
+     * @param param Distribution parameters.
      */
     void param(const param_type& param) { param_ = param; }
 
@@ -171,7 +171,7 @@ public:
     void reset() {}
 
     /**
-     * @brief Generate random number.
+     * @brief Generate a uniform real random number.
      *
      * @details The RNG has to produce 64-bit values.
      *
@@ -185,12 +185,12 @@ public:
     }
 
     /**
-     * @brief Generate random number on the interval specified by param.
+     * @brief Generate a uniform real random number according to the given distribution parameters.
      *
      * @tparam RNG 64-bit Random number generator.
      * @param rng RNG object.
-     * @param param Interval bounds.
-     * @return Random double on the specified interval.
+     * @param param Disribution parameters.
+     * @return Random double distributed according to the given distribution parameters.
      */
     template <typename RNG>
     double operator()(RNG& rng, const param_type& param) const {
@@ -202,42 +202,42 @@ private:
 };
 
 /**
- * @brief Write a textual representation of a uniform_real_distribution to ostream.
+ * @brief Write a textual representation of a distribution to std::ostream.
  *
- * @details Throws an exception, if writing to ostream fails.
+ * @details Throws an exception, if writing to std::ostream fails.
  *
- * @param os Reference to ostream.
+ * @param os std::ostream to write to.
  * @param ud Distribution to be written.
- * @return Reference to ostream.
+ * @return Reference to the std::ostream object.
  */
 std::ostream& operator<<(std::ostream& os, const uniform_real_distribution& ud);
 
 /**
- * @brief Restore uniform_real_distribution from istream.
+ * @brief Read a textual representations of a distribution from std::istream.
  *
- * @details If reading from istream fails, the state is left unchanged and an exception is thrown.
+ * @details Throws an exception, if reading from std::istream fails.
  *
- * @param is Reference to istream.
+ * @param is std::istream to read from.
  * @param ud Distribution to be read into.
- * @return Reference to istream.
+ * @return Reference to the std::istream object.
  */
 std::istream& operator>>(std::istream& is, uniform_real_distribution& ud);
 
 /**
- * @brief Compare two uniform_real_distributions for equality.
+ * @brief Compare two distributions for equality.
  *
- * @param lhs Distribution #1.
- * @param rhs Distribution #2.
- * @return `true` if the parameters of the distributions are the same.
+ * @param lhs Left-hand side distribution.
+ * @param rhs Right-hand side distribution.
+ * @return True if the parameters of the distributions are the same.
  */
 [[nodiscard]] bool operator==(const uniform_real_distribution& lhs, const uniform_real_distribution& rhs);
 
 /**
- * @brief Compare two uniform_real_distributions for inequality.
+ * @brief Compare two distributions for inequality.
  *
- * @param lhs Distribution #1.
- * @param rhs Distribution #2.
- * @return `true` if the parameters of the distributions are distinct.
+ * @param lhs Left-hand side distribution.
+ * @param rhs Right-hand side distribution.
+ * @return True if the parameters of the distributions are distinct.
  */
 [[nodiscard]] bool operator!=(const uniform_real_distribution& lhs, const uniform_real_distribution& rhs);
 

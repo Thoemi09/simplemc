@@ -15,10 +15,8 @@ namespace simplemc {
  *
  * @details The grid is defined by the value of the first grid point, the value of the
  * last grid point (!= first), its size (>= 2) and a power parameter (> 0). The grid points
- * y(i) are generated according to:
- *
- *     y(i) = first + scale * i**power, where i in [0, 1, ..., size - 1] and
- *     scale = (last - first) / std::pow((size - 1), power).
+ * `y(i)` are generated according to `y(i) = first + scale * i**power`, where `i in [0, 1, ..., size - 1]` 
+ * and `scale = (last - first) / std::pow((size - 1), power)`.
  *
  * If last < first, then the grid is descending.
  */
@@ -35,7 +33,7 @@ public:
     using size_type = grid_base::size_type;
 
     /**
-     * @brief Constructor for the power_grid.
+     * @brief Constructor for a power grid.
      *
      * @param first First value of the grid.
      * @param last Last value of the grid.

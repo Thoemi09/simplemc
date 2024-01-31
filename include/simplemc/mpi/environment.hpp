@@ -34,36 +34,36 @@ public:
     /**
      * @brief Check if the MPI environment is initialized.
      *
-     * @return `true`, if MPI_Init has been called.
+     * @return True if MPI_Init has been called.
      */
     [[nodiscard]] static bool initialized();
 
     /**
      * @brief Check if the MPI environment is finalized.
      *
-     * @return `true`, if MPI_Finalize has been called.
+     * @return True if MPI_Finalize has been called.
      */
     [[nodiscard]] static bool is_finalized();
 
     /**
-     * @brief Abort all MPI processes on `MPI_COMM_WORLD`.
+     * @brief Abort all MPI processes on MPI_COMM_WORLD.
      *
-     * @param errcode Error code that will be passed to the `MPI_Abort` function.
+     * @param errcode Error code that will be passed to the MPI_Abort function.
      */
     static void abort(int errcode = 0);
 
     /**
-     * @brief Clean up all MPI processes with a call to `MPI_Finalize`.
+     * @brief Clean up all MPI processes with a call to MPI_Finalize.
      */
     static void finalize();
 
     /**
      * @brief Constructor to initialize the MPI environment.
      *
-     * @param argc The number of arguments passed to `main()` through argv.
-     * @param argv The arguments passed to `main()` as an array of strings.
+     * @param argc The number of arguments passed to main() through argv.
+     * @param argv The arguments passed to main() as an array of strings.
      * @param abort_on_exception If the environment is destroyed due to an uncaught exception,
-     * it will call `MPI_Abort` instead of `MPI_Finalize` in its destructor.
+     * it will call MPI_Abort instead of MPI_Finalize in its destructor.
      */
     environment(int& argc, char**& argv, bool abort_on_exception = true);
 
@@ -78,8 +78,8 @@ public:
     environment& operator=(const environment&) = delete;
 
     /**
-     * @brief Clean up the MPI environment, either by calling `MPI_Abort` due to an uncaught exception
-     * or by calling `MPI_Finalize`.
+     * @brief Clean up the MPI environment, either by calling MPI_Abort due to an uncaught exception
+     * or by calling MPI_Finalize.
      */
     ~environment();
 

@@ -70,7 +70,7 @@ public:
     [[nodiscard]] static constexpr result_type max() { return std::numeric_limits<result_type>::max(); }
 
     /**
-     * @brief Construct a xoshiro256 RNG from a single std::uint64_t seed.
+     * @brief Construct a RNG from a single std::uint64_t seed.
      *
      * @details The value is used to seed a splitmix64 RNG, which in turn is used to seed
      * the internal state of the xoshiro256 RNG.
@@ -80,7 +80,7 @@ public:
     explicit xoshiro256(std::uint64_t s = default_seed);
 
     /**
-     * @brief Construct a xoshiro256 RNG from four std::uint64_t.
+     * @brief Construct a RNG from four std::uint64_t.
      *
      * @param s0 64-bit unsigned integer.
      * @param s1 64-bit unsigned integer.
@@ -90,7 +90,7 @@ public:
     xoshiro256(std::uint64_t s0, std::uint64_t s1, std::uint64_t s2, std::uint64_t s3);
 
     /**
-     * @brief Construct a xoshiro256 RNG from a SeedSequence.
+     * @brief Construct a RNG from a SeedSequence.
      *
      * @tparam SeedSeq Type of the seed sequence.
      * @param seq Seed sequence.
@@ -143,7 +143,7 @@ public:
     [[nodiscard]] const state_type& internal_state() const { return state_; }
 
     /**
-     * @brief Generate a random number and advance internal state.
+     * @brief Generate a random number and advance the internal state.
      *
      * @return A random 64-bit unsigned number.
      */
@@ -217,49 +217,49 @@ inline std::uint64_t xoshiro256<xoshiro256_type::starstar>::type_specific() {
 }
 
 /**
- * @brief Write textual representation of splitmix64 to ostream. 
- * 
- * @details Throws an exception, if writing to ostream fails.
+ * @brief Write a textual representation of a random number generator to std::ostream.
+ *
+ * @details Throws an exception, if writing to std::ostream fails.
  *
  * @tparam X xoshiro256 type.
- * @param os Reference to ostream.
- * @param eng xoshiro256 RNG.
- * @return Reference to ostream.
+ * @param os std::ostream to write to.
+ * @param eng RNG to be written.
+ * @return Reference to the std::ostream.
  */
 template <xoshiro256_type X>
 std::ostream& operator<<(std::ostream& os, const xoshiro256<X>& eng);
 
 /**
- * @brief Restore splitmix64 from istream. 
- * 
- * @details Throws an exception, if reading from istream fails.
+ * @brief Read a textual representation of a random number generator from std::istream.
+ *
+ * @details Throws an exception, if reading from std::istream fails.
  *
  * @tparam X xoshiro256 type.
- * @param is Reference to istream.
- * @param eng xoshiro256 RNG.
- * @return Reference to istream.
+ * @param is std::istream to read from.
+ * @param eng RNG to read into.
+ * @return Reference to the std::istream.
  */
 template <xoshiro256_type X>
 std::istream& operator>>(std::istream& is, xoshiro256<X>& eng);
 
 /**
- * @brief Compare two xoshiro256 RNGs for equality.
+ * @brief Compare two RNGs for equalitiy.
  *
  * @tparam X xoshiro256 type.
- * @param lhs xoshiro256 #1.
- * @param rhs xoshiro256 #2.
- * @return `true` if the internal states are equal.
+ * @param lhs Left-hand side RNG.
+ * @param rhs Right-hand side RNG.
+ * @return True if their internal states are equal.
  */
 template <xoshiro256_type X>
 [[nodiscard]] bool operator==(const xoshiro256<X>& lhs, const xoshiro256<X>& rhs);
 
 /**
- * @brief Compare two xoshiro256 RNGs for inequality.
+ * @brief Compare two RNGs for inequality.
  *
  * @tparam X xoshiro256 type.
- * @param lhs xoshiro256 #1.
- * @param rhs xoshiro256 #2.
- * @return `true` if the internal states are unequal.
+ * @param lhs Left-hand side RNG.
+ * @param rhs Right-hand side RNG.
+ * @return True if their internal states are distinct.
  */
 template <xoshiro256_type X>
 [[nodiscard]] bool operator!=(const xoshiro256<X>& lhs, const xoshiro256<X>& rhs);

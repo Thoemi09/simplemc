@@ -10,6 +10,8 @@
 
 #include <array>
 #include <cassert>
+#include <cstddef>
+#include <functional>
 #include <numeric>
 #include <vector>
 
@@ -139,17 +141,17 @@ template <std::integral T1, std::integral T2, nd_order Order = column_major>
     assert(idxs.size() == shape.size());
     const auto size = shape.size();
     if constexpr (std::same_as<Order, column_major>) {
-        auto idx = idxs.back();
+        auto flat_idx = idxs.back();
         for (std::size_t i = 2; i <= size; ++i) {
-            idx = idx * shape[size - i] + idxs[size - i];
+            flat_idx = flat_idx * shape[size - i] + idxs[size - i];
         }
-        return idx;
+        return flat_idx;
     } else {
-        auto idx = idxs.front();
+        auto flat_idx = idxs.front();
         for (std::size_t i = 1; i < size; ++i) {
-            idx = idx * shape[i] + idxs[i];
+            flat_idx = flat_idx * shape[i] + idxs[i];
         }
-        return idx;
+        return flat_idx;
     }
 }
 
@@ -169,17 +171,17 @@ template <std::integral T1, std::integral T2, std::size_t N, nd_order Order = co
 [[nodiscard]] constexpr auto flat_index(
     const std::array<T1, N>& idxs, const std::array<T2, N>& shape, [[maybe_unused]] Order order = Order {}) {
     if constexpr (std::same_as<Order, column_major>) {
-        auto idx = idxs.back();
+        auto flat_idx = idxs.back();
         for (std::size_t i = 2; i <= N; ++i) {
-            idx = idx * shape[N - i] + idxs[N - i];
+            flat_idx = flat_idx * shape[N - i] + idxs[N - i];
         }
-        return idx;
+        return flat_idx;
     } else {
-        auto idx = idxs.front();
+        auto flat_idx = idxs.front();
         for (std::size_t i = 1; i < N; ++i) {
-            idx = idx * shape[i] + idxs[i];
+            flat_idx = flat_idx * shape[i] + idxs[i];
         }
-        return idx;
+        return flat_idx;
     }
 }
 
@@ -191,7 +193,7 @@ template <std::integral T1, std::integral T2, std::size_t N, nd_order Order = co
  * we want to find the integer range `(j, j+1, ..., j+m-1)` such that `l` lies in the center of it
  * (insofar as this is possible considering the boundaries, i.e. `j >= 0` and `j <= n-1`). `m` is the
  * size of the wanted subrange. If `m` is even, the larger possible `j` value is chosen, e.g. if m = 2,
- * then j = l.
+ * then `j = l` if possible.
  *
  * @tparam T Integral type.
  * @param l Center of the subrange.

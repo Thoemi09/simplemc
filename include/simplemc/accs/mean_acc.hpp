@@ -11,41 +11,52 @@
 #include <range/v3/range/concepts.hpp>
 
 #include <cassert>
+#include <cstddef>
+#include <cstdint>
 
 namespace simplemc {
 
 /**
  * @brief Mean accumulator for calculating arithmetic means.
  *
- * @details No error estimation is available. The accumulator stores the sum of the accumulated
- * data as well as the number of samples.
+ * @details No error estimation is available. Depending on the type of algorithm, the
+ * accumulator either stores the sum of the accumulated data or the mean itself. The
+ * number of accumulated samples is always stored.
+ *
+ * The user can choose the apply a constant shift to the accumulated data. This can sometimes
+ * improve the numerical accuracy.
  *
  * If the size of the accumulator is 1, then values can be added with the stream operator:
- *
- *     acc << val;
+ * @code{.cpp}
+ * acc << val;
+ * @endcode
  *
  * If the size of the accumulator is > 1 and only a single value should be added at once,
  * then one can use the subscript operator together with the stream operator:
- *
- *     acc[idx] << val;
+ * @code{.cpp}
+ * acc[idx] << val;
+ * @endcode
  *
  * If the size of the accumulator is > 1 and multiple values should be added at once,
  * then one can use a multi value accumulator together with the stream operator:
- *
- *     {
- *         auto mva = acc.make_mva();
- *         mva[idx1] << val1;
- *         mva[idx2] << val2;
- *     }
+ * @code{.cpp}
+ * {
+ *     auto mva = acc.make_mva();
+ *     mva[idx1] << val1;
+ *     mva[idx2] << val2;
+ * }
+ * @endcode
  *
  * If a range of values should be added at once, one can use the accumulate function:
- *
- *     acc.accumulate(range, idx, count);
+ * @code{.cpp}
+ * acc.accumulate(range, idx, count);
+ * @endcode
  *
  * The mean (stderror, tau) is always returned as an Eigen::ArrayX object. If e.g. the size of the
  * accumulator is 1, then we still need to access the array:
- *
- *     auto mean = acc.mean()[0];
+ * @code{.cpp}
+ * auto mean = acc.mean()[0];
+ * @endcode
  *
  * @tparam T Type of accumulated values (either double or std::complex<double>).
  * @tparam A Algorithm used to calculate the mean.
@@ -80,7 +91,7 @@ public:
 
 private:
     /**
-     * @brief Multi value accumulator for mean_acc.
+     * @brief Multi value accumulator for the mean accumulator.
      *
      * @details It holds a reference to a mean accumulator. It can be used to add multiple data points
      * to the accumulator but only increase the count once (when it goes out of scope).
@@ -88,9 +99,9 @@ private:
     class mean_mva {
     public:
         /**
-         * @brief Construct a mean_mva for a given mean_acc and a given index.
+         * @brief Construct a multi value accumulator for a given mean accumulator and a given index.
          *
-         * @param acc Mean accumulator associated with this mean_mva.
+         * @param acc Mean accumulator.
          * @param idx Index.
          */
         mean_mva(mean_acc& acc, size_type idx) : acc_(acc), idx_(idx) { assert(idx_ >= 0 && idx_ < acc_.size()); }
@@ -160,8 +171,8 @@ public:
     void set(const storage_type& data, count_type count, value_type shift = 0.0);
 
     /**
-     * @brief Reset the current accumulator by setting everything to zero and resizing the number of
-     * elements if a size is specified.
+     * @brief Reset the current accumulator by setting everything to zero, resizing the number of
+     * elements (if a size is specified) and changing the constant shift (if a shift is specified).
      *
      * @param size New number of elements. If <= 0, no resizing is performed.
      * @param shift New constant shift. If it is not finite, the old value is kept.
@@ -199,7 +210,7 @@ public:
     }
 
     /**
-     * @brief Stream operator for incorporating the data from another mean_acc.
+     * @brief Stream operator for incorporating the data from another mean accumulator.
      *
      * @details It simply adds the (reshifted) data and the count of the other accumulator to this one.
      *
@@ -235,7 +246,7 @@ public:
      * @brief Create a multi value accumulator for a given index.
      *
      * @param idx Index.
-     * @return Multi value accumulator mean_mva.
+     * @return Multi value accumulator.
      */
     mean_mva make_mva(std::size_t idx = 0) { return mean_mva(*this, idx); }
 

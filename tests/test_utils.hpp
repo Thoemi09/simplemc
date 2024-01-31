@@ -7,6 +7,7 @@
 #define SIMPLEMC_TESTS_TEST_UTILS_HPP
 
 #include <gtest/gtest.h>
+#include <simplemc/utils/concepts.hpp>
 #include <simplemc/json/json.hpp>
 
 #include <fmt/ranges.h>
@@ -32,13 +33,29 @@ void check_json(const T& orig) {
 }
 
 // Check complex numbers for nearness.
-inline void check_complex_near(std::complex<double> lhs, std::complex<double> rhs, double eps = 1e-14) {
+template <typename T1, typename T2>
+inline void check_near(T1 lhs, T2 rhs, double eps = 1e-14) {
+    ASSERT_NEAR(lhs, rhs, eps);
+}
+
+template <typename T1, typename T2>
+inline void check_near(std::complex<T1> lhs, std::complex<T2> rhs, double eps = 1e-14) {
     ASSERT_NEAR(std::real(lhs), std::real(rhs), eps);
     ASSERT_NEAR(std::imag(lhs), std::imag(rhs), eps);
 }
 
 // Check complex numbers for double equality.
-inline void check_complex_equal(std::complex<double> lhs, std::complex<double> rhs) {
+template <typename T1, typename T2>
+inline void check_equal(T1 lhs, T2 rhs) {
+    if constexpr (std::integral<T1> && std::integral<T2>) {
+        ASSERT_EQ(lhs, rhs);
+    } else {
+        ASSERT_DOUBLE_EQ(lhs, rhs);
+    }
+}
+
+template <typename T1, typename T2>
+inline void check_equal(std::complex<T1> lhs, std::complex<T2> rhs) {
     ASSERT_DOUBLE_EQ(std::real(lhs), std::real(rhs));
     ASSERT_DOUBLE_EQ(std::imag(lhs), std::imag(rhs));
 }
@@ -47,7 +64,7 @@ inline void check_complex_equal(std::complex<double> lhs, std::complex<double> r
 void check_range_near(ranges::input_range auto&& rg, ranges::input_range auto&& exp_rg, double eps = 1e-14) {
     ASSERT_EQ(ranges::size(rg), ranges::size(exp_rg));
     for (auto&& [x, y] : ranges::views::zip(rg, exp_rg)) {
-        ASSERT_NEAR(x, y, eps);
+        check_near(x, y, eps);
     }
 }
 
@@ -55,7 +72,7 @@ void check_range_near(ranges::input_range auto&& rg, ranges::input_range auto&& 
 void check_range_equal(ranges::input_range auto&& rg, ranges::input_range auto&& exp_rg) {
     ASSERT_EQ(ranges::size(rg), ranges::size(exp_rg));
     for (auto&& [x, y] : ranges::views::zip(rg, exp_rg)) {
-        ASSERT_EQ(x, y);
+        check_equal(x, y);
     }
 }
 

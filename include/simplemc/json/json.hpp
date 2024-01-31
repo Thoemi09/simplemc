@@ -20,7 +20,7 @@ namespace nlohmann {
 template <typename T>
 struct adl_serializer<std::complex<T>> {
     /**
-     * @brief Serialize std::complex<T> to JSON.
+     * @brief Serialize std::complex<T> to JSON as an array of size 2.
      *
      * @param j nlohmann::json object.
      * @param z std::complex<T> object.

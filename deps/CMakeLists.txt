@@ -72,7 +72,7 @@ message(STATUS "MPI found: Include directories = ${MPI_CXX_INCLUDE_DIRS}")
 if(SIMPLEMC_FETCH_EIGEN)
     FetchContent_Declare(eigen3
         GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
-        GIT_TAG 3.4) # aa6964b
+        GIT_TAG master) # aa6964b
     set(EIGEN_BUILD_TESTING OFF CACHE BOOL "")
     message(STATUS "Fetching eigen ...")
     FetchContent_MakeAvailable(eigen3)

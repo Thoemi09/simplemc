@@ -20,11 +20,8 @@ namespace simplemc {
  * https://people.sc.fsu.edu/~jburkardt/f77_src/special_functions/special_functions.f
  *
  * This class and derived classes are intented to be used for estimating coefficients in a generalized
- * Fourier series:
- *
- *     f(x) = sum_l f_l p_l(x),
- *
- * with the coefficients f_l and the l-th order polynomial p_l(x). It is instantiated at a specific x.
+ * Fourier series: \f$f(x) = sum_l f_l p_l(x)\f$, with the coefficients \f$f_l\f$ and the l-th order polynomial
+ * \f$p_l(x)\f$. It is instantiated at a specific x.
  */
 class orthogonal_polynomial {
 public:
@@ -121,7 +118,10 @@ public:
      *
      * @return Value of the polynomial evaluated at the stored x.
      */
-    [[nodiscard]] virtual double last_value() const;
+    [[nodiscard]] virtual double last_value() const {
+        assert(l_ > 0);
+        return ylm1_;
+    }
 
     /**
      * @brief Get the derivative of the currently processed polynomial.
@@ -135,7 +135,10 @@ public:
      *
      * @return First derivative of the polynomial evaluated at the stored x.
      */
-    [[nodiscard]] virtual double last_derivative() const;
+    [[nodiscard]] virtual double last_derivative() const {
+        assert(l_ > 0);
+        return dylm1_;
+    }
 
     /**
      * @brief Get the value of the polynomial of a given order at a given x.
@@ -483,14 +486,17 @@ public:
      *
      * @return First derivative of the polynomial evaluated at the stored x.
      */
-    [[nodiscard]] double current_derivative() const override;
+    [[nodiscard]] double current_derivative() const override { return -static_cast<double>(l_) * dyl_ * sinx_; }
 
     /**
      * @brief Get the derivative of the previously processed polynomial evaluated at the stored x.
      *
      * @return First derivative of the polynomial evaluated at the stored x.
      */
-    [[nodiscard]] double last_derivative() const override;
+    [[nodiscard]] double last_derivative() const override {
+        assert(l_ > 0);
+        return -static_cast<double>(l_ - 1) * dylm1_ * sinx_;
+    }
 
     /**
      * @brief Get the value of the polynomial of a given order at a given x.
@@ -507,7 +513,7 @@ private:
 };
 
 /**
- * @brief Recursive implementation of the cosine for a specific x.
+ * @brief Recursive implementation of the sine for a specific x.
  */
 class sine : public orthogonal_polynomial {
 public:
@@ -552,28 +558,34 @@ public:
      *
      * @return Value of the polynomial evaluated at the stored x.
      */
-    [[nodiscard]] double current_value() const override;
+    [[nodiscard]] double current_value() const override { return yl_ * sinx_; }
 
     /**
      * @brief Get the value of the previously processed polynomial.
      *
      * @return Value of the polynomial evaluated at the stored x.
      */
-    [[nodiscard]] double last_value() const override;
+    [[nodiscard]] double last_value() const override {
+        assert(l_ > 0);
+        return ylm1_ * sinx_;
+    }
 
     /**
      * @brief Get the derivative of the currently processed polynomial.
      *
      * @return First derivative of the polynomial evaluated at the stored x.
      */
-    [[nodiscard]] double current_derivative() const override;
+    [[nodiscard]] double current_derivative() const override { return static_cast<double>(l_) * dyl_; }
 
     /**
      * @brief Get the derivative of the previously processed polynomial evaluated at the stored x.
      *
      * @return First derivative of the polynomial evaluated at the stored x.
      */
-    [[nodiscard]] double last_derivative() const override;
+    [[nodiscard]] double last_derivative() const override {
+        assert(l_ > 0);
+        return static_cast<double>(l_ - 1) * dylm1_;
+    }
 
     /**
      * @brief Get the value of the polynomial of a given order at a given x.

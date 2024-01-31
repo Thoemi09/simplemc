@@ -3,8 +3,8 @@
  * @brief Cubic spline interpolation in 1D.
  */
 
-#ifndef SIMPLEMC_NUMERIC_CUBIC_SPLINE_INTERPOLATION_H
-#define SIMPLEMC_NUMERIC_CUBIC_SPLINE_INTERPOLATION_H
+#ifndef SIMPLEMC_NUMERIC_CUBIC_SPLINE_INTERPOLATION_HPP
+#define SIMPLEMC_NUMERIC_CUBIC_SPLINE_INTERPOLATION_HPP
 
 #include <simplemc/numeric/eigen.hpp>
 #include <simplemc/numeric/utils.hpp>
@@ -18,7 +18,7 @@ namespace detail {
 
 /**
  * @brief Get basic spline matrix, i.e. with the first and last equation left unspecified.
- * The remaining equations are specified by giving boundary conditions.
+ * The remaining equations are specified by the boundary conditions.
  *
  * @details See LHS of Eq. 3.3.7 times 6 in Press, Numerical Recipes.
  *
@@ -42,7 +42,7 @@ template <typename Grid>
 
 /**
  * @brief Get basic spline vector, i.e. with the first and last element left unspecified.
- * The remaining elements are specified by giving boundary conditions.
+ * The remaining elements are specified by the boundary conditions.
  *
  * @details See RHS of Eq. 3.3.7 times 6 in Press, Numerical Recipes.
  *
@@ -106,8 +106,8 @@ public:
      *
      * @param grid Grid in x direction.
      * @param fvals Function values at grid points.
-     * @param yp_0 First derivative at lower end of grid.
-     * @param yp_n First derivative at upper end of grid.
+     * @param yp_0 First derivative at lower bound of grid.
+     * @param yp_n First derivative at upper bound of grid.
      */
     cubic_spline_interpolation(const grid_type& grid, const std::span<double>& fvals, double yp_0, double yp_n);
 
@@ -238,4 +238,4 @@ double cubic_spline_interpolation<Grid>::operator()(double x) const {
 
 } // namespace simplemc
 
-#endif // SIMPLEMC_NUMERIC_CUBIC_SPLINE_INTERPOLATION_H
+#endif // SIMPLEMC_NUMERIC_CUBIC_SPLINE_INTERPOLATION_HPP

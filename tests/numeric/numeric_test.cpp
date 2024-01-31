@@ -64,9 +64,10 @@ TEST(SimplemcNumeric, UtilityFunctions) {
     ASSERT_DOUBLE_EQ(rel_diff(1e-5, 2e-5), 1);
 
     // isfinite
+    ASSERT_TRUE(simplemc::isfinite(1.0 / 1.0));
     ASSERT_FALSE(simplemc::isfinite(1.0 / 0.0));
     std::complex<double> c1 { 1.0, std::log(-1) };
-    ASSERT_FALSE(isfinite(c1));
+    ASSERT_FALSE(simplemc::isfinite(c1));
 }
 
 // Test map_to_interval and map_to_interval_lb functions.
@@ -153,14 +154,39 @@ TEST(SimplemcNumeric, MakeSpan) {
     ASSERT_EQ(sp_a44.data(), &a44(0, 0));
 }
 
+// Test some Eigen specific extensions.
+TEST(SimplemcNumeric, EigenFunctions) {
+    // isfinite
+    constexpr auto inf = std::numeric_limits<double>::infinity();
+    constexpr auto nan = std::numeric_limits<double>::quiet_NaN();
+    typename vector<3>::type v { 1.0, 2.0, 3.0 };
+    typename vector<3>::type v_inf { 1.0, 2.0, inf };
+    typename vector<3>::type v_nan { 1.0, nan, 3.0 };
+    ASSERT_TRUE(simplemc::isfinite(v));
+    ASSERT_FALSE(simplemc::isfinite(v_inf));
+    ASSERT_FALSE(simplemc::isfinite(v_nan));
+    Eigen::MatrixXd mat = Eigen::MatrixXd::Random(10, 15);
+    ASSERT_TRUE(simplemc::isfinite(mat));
+    mat(5, 5) = inf;
+    ASSERT_FALSE(simplemc::isfinite(mat));
+
+    // abs_diff and rel_diff
+    typename vector<3>::type v1 { 1.0, 2.0, 3.0 };
+    typename vector<3>::type v2 { 1.0, 2.0, 3.0 + 1e-5 };
+    check_near(abs_diff(v1, v2), 1e-5);
+    ASSERT_TRUE(rel_diff(v1, v2) < 1e-5);
+}
+
 // Test conversion between cartesian and polar coordinates.
 TEST(SimplemcNumeric, PolarCartesianConversion) {
-    vector<3>::type vec { 1.0, 0.0, 0.0 };
-    vector<3>::type exp { 1.0, std::numbers::pi / 2, 0.0 };
-    check_range_near(cartesian_to_polar(vec), exp);
-    vector<2>::type vec2 { std::numbers::sqrt2, std::numbers::pi / 4 };
-    vector<2>::type exp2 { 1.0, 1.0 };
-    check_range_near(polar_to_cartesian(vec2), exp2);
+    vector<3>::type v3_c { 1.0, 0.0, 0.0 };
+    vector<3>::type v3_p { 1.0, std::numbers::pi / 2, 0.0 };
+    check_range_near(cartesian_to_polar(v3_c), v3_p);
+    // check_range_near(polar_to_cartesian(v3_p), v3_c);
+    vector<2>::type v2_p { std::numbers::sqrt2, std::numbers::pi / 4 };
+    vector<2>::type v2_c { 1.0, 1.0 };
+    check_range_near(polar_to_cartesian(v2_p), v2_c);
+    check_range_near(cartesian_to_polar(v2_c), v2_p);
 }
 
 // Test 1d linear lattice.
@@ -831,14 +857,18 @@ TEST(SimplemcNumeric, BasicQuadrature) {
 
 // Test trapezoidal quadrature.
 TEST(SimplemcNumeric, TrapzoidalQuadrature) {
-    double res = simplemc::trapez_quadrature([](double x) { return std::sin(x); }, 0, std::numbers::pi, 1e-10);
+    auto [res, err, n] = simplemc::trapez_quadrature([](double x) { return std::sin(x); }, 0, std::numbers::pi, 1e-10);
     ASSERT_NEAR(res, 2.0, 2.0 * 1e-10);
+    ASSERT_TRUE(err < 1e-10);
+    std::cout << "Number of iterations: " << n << std::endl;
 }
 
 // Test Simpson quadrature.
 TEST(SimplemcNumeric, SimpsonQuadrature) {
-    double res = simplemc::simpson_quadrature([](double x) { return std::sin(x); }, 0, std::numbers::pi, 1e-10);
+    auto [res, err, n] = simplemc::simpson_quadrature([](double x) { return std::sin(x); }, 0, std::numbers::pi, 1e-10);
     ASSERT_NEAR(res, 2.0, 2.0 * 1e-10);
+    ASSERT_TRUE(err < 1e-10);
+    std::cout << "Number of iterations: " << n << std::endl;
 }
 
 // Test a combination of interpolation and quadrature.
@@ -851,8 +881,10 @@ TEST(SimplemcNumeric, InterpolationWithQuadrature) {
     }
     simplemc::polynomial_interpolation pi(grid, fvals, 2);
     auto func = [&pi](double x) { return pi(x); };
-    double res = simplemc::simpson_quadrature(func, grid.first(), grid.last());
+    auto [res, err, n] = simplemc::simpson_quadrature(func, grid.first(), grid.last());
     ASSERT_NEAR(res, 2.0, 1e-6);
+    ASSERT_TRUE(err < 1e-7);
+    std::cout << "Number of iterations: " << n << std::endl;
 }
 
 // Test linear maps.

@@ -27,7 +27,7 @@ template <typename T>
 struct is_mpi_datatype : public std::false_type {};
 
 /**
- * @brief Alias template for the `value` in simplemc::mpi::is_mpi_datatype.
+ * @brief Alias template for the value in simplemc::mpi::is_mpi_datatype.
  *
  * @tparam T C++ type.
  */
@@ -40,7 +40,7 @@ inline constexpr bool is_mpi_datatype_v = is_mpi_datatype<T>::value;
  * @details For not supported C++ types, this struct will be empty. All others provide a
  * specialization with a static method `get()`, which returns the corresponding MPI datatype.
  *
- * @tparam T C++ type
+ * @tparam T C++ type.
  */
 template <typename T>
 struct mpi_type {};

@@ -1,5 +1,5 @@
 /**
- * @file samples.hpp
+ * @file seed_rng.hpp
  * @brief Utility function to seed an RNG with a seed sequence.
  */
 

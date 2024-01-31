@@ -14,11 +14,8 @@ namespace simplemc {
 /**
  * @brief Map a range [a, b] to another range [c, d] (and vice versa) via a linear function.
  *
- * @details The linear function is defined by
- *
- *     y(x) = alpha * x + beta
- *
- * such that y(a) = c, y(b) = d, y^-1(c) = a, y^-1(d) = b. The ranges have to be increasing,
+ * @details The linear function is defined by `y(x) = alpha * x + beta` such that
+ * `y(a) = c, y(b) = d, y^-1(c) = a, y^-1(d) = b`. The ranges have to be increasing,
  * i.e. a < b and c < d.
  */
 class linear_map {
@@ -58,7 +55,7 @@ public:
     [[nodiscard]] double map(double x) const;
 
     /**
-     * @brief Map a value x from [c, d] to [a, b].
+     * @brief Map a value y from [c, d] to [a, b].
      *
      * @param y Input value from [c, d].
      * @return Mapped value in [a, b].

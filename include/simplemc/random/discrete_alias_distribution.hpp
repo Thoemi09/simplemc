@@ -1,6 +1,6 @@
 /**
  * @file discrecte_alias_distribution.hpp
- * @brief Discrete distribution based on Walker-Alias-Algorithm.
+ * @brief Discrete distribution based on the Walker-Alias-Algorithm.
  */
 
 #ifndef SIMPLEMC_RANDOM_DISCRETE_ALIAS_DISTRIBUTION_HPP
@@ -25,7 +25,7 @@ class discrete_alias_distribution;
 namespace detail {
 
 /**
- * @brief Parameter type of discrete_alias_distribution.
+ * @brief Parameter type of simplemc::discrete_alias_distribution.
  *
  * @tparam T Integral type.
  */
@@ -33,17 +33,17 @@ template <integer_only T>
 class dad_param_type {
 public:
     /**
-     * @brief Type of distribution.
+     * @brief Type of the distribution.
      */
     using distribution_type = discrete_alias_distribution<T>;
 
     /**
-     * @brief Default constructor for dad_param_type.
+     * @brief Default constructor.
      */
     dad_param_type();
 
     /**
-     * @brief Constructs a dad_param_type from a range of weights.
+     * @brief Constructs distribution parameters from a range of weights.
      *
      * @tparam InputIt Iterator type.
      * @param first Beginning of range.
@@ -53,16 +53,15 @@ public:
     dad_param_type(InputIt first, InputIt last);
 
     /**
-     * @brief Constructs a dad_param_type from a list of weights.
+     * @brief Constructs distribution parameters from a list of weights.
      *
      * @param list Initializer list of weights.
      */
     dad_param_type(std::initializer_list<double> list);
 
     /**
-     * @brief Constructs a dad_param_type such that the weights are given as
-     * w_i = unary_op(xmin + d/2 + i*d) with d = (xmax - xmin)/n and
-     * i = 0, ..., n.
+     * @brief Constructs distribution parameters such that the weights are given as
+     * `w_i = unary_op(xmin + d/2 + i*d)` with `d = (xmax - xmin)/n` and `i = 0, ..., n`.
      *
      * @tparam UnaryOp Unary operation.
      * @param n Number of bin/weights.
@@ -132,12 +131,12 @@ void dad_param_type<T>::normalize() {
 }
 
 /**
- * @brief Write textual representation of dad_param_type to ostream.
+ * @brief Write a textual representation of distribution parameters to std::ostream.
  *
- * @details Throws an exception, if writing to ostream fails.
+ * @details Throws an exception, if writing to std::ostream fails.
  *
- * @param os std::ostream.
- * @param param Parameters.
+ * @param os std::ostream to write to.
+ * @param param Distribution parameters to be written.
  * @return Reference to the std::ostream object.
  */
 template <integer_only T>
@@ -158,13 +157,13 @@ std::ostream& operator<<(std::ostream& os, const dad_param_type<T>& param) {
 }
 
 /**
- * @brief Read textual representation of dad_param_type from istream.
+ * @brief Read a textual representation of distribution parameters from std::istream.
  *
- * @details Throws an exception, if reading from istream fails.
+ * @details Throws an exception, if reading from std::istream fails.
  *
  * @tparam T Integral type.
- * @param is std::istream.
- * @param param Parameters.
+ * @param is std::istream to read from.
+ * @param param Distribution parameters to read into.
  * @return Reference to the std::istream object.
  */
 template <integer_only T>
@@ -188,12 +187,12 @@ std::istream& operator>>(std::istream& is, dad_param_type<T>& param) {
 }
 
 /**
- * @brief Compare two dad_param_type objects for equality.
+ * @brief Compare two distributions for equality.
  *
  * @tparam T Integral type.
- * @param lhs Parameters #1.
- * @param rhs Parameters #2.
- * @return `true` if their probabilities are equal.
+ * @param lhs Left-hand side distribution.
+ * @param rhs Right-hand side distribution.
+ * @return True if their probabilities are equal.
  */
 template <integer_only T>
 [[nodiscard]] bool operator==(const dad_param_type<T>& lhs, const dad_param_type<T>& rhs) {
@@ -201,12 +200,12 @@ template <integer_only T>
 }
 
 /**
- * @brief Compare two dad_param_type objects for inequality.
+ * @brief Compare two distribtuions for inequality.
  *
  * @tparam T Integral type.
- * @param lhs Parameters #1.
- * @param rhs Parameters #2.
- * @return `true` if their probabilities are not equal.
+ * @param lhs Left-hand side distribution.
+ * @param rhs Right-hand side distribution.
+ * @return True if their probabilities are not equal.
  */
 template <integer_only T>
 [[nodiscard]] bool operator!=(const dad_param_type<T>& lhs, const dad_param_type<T>& rhs) {
@@ -229,7 +228,7 @@ public:
     /**
      * @brief Type of the random number generated.
      */
-    using result_type = std::size_t;
+    using result_type = T;
 
     /**
      * @brief Parameter type of the distribution.
@@ -237,12 +236,12 @@ public:
     using param_type = detail::dad_param_type<T>;
 
     /**
-     * @brief Default constructor for a discrete_alias_distribution.
+     * @brief Default constructor.
      */
     discrete_alias_distribution();
 
     /**
-     * @brief Construct a discrete_alias_distribution from a range of weights.
+     * @brief Construct a distribution from a range of weights.
      *
      * @tparam InputIt Iterator type.
      * @param first Beginning of range.
@@ -252,16 +251,15 @@ public:
     discrete_alias_distribution(InputIt first, InputIt last);
 
     /**
-     * @brief Construct a discrete_alias_distribution from a list of weights.
+     * @brief Construct a distribution from a list of weights.
      *
      * @param list Initializer list of weights.
      */
     discrete_alias_distribution(std::initializer_list<double> list);
 
     /**
-     * @brief Construct a discrete_alias_distribution such that the weights are
-     * given as w_i = unary_op(xmin + d/2 + i*d) with d = (xmax - xmin)/n and
-     * i = 0, ..., n.
+     * @brief Construct a distribution such that the weights are given as
+     * `w_i = unary_op(xmin + d/2 + i*d)` with `d = (xmax - xmin)/n` and `i = 0, ..., n`.
      *
      * @tparam UnaryOp Unary operation.
      * @param n Number of bin/weights.
@@ -273,9 +271,9 @@ public:
     discrete_alias_distribution(std::size_t n, double xmin, double xmax, UnaryOp unary_op);
 
     /**
-     * @brief Construct a discrete_alias_distribution from a given param_type.
+     * @brief Construct a distribution from given distribution parameters.
      *
-     * @param param Parameter specifying the weights.
+     * @param param Parameters specifying the weights.
      */
     explicit discrete_alias_distribution(const param_type& param);
 
@@ -294,23 +292,23 @@ public:
     [[nodiscard]] result_type max() const { return static_cast<result_type>(param_.probs_.size() - 1); }
 
     /**
-     * @brief Get probabilities.
+     * @brief Get the probabilities.
      *
      * @return Probability vector.
      */
     [[nodiscard]] const std::vector<double>& probabilities() const { return param_.probabilities(); }
 
     /**
-     * @brief Get parameter set of the distribution.
+     * @brief Get the distribution parameters.
      *
-     * @return Parameters.
+     * @return Distribution parameters.
      */
     [[nodiscard]] const param_type& param() const { return param_; }
 
     /**
-     * @brief Set the parameters for this distribution.
+     * @brief Set the distribution parameters.
      *
-     * @param param Parameter object.
+     * @param param Distribution parameters.
      */
     void param(const param_type& param) {
         param_ = param;
@@ -323,24 +321,24 @@ public:
     void reset() {}
 
     /**
-     * @brief Generate random integer.
+     * @brief Generate a random integer.
      *
      * @tparam RNG Random number generator.
      * @param rng RNG object.
-     * @return Random int distributed according to weights/probabilities.
+     * @return Random integer distributed according to weights/probabilities.
      */
     template <typename RNG>
     result_type operator()(RNG& rng) const;
 
     /**
-     * @brief Generate random integer distributed according to param.
+     * @brief Generate a random integer distributed according to given distribution parameters.
      *
      * @details Uses a linear search instead of Walker-Alias.
      *
      * @tparam RNG Random number generator.
      * @param rng RNG object.
-     * @param param Parameter object specifying probabilities.
-     * @return Random int distributed according to param.
+     * @param param Distribution parameters specifying probabilities.
+     * @return Random integer distributed according to the given distribution parameters.
      */
     template <typename RNG>
     result_type operator()(RNG& rng, const param_type& param) const;
@@ -444,14 +442,14 @@ discrete_alias_distribution<T>::result_type discrete_alias_distribution<T>::oper
 }
 
 /**
- * @brief Write a textual representation of a discrete_alias_distribution to ostream.
+ * @brief Write a textual representation of a distribution to std::ostream.
  *
- * @details Throws an exception, if writing to ostream fails.
+ * @details Throws an exception, if writing to std::ostream fails.
  *
  * @tparam T Integral type.
- * @param os Reference to ostream.
+ * @param os std::ostream to write to.
  * @param dd Distribution to be written.
- * @return Reference to ostream.
+ * @return Reference to the std::ostream object.
  */
 template <integer_only T>
 std::ostream& operator<<(std::ostream& os, const discrete_alias_distribution<T>& dad) {
@@ -462,14 +460,14 @@ std::ostream& operator<<(std::ostream& os, const discrete_alias_distribution<T>&
 }
 
 /**
- * @brief Restore discrete_alias_distribution from istream.
+ * @brief Read a textual representation of a distribution from std::istream.
  *
- * @details Throws an exception, if reading from istream fails.
+ * @details Throws an exception, if reading from std::istream fails.
  *
  * @tparam T Integral type.
- * @param is Reference to istream.
+ * @param is std::istream to read from.
  * @param dd Distribution to be read into.
- * @return Reference to istream.
+ * @return Reference to the std::istream object.
  */
 template <integer_only T>
 std::istream& operator>>(std::istream& is, discrete_alias_distribution<T>& dad) {
@@ -483,12 +481,12 @@ std::istream& operator>>(std::istream& is, discrete_alias_distribution<T>& dad) 
 }
 
 /**
- * @brief Compare two discrete_alias_distributions for equality.
+ * @brief Compare two distributions for equality.
  *
  * @tparam T Integral type.
- * @param lhs Distribution #1.
- * @param rhs Distribution #2.
- * @return `true` if the parameters of the distributions are the same.
+ * @param lhs Left-hand side distribution.
+ * @param rhs Right-hand side distribution.
+ * @return True if the parameters of the distributions are the same.
  */
 template <integer_only T>
 [[nodiscard]] bool operator==(const discrete_alias_distribution<T>& lhs, const discrete_alias_distribution<T>& rhs) {
@@ -496,12 +494,12 @@ template <integer_only T>
 }
 
 /**
- * @brief Compare two discrete_alias_distributions for inequality.
+ * @brief Compare two distributions for inequality.
  *
  * @tparam T Integral type.
- * @param lhs Distribution #1.
- * @param rhs Distribution #2.
- * @return `true` if the parameters of the distributions are distinct.
+ * @param lhs Left-hand side distribution.
+ * @param rhs Right-hand side distribution.
+ * @return True if the parameters of the distributions are distinct.
  */
 template <integer_only T>
 [[nodiscard]] bool operator!=(const discrete_alias_distribution<T>& lhs, const discrete_alias_distribution<T>& rhs) {

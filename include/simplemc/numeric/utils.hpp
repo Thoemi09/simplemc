@@ -9,34 +9,37 @@
 #include <algorithm>
 #include <cmath>
 #include <complex>
+#include <limits>
+#include <type_traits>
 
 namespace simplemc {
 
 /**
- * @brief Check if an arithmetic value is finite. 
- * 
+ * @brief Check if an arithmetic value is finite.
+ *
  * @details Simply calls std::isfinite.
  *
  * @tparam T Value type.
  * @param t Arithmetic value.
- * @return True if value is finite.
+ * @return True if the value is finite.
  */
 template <typename T>
-inline constexpr bool isfinite(T t) {
+    requires std::is_arithmetic_v<T>
+[[nodiscard]] inline constexpr bool isfinite(T t) {
     return std::isfinite(t);
 }
 
 /**
  * @brief Check if a complex number is finite.
- * 
+ *
  * @details Simply calls std::isfinite on the real and imaginary part.
  *
  * @tparam T Value type.
  * @param t std::complex<T> object.
- * @return True if real and imaginary part are finite.
+ * @return True if the real and the imaginary part are finite.
  */
 template <typename T>
-inline constexpr bool isfinite(const std::complex<T>& t) {
+[[nodiscard]] inline constexpr bool isfinite(const std::complex<T>& t) {
     return isfinite(t.real()) && isfinite(t.imag());
 }
 
@@ -50,20 +53,21 @@ inline constexpr bool isfinite(const std::complex<T>& t) {
  * @return Absolute difference.
  */
 template <typename T1, typename T2>
-inline constexpr auto abs_diff(T1 t1, T2 t2) {
+    requires std::is_arithmetic_v<T1> && std::is_arithmetic_v<T2>
+[[nodiscard]] inline constexpr auto abs_diff(T1 t1, T2 t2) {
     return std::abs(t1 - t2);
 }
 
 /**
  * @brief Absolute difference between two complex numbers.
  *
- * @tparam T Value type.
+ * @tparam T Value type of std::complex.
  * @param t1 std::complex<T> #1.
  * @param t2 std::complex<T> #2.
  * @return Modulus of their difference.
  */
 template <typename T>
-inline constexpr auto abs_diff(const std::complex<T>& t1, const std::complex<T>& t2) {
+[[nodiscard]] inline constexpr auto abs_diff(const std::complex<T>& t1, const std::complex<T>& t2) {
     return std::abs(t1 - t2);
 }
 
@@ -77,7 +81,8 @@ inline constexpr auto abs_diff(const std::complex<T>& t1, const std::complex<T>&
  * @return Relative difference.
  */
 template <typename T1, typename T2>
-inline constexpr auto rel_diff(T1 t1, T2 t2) {
+    requires std::is_arithmetic_v<T1> && std::is_arithmetic_v<T2>
+[[nodiscard]] inline constexpr auto rel_diff(T1 t1, T2 t2) {
     double a = t1;
     double b = t2;
     if (t1 == 0) {
@@ -92,13 +97,13 @@ inline constexpr auto rel_diff(T1 t1, T2 t2) {
 /**
  * @brief Relative difference between two complex numbers.
  *
- * @tparam T Value type.
+ * @tparam T Value type of std::complex.
  * @param t1 std::complex<T> #1.
  * @param t2 std::complex<T> #2.
  * @return Relative difference.
  */
 template <typename T>
-inline constexpr auto rel_diff(const std::complex<T>& t1, const std::complex<T>& t2) {
+[[nodiscard]] inline constexpr auto rel_diff(const std::complex<T>& t1, const std::complex<T>& t2) {
     double a = std::abs(t1);
     double b = std::abs(t2);
     if (a == 0) {
@@ -111,24 +116,32 @@ inline constexpr auto rel_diff(const std::complex<T>& t1, const std::complex<T>&
 }
 
 /**
- * @brief Map the given value to its principle interval `(lower_bound, upper_bound]`.
+ * @brief Map the given value to its principle interval `(lower_bound, upper_bound]`
+ * excluding the lower bound and including the upper bound.
+ *
+ * @details The difference `upper_bound - lower_bound` will be added to the given value
+ * until it lies within `(lower_bound, upper_bound]`.
  *
  * @param val Value to be mapped.
- * @param lower_bound Lower bound of interval.
- * @param upper_bound Upper bound of interval.
+ * @param lower_bound Lower bound of the interval.
+ * @param upper_bound Upper bound of the interval.
  * @return Value mapped to its principle interval.
  */
-double map_to_interval(double val, double lower_bound, double upper_bound);
+[[nodiscard]] double map_to_interval(double val, double lower_bound, double upper_bound);
 
 /**
- * @brief Map the given value to its principle interval `[lower_bound, upper_bound)`.
+ * @brief Map the given value to its principle interval `[lower_bound, upper_bound)`
+ * excluding the upper bound and including the lower bound.
+ *
+ * @details The difference `upper_bound - lower_bound` will be added to the given value
+ * until it lies within `[lower_bound, upper_bound)`.
  *
  * @param val Value to be mapped.
- * @param lower_bound Lower bound of interval.
- * @param upper_bound Upper bound of interval.
+ * @param lower_bound Lower bound of the interval.
+ * @param upper_bound Upper bound of the interval.
  * @return Value mapped to its principle interval.
  */
-double map_to_interval_lb(double val, double lower_bound, double upper_bound);
+[[nodiscard]] double map_to_interval_lb(double val, double lower_bound, double upper_bound);
 
 /**
  * @brief Check if a value lies within certain bounds, i.e. in the interval
@@ -138,9 +151,9 @@ double map_to_interval_lb(double val, double lower_bound, double upper_bound);
  * @param lower_bound Lower bound.
  * @param upper_bound Upper bound.
  * @param min_diff Minimum distance to bounds.
- * @return `true`, if value lies within `(lower_bound + min_diff, upper_bound - min_diff)`.
+ * @return True if value lies within `(lower_bound + min_diff, upper_bound - min_diff)`.
  */
-inline constexpr bool within_bounds(double val, double lower_bound, double upper_bound, double min_diff) {
+[[nodiscard]] inline constexpr bool within_bounds(double val, double lower_bound, double upper_bound, double min_diff) {
     return val > lower_bound + min_diff && val < upper_bound - min_diff && isfinite(val);
 }
 

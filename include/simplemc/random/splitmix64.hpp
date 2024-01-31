@@ -49,14 +49,14 @@ public:
     [[nodiscard]] static constexpr result_type max() { return std::numeric_limits<result_type>::max(); }
 
     /**
-     * @brief Construct a splitmix64 RNG from a single std::uint64_t seed.
+     * @brief Construct a RNG from a single std::uint64_t seed.
      *
      * @param s 64-bit unsigned integer seed.
      */
     explicit splitmix64(std::uint64_t s = default_seed);
 
     /**
-     * @brief Construct a splitmix64 RNG from a SeedSequence.
+     * @brief Construct a RNG from a SeedSequence.
      *
      * @tparam SeedSeq Type of the seed sequence.
      * @param seq Seed sequence.
@@ -98,7 +98,7 @@ public:
     [[nodiscard]] std::uint64_t internal_state() const { return state_; }
 
     /**
-     * @brief Generate a random number and advance internal state.
+     * @brief Generate a random number and advance the internal state.
      *
      * @return Random 64-bit unsigned integer.
      */
@@ -127,42 +127,42 @@ private:
 };
 
 /**
- * @brief Write textual representation of splitmix64 to ostream.
+ * @brief Write a textual representation of a random number generator to std::ostream.
  *
- * @details Throws an exception, if writing to ostream fails.
+ * @details Throws an exception, if writing to std::ostream fails.
  *
- * @param os Reference to ostream.
- * @param eng splitmix64 RNG.
- * @return Reference to ostream.
+ * @param os std::ostream to write to.
+ * @param eng RNG to be written.
+ * @return Reference to the std::ostream.
  */
 std::ostream& operator<<(std::ostream& os, const splitmix64& eng);
 
 /**
- * @brief Restore splitmix64 from istream.
+ * @brief Read a textual representation of a random number generator from std::istream.
  *
- * @details Throws an exception, if reading from istream fails.
+ * @details Throws an exception, if reading from std::istream fails.
  *
- * @param is Reference to istream.
- * @param eng splitmix64 RNG.
- * @return Reference to istream.
+ * @param is std::istream to read from.
+ * @param eng RNG to read into.
+ * @return Reference to the std::istream.
  */
 std::istream& operator>>(std::istream& is, splitmix64& eng);
 
 /**
- * @brief Compare two splitmix64 RNGs for equalitiy.
+ * @brief Compare two RNGs for equalitiy.
  *
- * @param lhs splitmix64 #1
- * @param rhs splitmix64 #2
- * @return `true` if the internal states are equal.
+ * @param lhs Left-hand side RNG.
+ * @param rhs Right-hand side RNG.
+ * @return True if their internal states are equal.
  */
 [[nodiscard]] bool operator==(const splitmix64& lhs, const splitmix64& rhs);
 
 /**
- * @brief Compare two splitmix64 RNGs for inequality.
+ * @brief Compare two RNGs for inequality.
  *
- * @param lhs splitmix64 #1
- * @param rhs splitmix64 #2
- * @return `true` if the internal states are unequal.
+ * @param lhs Left-hand side RNG.
+ * @param rhs Right-hand side RNG.
+ * @return True if their internal states are distinct.
  */
 [[nodiscard]] bool operator!=(const splitmix64& lhs, const splitmix64& rhs);
 

@@ -93,7 +93,7 @@ TEST(SimplemcAccs, Utils) {
     auto mean = simplemc::accs::mean(data, 5);
     auto mean_nan = simplemc::accs::mean(data, 0);
     for (auto i = 0; i < mean.size(); ++i) {
-        check_complex_near(mean[i], std::complex<double> { i / 5.0, i / 5.0 });
+        check_near(mean[i], std::complex<double> { i / 5.0, i / 5.0 });
         ASSERT_TRUE(std::isnan(mean_nan[i].real()));
         ASSERT_TRUE(std::isnan(mean_nan[i].imag()));
     }
@@ -101,6 +101,7 @@ TEST(SimplemcAccs, Utils) {
 
 // Test mean accumulator.
 TEST(SimplemcAccs, MeanAccumulator) {
+    // general set up
     using acc_d = simplemc::mean_acc<double>;
     using acc_c = simplemc::mean_acc<std::complex<double>, simplemc::accs::varalg::welford>; 
     int n = 100000;
@@ -108,6 +109,8 @@ TEST(SimplemcAccs, MeanAccumulator) {
     int size = 3;
     acc_d acc_sv(1, 5.0), acc_mva(size, 2.0), acc_rg(size, 2.0);
     acc_c acc_sv_w(1, { 5.0, 1.0 }), acc_mva_w(size, { -3.2, -2.2 }), acc_rg_w(size, 10.0);
+
+    // check empty accumulators
     ASSERT_EQ(acc_sv.size(), 1);
     ASSERT_EQ(acc_mva.size(), size);
     ASSERT_EQ(acc_rg.size(), size);
@@ -120,8 +123,12 @@ TEST(SimplemcAccs, MeanAccumulator) {
     check_empty(acc_sv_w);
     check_empty(acc_mva_w);
     check_empty(acc_rg_w);
+
+    // fill accumulators
     fill_accs(acc_sv, acc_mva, acc_rg, n);
     fill_accs(acc_sv_w, acc_mva_w, acc_rg_w, n);
+
+    // check filled accumulators
     ASSERT_EQ(acc_sv.count(), n);
     ASSERT_EQ(acc_mva.count(), n);
     ASSERT_EQ(acc_rg.count(), n);
@@ -134,6 +141,8 @@ TEST(SimplemcAccs, MeanAccumulator) {
     check_mean(acc_sv_w, n, tol);
     check_mean(acc_mva_w, n, tol);
     check_mean(acc_rg_w, n, tol);
+
+    // check reset and merging of accumulators
     acc_d merge(size);
     merge.reset(0, 2.0);
     ASSERT_EQ(merge.count(), 0);

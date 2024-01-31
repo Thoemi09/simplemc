@@ -17,10 +17,10 @@ namespace simplemc {
  * @details Taken from cppreference.com.
  *
  * @tparam T Type to check.
- * @tparam U Types to compare against.
+ * @tparam Us Types to compare against.
  */
-template <typename T, typename... U>
-concept is_any_of = (std::same_as<T, U> || ...);
+template <typename T, typename... Us>
+concept is_any_of = (std::same_as<T, Us> || ...);
 
 /**
  * @brief A concept that checks if a type is an integer type except for bool, char, and wchar_t.
@@ -33,7 +33,7 @@ concept integer_only =
 
 /**
  * @brief A concept that checks if a type is either a double or a std::complex<double>.
- * 
+ *
  * @tparam T Type to check.
  */
 template <typename T>

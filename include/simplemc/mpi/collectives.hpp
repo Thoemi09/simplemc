@@ -22,14 +22,14 @@ namespace simplemc::mpi {
 /**
  * @brief Reduce a specific number of values (on all processes).
  *
- * @details Calls `MPI_Allreduce`. If the MPI call fails, a simplemc::simplemc_exception is thrown.
+ * @details Calls MPI_Allreduce. If the MPI call fails, a simplemc::simplemc_exception is thrown.
  * The MPI operation should be one of the following: `MPI_MAX`, `MPI_MIN`, `MPI_SUM`, `MPI_PROD`,
  * `MPI_LAND`, `MPI_BAND`, `MPI_LOR`, `MPI_BOR`, `MPI_LXOR`, `MPI_BXOR`.
  *
  * Does nothing if count is <= 0.
  *
- * @tparam T mpi_compatible type.
- * @param comm Communicator object.
+ * @tparam T simplemc::mpi::mpi_compatible type.
+ * @param comm simplemc::mpi::communicator object.
  * @param in_values Pointer to the memory to be reduced.
  * @param count Number of values to be reduced.
  * @param out_values Pointer to the memory to be reduced into.
@@ -46,8 +46,8 @@ void all_reduce(const communicator& comm, const T* in_values, int count, T* out_
 /**
  * @brief Reduce a single value (on all processes).
  *
- * @tparam T mpi_compatible type.
- * @param comm Communicator object.
+ * @tparam T simplemc::mpi::mpi_compatible type.
+ * @param comm simplemc::mpi::communicator object.
  * @param in_value Value to be reduced.
  * @param out_value Value to be reduced into.
  * @param op MPI operation.
@@ -60,10 +60,10 @@ void all_reduce(const communicator& comm, const T& in_value, T& out_value, MPI_O
 /**
  * @brief Check if a value is equal across all processes (on all processes).
  *
- * @tparam T mpi_compatible type.
- * @param comm Communicator object.
+ * @tparam T simplemc::mpi::mpi_compatible type.
+ * @param comm simplemc::mpi::communicator object.
  * @param value Value to be compared.
- * @return `true`, if the value is equal on all processes.
+ * @return True if the value is equal on all processes.
  */
 template <mpi_compatible T>
 [[nodiscard]] bool all_equal(const communicator& comm, const T& in_value) {
@@ -78,7 +78,7 @@ template <mpi_compatible T>
  *
  * @tparam R1 Input range.
  * @tparam R2 Output range.
- * @param comm Communicator object.
+ * @param comm simplemc::mpi::communicator object.
  * @param in_values Range to be reduced.
  * @param out_values Range to be reduced into.
  * @param op MPI operation.
@@ -98,11 +98,11 @@ void all_reduce(
 /**
  * @brief Gather a specified number of values (on all processes).
  *
- * @details Calls `MPI_Allgather`. If the MPI call fails, a simplemc::simplemc_exception is thrown.
+ * @details Calls MPI_Allgather. If the MPI call fails, a simplemc::simplemc_exception is thrown.
  * Does nothing if count is <= 0.
  *
- * @tparam T mpi_compatible type.
- * @param comm Communicator object.
+ * @tparam T simplemc::mpi::mpi_compatible type.
+ * @param comm simplemc::mpi::communicator object.
  * @param in_values Pointer to the memory to be gathered.
  * @param count Number of values to be gathered.
  * @param out_values Pointer to the memory to be gathered into.
@@ -120,7 +120,7 @@ void all_gather(const communicator& comm, const T* in_values, int count, T* out_
  * @brief Gather a single value (on all processes).
  *
  * @tparam R Output range.
- * @param comm Communicator object.
+ * @param comm simplemc::mpi::communicator object.
  * @param in_value Value to be gathered.
  * @param out_values Range to gathered into.
  */
@@ -138,7 +138,7 @@ void all_gather(const communicator& comm, const ranges::range_value_t<R>& in_val
  *
  * @tparam R1 Input range.
  * @tparam R2 Output range.
- * @param comm Communicator object.
+ * @param comm simplemc::mpi::communicator object.
  * @param in_values Range to be gathered.
  * @param out_values Range to be gathered into.
  */
@@ -156,11 +156,11 @@ void all_gather(const communicator& comm, R1&& in_values, R2&& out_values) { // 
 /**
  * @brief Reduce a specific number of values (only on root).
  *
- * @details Calls `MPI_Reduce`. If the MPI call fails, a simplemc::simplemc_exceptions is thrown.
+ * @details Calls MPI_Reduce. If the MPI call fails, a simplemc::simplemc_exceptions is thrown.
  * Does nothing if count is <= 0.
  *
- * @tparam T mpi_compatible type.
- * @param comm Communicator object.
+ * @tparam T simplemc::mpi::mpi_compatible type.
+ * @param comm simplemc::mpi::communicator object.
  * @param in_values Pointer to the memory to be reduced.
  * @param count Number of values to be reduced.
  * @param out_values Pointer to the memory to be reduced into.
@@ -181,8 +181,8 @@ void reduce(const communicator& comm, const T* in_values, int count, T* out_valu
 /**
  * @brief Reduce a single value (only on root).
  *
- * @tparam T mpi_compatible type.
- * @param comm Communicator object.
+ * @tparam T simplemc::mpi::mpi_compatible type.
+ * @param comm simplemc::mpi::communicator object.
  * @param in_value Value to be reduced.
  * @param out_value Value to be reduced into.
  * @param op MPI operation.
@@ -198,7 +198,7 @@ void reduce(const communicator& comm, const T& in_value, T& out_value, MPI_Op op
  *
  * @tparam R1 Input range.
  * @tparam R2 Output range.
- * @param comm Communicator object.
+ * @param comm simplemc::mpi::communicator object.
  * @param in_values Range to be reduced.
  * @param out_values Range to be reduced into.
  * @param op MPI operation.
@@ -220,11 +220,11 @@ void reduce(const communicator& comm, R1&& in_values, R2&& out_values, MPI_Op op
 /**
  * @brief Gather a specific number of values (only on root).
  *
- * @details Calls `MPI_Gather`. If the MPI call fails, a simplemc::simplemc_exception is thrown.
+ * @details Calls MPI_Gather. If the MPI call fails, a simplemc::simplemc_exception is thrown.
  * Does nothing if count is <= 0.
  *
- * @tparam T mpi_compatible type.
- * @param comm Communicator object.
+ * @tparam T simplemc::mpi::mpi_compatible type.
+ * @param comm simplemc::mpi::communicator object.
  * @param in_values Pointer to the memory to be gathered.
  * @param count Number of values to be gathered.
  * @param out_values Pointer to the memory to be gathered into.
@@ -246,7 +246,7 @@ void gather(const communicator& comm, const T* in_values, int count, T* out_valu
  * @brief Gather a single value (only on root).
  *
  * @tparam R Output range.
- * @param comm Communicator object.
+ * @param comm simplemc::mpi::communicator object.
  * @param in_value Value to be gathered.
  * @param out_values Range to be gathered into.
  * @param root Root process.
@@ -266,7 +266,7 @@ void gather(const communicator& comm, const ranges::range_value_t<R>& in_value, 
  *
  * @tparam R1 Input range.
  * @tparam R2 Output range.
- * @param comm Communicator object.
+ * @param comm simplemc::mpi::communicator object.
  * @param in_values Range to gather.
  * @param out_values Range to be gathered into.
  * @param root Root process.
@@ -290,8 +290,8 @@ void gather(const communicator& comm, R1&& in_values, R2&& out_values, int root)
  * @details Calls MPI_Bcast. If the MPI call fails, a simplemc::simplemc_exceptions is thrown.
  * Does nothing if count is <= 0.
  *
- * @tparam T mpi_compatible type.
- * @param comm Communicator object.
+ * @tparam T simplemc::mpi::mpi_compatible type.
+ * @param comm simplemc::mpi::communicator object.
  * @param values Pointer to the memory to be broadcasted from/into.
  * @param count Number of values to be broadcasted.
  * @param root Root process.
@@ -310,8 +310,8 @@ void broadcast(const communicator& comm, T* values, int count, int root) {
 /**
  * @brief Broadcast a single value.
  *
- * @tparam T mpi_compatible type.
- * @param comm Communicator object.
+ * @tparam T simplemc::mpi::mpi_compatible type.
+ * @param comm simplemc::mpi::communicator object.
  * @param value Value to be broadcasted from/into.
  * @param root Root process.
  */
@@ -324,7 +324,7 @@ void broadcast(const communicator& comm, T& value, int root) {
  * @brief Broadcast a range.
  *
  * @tparam R Range.
- * @param comm Communicator object.
+ * @param comm simplemc::mpi::communicator object.
  * @param rg Range to be broadcasted from/into.
  * @param root Root process.
  */
@@ -342,8 +342,8 @@ void broadcast(const communicator& comm, R&& rg, int root) { // NOLINT
  * @details Calls MPI_Scatter. If the MPI call fails, a simplemc::simplemc_exceptions is thrown.
  * Does nothing if count <= 0.
  *
- * @tparam T mpi_compatible type.
- * @param comm Communicator object.
+ * @tparam T simplemc::mpi::mpi_compatible type.
+ * @param comm simplemc::mpi::communicator object.
  * @param in_values Pointer to the memory to be scattered.
  * @param count Number of values to be scattered.
  * @param out_values Pointer to the memory to be scattered into.
@@ -365,7 +365,7 @@ void scatter(const communicator& comm, const T* in_values, int count, T* out_val
  * @brief Scatter N values, where N is equal to the communicator size.
  *
  * @tparam R Range.
- * @param comm Communicator object.
+ * @param comm simplemc::mpi::communicator object.
  * @param in_values Values to be scattered.
  * @param out_value Value to be scattered into.
  * @param root Root process.
@@ -385,7 +385,7 @@ void scatter(const communicator& comm, R&& in_values, ranges::range_value_t<R>& 
  *
  * @tparam R1 Input range.
  * @tparam R2 Output range.
- * @param comm Communicator object.
+ * @param comm simplemc::mpi::communicator object.
  * @param in_values Values to be scattered.
  * @param out_value Value to be scattered into.
  * @param root Root process.

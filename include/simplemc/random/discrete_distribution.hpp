@@ -26,7 +26,7 @@ class discrete_distribution;
 namespace detail {
 
 /**
- * @brief Parameter type of discrete_distribution.
+ * @brief Parameter type of simplemc::discrete_distribution.
  *
  * @tparam T Integral type.
  */
@@ -39,12 +39,12 @@ public:
     using distribution_type = discrete_distribution<T>;
 
     /**
-     * @brief Default constructor for dd_param_type.
+     * @brief Default constructor.
      */
     dd_param_type();
 
     /**
-     * @brief Construct a dd_param_type from a range of weights.
+     * @brief Construct distribution parameters from a range of weights.
      *
      * @tparam InputIt Iterator type.
      * @param first Beginning of range.
@@ -54,15 +54,15 @@ public:
     dd_param_type(InputIt first, InputIt last);
 
     /**
-     * @brief Construct a dd_param_type from a list of weights.
+     * @brief Construct distribution parameters from a list of weights.
      *
      * @param list Initializer list of weights.
      */
     dd_param_type(std::initializer_list<double> list);
 
     /**
-     * @brief Construct a dd_param_type such that the weights are given as
-     * w_i = unary_op(xmin + d/2 + i*d) with d = (xmax - xmin)/n and i = 0, ..., n.
+     * @brief Construct distribution parameters such that the weights are given as
+     * `w_i = unary_op(xmin + d/2 + i*d)` with `d = (xmax - xmin)/n` and `i = 0, ..., n`.
      *
      * @tparam UnaryOp Unary operation.
      * @param n Number of bins/weights.
@@ -74,7 +74,7 @@ public:
     dd_param_type(std::size_t n, double xmin, double xmax, UnaryOp unary_op);
 
     /**
-     * @brief Get probabilities.
+     * @brief Get the probabilities.
      *
      * @return Probability vector.
      */
@@ -139,13 +139,13 @@ void dd_param_type<T>::initialize() {
 }
 
 /**
- * @brief Write textual representation of dd_param_type to ostream.
+ * @brief Write a textual representation of distribution parameters to std::ostream.
  *
- * @details Throws an exception, if writing to ostream fails.
+ * @details Throws an exception, if writing to std::ostream fails.
  *
  * @tparam T Integral type.
- * @param os std::ostream.
- * @param param Parameters.
+ * @param os std::ostream to write to.
+ * @param param Distribution parameters to be written.
  * @return Reference to the std::ostream object.
  */
 template <integer_only T>
@@ -166,13 +166,13 @@ std::ostream& operator<<(std::ostream& os, const dd_param_type<T>& param) {
 }
 
 /**
- * @brief Read textual representation of dd_param_type from istream.
+ * @brief Read a textual representation of distribution parameters from std::istream.
  *
- * @details Throws an exception, if reading from istream fails.
+ * @details Throws an exception, if reading from std::istream fails.
  *
  * @tparam T Integral type.
- * @param is std::istream.
- * @param param Parameters.
+ * @param is std::istream to read from.
+ * @param param Distribution parameters to read into.
  * @return Reference to the std::istream object.
  */
 template <integer_only T>
@@ -196,12 +196,12 @@ std::istream& operator>>(std::istream& is, dd_param_type<T>& param) {
 }
 
 /**
- * @brief Compare two dd_param_type objects for equality.
+ * @brief Compare two distribution parameters for equality.
  *
  * @tparam T Integral type.
- * @param lhs Parameters #1.
- * @param rhs Parameters #2.
- * @return `true` if their probabilities are equal.
+ * @param lhs Left-hand side distribution parameters.
+ * @param rhs Right-hand side distribution parameters.
+ * @return True if their probabilities are equal.
  */
 template <integer_only T>
 [[nodiscard]] bool operator==(const dd_param_type<T>& lhs, const dd_param_type<T>& rhs) {
@@ -209,12 +209,12 @@ template <integer_only T>
 }
 
 /**
- * @brief Compare two dd_param_type objects for inequality.
+ * @brief Compare two distribution parameters for inequality.
  *
  * @tparam T Integral type.
- * @param lhs Parameters #1.
- * @param rhs Parameters #2.
- * @return `true` if their probabilities are not equal.
+ * @param lhs Left-hand side distribution parameters.
+ * @param rhs Right-hand side distribution parameters.
+ * @return True if their probabilities are not equal.
  */
 template <integer_only T>
 [[nodiscard]] bool operator!=(const dd_param_type<T>& lhs, const dd_param_type<T>& rhs) {
@@ -245,12 +245,12 @@ public:
     using param_type = detail::dd_param_type<T>;
 
     /**
-     * @brief Default constructor for a discrete_distribution.
+     * @brief Default constructor.
      */
     discrete_distribution() = default;
 
     /**
-     * @brief Construct a discrete_distribution from a range of weights.
+     * @brief Construct a distribution from a range of weights.
      *
      * @tparam InputIt Iterator type.
      * @param first Beginning of range.
@@ -260,16 +260,15 @@ public:
     discrete_distribution(InputIt first, InputIt last) : param_(first, last) {}
 
     /**
-     * @brief Construct a discrete_distribution from a list of weights.
+     * @brief Construct a distribution from a list of weights.
      *
      * @param list Initializer list of weights.
      */
     discrete_distribution(std::initializer_list<double> list) : param_(list) {};
 
     /**
-     * @brief Construct a discrete_distribution such that the weights are given
-     * as w_i = unary_op(xmin + d/2 + i*d) with d = (xmax - xmin)/n and
-     * i = 0, ..., n.
+     * @brief Construct a distribution such that the weights are given as 
+     * `w_i = unary_op(xmin + d/2 + i*d)` with `d = (xmax - xmin)/n` and `i = 0, ..., n`.
      *
      * @tparam UnaryOp Unary operation.
      * @param n Number of bins/weights.
@@ -282,9 +281,9 @@ public:
         param_(n, xmin, xmax, unary_op) {}
 
     /**
-     * @brief Construct a discrete_distribution from a given param_type.
+     * @brief Construct a distribution from given distribution parameters.
      *
-     * @param param Parameter specifying the weights.
+     * @param param Parameters specifying the weights.
      */
     explicit discrete_distribution(const param_type& param) : param_(param) {}
 
@@ -303,23 +302,23 @@ public:
     [[nodiscard]] result_type max() const { return static_cast<result_type>(param_.probs_.size() - 1); }
 
     /**
-     * @brief Get probabilities.
+     * @brief Get the probabilities.
      *
      * @return Probability vector.
      */
     [[nodiscard]] const std::vector<double>& probabilities() const { return param_.probabilities(); }
 
     /**
-     * @brief Get parameter set of the distribution.
+     * @brief Get the distribution parameters.
      *
-     * @return Parameters.
+     * @return Distribution parameters.
      */
     [[nodiscard]] const param_type& param() const { return param_; }
 
     /**
-     * @brief Set the parameters for this distribution.
+     * @brief Set the distribution parameters
      *
-     * @param param Parameter object.
+     * @param param Distribution paramters.
      */
     void param(const param_type& param) { param_ = param; }
 
@@ -341,12 +340,12 @@ public:
     }
 
     /**
-     * @brief Generate random integer distributed according to param.
+     * @brief Generate random integer distributed according to given distribution parameters.
      *
      * @tparam RNG Random number generator.
      * @param rng RNG object.
-     * @param param Parameter object specifying probabilities.
-     * @return Random integer distributed according to param.
+     * @param param Distribution parameters specifying probabilities.
+     * @return Random integer distributed according to the given distribution parameters.
      */
     template <typename RNG>
     result_type operator()(RNG& rng, const param_type& param) const {
@@ -358,14 +357,14 @@ private:
 };
 
 /**
- * @brief Write a textual representation of a discrete_distribution to ostream.
+ * @brief Write a textual representation of a distribution to std::ostream.
  *
- * @details Throws an exception, if writing to ostream fails.
+ * @details Throws an exception, if writing to std::ostream fails.
  *
  * @tparam T Integral type.
- * @param os Reference to ostream.
+ * @param os std::ostream to write to.
  * @param dd Distribution to be written.
- * @return Reference to ostream.
+ * @return Reference to the std::ostream object.
  */
 template <integer_only T>
 std::ostream& operator<<(std::ostream& os, const discrete_distribution<T>& dd) {
@@ -376,14 +375,14 @@ std::ostream& operator<<(std::ostream& os, const discrete_distribution<T>& dd) {
 }
 
 /**
- * @brief Restore discrete_distribution from istream.
+ * @brief Read a textual representations of a distribution from std::istream.
  *
- * @details Throws an exception, if reading from istream fails.
+ * @details Throws an exception, if reading from std::istream fails.
  *
  * @tparam T Integral type.
- * @param is Reference to istream.
+ * @param is std::istream to read from.
  * @param dd Distribution to be read into.
- * @return Reference to istream.
+ * @return Reference to the std::istream object.
  */
 template <integer_only T>
 std::istream& operator>>(std::istream& is, discrete_distribution<T>& dd) {
@@ -397,12 +396,12 @@ std::istream& operator>>(std::istream& is, discrete_distribution<T>& dd) {
 }
 
 /**
- * @brief Compare two discrete_distributions for equality.
+ * @brief Compare two distributions for equality.
  *
  * @tparam T Integral type.
- * @param lhs Distribution #1.
- * @param rhs Distribution #2.
- * @return `true` if the parameters of the distributions are the same.
+ * @param lhs Left-hand side distribution.
+ * @param rhs Right-hand side distribution.
+ * @return True if the parameters of the distributions are the same.
  */
 template <integer_only T>
 [[nodiscard]] bool operator==(const discrete_distribution<T>& lhs, const discrete_distribution<T>& rhs) {
@@ -410,12 +409,12 @@ template <integer_only T>
 }
 
 /**
- * @brief Compare two discrete_distributions for inequality.
+ * @brief Compare two distributions for inequality.
  *
  * @tparam T Integral type.
- * @param lhs Distribution #1.
- * @param rhs Distribution #2.
- * @return `true` if the parameters of the distributions are distinct.
+ * @param lhs Left-hand side distribution.
+ * @param rhs Right-hand side distribution.
+ * @return True if the parameters of the distributions are distinct.
  */
 template <integer_only T>
 [[nodiscard]] bool operator!=(const discrete_distribution<T>& lhs, const discrete_distribution<T>& rhs) {

@@ -1,6 +1,6 @@
 /**
  * @file communicator.cpp
- * @brief Wrapper for an `MPI_Comm`.
+ * @brief Wrapper for an MPI_Comm MPI communicator.
  */
 
 #include <simplemc/mpi/communicator.hpp>

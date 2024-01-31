@@ -9,7 +9,7 @@ namespace simplemc::accs {
 
 template <double_or_complex T>
 Eigen::ArrayX<T> make_nans(long size) {
-    const auto nan = std::numeric_limits<double>::quiet_NaN();
+    constexpr auto nan = std::numeric_limits<double>::quiet_NaN();
     if constexpr (std::is_same_v<T, double>) {
         return Eigen::ArrayX<T>::Constant(size, nan);
     } else {

@@ -38,7 +38,7 @@ public:
     using matrix_type = Eigen::MatrixXd;
 
     /**
-     * @brief Tag for bravais lattice.
+     * @brief Tags for different bravais lattices.
      */
     enum class lattice_tag {
         linear_1d,
@@ -75,7 +75,7 @@ public:
      * - alpha: Angle between b and c (only in 3d).
      * - beta: Angle between a and c (only in 3d).
      * - gamma: Angle between a and b (only in 2d and 3d).
-     * - tag: Tag for the lattice.
+     * - tag: Tag specifying the type of lattice.
      */
     struct params {
         double a { 0.0 };
@@ -89,7 +89,7 @@ public:
 
     /**
      * @brief Check dimensions of lattice vector matrix. Throws an exception if dimensions are
-     * not supported, i.e. only support for 1x1, 2x2 and 3x3.
+     * not supported, i.e. if the matrix is neither 1x1, 2x2 or 3x3.
      *
      * @param mat Matrix with lattice vectors in columns.
      */
@@ -101,7 +101,7 @@ public:
      * @param mat Matrix with lattice vectors in columns.
      * @return Volume spanned by lattice vectors.
      */
-    static double calculate_cell_volume(const matrix_type& mat);
+    [[nodiscard]] static double calculate_cell_volume(const matrix_type& mat);
 
     /**
      * @brief Calculate reciprocal lattice vectors w.r.t. to a given lattice.
@@ -109,7 +109,7 @@ public:
      * @param mat Matrix with lattice vectors in columns.
      * @return Matrix with reciprocal lattice vectors in columns.
      */
-    static matrix_type calculate_reciprocal_lattice(const matrix_type& mat);
+    [[nodiscard]] static matrix_type calculate_reciprocal_lattice(const matrix_type& mat);
 
     /**
      * @brief Calculate vertices of the cell spanned by given lattice vectors.
@@ -117,16 +117,16 @@ public:
      * @param mat Matrix with lattice vectors in columns.
      * @return Matrix with vertices in columns.
      */
-    static matrix_type calculate_cell_vertices(const matrix_type& mat);
+    [[nodiscard]] static matrix_type calculate_cell_vertices(const matrix_type& mat);
 
     /**
-     * @brief Calculate the transformations matrix of the linear map which maps the cell spanned
+     * @brief Calculate the transformation matrix of the linear map which maps the cell spanned
      * by the given lattice vectors to the unit line/square/cube.
      *
      * @param mat Matrix with lattice vectors in columns.
      * @return Transformation matrix.
      */
-    static matrix_type calculate_transformation_matrix(const matrix_type& mat);
+    [[nodiscard]] static matrix_type calculate_transformation_matrix(const matrix_type& mat);
 
     /**
      * @brief Default constructor.
@@ -209,7 +209,7 @@ private:
  * @param tag Lattice tag.
  * @return String corresponding to a certain lattice tag.
  */
-std::string lattice_tag_to_string(const bravais_lattice::lattice_tag& tag);
+[[nodiscard]] std::string lattice_tag_to_string(const bravais_lattice::lattice_tag& tag);
 
 /**
  * @brief Convert string to lattice tag.
@@ -217,7 +217,7 @@ std::string lattice_tag_to_string(const bravais_lattice::lattice_tag& tag);
  * @param str String.
  * @return Lattice tag corresponding to a certain string.
  */
-bravais_lattice::lattice_tag string_to_lattice_tag(const std::string& str);
+[[nodiscard]] bravais_lattice::lattice_tag string_to_lattice_tag(const std::string& str);
 
 /**
  * @brief Check 1d lattice parameters.
@@ -227,12 +227,12 @@ bravais_lattice::lattice_tag string_to_lattice_tag(const std::string& str);
 void check_1d_lattice_parameters(const bravais_lattice::params& p);
 
 /**
- * @brief Make linear lattice vectors.
+ * @brief Make linear lattice.
  *
  * @param a Lattice constant.
  * @return Linear lattice.
  */
-bravais_lattice make_linear_lattice(double a);
+[[nodiscard]] bravais_lattice make_linear_lattice(double a);
 
 /**
  * @brief Check 2d lattice parameters.
@@ -247,7 +247,7 @@ void check_2d_lattice_parameters(const bravais_lattice::params& p);
  * @param a Lattice constant.
  * @return Square lattice.
  */
-bravais_lattice make_square_lattice(double a);
+[[nodiscard]] bravais_lattice make_square_lattice(double a);
 
 /**
  * @brief Make 2d hexagonal lattice.
@@ -255,7 +255,7 @@ bravais_lattice make_square_lattice(double a);
  * @param a Lattice constant.
  * @return 2d hexagonal lattice.
  */
-bravais_lattice make_hexagonal_lattice(double a);
+[[nodiscard]] bravais_lattice make_hexagonal_lattice(double a);
 
 /**
  * @brief Make rectangular lattice.
@@ -264,7 +264,7 @@ bravais_lattice make_hexagonal_lattice(double a);
  * @param b Lattice constant.
  * @return Rectangular lattice.
  */
-bravais_lattice make_rectangular_lattice(double a, double b);
+[[nodiscard]] bravais_lattice make_rectangular_lattice(double a, double b);
 
 /**
  * @brief Make rectangular centered lattice.
@@ -273,7 +273,7 @@ bravais_lattice make_rectangular_lattice(double a, double b);
  * @param b Lattice constant.
  * @return Rectangular centered lattice.
  */
-bravais_lattice make_rectangular_centered_lattice(double a, double b);
+[[nodiscard]] bravais_lattice make_rectangular_centered_lattice(double a, double b);
 
 /**
  * @brief Make oblique 2d lattice.
@@ -283,7 +283,7 @@ bravais_lattice make_rectangular_centered_lattice(double a, double b);
  * @param gamma Angle between a-b.
  * @return Oblique 2d lattice.
  */
-bravais_lattice make_oblique_lattice(double a, double b, double gamma);
+[[nodiscard]] bravais_lattice make_oblique_lattice(double a, double b, double gamma);
 
 /**
  * @brief Check 3d lattice parameters.
@@ -298,7 +298,7 @@ void check_3d_lattice_parameters(const bravais_lattice::params& p);
  * @param a Lattice constant.
  * @return Cubic lattice.
  */
-bravais_lattice make_cubic_lattice(double a);
+[[nodiscard]] bravais_lattice make_cubic_lattice(double a);
 
 /**
  * @brief Make FCC lattice.
@@ -306,7 +306,7 @@ bravais_lattice make_cubic_lattice(double a);
  * @param a Lattice constant.
  * @return FCC lattice.
  */
-bravais_lattice make_fcc_lattice(double a);
+[[nodiscard]] bravais_lattice make_fcc_lattice(double a);
 
 /**
  * @brief Make BCC lattice.
@@ -314,7 +314,7 @@ bravais_lattice make_fcc_lattice(double a);
  * @param a Lattice constant.
  * @return BCC lattice.
  */
-bravais_lattice make_bcc_lattice(double a);
+[[nodiscard]] bravais_lattice make_bcc_lattice(double a);
 
 /**
  * @brief Make hexagonal lattice.
@@ -323,7 +323,7 @@ bravais_lattice make_bcc_lattice(double a);
  * @param c Lattice constant.
  * @return Hexagonal lattice.
  */
-bravais_lattice make_hexagonal_lattice(double a, double c);
+[[nodiscard]] bravais_lattice make_hexagonal_lattice(double a, double c);
 
 /**
  * @brief Make rhombohedral lattice.
@@ -332,7 +332,7 @@ bravais_lattice make_hexagonal_lattice(double a, double c);
  * @param c Lattice constant.
  * @return Rhombohedral lattice.
  */
-bravais_lattice make_rhombohedral_lattice(double a, double c);
+[[nodiscard]] bravais_lattice make_rhombohedral_lattice(double a, double c);
 
 /**
  * @brief Make tetragonal lattice.
@@ -341,7 +341,7 @@ bravais_lattice make_rhombohedral_lattice(double a, double c);
  * @param c Lattice constant.
  * @return Tetragonal lattice.
  */
-bravais_lattice make_tetragonal_lattice(double a, double c);
+[[nodiscard]] bravais_lattice make_tetragonal_lattice(double a, double c);
 
 /**
  * @brief Make tetragonal body-centered lattice.
@@ -350,7 +350,7 @@ bravais_lattice make_tetragonal_lattice(double a, double c);
  * @param c Lattice constant.
  * @return Tetragonal body-centered lattice.
  */
-bravais_lattice make_tetragonal_bc_lattice(double a, double c);
+[[nodiscard]] bravais_lattice make_tetragonal_bc_lattice(double a, double c);
 
 /**
  * @brief Make orthorhombic lattice.
@@ -360,7 +360,7 @@ bravais_lattice make_tetragonal_bc_lattice(double a, double c);
  * @param c Lattice constant.
  * @return Orthorhombic lattice.
  */
-bravais_lattice make_orthorhombic_lattice(double a, double b, double c);
+[[nodiscard]] bravais_lattice make_orthorhombic_lattice(double a, double b, double c);
 
 /**
  * @brief Make orthorombic body-centered lattice.
@@ -370,7 +370,7 @@ bravais_lattice make_orthorhombic_lattice(double a, double b, double c);
  * @param c Lattice constant.
  * @return Orthorhombic body-centered lattice.
  */
-bravais_lattice make_orthorhombic_bc_lattice(double a, double b, double c);
+[[nodiscard]] bravais_lattice make_orthorhombic_bc_lattice(double a, double b, double c);
 
 /**
  * @brief Make orthorombic face-centered lattice.
@@ -380,7 +380,7 @@ bravais_lattice make_orthorhombic_bc_lattice(double a, double b, double c);
  * @param c Lattice constant.
  * @return Orthorhombic face-centered lattice.
  */
-bravais_lattice make_orthorhombic_fc_lattice(double a, double b, double c);
+[[nodiscard]] bravais_lattice make_orthorhombic_fc_lattice(double a, double b, double c);
 
 /**
  * @brief Make orthorombic base-centered lattice.
@@ -390,7 +390,7 @@ bravais_lattice make_orthorhombic_fc_lattice(double a, double b, double c);
  * @param c Lattice constant.
  * @return Orthorhombic base-centered lattice.
  */
-bravais_lattice make_orthorhombic_base_centered_lattice(double a, double b, double c);
+[[nodiscard]] bravais_lattice make_orthorhombic_base_centered_lattice(double a, double b, double c);
 
 /**
  * @brief Make monoclinic lattice.
@@ -401,7 +401,7 @@ bravais_lattice make_orthorhombic_base_centered_lattice(double a, double b, doub
  * @param beta Angle between a-c.
  * @return Monoclinic lattice.
  */
-bravais_lattice make_monoclinic_lattice(double a, double b, double c, double beta);
+[[nodiscard]] bravais_lattice make_monoclinic_lattice(double a, double b, double c, double beta);
 
 /**
  * @brief Make monoclinic base-centered lattice.
@@ -412,7 +412,7 @@ bravais_lattice make_monoclinic_lattice(double a, double b, double c, double bet
  * @param beta Angle between a-c.
  * @return Monoclinic base-centered lattice.
  */
-bravais_lattice make_monoclinic_base_centered_lattice(double a, double b, double c, double beta);
+[[nodiscard]] bravais_lattice make_monoclinic_base_centered_lattice(double a, double b, double c, double beta);
 
 /**
  * @brief Make triclinic lattice.
@@ -425,7 +425,8 @@ bravais_lattice make_monoclinic_base_centered_lattice(double a, double b, double
  * @param gamma Angle between a-b.
  * @return Triclinic lattice.
  */
-bravais_lattice make_triclinic_lattice(double a, double b, double c, double alpha, double beta, double gamma);
+[[nodiscard]] bravais_lattice make_triclinic_lattice(
+    double a, double b, double c, double alpha, double beta, double gamma);
 
 } // namespace simplemc
 

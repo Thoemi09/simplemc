@@ -9,8 +9,8 @@ add_library(simplemc::simplemc-accs ALIAS simplemc-accs)
 target_sources(simplemc-accs
     PRIVATE
         utils.cpp
-        mean_acc.cpp
-        var_acc.cpp)
+        mean_acc.cpp)
+        # var_acc.cpp)
 target_link_libraries(simplemc-accs
     PUBLIC
         simplemc::simplemc-numeric

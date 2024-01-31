@@ -37,13 +37,13 @@ inline double interp_linear_1d(double xd, double f0, double f1) {
  * @brief Perform linear interpolation in n-dimensions.
  *
  * @tparam N Current dimension.
- * @tparam Grid n-dimensional grid.
+ * @tparam Grid Type of the n-dimensional grid.
  * @tparam Order Index order.
- * @param idx_arr Index array of the lower left corner of the hypercube in which we interpolate.
+ * @param idx_arr Index array representing the lower left corner of the hypercube in which we interpolate.
  * @param xd_arr Array of ratios of the distances in each direction.
  * @param fvals Span containing the function values.
  * @param shape_arr Shape of the grid (used for indexing the correct function values).
- * @param order Order of the multi-dimensional array containing the function values.
+ * @param order Index order of the multi-dimensional array containing the function values.
  * @return Interpolated value.
  */
 template <int N, typename Grid, nd_order Order = column_major>
@@ -69,7 +69,7 @@ inline double interp_linear_nd(const typename Grid::nd_size_type& idx_arr, const
 /**
  * @brief Get ratios of the distances in each direction, i.e. (x[i] - x0[i]) / (x1[i] - x0[i]).
  *
- * @tparam NDGrid n-dimensional grid.
+ * @tparam Grid Type of the n-dimensional grid.
  * @param idx_arr Index array.
  * @param x_arr Value array.
  * @param grid n-dimensional grid.
@@ -184,7 +184,7 @@ public:
      *
      * @param grid n-dimensional grid.
      * @param fvals Function values at grid points.
-     * @param order Order of the multi-dimensional array containing the function values.
+     * @param order Index order of the multi-dimensional array containing the function values.
      */
     linear_interpolation_nd(
         const grid_type& grid, const std::span<double>& fvals, [[maybe_unused]] Order order = Order {});

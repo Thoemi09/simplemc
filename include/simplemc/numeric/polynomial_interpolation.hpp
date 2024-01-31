@@ -92,6 +92,11 @@ public:
      */
     [[nodiscard]] const auto& function_values() const { return fvals_; }
 
+    /**
+     * @brief Get the degree of the polynomial.
+     */
+    [[nodiscard]] auto degree() const { return npoints_ - 1; }
+
 private:
     grid_type grid_;
     std::span<double> fvals_;
@@ -152,12 +157,13 @@ public:
     static constexpr std::size_t dim() { return grid_type::dim(); }
 
     /**
-     * @brief Construct a polynomical interpolation object on a given grid with given function values.
+     * @brief Construct a polynomical interpolation object of a certain degree on a given grid
+     * with given function values.
      *
      * @param grid n-dimensional grid.
      * @param fvals Function values at grid points.
      * @param degree Degree of polynomial.
-     * @param order Order of the multi-dimensional array containing the function values.
+     * @param order Index order of the multi-dimensional array containing the function values.
      */
     polynomial_interpolation_nd(const grid_type& grid, const std::span<double>& fvals, std::size_t degree,
         [[maybe_unused]] Order order = Order {});
@@ -190,13 +196,18 @@ public:
      */
     [[nodiscard]] const auto& function_values() const { return fvals_; }
 
+    /**
+     * @brief Get the degree of the polynomial.
+     */
+    [[nodiscard]] auto degree() const { return npoints_ - 1; }
+
 private:
     /**
      * @brief Perform polynomial interpolation in n-dimensions.
      *
      * @tparam N Current dimension.
      * @param x_arr Value array at which we seek the function value.
-     * @param idx_arr Index array of the lower left corner of the hypercube in which we interpolate.
+     * @param idx_arr Index array representing the lower left corner of the hypercube in which we interpolate.
      * @param shape_arr Shape of the grid (used for indexing the correct function values).
      * @return Interpolated value.
      */

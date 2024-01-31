@@ -1,6 +1,6 @@
 /**
- * @file special_functions.cpp
- * @brief Implementation of special functions for estimating coefficients in a generalized Fourier series.
+ * @file orthogonal_polynomials.cpp
+ * @brief Implementation of orthogonal polynomials for estimating coefficients in a generalized Fourier series.
  */
 
 #include <simplemc/numeric/orthogonal_polynomials.hpp>
@@ -19,16 +19,6 @@ orthogonal_polynomial::orthogonal_polynomial(double x, double y0, double y1, dou
     dy1_ { dy1 },
     dyl_ { dy0 },
     dylm1_ { 0.0 } {}
-
-double orthogonal_polynomial::last_value() const {
-    assert(l_ > 0);
-    return ylm1_;
-}
-
-double orthogonal_polynomial::last_derivative() const {
-    assert(l_ > 0);
-    return dylm1_;
-}
 
 double orthogonal_polynomial::derivative(int l, double x) {
     assert(l >= 0);
@@ -312,15 +302,6 @@ double cosine::next() {
     return ylm1_;
 }
 
-double cosine::current_derivative() const {
-    return -static_cast<double>(l_) * dyl_ * sinx_;
-}
-
-double cosine::last_derivative() const {
-    assert(l_ > 0);
-    return -static_cast<double>(l_ - 1) * dylm1_ * sinx_;
-}
-
 double cosine::value(int l, double x) {
     assert(l >= 0);
     l_ = 0;
@@ -367,24 +348,6 @@ double sine::next() {
     }
     ++l_;
     return ylm1_ * sinx_;
-}
-
-double sine::current_value() const {
-    return yl_ * sinx_;
-}
-
-double sine::last_value() const {
-    assert(l_ > 0);
-    return ylm1_ * sinx_;
-}
-
-double sine::current_derivative() const {
-    return static_cast<double>(l_) * dyl_;
-}
-
-double sine::last_derivative() const {
-    assert(l_ > 0);
-    return static_cast<double>(l_ - 1) * dylm1_;
 }
 
 double sine::value(int l, double x) {

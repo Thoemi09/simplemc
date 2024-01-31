@@ -15,8 +15,8 @@ namespace simplemc::detail {
  * @brief Generate a double value on the interval [min, max) given a random
  * 64-bit unsigned integer RNG (see http://prng.di.unimi.it/).
  *
- * @tparam RNG 64-bit RNG.
- * @param rng rng object.
+ * @tparam RNG 64-bit random number generator.
+ * @param rng RNG object.
  * @param min Lower bound.
  * @param max Upper bound.
  * @return Double value on the specified interval.

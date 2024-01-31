@@ -6,12 +6,7 @@
 #include <gtest/gtest.h>
 
 #include <simplemc/config.hpp>
-#include <simplemc/utils/concepts.hpp>
-#include <simplemc/utils/file_io.hpp>
-#include <simplemc/utils/format.hpp>
-#include <simplemc/utils/indexing.hpp>
-#include <simplemc/utils/simplemc_exception.hpp>
-#include <simplemc/utils/timer.hpp>
+#include <simplemc/utils.hpp>
 
 #include <fmt/ranges.h>
 #include <range/v3/all.hpp>

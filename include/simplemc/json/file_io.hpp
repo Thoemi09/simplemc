@@ -26,7 +26,7 @@ enum class json_binary_mode { bson, cbor, msgpack, ubjson };
  * @details The file is opened in the standard std::ios_base::out mode, i.e.
  * any content of an existing file will be truncated before writing to it.
  *
- * Throws an exception if writing fails.
+ * Throws a simplemc::simplemc_exception if writing fails.
  *
  * @param json nlohmann::json object to be written.
  * @param fname Name of the file.
@@ -40,7 +40,7 @@ void write_json_file(const nlohmann::json& json, const std::string& fname, int w
  * @details The file is opened in the std::ios_base::binary mode, i.e. any
  * content of an existing file will be truncated before writing to it.
  *
- * Throws an exception if writing fails.
+ * Throws a simplemc::simplemc_exception if writing fails.
  *
  * @param json nlohmann::json object to be written.
  * @param fname Name of the file.
@@ -51,7 +51,7 @@ void write_json_file(const nlohmann::json& json, const std::string& fname, json_
 /**
  * @brief Read a JSON text file into a nlohmann::json object.
  *
- * @details Throws an exception if reading fails.
+ * @details Throws a simplemc::simplemc_exception if reading fails.
  *
  * @param json nlohmann::json object to be read into.
  * @param fname Name of the file.
@@ -64,7 +64,7 @@ void read_json_file(nlohmann::json& json, const std::string& fname);
  * @details The specified binary mode has to be the same that was used to write
  * the file in the first place.
  *
- * Throws an exception if reading fails.
+ * Throws a simplemc::simplemc_exception if reading fails.
  *
  * @param json nlohmann::json object to be read into.
  * @param fname Name of the file.

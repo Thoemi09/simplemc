@@ -8,8 +8,12 @@
 
 #include <Eigen/Dense>
 
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
 #include <limits>
 #include <span>
+#include <type_traits>
 
 namespace simplemc {
 
@@ -38,32 +42,33 @@ struct matrix {
  *
  * @tparam Derived Derived type.
  * @param t Eigen::PlainObjectBase object.
- * @return Span of the object.
+ * @return Span of the underlying data.
  */
 template <typename Derived>
 inline auto make_span(const Eigen::PlainObjectBase<Derived>& t) {
     return std::span<std::remove_reference_t<decltype(t(0, 0))>>(&t(0, 0), static_cast<std::size_t>(t.size()));
 }
 
+/// Overload of simplemc::make_span for non-const Eigen::PlainObjectBase objects.
 template <typename Derived>
 inline auto make_span(Eigen::PlainObjectBase<Derived>& t) {
     return std::span<std::remove_reference_t<decltype(t(0, 0))>>(&t(0, 0), static_cast<std::size_t>(t.size()));
 }
 
 /**
- * @brief Checks if an Eigen::MatrixBase object is finite.
+ * @brief Check if an Eigen::MatrixBase object is finite.
  *
  * @tparam Derived Derived type.
  * @param t Eigen::MatrixBase object.
- * @return `true`, if any element is inf or nan.
+ * @return True if all elements of the object are finite.
  */
 template <typename Derived>
 inline bool isfinite(const Eigen::MatrixBase<Derived>& t) {
-    return t.array().isfinite().any();
+    return t.array().isFinite().all();
 }
 
 /**
- * @brief Absolute difference between two Eigen::Matrix using the 2-norm for vectors
+ * @brief Absolute difference between two Eigen::Matrix objects using the 2-norm for vectors
  * and the Frobenius norm for matrices.
  *
  * @tparam Derived Derived type.
@@ -77,7 +82,7 @@ inline double abs_diff(const Eigen::MatrixBase<Derived>& t1, const Eigen::Matrix
 }
 
 /**
- * @brief Relative difference between two Eigen::Matrix using the 2-norm for vectors
+ * @brief Relative difference between two Eigen::Matrix objects using the 2-norm for vectors
  * and the Frobenius norm for matrices.
  *
  * @tparam Derived Derived type.
@@ -109,7 +114,7 @@ inline double rel_diff(const Eigen::MatrixBase<Derived>& t1, const Eigen::Matrix
  * - 3D: (r, theta, phi) -> (x, y, z)
  *
  * @param vec Vector with spherical/polar coordinates (r, theta, phi)/(r, phi)/(x).
- * @return Vector with cartesian vector (x, y, z)/(x, y)/(x).
+ * @return Vector with cartesian coordinates (x, y, z)/(x, y)/(x).
  */
 inline typename vector<1>::type polar_to_cartesian(const typename vector<1>::type& vec) {
     return vec;
@@ -125,8 +130,8 @@ inline typename vector<2>::type polar_to_cartesian(const typename vector<2>::typ
 /// See simplemc::polar_to_cartesian.
 inline typename vector<3>::type polar_to_cartesian(const typename vector<3>::type& vec) {
     typename vector<3>::type res;
-    const auto sin2 = std::sin(vec[2]);
-    res << vec[0] * std::cos(vec[1]) * sin2, vec[0] * std::cos(vec[2]), vec[0] * std::sin(vec[1]) * sin2;
+    const auto sin_theta = std::sin(vec[1]);
+    res << vec[0] * std::cos(vec[2]) * sin_theta, vec[0] * std::sin(vec[2]) * sin_theta, vec[0] * std::cos(vec[1]);
     return res;
 }
 
