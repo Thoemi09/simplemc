@@ -6,9 +6,12 @@
 #ifndef SIMPLEMC_RANDOM_XOSHIRO256_HPP
 #define SIMPLEMC_RANDOM_XOSHIRO256_HPP
 
+#include <simplemc/random/splitmix64.hpp>
+#include <simplemc/utils/simplemc_exception.hpp>
+
 #include <array>
 #include <cstdint>
-#include <iosfwd>
+#include <iostream>
 #include <limits>
 #include <type_traits>
 
@@ -77,7 +80,7 @@ public:
      *
      * @param s 64-bit unsigned integer seed.
      */
-    explicit xoshiro256(std::uint64_t s = default_seed);
+    explicit xoshiro256(std::uint64_t s = default_seed) { seed(s); }
 
     /**
      * @brief Construct a RNG from four std::uint64_t.
@@ -87,7 +90,8 @@ public:
      * @param s2 64-bit unsigned integer.
      * @param s3 64-bit unsigned integer.
      */
-    xoshiro256(std::uint64_t s0, std::uint64_t s1, std::uint64_t s2, std::uint64_t s3);
+    xoshiro256(std::uint64_t s0, std::uint64_t s1, std::uint64_t s2, std::uint64_t s3) :
+        state_(state_type { s0, s1, s2, s3 }) {}
 
     /**
      * @brief Construct a RNG from a SeedSequence.
@@ -109,7 +113,13 @@ public:
      *
      * @param s 64-bit unsigned integer.
      */
-    void seed(std::uint64_t s = default_seed);
+    void seed(std::uint64_t s = default_seed) {
+        splitmix64 sm(s);
+        state_[0] = sm();
+        state_[1] = sm();
+        state_[2] = sm();
+        state_[3] = sm();
+    }
 
     /**
      * @brief Set the internal state with four std::uint64_t directly.
@@ -119,7 +129,9 @@ public:
      * @param s2 64-bit unsigned integer.
      * @param s3 64-bit unsigned integer.
      */
-    void seed(std::uint64_t s0, std::uint64_t s1, std::uint64_t s2, std::uint64_t s3);
+    void seed(std::uint64_t s0, std::uint64_t s1, std::uint64_t s2, std::uint64_t s3) {
+        state_ = state_type { s0, s1, s2, s3 };
+    }
 
     /**
      * @brief Set the internal state using a SeedSequence.
@@ -164,17 +176,29 @@ public:
      *
      * @param z Number of steps to jump ahead.
      */
-    void discard(std::uintmax_t z);
+    void discard(std::uintmax_t z) {
+        for (std::uintmax_t i = 0; i < z; i++) {
+            this->operator()();
+        }
+    }
 
     /**
      * @brief Advance the internal state 2^128 steps.
      */
-    void jump();
+    void jump() {
+        static const state_type arr =
+            state_type { 0x180ec6d33cfd0aba, 0xd5a61266f0c9392c, 0xa9582618e03fc9aa, 0x39abdc4529b1661c };
+        base_jump(arr);
+    }
 
     /**
      * @brief Advance the internal state 2^192 steps.
      */
-    void long_jump();
+    void long_jump() {
+        static const state_type arr =
+            state_type { 0x76e15d3efefdcbbf, 0xc5004e441c522fb3, 0x77710069854ee241, 0x39109bb02acbe635 };
+        base_jump(arr);
+    }
 
     /* Friend declarations. */
     friend std::ostream& operator<< <X>(std::ostream&, const xoshiro256&);
@@ -196,7 +220,27 @@ private:
     /**
      * @brief Perform the actual jump.
      */
-    void base_jump(const state_type& arr);
+    void base_jump(const state_type& arr) {
+        std::uint64_t s0 = 0;
+        std::uint64_t s1 = 0;
+        std::uint64_t s2 = 0;
+        std::uint64_t s3 = 0;
+        for (std::size_t i = 0; i < arr.size(); i++) {
+            for (int b = 0; b < 64; b++) {
+                if (arr[i] & static_cast<std::uint64_t>(1) << b) {
+                    s0 ^= state_[0];
+                    s1 ^= state_[1];
+                    s2 ^= state_[2];
+                    s3 ^= state_[3];
+                }
+                this->operator()();
+            }
+        }
+        state_[0] = s0;
+        state_[1] = s1;
+        state_[2] = s2;
+        state_[3] = s3;
+    }
 
     state_type state_ {};
 };
@@ -227,7 +271,12 @@ inline std::uint64_t xoshiro256<xoshiro256_type::starstar>::type_specific() {
  * @return Reference to the std::ostream.
  */
 template <xoshiro256_type X>
-std::ostream& operator<<(std::ostream& os, const xoshiro256<X>& eng);
+std::ostream& operator<<(std::ostream& os, const xoshiro256<X>& eng) {
+    if (!(os << eng.state_[0] << ' ' << eng.state_[1] << ' ' << eng.state_[2] << ' ' << eng.state_[3])) {
+        throw simplemc_exception("Error writing xoshiro256 to ostream.");
+    }
+    return os;
+}
 
 /**
  * @brief Read a textual representation of a random number generator from std::istream.
@@ -240,7 +289,15 @@ std::ostream& operator<<(std::ostream& os, const xoshiro256<X>& eng);
  * @return Reference to the std::istream.
  */
 template <xoshiro256_type X>
-std::istream& operator>>(std::istream& is, xoshiro256<X>& eng);
+std::istream& operator>>(std::istream& is, xoshiro256<X>& eng) {
+    typename xoshiro256<X>::state_type arr;
+    if (is >> arr[0] >> std::ws >> arr[1] >> std::ws >> arr[2] >> std::ws >> arr[3]) {
+        eng.state_ = arr;
+    } else {
+        throw simplemc_exception("Error reading xoshiro256 from istream.");
+    }
+    return is;
+}
 
 /**
  * @brief Compare two RNGs for equalitiy.
@@ -251,7 +308,9 @@ std::istream& operator>>(std::istream& is, xoshiro256<X>& eng);
  * @return True if their internal states are equal.
  */
 template <xoshiro256_type X>
-[[nodiscard]] bool operator==(const xoshiro256<X>& lhs, const xoshiro256<X>& rhs);
+[[nodiscard]] bool operator==(const xoshiro256<X>& lhs, const xoshiro256<X>& rhs) {
+    return lhs.state_ == rhs.state_;
+}
 
 /**
  * @brief Compare two RNGs for inequality.
@@ -262,7 +321,9 @@ template <xoshiro256_type X>
  * @return True if their internal states are distinct.
  */
 template <xoshiro256_type X>
-[[nodiscard]] bool operator!=(const xoshiro256<X>& lhs, const xoshiro256<X>& rhs);
+[[nodiscard]] bool operator!=(const xoshiro256<X>& lhs, const xoshiro256<X>& rhs) {
+    return !(lhs == rhs);
+}
 
 /**
  * @brief xoshiro256+. Use only for floating-point generation.
