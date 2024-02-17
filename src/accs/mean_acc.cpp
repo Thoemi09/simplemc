@@ -59,7 +59,13 @@ void mean_acc<T, A>::reset(size_type size, value_type shift) {
 template <double_or_complex T, accs::varalg A>
 mean_acc<T, A>& mean_acc<T, A>::operator<<(const mean_acc& acc) {
     assert(size() == acc.size());
-    data_ += (acc.data_ + acc.shift_ - shift_);
+    if constexpr (varalg() == accs::varalg::standard) {
+        data_ += (acc.data_ + acc.shift_ - shift_);
+    } else {
+        const auto n1 = static_cast<value_type>(count_);
+        const auto n2 = static_cast<value_type>(acc.count_);
+        data_ = (data_ * n1 + (acc.data_ + acc.shift_ - shift_) * n2) / (n1 + n2);
+    }
     count_ += acc.count_;
     return *this;
 }

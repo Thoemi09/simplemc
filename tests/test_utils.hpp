@@ -32,19 +32,20 @@ void check_json(const T& orig) {
     check_json(orig, copy);
 }
 
-// Check complex numbers for nearness.
+// Check for nearness.
 template <typename T1, typename T2>
 inline void check_near(T1 lhs, T2 rhs, double eps = 1e-14) {
     ASSERT_NEAR(lhs, rhs, eps);
 }
 
+// Check complex numbers for nearness
 template <typename T1, typename T2>
 inline void check_near(std::complex<T1> lhs, std::complex<T2> rhs, double eps = 1e-14) {
     ASSERT_NEAR(std::real(lhs), std::real(rhs), eps);
     ASSERT_NEAR(std::imag(lhs), std::imag(rhs), eps);
 }
 
-// Check complex numbers for double equality.
+// Check for equality.
 template <typename T1, typename T2>
 inline void check_equal(T1 lhs, T2 rhs) {
     if constexpr (std::integral<T1> && std::integral<T2>) {
@@ -54,6 +55,7 @@ inline void check_equal(T1 lhs, T2 rhs) {
     }
 }
 
+// Check complex numbers for double equality.
 template <typename T1, typename T2>
 inline void check_equal(std::complex<T1> lhs, std::complex<T2> rhs) {
     ASSERT_DOUBLE_EQ(std::real(lhs), std::real(rhs));

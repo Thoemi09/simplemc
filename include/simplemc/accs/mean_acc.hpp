@@ -19,12 +19,11 @@ namespace simplemc {
 /**
  * @brief Mean accumulator for calculating arithmetic means.
  *
- * @details No error estimation is available. Depending on the type of algorithm, the
- * accumulator either stores the sum of the accumulated data or the mean itself. The
- * number of accumulated samples is always stored.
+ * @details No error estimation is available.
  *
- * The user can choose the apply a constant shift to the accumulated data. This can sometimes
- * improve the numerical accuracy.
+ * The user can choose between the standard and the more stable Welford algorithm and whether 
+ * to apply a constant shift to the accumulated data. This can sometimes improve the numerical 
+ * accuracy.
  *
  * If the size of the accumulator is 1, then values can be added with the stream operator:
  * @code{.cpp}
@@ -85,7 +84,7 @@ public:
     using storage_type = Eigen::ArrayX<value_type>;
 
     /**
-     * @brief Get algorithm used to calculate the mean.
+     * @brief Get the algorithm used to calculate the mean.
      */
     static constexpr auto varalg() { return A; }
 
@@ -211,8 +210,6 @@ public:
 
     /**
      * @brief Stream operator for incorporating the data from another mean accumulator.
-     *
-     * @details It simply adds the (reshifted) data and the count of the other accumulator to this one.
      *
      * @param acc Mean accumulator to be incorporated.
      * @return Reference to this object.

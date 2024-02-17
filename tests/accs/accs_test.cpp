@@ -31,7 +31,7 @@ void fill_accs(A& acc_sv, A& acc_mva, A& acc_rg, int num) {
         if constexpr (std::is_same_v<typename A::value_type, double>) {
             acc_sv << norm_dist(eng);
             for (int j = 0; j < size; ++j) {
-                mva[j] << norm_dist(eng); 
+                mva[j] << norm_dist(eng);
                 vec[j] = norm_dist(eng);
             }
             acc_rg.accumulate(vec);
@@ -103,7 +103,7 @@ TEST(SimplemcAccs, Utils) {
 TEST(SimplemcAccs, MeanAccumulator) {
     // general set up
     using acc_d = simplemc::mean_acc<double>;
-    using acc_c = simplemc::mean_acc<std::complex<double>, simplemc::accs::varalg::welford>; 
+    using acc_c = simplemc::mean_acc<std::complex<double>, simplemc::accs::varalg::welford>;
     int n = 100000;
     double tol = 1e-2;
     int size = 3;
@@ -144,11 +144,19 @@ TEST(SimplemcAccs, MeanAccumulator) {
 
     // check reset and merging of accumulators
     acc_d merge(size);
+    acc_c merge_w(size);
     merge.reset(0, 2.0);
+    merge_w.reset(0, { 2.0, 1.0 });
     ASSERT_EQ(merge.count(), 0);
-    ASSERT_EQ(merge.shift(), 2.0);
+    check_equal(merge.shift(), 2.0);
+    ASSERT_EQ(merge_w.count(), 0);
+    check_equal(merge_w.shift(), std::complex<double> { 2.0, 1.0 });
     merge << acc_mva;
     merge << acc_rg;
+    merge_w << acc_mva_w;
+    merge_w << acc_rg_w;
     ASSERT_EQ(merge.count(), 2 * n);
+    ASSERT_EQ(merge_w.count(), 2 * n);
     check_mean(merge, 2 * n, tol);
+    check_mean(merge_w, 2 * n, tol);
 }
