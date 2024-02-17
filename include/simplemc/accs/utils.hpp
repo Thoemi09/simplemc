@@ -26,7 +26,14 @@ enum class varalg { standard, welford };
  * @return Eigen::Array with NaNs.
  */
 template <double_or_complex T>
-Eigen::ArrayX<T> make_nans(long size);
+Eigen::ArrayX<T> make_nans(long size) {
+    constexpr auto nan = std::numeric_limits<double>::quiet_NaN();
+    if constexpr (std::is_same_v<T, double>) {
+        return Eigen::ArrayX<T>::Constant(size, nan);
+    } else {
+        return Eigen::ArrayX<T>::Constant(size, std::complex<double> { nan, nan });
+    }
+}
 
 /**
  * @brief Calculate the sample mean.
@@ -39,7 +46,39 @@ Eigen::ArrayX<T> make_nans(long size);
  * @return Sample mean.
  */
 template <double_or_complex T, varalg A = varalg::standard>
-Eigen::ArrayX<T> mean(const Eigen::ArrayX<T>& data, std::uint64_t count, T shift = 0.0);
+Eigen::ArrayX<T> mean(const Eigen::ArrayX<T>& data, std::uint64_t count, T shift = 0.0) {
+    if (count == 0) {
+        return make_nans<T>(data.size());
+    }
+    if constexpr (A == varalg::standard) {
+        return data / static_cast<T>(count) + shift;
+    } else {
+        return data + shift;
+    }
+}
+
+/**
+ * @brief Calculate the sample variance.
+ *
+ * @tparam A Algorithm used to calculate the mean.
+ * @param data Accumulated data (depends on the algorithm).
+ * @param data2 Accumulated squared data (depends on the algorithm).
+ * @param count Number of accumulated values.
+ * @return Sample variance.
+ */
+template <varalg A = varalg::standard>
+Eigen::ArrayX<double> variance(
+    const Eigen::ArrayX<double>& data, const Eigen::ArrayX<double>& data2, std::uint64_t count) {
+    if (count <= 1) {
+        return make_nans<double>(data.size());
+    }
+    const auto cd = static_cast<double>(count);
+    if constexpr (A == varalg::standard) {
+        return (data2 - data * data / cd) / (cd - 1);
+    } else {
+        return data2 / (cd - 1);
+    }
+}
 
 } // namespace simplemc::accs
 

@@ -7,6 +7,8 @@
 #define SIMPLEMC_ACCS_MEAN_ACC_HPP
 
 #include <simplemc/accs/utils.hpp>
+#include <simplemc/numeric/utils.hpp>
+#include <simplemc/utils/simplemc_exception.hpp>
 
 #include <range/v3/range/concepts.hpp>
 
@@ -21,8 +23,8 @@ namespace simplemc {
  *
  * @details No error estimation is available.
  *
- * The user can choose between the standard and the more stable Welford algorithm and whether 
- * to apply a constant shift to the accumulated data. This can sometimes improve the numerical 
+ * The user can choose between the standard and the more stable Welford algorithm and whether
+ * to apply a constant shift to the accumulated data. This can sometimes improve the numerical
  * accuracy.
  *
  * If the size of the accumulator is 1, then values can be added with the stream operator:
@@ -149,7 +151,15 @@ public:
      * @param size Number of elements.
      * @param shift Constant shift applied to the accumulated samples.
      */
-    mean_acc(size_type size = 1, value_type shift = 0.0);
+    mean_acc(size_type size = 1, value_type shift = 0.0) :
+        data_(storage_type::Zero(size)),
+        count_(0),
+        idx_(0),
+        shift_(shift) {
+        if (size <= 0) {
+            throw simplemc_exception("Size <= 0 in mean accumulator", "mean_acc::mean_acc");
+        }
+    }
 
     /**
      * @brief Construct a mean accumulator with a given data storage, count and constant shift.
@@ -158,7 +168,15 @@ public:
      * @param count Number of accumulated samples.
      * @param shift Constant shift applied to the accumulated samples.
      */
-    mean_acc(const storage_type& data, count_type count, value_type shift = 0.0);
+    mean_acc(storage_type data, count_type count, value_type shift = 0.0) :
+        data_(std::move(data)),
+        count_(count),
+        idx_(0),
+        shift_(shift) {
+        if (data_.size() == 0) {
+            throw simplemc_exception("Size == 0 in mean accumulator", "mean_acc::mean_acc");
+        }
+    }
 
     /**
      * @brief Set the data storage, count and shift.
@@ -167,7 +185,15 @@ public:
      * @param count Number of accumulated samples.
      * @param shift Constant shift applied to the accumulated samples.
      */
-    void set(const storage_type& data, count_type count, value_type shift = 0.0);
+    void set(const storage_type& data, count_type count, value_type shift = 0.0) {
+        if (data.size() == 0) {
+            throw simplemc_exception("Size == 0 in mean accumulator", "mean_acc::set");
+        }
+        data_ = data;
+        count_ = count;
+        idx_ = 0;
+        shift_ = shift;
+    }
 
     /**
      * @brief Reset the current accumulator by setting everything to zero, resizing the number of
@@ -176,7 +202,18 @@ public:
      * @param size New number of elements. If <= 0, no resizing is performed.
      * @param shift New constant shift. If it is not finite, the old value is kept.
      */
-    void reset(size_type size = 0, value_type shift = std::numeric_limits<double>::infinity());
+    void reset(size_type size = 0, value_type shift = std::numeric_limits<double>::infinity()) {
+        if (size <= 0) {
+            size = data_.size();
+        }
+        if (!simplemc::isfinite(shift)) {
+            shift = shift_;
+        }
+        data_ = storage_type::Zero(size);
+        count_ = 0;
+        idx_ = 0;
+        shift_ = shift;
+    }
 
     /**
      * @brief Subscript operator sets the index and returns a reference to this object.
@@ -192,9 +229,7 @@ public:
 
     /**
      * @brief Stream operator for accumulating single values.
-     *
-     * @details It adds the value to the current index and increases the count by one.
-     *
+     * 
      * @param val Value to be accumulated.
      * @return Reference to this object.
      */
@@ -214,7 +249,18 @@ public:
      * @param acc Mean accumulator to be incorporated.
      * @return Reference to this object.
      */
-    mean_acc& operator<<(const mean_acc& acc);
+    mean_acc& operator<<(const mean_acc& acc) {
+        assert(size() == acc.size());
+        if constexpr (varalg() == accs::varalg::standard) {
+            data_ += (acc.data_ + acc.shift_ - shift_);
+        } else {
+            const auto n1 = static_cast<value_type>(count_);
+            const auto n2 = static_cast<value_type>(acc.count_);
+            data_ = (data_ * n1 + (acc.data_ + acc.shift_ - shift_) * n2) / (n1 + n2);
+        }
+        count_ += acc.count_;
+        return *this;
+    }
 
     /**
      * @brief Accumulate a range of values.
@@ -271,7 +317,7 @@ public:
     /**
      * @brief Get accumulated data.
      *
-     * @return Data storage.
+     * @return Data storage (content depends on the algorithm).
      */
     [[nodiscard]] const storage_type& data() const { return data_; }
 
