@@ -7,13 +7,14 @@
 #define SIMPLEMC_ACCS_MEAN_ACC_HPP
 
 #include <simplemc/accs/utils.hpp>
+#include <simplemc/numeric/eigen.hpp>
 #include <simplemc/numeric/utils.hpp>
+#include <simplemc/utils/concepts.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
 #include <range/v3/range/concepts.hpp>
 
 #include <cassert>
-#include <cstddef>
 #include <cstdint>
 
 namespace simplemc {
@@ -53,8 +54,8 @@ namespace simplemc {
  * acc.accumulate(range, idx, count);
  * @endcode
  *
- * The mean (stderror, tau) is always returned as an Eigen::ArrayX object. If e.g. the size of the
- * accumulator is 1, then we still need to access the array:
+ * Results (mean, stderror, tau) are always returned as an Eigen::ArrayX object. If e.g.
+ * the size of the accumulator is 1, then we still need to access the array:
  * @code{.cpp}
  * auto mean = acc.mean()[0];
  * @endcode
@@ -71,7 +72,7 @@ public:
     using value_type = T;
 
     /**
-     * @brief Type for counting the number of samples.
+     * @brief Type for counting the number of accumulated values.
      */
     using count_type = std::uint64_t;
 
@@ -113,7 +114,7 @@ private:
          * @param idx Index.
          * @return Reference to this object.
          */
-        mean_mva& operator[](std::size_t idx) {
+        mean_mva& operator[](size_type idx) {
             assert(idx >= 0 && idx < acc_.size());
             idx_ = idx;
             return *this;
@@ -127,9 +128,9 @@ private:
          */
         mean_mva& operator<<(value_type val) {
             if constexpr (varalg() == accs::varalg::standard) {
-                acc_.data_[idx_] += (val - acc_.shift_);
+                acc_.data_[idx_] += (val - acc_.shift_[idx_]);
             } else {
-                acc_.data_[idx_] += (val - acc_.shift_ - acc_.data_[idx_]) / static_cast<value_type>(acc_.count_ + 1);
+                acc_.data_[idx_] += (val - acc_.shift_[idx_] - acc_.data_[idx_]) / static_cast<value_type>(acc_.count_ + 1);
             }
             return *this;
         }
@@ -141,22 +142,37 @@ private:
 
     private:
         mean_acc& acc_; // NOLINT (reference is wanted here)
-        std::size_t idx_;
+        size_type idx_;
     };
 
 public:
     /**
-     * @brief Construct a mean accumulator with a given number of elements and a constant shift.
+     * @brief Construct a mean accumulator with a given number of elements.
      *
      * @param size Number of elements.
-     * @param shift Constant shift applied to the accumulated samples.
+     * @param shift A single constant shift applied to the accumulated values.
      */
-    mean_acc(size_type size = 1, value_type shift = 0.0) :
+    explicit mean_acc(size_type size = 1, value_type shift = 0.0) :
         data_(storage_type::Zero(size)),
+        shift_(storage_type::Constant(size, shift)),
         count_(0),
-        idx_(0),
-        shift_(shift) {
+        idx_(0) {
         if (size <= 0) {
+            throw simplemc_exception("Size <= 0 in mean accumulator", "mean_acc::mean_acc");
+        }
+    }
+
+    /**
+     * @brief Construct a mean accumulator with a given constant shift.
+     *
+     * @param shift Constant shift applied to the accumulated values.
+     */
+    explicit mean_acc(storage_type shift) :
+        data_(storage_type::Zero(shift.size())),
+        shift_(std::move(shift)),
+        count_(0),
+        idx_(0) {
+        if (data_.size() <= 0) {
             throw simplemc_exception("Size <= 0 in mean accumulator", "mean_acc::mean_acc");
         }
     }
@@ -165,54 +181,20 @@ public:
      * @brief Construct a mean accumulator with a given data storage, count and constant shift.
      *
      * @param data Accumulated data.
-     * @param count Number of accumulated samples.
-     * @param shift Constant shift applied to the accumulated samples.
+     * @param shift Constant shift applied to the accumulated values.
+     * @param count Number of accumulated values.
      */
-    mean_acc(storage_type data, count_type count, value_type shift = 0.0) :
+    mean_acc(storage_type data, storage_type shift, count_type count) :
         data_(std::move(data)),
+        shift_(std::move(shift)),
         count_(count),
-        idx_(0),
-        shift_(shift) {
+        idx_(0) {
         if (data_.size() == 0) {
             throw simplemc_exception("Size == 0 in mean accumulator", "mean_acc::mean_acc");
         }
-    }
-
-    /**
-     * @brief Set the data storage, count and shift.
-     *
-     * @param data Accumulated data.
-     * @param count Number of accumulated samples.
-     * @param shift Constant shift applied to the accumulated samples.
-     */
-    void set(const storage_type& data, count_type count, value_type shift = 0.0) {
-        if (data.size() == 0) {
-            throw simplemc_exception("Size == 0 in mean accumulator", "mean_acc::set");
+        if (data_.size() != shift_.size()) {
+            throw simplemc_exception("Size of data != size of shift in mean accumulator", "mean_acc::mean_acc");
         }
-        data_ = data;
-        count_ = count;
-        idx_ = 0;
-        shift_ = shift;
-    }
-
-    /**
-     * @brief Reset the current accumulator by setting everything to zero, resizing the number of
-     * elements (if a size is specified) and changing the constant shift (if a shift is specified).
-     *
-     * @param size New number of elements. If <= 0, no resizing is performed.
-     * @param shift New constant shift. If it is not finite, the old value is kept.
-     */
-    void reset(size_type size = 0, value_type shift = std::numeric_limits<double>::infinity()) {
-        if (size <= 0) {
-            size = data_.size();
-        }
-        if (!simplemc::isfinite(shift)) {
-            shift = shift_;
-        }
-        data_ = storage_type::Zero(size);
-        count_ = 0;
-        idx_ = 0;
-        shift_ = shift;
     }
 
     /**
@@ -228,17 +210,17 @@ public:
     }
 
     /**
-     * @brief Stream operator for accumulating single values.
-     * 
+     * @brief Stream operator for accumulating a single value.
+     *
      * @param val Value to be accumulated.
      * @return Reference to this object.
      */
     mean_acc& operator<<(value_type val) {
         ++count_;
         if constexpr (varalg() == accs::varalg::standard) {
-            data_[idx_] += (val - shift_);
+            data_[idx_] += (val - shift_[idx_]);
         } else {
-            data_[idx_] += (val - shift_ - data_[idx_]) / static_cast<value_type>(count_);
+            data_[idx_] += (val - shift_[idx_] - data_[idx_]) / static_cast<value_type>(count_);
         }
         return *this;
     }
@@ -256,7 +238,7 @@ public:
         } else {
             const auto n1 = static_cast<value_type>(count_);
             const auto n2 = static_cast<value_type>(acc.count_);
-            data_ = (data_ * n1 + (acc.data_ + acc.shift_ - shift_) * n2) / (n1 + n2);
+            data_ = data_ * n1 / (n1 + n2) + (acc.data_ + acc.shift_ - shift_) * n2 / (n1 + n2);
         }
         count_ += acc.count_;
         return *this;
@@ -277,9 +259,9 @@ public:
         ++count_;
         for (auto val : rg) {
             if constexpr (varalg() == accs::varalg::standard) {
-                data_[idx] += (val - shift_);
+                data_[idx] += (val - shift_[idx]);
             } else {
-                data_[idx] += (val - shift_ - data_[idx]) / static_cast<value_type>(count_);
+                data_[idx] += (val - shift_[idx] - data_[idx]) / static_cast<value_type>(count_);
             }
             ++idx;
         }
@@ -291,7 +273,7 @@ public:
      * @param idx Index.
      * @return Multi value accumulator.
      */
-    mean_mva make_mva(std::size_t idx = 0) { return mean_mva(*this, idx); }
+    mean_mva make_mva(size_type idx = 0) { return mean_mva(*this, idx); }
 
     /**
      * @brief Get the size of the accumulator.
@@ -301,18 +283,18 @@ public:
     [[nodiscard]] auto size() const { return data_.size(); }
 
     /**
-     * @brief Get total number of samples.
+     * @brief Get the total number of accumulated values.
      *
-     * @return Number of accumulated data points.
+     * @return Number of accumulated values.
      */
     [[nodiscard]] auto count() const { return count_; }
 
     /**
-     * @brief Get constant shift.
+     * @brief Get the constant shift.
      *
-     * @return Constant shift applied to accumulated samples.
+     * @return Constant shift applied to the accumulated values.
      */
-    [[nodiscard]] auto shift() const { return shift_; }
+    [[nodiscard]] const storage_type& shift() const { return shift_; }
 
     /**
      * @brief Get accumulated data.
@@ -332,9 +314,9 @@ public:
 
 private:
     storage_type data_;
+    storage_type shift_;
     count_type count_;
     size_type idx_;
-    value_type shift_;
 };
 
 } // namespace simplemc

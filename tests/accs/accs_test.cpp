@@ -82,28 +82,13 @@ void check_mean(const A& acc, int n, double tol) {
     }
 }
 
-// Test utility functions.
-TEST(SimplemcAccs, Utils) {
-    using value_type = std::complex<double>;
-    using storage_type = Eigen::ArrayX<value_type>;
-    storage_type data = storage_type::Constant(5, std::complex<double> { 1.0, 1.0 });
-    for (auto i = 0; i < data.size(); ++i) {
-        data[i] = std::complex<double> { i * 1.0, i * 1.0 };
-    }
-    auto mean = simplemc::accs::mean(data, 5);
-    auto mean_nan = simplemc::accs::mean(data, 0);
-    for (auto i = 0; i < mean.size(); ++i) {
-        check_near(mean[i], std::complex<double> { i / 5.0, i / 5.0 });
-        ASSERT_TRUE(std::isnan(mean_nan[i].real()));
-        ASSERT_TRUE(std::isnan(mean_nan[i].imag()));
-    }
-}
-
 // Test mean accumulator.
 TEST(SimplemcAccs, MeanAccumulator) {
     // general set up
     using acc_d = simplemc::mean_acc<double>;
     using acc_c = simplemc::mean_acc<std::complex<double>, simplemc::accs::varalg::welford>;
+    using storage_d = typename acc_d::storage_type;
+    using storage_c = typename acc_c::storage_type;
     int n = 100000;
     double tol = 1e-2;
     int size = 3;
@@ -143,14 +128,10 @@ TEST(SimplemcAccs, MeanAccumulator) {
     check_mean(acc_rg_w, n, tol);
 
     // check reset and merging of accumulators
-    acc_d merge(size);
-    acc_c merge_w(size);
-    merge.reset(0, 2.0);
-    merge_w.reset(0, { 2.0, 1.0 });
+    acc_d merge(storage_d::Constant(size, 2.0).eval());
+    acc_c merge_w(storage_c::Constant(size, { 2.0, 1.0 }).eval());
     ASSERT_EQ(merge.count(), 0);
-    check_equal(merge.shift(), 2.0);
     ASSERT_EQ(merge_w.count(), 0);
-    check_equal(merge_w.shift(), std::complex<double> { 2.0, 1.0 });
     merge << acc_mva;
     merge << acc_rg;
     merge_w << acc_mva_w;

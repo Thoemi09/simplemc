@@ -9,7 +9,11 @@
 #include <simplemc/numeric/eigen.hpp>
 #include <simplemc/utils/concepts.hpp>
 
+#include <cassert>
+#include <complex>
 #include <cstdint>
+#include <limits>
+#include <type_traits>
 
 namespace simplemc::accs {
 
@@ -40,13 +44,14 @@ Eigen::ArrayX<T> make_nans(long size) {
  *
  * @tparam T Type of accumulated values (either double or std::complex<double>).
  * @tparam A Algorithm used to calculate the mean.
- * @param data Accumulated values.
+ * @param data Accumulated data.
  * @param count Number of accumulated values.
- * @param shift Constant shift applied to accumulated values.
+ * @param shift Constant shift applied to the accumulated values.
  * @return Sample mean.
  */
 template <double_or_complex T, varalg A = varalg::standard>
-Eigen::ArrayX<T> mean(const Eigen::ArrayX<T>& data, std::uint64_t count, T shift = 0.0) {
+Eigen::ArrayX<T> mean(const Eigen::ArrayX<T>& data, std::uint64_t count, const Eigen::ArrayX<T>& shift) {
+    assert(data.size() == shift.size());
     if (count == 0) {
         return make_nans<T>(data.size());
     }
@@ -60,15 +65,15 @@ Eigen::ArrayX<T> mean(const Eigen::ArrayX<T>& data, std::uint64_t count, T shift
 /**
  * @brief Calculate the sample variance.
  *
- * @tparam A Algorithm used to calculate the mean.
- * @param data Accumulated data (depends on the algorithm).
- * @param data2 Accumulated squared data (depends on the algorithm).
+ * @tparam A Algorithm used to calculate the variance.
+ * @param data Accumulated data.
+ * @param data2 Accumulated squared data.
  * @param count Number of accumulated values.
  * @return Sample variance.
  */
 template <varalg A = varalg::standard>
 Eigen::ArrayX<double> variance(
-    const Eigen::ArrayX<double>& data, const Eigen::ArrayX<double>& data2, std::uint64_t count) {
+    [[maybe_unused]] const Eigen::ArrayX<double>& data, const Eigen::ArrayX<double>& data2, std::uint64_t count) {
     if (count <= 1) {
         return make_nans<double>(data.size());
     }
