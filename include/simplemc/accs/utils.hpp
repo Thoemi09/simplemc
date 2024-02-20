@@ -56,7 +56,7 @@ Eigen::ArrayX<T> mean(const Eigen::ArrayX<T>& data, std::uint64_t count, const E
         return make_nans<T>(data.size());
     }
     if constexpr (A == varalg::standard) {
-        return data / static_cast<T>(count) + shift;
+        return data / static_cast<double>(count) + shift;
     } else {
         return data + shift;
     }

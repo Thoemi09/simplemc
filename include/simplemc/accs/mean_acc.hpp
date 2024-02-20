@@ -130,7 +130,8 @@ private:
             if constexpr (varalg() == accs::varalg::standard) {
                 acc_.data_[idx_] += (val - acc_.shift_[idx_]);
             } else {
-                acc_.data_[idx_] += (val - acc_.shift_[idx_] - acc_.data_[idx_]) / static_cast<value_type>(acc_.count_ + 1);
+                acc_.data_[idx_] +=
+                    (val - acc_.shift_[idx_] - acc_.data_[idx_]) / static_cast<value_type>(acc_.count_ + 1);
             }
             return *this;
         }
@@ -178,7 +179,7 @@ public:
     }
 
     /**
-     * @brief Construct a mean accumulator with a given data storage, count and constant shift.
+     * @brief Construct a mean accumulator with a given data storage, a constant shift and a count.
      *
      * @param data Accumulated data.
      * @param shift Constant shift applied to the accumulated values.
@@ -234,7 +235,7 @@ public:
     mean_acc& operator<<(const mean_acc& acc) {
         assert(size() == acc.size());
         if constexpr (varalg() == accs::varalg::standard) {
-            data_ += (acc.data_ + acc.shift_ - shift_);
+            data_ += acc.data_ + acc.count_ * (acc.shift_ - shift_);
         } else {
             const auto n1 = static_cast<value_type>(count_);
             const auto n2 = static_cast<value_type>(acc.count_);

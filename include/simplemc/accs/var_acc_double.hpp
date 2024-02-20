@@ -90,8 +90,9 @@ private:
          */
         var_mva& operator<<(value_type val) {
             if constexpr (varalg() == accs::varalg::standard) {
-                acc_.data_[idx_] += (val - acc_.shift_[idx_]);
-                acc_.data2_[idx_] += (val - acc_.shift_[idx_]) * (val - acc_.shift_[idx_]);
+                const auto tmp = val - acc_.shift_[idx_];
+                acc_.data_[idx_] += tmp;
+                acc_.data2_[idx_] += tmp * tmp;
             } else {
                 const auto tmp = val - acc_.shift_[idx_] - acc_.data_[idx_];
                 acc_.data_[idx_] += tmp / static_cast<value_type>(acc_.count_ + 1);
@@ -145,7 +146,7 @@ public:
     }
 
     /**
-     * @brief Construct a variance accumulator with given data storages, a count and constant shift.
+     * @brief Construct a variance accumulator with given data storages, a constant shift and a count.
      *
      * @param data Accumulated data.
      * @param data2 Accumulated squared data.
@@ -187,8 +188,9 @@ public:
     var_acc& operator<<(value_type val) {
         ++count_;
         if constexpr (varalg() == accs::varalg::standard) {
-            data_[idx_] += (val - shift_[idx_]);
-            data2_[idx_] += (val - shift_[idx_]) * (val - shift_[idx_]);
+            const auto tmp = val - shift_[idx_];
+            data_[idx_] += tmp;
+            data2_[idx_] += tmp * tmp;
         } else {
             const auto tmp = val - shift_[idx_] - data_[idx_];
             data_[idx_] += tmp / static_cast<value_type>(count_);
@@ -205,15 +207,14 @@ public:
      */
     var_acc& operator<<(const var_acc& acc) {
         assert(size() == acc.size());
-        auto shifted_data = acc.data_ + acc.shift_ - shift_;
         if constexpr (varalg() == accs::varalg::standard) {
-            data_ += shifted_data;
-            data2_ += (acc.data2_ - 2.0 * (shift_ - acc.shift_) * (acc.data_ + acc.shift_) +
-                acc.count_ * (shift_.square() - acc.shift_.square()));
+            data_ += acc.data_ + acc.count_ * (acc.shift_ - shift_);
+            data2_ +=
+                acc.data2_ + 2.0 * (acc.shift_ - shift_) * acc.data_ + acc.count_ * (acc.shift_ - shift_).square();
         } else {
             const auto n1 = static_cast<value_type>(count_);
             const auto n2 = static_cast<value_type>(acc.count_);
-            data2_ += acc.data2_ + (shifted_data - data_).square() * n1 * n2 / (n1 + n2);
+            data2_ += acc.data2_ + (acc.data_ + acc.shift_ - shift_ - data_).square() * n1 * n2 / (n1 + n2);
             data_ = data_ * n1 / (n1 + n2) + (acc.data_ + acc.shift_ - shift_) * n2 / (n1 + n2);
         }
         count_ += acc.count_;
@@ -235,8 +236,9 @@ public:
         ++count_;
         for (auto val : rg) {
             if constexpr (varalg() == accs::varalg::standard) {
-                data_[idx] += (val - shift_[idx_]);
-                data2_[idx] += (val - shift_[idx_]) * (val - shift_[idx_]);
+                const auto tmp = val - shift_[idx];
+                data_[idx] += tmp;
+                data2_[idx] += tmp * tmp;
             } else {
                 const auto tmp = val - shift_[idx_] - data_[idx];
                 data_[idx] += tmp / static_cast<value_type>(count_);
@@ -299,17 +301,39 @@ public:
     }
 
     /**
-     * @brief Calculate the standard error from the accumulated data.
-     *
-     * @details The standard error \f$s_{\bar{X}}\f$ of the mean is calculated. It is related to the
-     * variance of the mean by \f$s_{\bar{X}} = \sqrt{s^2_{\bar{X}}}\f$ and to the standard error of
-     * the actual data by \f$s_{X} = s_{\bar{X}} * N\f$ where \f$N\f$ is the number of accumulated
-     * values.
+     * @brief Calculate the standard error of the mean.
      *
      * @return Data storage with standard errors.
      */
     [[nodiscard]] storage_type stderror() const {
         return (simplemc::accs::variance<varalg()>(data_, data2_, count_) / static_cast<value_type>(count_)).sqrt();
+    }
+
+    /**
+     * @brief Calculate the variance of the mean.
+     *
+     * @return Data storage with variances.
+     */
+    [[nodiscard]] storage_type variance() const {
+        return simplemc::accs::variance<varalg()>(data_, data2_, count_) / static_cast<value_type>(count_);
+    }
+
+    /**
+     * @brief Calculate the standard error of the accumulated data.
+     *
+     * @return Data storage with standard errors.
+     */
+    [[nodiscard]] storage_type stderror_of_data() const {
+        return simplemc::accs::variance<varalg()>(data_, data2_, count_).sqrt();
+    }
+
+    /**
+     * @brief Calculate the variance of the accumulated data.
+     *
+     * @return Data storage with variances.
+     */
+    [[nodiscard]] storage_type variance_of_data() const {
+        return simplemc::accs::variance<varalg()>(data_, data2_, count_);
     }
 
 private:
