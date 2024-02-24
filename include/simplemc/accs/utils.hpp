@@ -42,46 +42,54 @@ Eigen::ArrayX<T> make_nans(long size) {
 /**
  * @brief Calculate the sample mean.
  *
+ * @details We have to correct for the constant shift vector.
+ *
  * @tparam T Type of accumulated values (either double or std::complex<double>).
  * @tparam A Algorithm used to calculate the mean.
- * @param data Accumulated data.
+ * @param mdata Accumulated mean data.
  * @param count Number of accumulated values.
- * @param shift Constant shift applied to the accumulated values.
+ * @param shift Constant shift vector applied to the accumulated values.
  * @return Sample mean.
  */
 template <double_or_complex T, varalg A = varalg::standard>
-Eigen::ArrayX<T> mean(const Eigen::ArrayX<T>& data, std::uint64_t count, const Eigen::ArrayX<T>& shift) {
+Eigen::ArrayX<T> mean(const Eigen::ArrayX<T>& mdata, std::uint64_t count, const Eigen::ArrayX<T>& shift) {
     assert(data.size() == shift.size());
     if (count == 0) {
-        return make_nans<T>(data.size());
+        return make_nans<T>(mdata.size());
     }
     if constexpr (A == varalg::standard) {
-        return data / static_cast<double>(count) + shift;
+        return mdata / static_cast<double>(count) + shift;
     } else {
-        return data + shift;
+        return mdata + shift;
     }
 }
 
 /**
- * @brief Calculate the sample variance.
+ * @brief Calculate the sample variance or covariance.
+ *
+ * @details If the given accumulated mean data storages are the same, then the sample variance is
+ * calculated, otherwise the sample covariance.
  *
  * @tparam A Algorithm used to calculate the variance.
- * @param data Accumulated data.
- * @param data2 Accumulated squared data.
+ * @param mdata1 Accumulated mean data #1.
+ * @param mdata2 Accumulated mean data #2.
+ * @param vdata Accumulated variance/covariance data.
  * @param count Number of accumulated values.
- * @return Sample variance.
+ * @return Sample variance or covariance.
  */
 template <varalg A = varalg::standard>
-Eigen::ArrayX<double> variance(
-    [[maybe_unused]] const Eigen::ArrayX<double>& data, const Eigen::ArrayX<double>& data2, std::uint64_t count) {
+Eigen::ArrayX<double> variance([[maybe_unused]] const Eigen::ArrayX<double>& mdata1,
+    [[maybe_unused]] const Eigen::ArrayX<double>& mdata2, const Eigen::ArrayX<double>& vdata, std::uint64_t count) {
+    assert(mdata1.size() == mdata2.size());
+    assert(mdata1.size() == vdata.size());
     if (count <= 1) {
-        return make_nans<double>(data.size());
+        return make_nans<double>(mdata1.size());
     }
     const auto cd = static_cast<double>(count);
     if constexpr (A == varalg::standard) {
-        return (data2 - data * data / cd) / (cd - 1);
+        return (vdata - mdata1 * mdata2 / cd) / (cd - 1);
     } else {
-        return data2 / (cd - 1);
+        return vdata / (cd - 1);
     }
 }
 

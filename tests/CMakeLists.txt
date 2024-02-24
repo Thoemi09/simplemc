@@ -1,5 +1,5 @@
 # Build tests for simplemc.
-# 
+#
 # The following targets are defined:
 # ---------------------------------
 # simplemc-test
@@ -22,7 +22,7 @@ add_subdirectory(accs)
 
 # temporary tests
 add_executable(tmp-test tmp_test.cpp)
-target_link_libraries(tmp-test PRIVATE simplemc-test)
+target_link_libraries(tmp-test PRIVATE simplemc-test simplemc::simplemc-accs)
 
 add_executable(tmp-mpi-test tmp_mpi_test.cpp)
 target_link_libraries(tmp-mpi-test PRIVATE simplemc::simplemc-mpi)

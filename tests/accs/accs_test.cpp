@@ -99,7 +99,7 @@ TEST_F(SimplemcAccs, MeanAccumulator) {
     using storage_d = typename acc_d::storage_type;
     using storage_c = typename acc_c::storage_type;
     double tol = 1e-2;
-    int size = 3;
+    int size = 2;
     acc_d acc_sv_d(1, 5.0), acc_mva_d(size, 2.0), acc_rg_d(size, 1.0);
     acc_c acc_sv_c(1, { 5.0, 1.0 }), acc_mva_c(size, { -3.2, -2.2 }), acc_rg_c(size, 10.0);
 
@@ -145,27 +145,6 @@ TEST_F(SimplemcAccs, MeanAccumulator) {
     check_range_near(acc_mva_c.mean(), m_vec_c, tol);
     check_range_near(acc_rg_c.mean(), m_vec_c, tol);
 
-    // print results
-    fmt::print("Mean accumulator with double values:\n");
-    fmt::print("Expected:\n");
-    fmt::print("  Mean: {}\n", m_d);
-    fmt::print("Single value:\n");
-    fmt::print("  Mean: {}\n", acc_sv_d.mean());
-    fmt::print("Multi value:\n");
-    fmt::print("  Mean: {}\n", acc_mva_d.mean());
-    fmt::print("Range:\n");
-    fmt::print("  Mean: {}\n", acc_rg_d.mean());
-
-    fmt::print("\nMean accumulator with complex values:\n");
-    fmt::print("Expected:\n");
-    fmt::print("  Mean: {}\n", m_c);
-    fmt::print("Single value:\n");
-    fmt::print("  Mean: {}\n", acc_sv_c.mean());
-    fmt::print("Multi value:\n");
-    fmt::print("  Mean: {}\n", acc_mva_c.mean());
-    fmt::print("Range:\n");
-    fmt::print("  Mean: {}\n", acc_rg_c.mean());
-
     // check reset and merging of accumulators
     acc_d merge_d(storage_d::Constant(size, 2.0).eval());
     acc_c merge_c(storage_c::Constant(size, { 2.0, 1.0 }).eval());
@@ -181,14 +160,14 @@ TEST_F(SimplemcAccs, MeanAccumulator) {
     check_range_near(merge_c.mean(), m_vec_c, tol);
 }
 
-// Test variance accumulator.
+// Test variance accumulator for double values.
 TEST_F(SimplemcAccs, DoubleVarianceAccumulator) {
     // general set up
     using acc_std = simplemc::var_acc<double, simplemc::accs::varalg::standard>;
     using acc_wel = simplemc::var_acc<double, simplemc::accs::varalg::welford>;
     using storage_d = typename acc_std::storage_type;
     double tol = 1e-2;
-    int size = 3;
+    int size = 2;
     acc_std acc_sv_std(1, 5.0), acc_mva_std(size, 2.0), acc_rg_std(size, 1.0);
     acc_wel acc_sv_wel(1, 5.0), acc_mva_wel(size, 2.0), acc_rg_wel(size, 1.0);
 
@@ -241,35 +220,6 @@ TEST_F(SimplemcAccs, DoubleVarianceAccumulator) {
     check_range_near(acc_mva_wel.variance_of_data(), v_vec_d, tol);
     check_range_near(acc_rg_wel.variance_of_data(), v_vec_d, tol);
 
-    // print results
-    fmt::print("Standard variance accumulator with double values:\n");
-    fmt::print("Expected:\n");
-    fmt::print("  Mean: {}\n", m_d);
-    fmt::print("  Variance: {}\n", v_d);
-    fmt::print("Single value:\n");
-    fmt::print("  Mean: {}\n", acc_sv_std.mean());
-    fmt::print("  Variance: {}\n", acc_sv_std.variance_of_data());
-    fmt::print("Multi value:\n");
-    fmt::print("  Mean: {}\n", acc_mva_std.mean());
-    fmt::print("  Variance: {}\n", acc_mva_std.variance_of_data());
-    fmt::print("Range:\n");
-    fmt::print("  Mean: {}\n", acc_rg_std.mean());
-    fmt::print("  Variance: {}\n", acc_rg_std.variance_of_data());
-
-    fmt::print("\nWelford variance accumulator with double values:\n");
-    fmt::print("Expected:\n");
-    fmt::print("  Mean: {}\n", m_d);
-    fmt::print("  Variance: {}\n", v_d);
-    fmt::print("Single value:\n");
-    fmt::print("  Mean: {}\n", acc_sv_wel.mean());
-    fmt::print("  Variance: {}\n", acc_sv_wel.variance_of_data());
-    fmt::print("Multi value:\n");
-    fmt::print("  Mean: {}\n", acc_mva_wel.mean());
-    fmt::print("  Variance: {}\n", acc_mva_wel.variance_of_data());
-    fmt::print("Range:\n");
-    fmt::print("  Mean: {}\n", acc_rg_wel.mean());
-    fmt::print("  Variance: {}\n", acc_rg_wel.variance_of_data());
-
     // check reset and merging of accumulators
     acc_std merge_std(storage_d::Constant(size, -12.7).eval());
     acc_wel merge_wel(storage_d::Constant(size, -12.7).eval());
@@ -285,4 +235,99 @@ TEST_F(SimplemcAccs, DoubleVarianceAccumulator) {
     check_range_near(merge_std.variance_of_data(), v_vec_d, tol);
     check_range_near(merge_wel.mean(), m_vec_d, tol);
     check_range_near(merge_wel.variance_of_data(), v_vec_d, tol);
+}
+
+// Test variance accumulator for complex values.
+TEST_F(SimplemcAccs, ComplexVarianceAccumulator) {
+    // general set up
+    using acc_std = simplemc::var_acc<std::complex<double>, simplemc::accs::varalg::standard>;
+    using acc_wel = simplemc::var_acc<std::complex<double>, simplemc::accs::varalg::welford>;
+    using storage_c = typename acc_std::storage_type;
+    using storage_d = typename acc_wel::dbl_storage_type;
+    double tol = 1e-2;
+    int size = 2;
+    acc_std acc_sv_std(1, { 5.0, 1.0 }), acc_mva_std(size, { -3.2, -2.2 }), acc_rg_std(size, 10.0);
+    acc_wel acc_sv_wel(1, { 5.0, 1.0 }), acc_mva_wel(size, { -3.2, -2.2 }), acc_rg_wel(size, 10.0);
+
+    // check size of empty accumulators
+    ASSERT_EQ(acc_sv_std.size(), 1);
+    ASSERT_EQ(acc_mva_std.size(), size);
+    ASSERT_EQ(acc_rg_std.size(), size);
+    ASSERT_EQ(acc_sv_wel.size(), 1);
+    ASSERT_EQ(acc_mva_wel.size(), size);
+    ASSERT_EQ(acc_rg_wel.size(), size);
+
+    // check empty accumulators
+    check_empty(acc_sv_std);
+    check_empty(acc_mva_std);
+    check_empty(acc_rg_std);
+    check_empty(acc_sv_wel);
+    check_empty(acc_mva_wel);
+    check_empty(acc_rg_wel);
+
+    // fill accumulators
+    const auto samples_c = tp_c.get_sampled_values();
+    fill_accs(acc_sv_std, acc_mva_std, acc_rg_std, samples_c);
+    fill_accs(acc_sv_wel, acc_mva_wel, acc_rg_wel, samples_c);
+
+    // check size of filled accumulators
+    ASSERT_EQ(acc_sv_std.count(), tp_c.total_count);
+    ASSERT_EQ(acc_mva_std.count(), tp_c.total_count);
+    ASSERT_EQ(acc_rg_std.count(), tp_c.total_count);
+    ASSERT_EQ(acc_sv_wel.count(), tp_c.total_count);
+    ASSERT_EQ(acc_mva_wel.count(), tp_c.total_count);
+    ASSERT_EQ(acc_rg_wel.count(), tp_c.total_count);
+
+    // check mean
+    const auto m_c = sample_mean(samples_c);
+    const auto m_vec_c = storage_c::Constant(size, m_c);
+    check_near(acc_sv_std.mean()[0], m_c, tol);
+    check_range_near(acc_mva_std.mean(), m_vec_c, tol);
+    check_range_near(acc_rg_std.mean(), m_vec_c, tol);
+    check_near(acc_sv_wel.mean()[0], m_c, tol);
+    check_range_near(acc_mva_wel.mean(), m_vec_c, tol);
+    check_range_near(acc_rg_wel.mean(), m_vec_c, tol);
+
+    // check stderror/variance
+    const auto [re_v, im_v, reim_v] = sample_variance(samples_c);
+    const auto re_v_vec = storage_d::Constant(size, re_v);
+    const auto im_v_vec = storage_d::Constant(size, im_v);
+    const auto reim_v_vec = storage_d::Constant(size, reim_v);
+
+    check_near(acc_sv_std.variance_of_real_data()[0], re_v, tol);
+    check_range_near(acc_mva_std.variance_of_real_data(), re_v_vec, tol);
+    check_range_near(acc_rg_std.variance_of_real_data(), re_v_vec, tol);
+    check_near(acc_sv_wel.variance_of_real_data()[0], re_v, tol);
+    check_range_near(acc_mva_wel.variance_of_real_data(), re_v_vec, tol);
+    check_range_near(acc_rg_wel.variance_of_real_data(), re_v_vec, tol);
+
+    check_near(acc_sv_std.variance_of_imag_data()[0], im_v, tol);
+    check_range_near(acc_mva_std.variance_of_imag_data(), im_v_vec, tol);
+    check_range_near(acc_rg_std.variance_of_imag_data(), im_v_vec, tol);
+    check_near(acc_sv_wel.variance_of_imag_data()[0], im_v, tol);
+    check_range_near(acc_mva_wel.variance_of_imag_data(), im_v_vec, tol);
+    check_range_near(acc_rg_wel.variance_of_imag_data(), im_v_vec, tol);
+
+    check_near(acc_sv_std.covariance_of_real_and_imag_data()[0], reim_v, tol);
+    check_range_near(acc_mva_std.covariance_of_real_and_imag_data(), reim_v_vec, tol);
+    check_range_near(acc_rg_std.covariance_of_real_and_imag_data(), reim_v_vec, tol);
+    check_near(acc_sv_wel.covariance_of_real_and_imag_data()[0], reim_v, tol);
+    check_range_near(acc_mva_wel.covariance_of_real_and_imag_data(), reim_v_vec, tol);
+    check_range_near(acc_rg_wel.covariance_of_real_and_imag_data(), reim_v_vec, tol);
+
+    // check reset and merging of accumulators
+    acc_std merge_std(storage_c::Constant(size, { -12.7, 4.2 }).eval());
+    acc_wel merge_wel(storage_c::Constant(size, { -12.7, 4.2 }).eval());
+    ASSERT_EQ(merge_std.count(), 0);
+    ASSERT_EQ(merge_wel.count(), 0);
+    merge_std << acc_mva_std;
+    merge_std << acc_rg_std;
+    merge_wel << acc_mva_wel;
+    merge_wel << acc_rg_wel;
+    ASSERT_EQ(merge_std.count(), 2 * tp_c.total_count);
+    ASSERT_EQ(merge_wel.count(), 2 * tp_c.total_count);
+    check_range_near(merge_std.mean(), m_vec_c, tol);
+    check_range_near(merge_std.covariance_of_real_and_imag_data(), reim_v_vec, tol);
+    check_range_near(merge_wel.mean(), m_vec_c, tol);
+    check_range_near(merge_wel.covariance_of_real_and_imag_data(), reim_v_vec, tol);
 }
