@@ -40,7 +40,7 @@ Eigen::ArrayX<T> make_nans(long size) {
 }
 
 /**
- * @brief Calculate the sample mean.
+ * @brief Calculate the sample mean of a random vector.
  *
  * @details We have to correct for the constant shift vector.
  *
@@ -65,20 +65,18 @@ Eigen::ArrayX<T> mean(const Eigen::ArrayX<T>& mdata, std::uint64_t count, const 
 }
 
 /**
- * @brief Calculate the sample variance or covariance.
- *
- * @details If the given accumulated mean data storages are the same, then the sample variance is
- * calculated, otherwise the sample covariance.
+ * @brief Calculate the diagonal elements of the covariance or cross-covariance matrix of
+ * two random vectors.
  *
  * @tparam A Algorithm used to calculate the variance.
  * @param mdata1 Accumulated mean data #1.
  * @param mdata2 Accumulated mean data #2.
- * @param vdata Accumulated variance/covariance data.
+ * @param vdata Accumulated covariance/cross-covariance data.
  * @param count Number of accumulated values.
  * @return Sample variance or covariance.
  */
 template <varalg A = varalg::standard>
-Eigen::ArrayX<double> variance([[maybe_unused]] const Eigen::ArrayX<double>& mdata1,
+Eigen::ArrayX<double> diag_covariance([[maybe_unused]] const Eigen::ArrayX<double>& mdata1,
     [[maybe_unused]] const Eigen::ArrayX<double>& mdata2, const Eigen::ArrayX<double>& vdata, std::uint64_t count) {
     assert(mdata1.size() == mdata2.size());
     assert(mdata1.size() == vdata.size());

@@ -28,18 +28,19 @@ namespace simplemc {
  * to apply a constant shift to the accumulated data. This can sometimes improve the numerical
  * accuracy.
  *
- * Let \f$ \{ \mathbf{x}_i: i = 1,\dots,N \} \f$ be the set of random vectors to accumulate and let
- * \f$ \mathbf{t} \f$ be the constant shift. We denote the data storage by \f$ \mathbf{m}_N \f$.
+ * Let \f$ \{ \mathbf{x}^{(i)}: i = 1,\dots,N \} \f$ be the set of random vectors to accumulate and let
+ * \f$ \mathbf{t} \f$ be the constant shift. We denote the data storage by \f$ \mathbf{m}^{(N)} \f$.
  * Depending on the alogorithm used, the following things are calculated:
  *
  * - Standard algorithm: The shifted sum of the accumulated vectors is stored in the data storage, i.e.
- * \f$ \mathbf{m}_N = \sum_{i=1}^N (\mathbf{x}_i - \mathbf{t}) = \mathbf{m}_{N-1} + (\mathbf{x}_N -
- * \mathbf{t}) \f$. The mean is then estimated with \f$ \bar{\mathbf{X}} = \mathbf{m}_N / N + \mathbf{t} \f$.
+ * \f$ \mathbf{m}^{(N)} = \sum_{i=1}^N (\mathbf{x}^{(i)} - \mathbf{t}) = \mathbf{m}^{(N-1)} + 
+ * (\mathbf{x}^{(N)} - \mathbf{t}) \f$. The mean is then estimated with \f$ \bar{\mathbf{X}} = 
+ * \mathbf{m}^{(N)} / N + \mathbf{t} \f$.
  *
- * - Welford algorithm: The current mean is stored in the data storage, i.e. \f$ \mathbf{m}_N = \frac{1}{N}
- * \sum_{i=1}^N (\mathbf{x}_i - \mathbf{t}) = \mathbf{m}_{N-1} + \frac{1}{N} \left( \mathbf{x}_N - \mathbf{t} -
- * \mathbf{m}_{N-1} \right) \f$. The mean is then simply given by \f$ \bar{\mathbf{X}} = \mathbf{m}_N +
- * \mathbf{t} \f$.
+ * - Welford algorithm: The shifted mean is stored in the data storage, i.e. \f$ \mathbf{m}^{(N)} = 
+ * \frac{1}{N} \sum_{i=1}^N (\mathbf{x}^{(i)} - \mathbf{t}) = \mathbf{m}^{(N-1)} + \frac{1}{N} \left( 
+ * \mathbf{x}^{(N)} - \mathbf{t} - \mathbf{m}^{(N-1)} \right) \f$. The mean is then simply given by 
+ * \f$ \bar{\mathbf{X}} = \mathbf{m}^{(N)} + \mathbf{t} \f$.
  *
  * If the size of the accumulator is 1, then values can be added with the stream operator:
  * @code{.cpp}

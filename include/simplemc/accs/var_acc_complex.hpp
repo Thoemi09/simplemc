@@ -26,24 +26,27 @@ namespace simplemc {
  *
  * @details The variance of a complex random variable is determined by the variance of its real and
  * imaginary parts as well as their covariance (see https://en.wikipedia.org/wiki/Complex_random_vector).
+ * Note that in the following we only talk about the covariance of the real and imaginary part of a
+ * single random complex variable, not the full covariance matrix of a complex random vector.
  *
- * Let \f$ \{ \mathbf{z}_i = \mathbf{x}_i + i \mathbf{y}_i : i = 1,\dots,N \} \f$ be the set of complex
- * random vectors to accumulate and let \f$ \mathbf{t} = \mathbf{u} + i \mathbf{v} \f$ be the constant shift.
- * We denote the data storage for the mean data by \f$ \mathbf{m}_N \f$ and for the real variance, imaginary
- * variance and covariance data by \f$ \mathbf{r}_N \f$, \f$ \mathbf{j}_N \f$ and \f$ \mathbf{c}_N \f$,
- * respectively. The mean and variance of the real and imaginary parts are calculated as in simplemc::var_acc.
- * To get the covariance, we do the following:
+ * Let \f$ \{ \mathbf{z}^{(i)} = \mathbf{x}^{(i)} + i \mathbf{y}^{(i)} : i = 1,\dots,N \} \f$ be the set 
+ * of complex random vectors to accumulate and let \f$ \mathbf{t} = \mathbf{u} + i \mathbf{v} \f$ be the 
+ * constant shift. We denote the data storage for the mean data by \f$ \mathbf{m}^{(N)} \f$ and for the 
+ * real variance, imaginary variance and covariance data by \f$ \mathbf{r}^{(N)} \f$, \f$ \mathbf{j}^{(N)}
+ * \f$ and \f$ \mathbf{c}^{(N)} \f$, respectively. The mean and variance of the real and imaginary parts 
+ * are calculated as in simplemc::var_acc. To get the covariance, we do the following:
  *
- * - Standard algorithm: The covariance data stores \f$ \mathbf{c}_N = \sum_{i=1}^N (\mathbf{x}_i -
- * \mathbf{u})(\mathbf{y}_i - \mathbf{v}) = \mathbf{c}_{N-1} + (\mathbf{x}_N - \mathbf{u})(\mathbf{y}_N -
- * \mathbf{v}) \f$. Then the sample covariance is estimated with \f$ \mathrm{Cov}(\mathrm{Re}[\mathbf{Z}],
- * \mathrm{Im}[\mathbf{Z}]) = \frac{1}{N - 1} \left( \mathbf{c}_N - \mathrm{Re}[\mathbf{m}_N] *
- * \mathrm{Im}[\mathbf{m}_N] / N \right) \f$.
+ * - Standard algorithm: The covariance data stores \f$ \mathbf{c}^{(N)}_j = \sum_{i=1}^N ( \mathbf{x}^{(i)}_j 
+ * - \mathbf{u}_j)(\mathbf{y}^{(i)}_j - \mathbf{v}_j) = \mathbf{c}^{(N-1)}_j + (\mathbf{x}^{(N)}_j - 
+ * \mathbf{u}_j)(\mathbf{y}^{(N)} - \mathbf{v}_j) \f$. Then the sample covariance is estimated with \f$ 
+ * \mathrm{Cov}(\mathrm{Re}[\mathbf{Z}_j], \mathrm{Im}[\mathbf{Z}_j]) = \frac{1}{N - 1} \left(
+ * \mathbf{c}^{(N)}_j - \mathrm{Re}[\mathbf{m}^{(N)}_j] * \mathrm{Im}[\mathbf{m}^{(N)}_j] / N \right) \f$.
  *
- * - Welford algorithm: The covariance data stores \f$ \mathbf{c}_N = \mathbf{c}_{N-1} + \left( \mathbf{x}_N -
- * \mathbf{u} - \mathrm{Re}[\mathbf{m}_{N-1}] \right) \left( \mathbf{y}_N - \mathbf{v} -
- * \mathrm{Im}[\mathbf{m}_{N}] \right) \f$. Then the sample covariance is estimated with \f$
- * \mathrm{Cov}(\mathrm{Re}[\mathbf{Z}], \mathrm{Im}[\mathbf{Z}]) = \frac{1}{N - 1} \mathbf{c}_N \f$.
+ * - Welford algorithm: The covariance data stores \f$ \mathbf{c}^{(N)}_j = \mathbf{c}^{(N-1)}_j + \left( 
+ * \mathbf{x}^{(N)}_j - \mathbf{u}_j - \mathrm{Re}[\mathbf{m}^{(N-1)}_j] \right) \left( \mathbf{y}^{(N)}_j
+ * - \mathbf{v}_j - \mathrm{Im}[\mathbf{m}^{(N)}_j] \right) \f$. Then the sample covariance is estimated 
+ * with \f$ \mathrm{Cov}(\mathrm{Re}[\mathbf{Z}_j], \mathrm{Im}[\mathbf{Z}_j]) = \frac{1}{N - 1} 
+ * \mathbf{c}^{(N)}_j \f$.
  *
  * @tparam A Algorithm used to calculate the mean/variance.
  */
@@ -382,9 +385,10 @@ public:
     /**
      * @brief Calculate the sample variance of the mean.
      *
-     * @details The sample variance of the mean \f$ \mathbf{s}^2_{\bar{\mathbf{Z}}} \f$ is related to the
-     * standard error of the mean \f$ \mathbf{s}_{\bar{\mathbf{Z}}} = \sqrt{\mathbf{s}^2_{\bar{\mathbf{Z}}}} \f$
-     * and to the variance of the data \f$ \mathbf{s}^2_{\mathbf{Z}} = \mathbf{s}^2_{\bar{\mathbf{Z}}} * N \f$.
+     * @details The sample variance of the mean \f$ \mathbf{s}^2_{\bar{\mathbf{Z}}j} \f$ is related to the
+     * standard error of the mean \f$ \mathbf{s}_{\bar{\mathbf{Z}}j} = \sqrt{\mathbf{s}^2_{\bar{\mathbf{Z}}j}}
+     * \f$ and to the variance of the data \f$ \mathbf{s}^2_{\mathbf{Z}j} = \mathbf{s}^2_{\bar{\mathbf{Z}}j} 
+     * * N \f$.
      *
      * @return Data storage with variances.
      */
@@ -409,7 +413,7 @@ public:
      * @return Data storage with variances.
      */
     [[nodiscard]] dbl_storage_type variance_of_real_data() const {
-        return simplemc::accs::variance<varalg()>(mdata_.real(), mdata_.real(), rdata_, count_);
+        return simplemc::accs::diag_covariance<varalg()>(mdata_.real(), mdata_.real(), rdata_, count_);
     }
 
     /**
@@ -418,7 +422,7 @@ public:
      * @return Data storage with variances.
      */
     [[nodiscard]] dbl_storage_type variance_of_imag_data() const {
-        return simplemc::accs::variance<varalg()>(mdata_.imag(), mdata_.imag(), idata_, count_);
+        return simplemc::accs::diag_covariance<varalg()>(mdata_.imag(), mdata_.imag(), idata_, count_);
     }
 
     /**
@@ -427,7 +431,7 @@ public:
      * @return Data storage with covariances.
      */
     [[nodiscard]] dbl_storage_type covariance_of_real_and_imag_data() const {
-        return simplemc::accs::variance<varalg()>(mdata_.real(), mdata_.imag(), cdata_, count_);
+        return simplemc::accs::diag_covariance<varalg()>(mdata_.real(), mdata_.imag(), cdata_, count_);
     }
 
 private:

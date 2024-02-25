@@ -24,20 +24,21 @@ namespace simplemc {
 /**
  * @brief Variance accumulator specialized for accumulating double values.
  *
- * @details Let \f$ \{ \mathbf{x}_i: i = 1,\dots,N \} \f$ be the set of random vectors to accumulate and
- * let \f$ \mathbf{t} \f$ be the constant shift. We denote the data storage for the mean data by \f$
- * \mathbf{m}_N \f$ and for the variance data by \f$ \mathbf{v}_N \f$. The mean data and the sample mean
- * are calculate as in simplemc::mean_acc.
+ * @details Let \f$ \{ \mathbf{x}^{(i)}: i = 1,\dots,N \} \f$ be the set of random vectors to accumulate 
+ * and let \f$ \mathbf{t} \f$ be the constant shift. We denote the data storage for the mean data by 
+ * \f$ \mathbf{m}^{(N)} \f$ and for the variance data by \f$ \mathbf{v}^{(N)} \f$. The mean data and the 
+ * sample mean are calculated as in simplemc::mean_acc and the calculated variance corresponds to the
+ * diagonal of the sample covariance matrix:
  *
- * - Standard algorithm: The variance data stores \f$ \mathbf{v}_N = \sum_{i=1}^N (\mathbf{x}_i - \mathbf{t})^2
- * = \mathbf{v}_{N-1} + (\mathbf{x}_N - \mathbf{t})^2 \f$. Then the sample variance is estimated with
- * \f$ \mathbf{s}^2_{\mathbf{X}} = \frac{1}{N - 1} \left( \mathbf{v}_N - \mathbf{m}_N * \mathbf{m}_N
- * / N \right) \f$.
+ * - Standard algorithm: The variance data stores \f$ \mathbf{v}^{(N)}_j = \sum_{i=1}^N (\mathbf{x}^{(i)}_j
+ * - \mathbf{t}_j)^2 = \mathbf{v}^{(N-1)}_j + (\mathbf{x}^{(N)}_j - \mathbf{t}_j)^2 \f$. Then the sample 
+ * variance is estimated with \f$ \mathbf{s}^2_{\mathbf{X}j} = \frac{1}{N - 1} \left( \mathbf{v}^{(N)}_j - 
+ * \mathbf{m}^{(N)}_j * \mathbf{m}^{(N)}_j / N \right) \f$.
  *
- * - Welford algorithm: The variance data stores \f$ \mathbf{v}_N = \mathbf{v}_{N-1} + \left( \mathbf{x}_N -
- * \mathbf{t} - \mathbf{m}_{N} \right) \left( \mathbf{x}_N - \mathbf{t} - \mathbf{m}_{N-1}
- * \right) \f$. Then the sample variance is estimated with \f$ \mathbf{s}^2_{\mathbf{x}} = \frac{1}{N - 1}
- * \mathbf{v}_N \f$.
+ * - Welford algorithm: The variance data stores \f$ \mathbf{v}^{(N)}_j = \mathbf{v}^{(N-1)}_j + \left( 
+ * \mathbf{x}^{(N)}_j - \mathbf{t}_j - \mathbf{m}^{(N)}_j \right) \left( \mathbf{x}^{(N)}_j - \mathbf{t}_j 
+ * - \mathbf{m}^{(N-1)}_j \right) \f$. Then the sample variance is estimated with \f$ \mathbf{s}^2_{\mathbf{X}j} 
+ * = \frac{1}{N - 1} \mathbf{v}^{(N)}_j \f$.
  *
  * @tparam A Algorithm used to calculate the mean/variance.
  */
@@ -321,27 +322,28 @@ public:
     }
 
     /**
-     * @brief Calculate the sample variance of the mean.
+     * @brief Calculate the diagonal of the sample covariance matrix of the mean.
      *
-     * @details The sample variance of the mean \f$ \mathbf{s}^2_{\bar{\mathbf{X}}} \f$ is related to the 
-     * standard error of the mean \f$ \mathbf{s}_{\bar{\mathbf{X}}} = \sqrt{\mathbf{s}^2_{\mathbf{X}} } \f$ 
-     * and to the variance of the data \f$ \mathbf{s}^2_{\mathbf{X}} = \mathbf{s}^2_{\bar{\mathbf{X}}} * N \f$.
+     * @details The sample variance of the mean \f$ \mathbf{s}^2_{\bar{\mathbf{X}}j} \f$ is related to the
+     * standard error of the mean \f$ \mathbf{s}_{\bar{\mathbf{X}}j} = \sqrt{\mathbf{s}^2_{\mathbf{X}j}} \f$
+     * and to the variance of the data \f$ \mathbf{s}^2_{\mathbf{X}j} = \mathbf{s}^2_{\bar{\mathbf{X}j}} * N \f$.
      *
      * @return Data storage with variances.
      */
     [[nodiscard]] storage_type variance() const {
-        return simplemc::accs::variance<varalg()>(mdata_, mdata_, vdata_, count_) / static_cast<value_type>(count_);
+        return simplemc::accs::diag_covariance<varalg()>(mdata_, mdata_, vdata_, count_) /
+            static_cast<value_type>(count_);
     }
 
     /**
-     * @brief Calculate the sample variance of the accumulated data.
+     * @brief Calculate the diagonal of the sample covariance matrix of the accumulated data.
      *
      * @details See var_acc::variance.
      *
      * @return Data storage with variances.
      */
     [[nodiscard]] storage_type variance_of_data() const {
-        return simplemc::accs::variance<varalg()>(mdata_, mdata_, vdata_, count_);
+        return simplemc::accs::diag_covariance<varalg()>(mdata_, mdata_, vdata_, count_);
     }
 
 private:
