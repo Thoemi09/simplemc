@@ -13,6 +13,7 @@
 #include <simplemc/utils/simplemc_exception.hpp>
 
 #include <range/v3/range/concepts.hpp>
+#include <range/v3/view/zip.hpp>
 
 #include <cassert>
 #include <complex>
@@ -29,26 +30,7 @@ namespace simplemc {
  * Note that in the following we only talk about the covariance of the real and imaginary part of a
  * single random complex variable, not the full covariance matrix of a complex random vector.
  *
- * Let \f$ \{ \mathbf{z}^{(i)} = \mathbf{x}^{(i)} + i \mathbf{y}^{(i)} : i = 1,\dots,N \} \f$ be the set 
- * of complex random vectors to accumulate and let \f$ \mathbf{t} = \mathbf{u} + i \mathbf{v} \f$ be the 
- * constant shift. We denote the data storage for the mean data by \f$ \mathbf{m}^{(N)} \f$ and for the 
- * real variance, imaginary variance and covariance data by \f$ \mathbf{r}^{(N)} \f$, \f$ \mathbf{j}^{(N)}
- * \f$ and \f$ \mathbf{c}^{(N)} \f$, respectively. The mean and variance of the real and imaginary parts 
- * are calculated as in simplemc::var_acc. To get the covariance, we do the following:
- *
- * - Standard algorithm: The covariance data stores \f$ \mathbf{c}^{(N)}_j = \sum_{i=1}^N ( \mathbf{x}^{(i)}_j 
- * - \mathbf{u}_j)(\mathbf{y}^{(i)}_j - \mathbf{v}_j) = \mathbf{c}^{(N-1)}_j + (\mathbf{x}^{(N)}_j - 
- * \mathbf{u}_j)(\mathbf{y}^{(N)} - \mathbf{v}_j) \f$. Then the sample covariance is estimated with \f$ 
- * \mathrm{Cov}(\mathrm{Re}[\mathbf{Z}_j], \mathrm{Im}[\mathbf{Z}_j]) = \frac{1}{N - 1} \left(
- * \mathbf{c}^{(N)}_j - \mathrm{Re}[\mathbf{m}^{(N)}_j] * \mathrm{Im}[\mathbf{m}^{(N)}_j] / N \right) \f$.
- *
- * - Welford algorithm: The covariance data stores \f$ \mathbf{c}^{(N)}_j = \mathbf{c}^{(N-1)}_j + \left( 
- * \mathbf{x}^{(N)}_j - \mathbf{u}_j - \mathrm{Re}[\mathbf{m}^{(N-1)}_j] \right) \left( \mathbf{y}^{(N)}_j
- * - \mathbf{v}_j - \mathrm{Im}[\mathbf{m}^{(N)}_j] \right) \f$. Then the sample covariance is estimated 
- * with \f$ \mathrm{Cov}(\mathrm{Re}[\mathbf{Z}_j], \mathrm{Im}[\mathbf{Z}_j]) = \frac{1}{N - 1} 
- * \mathbf{c}^{(N)}_j \f$.
- *
- * @tparam A Algorithm used to calculate the mean/variance.
+ * @tparam A Algorithm (either standard or Welford).
  */
 template <accs::varalg A>
 class var_acc<std::complex<double>, A> {
@@ -69,17 +51,17 @@ public:
     using size_type = long;
 
     /**
-     * @brief Type for storing accumulated values.
+     * @brief Type used for 1-dimensional complex arrays.
      */
-    using storage_type = Eigen::ArrayX<value_type>;
+    using cplx_array_type = Eigen::ArrayX<value_type>;
 
     /**
-     * @brief Type for storing accumulated double values.
+     * @brief Type used for 1-dimensional double arrays.
      */
-    using dbl_storage_type = Eigen::ArrayX<double>;
+    using dbl_array_type = Eigen::ArrayX<double>;
 
     /**
-     * @brief Get the algorithm used to calculate the mean/variance.
+     * @brief Get the algorithm.
      */
     static constexpr auto varalg() { return A; }
 
@@ -120,18 +102,18 @@ private:
          */
         var_mva& operator<<(value_type val) {
             if constexpr (varalg() == accs::varalg::standard) {
-                const auto tmp = val - acc_.shift_[idx_];
-                acc_.mdata_[idx_] += tmp;
-                acc_.rdata_[idx_] += std::real(tmp) * std::real(tmp);
-                acc_.idata_[idx_] += std::imag(tmp) * std::imag(tmp);
-                acc_.cdata_[idx_] += std::real(tmp) * std::imag(tmp);
+                const auto tmp = val - acc_.shift_(idx_);
+                acc_.mdata_(idx_) += tmp;
+                acc_.rdata_(idx_) += std::real(tmp) * std::real(tmp);
+                acc_.idata_(idx_) += std::imag(tmp) * std::imag(tmp);
+                acc_.cdata_(idx_) += std::real(tmp) * std::imag(tmp);
             } else {
-                const auto tmp = val - acc_.shift_[idx_] - acc_.mdata_[idx_];
-                acc_.mdata_[idx_] += tmp / static_cast<double>(acc_.count_ + 1);
-                const auto tmp2 = val - acc_.shift_[idx_] - acc_.mdata_[idx_];
-                acc_.rdata_[idx_] += std::real(tmp) * std::real(tmp2);
-                acc_.idata_[idx_] += std::imag(tmp) * std::imag(tmp2);
-                acc_.cdata_[idx_] += std::real(tmp) * std::imag(tmp2);
+                const auto tmp = val - acc_.shift_(idx_) - acc_.mdata_(idx_);
+                acc_.mdata_(idx_) += tmp / static_cast<double>(acc_.count_ + 1);
+                const auto tmp2 = val - acc_.shift_(idx_) - acc_.mdata_(idx_);
+                acc_.rdata_(idx_) += std::real(tmp) * std::real(tmp2);
+                acc_.idata_(idx_) += std::imag(tmp) * std::imag(tmp2);
+                acc_.cdata_(idx_) += std::real(tmp) * std::imag(tmp2);
             }
             return *this;
         }
@@ -154,11 +136,11 @@ public:
      * @param shift A single constant shift applied to the accumulated values.
      */
     explicit var_acc(size_type size = 1, value_type shift = 0.0) :
-        mdata_(storage_type::Zero(size)),
-        rdata_(dbl_storage_type::Zero(size)),
-        idata_(dbl_storage_type::Zero(size)),
-        cdata_(dbl_storage_type::Zero(size)),
-        shift_(storage_type::Constant(size, shift)),
+        mdata_(cplx_array_type::Zero(size)),
+        rdata_(dbl_array_type::Zero(size)),
+        idata_(dbl_array_type::Zero(size)),
+        cdata_(dbl_array_type::Zero(size)),
+        shift_(cplx_array_type::Constant(size, shift)),
         count_(0),
         idx_(0) {
         if (size <= 0) {
@@ -173,11 +155,11 @@ public:
      *
      * @param shift Constant shift applied to the accumulated values.
      */
-    explicit var_acc(storage_type shift) :
-        mdata_(storage_type::Zero(shift.size())),
-        rdata_(dbl_storage_type::Zero(shift.size())),
-        idata_(dbl_storage_type::Zero(shift.size())),
-        cdata_(dbl_storage_type::Zero(shift.size())),
+    explicit var_acc(cplx_array_type shift) :
+        mdata_(cplx_array_type::Zero(shift.size())),
+        rdata_(dbl_array_type::Zero(shift.size())),
+        idata_(dbl_array_type::Zero(shift.size())),
+        cdata_(dbl_array_type::Zero(shift.size())),
         shift_(std::move(shift)),
         count_(0),
         idx_(0) {
@@ -196,8 +178,8 @@ public:
      * @param shift Constant shift applied to the accumulated values.
      * @param count Number of accumulated values.
      */
-    var_acc(storage_type mdata, dbl_storage_type rdata, dbl_storage_type idata, dbl_storage_type cdata,
-        storage_type shift, count_type count) :
+    var_acc(cplx_array_type mdata, dbl_array_type rdata, dbl_array_type idata, dbl_array_type cdata,
+        cplx_array_type shift, count_type count) :
         mdata_(std::move(mdata)),
         rdata_(std::move(rdata)),
         idata_(std::move(idata)),
@@ -235,18 +217,18 @@ public:
     var_acc& operator<<(value_type val) {
         ++count_;
         if constexpr (varalg() == accs::varalg::standard) {
-            const auto tmp = val - shift_[idx_];
-            mdata_[idx_] += tmp;
-            rdata_[idx_] += std::real(tmp) * std::real(tmp);
-            idata_[idx_] += std::imag(tmp) * std::imag(tmp);
-            cdata_[idx_] += std::real(tmp) * std::imag(tmp);
+            const auto tmp = val - shift_(idx_);
+            mdata_(idx_) += tmp;
+            rdata_(idx_) += std::real(tmp) * std::real(tmp);
+            idata_(idx_) += std::imag(tmp) * std::imag(tmp);
+            cdata_(idx_) += std::real(tmp) * std::imag(tmp);
         } else {
-            const auto tmp = val - shift_[idx_] - mdata_[idx_];
-            mdata_[idx_] += tmp / static_cast<double>(count_);
-            const auto tmp2 = val - shift_[idx_] - mdata_[idx_];
-            rdata_[idx_] += std::real(tmp) * std::real(tmp2);
-            idata_[idx_] += std::imag(tmp) * std::imag(tmp2);
-            cdata_[idx_] += std::real(tmp) * std::imag(tmp2);
+            const auto tmp = val - shift_(idx_) - mdata_(idx_);
+            mdata_(idx_) += tmp / static_cast<double>(count_);
+            const auto tmp2 = val - shift_(idx_) - mdata_(idx_);
+            rdata_(idx_) += std::real(tmp) * std::real(tmp2);
+            idata_(idx_) += std::imag(tmp) * std::imag(tmp2);
+            cdata_(idx_) += std::real(tmp) * std::imag(tmp2);
         }
         return *this;
     }
@@ -273,12 +255,14 @@ public:
         } else {
             const auto n1 = static_cast<double>(count_);
             const auto n2 = static_cast<double>(acc.count_);
-            rdata_ += acc.rdata_ + (acc.mdata_ + acc.shift_ - shift_ - mdata_).real().square() * n1 * n2 / (n1 + n2);
-            idata_ += acc.idata_ + (acc.mdata_ + acc.shift_ - shift_ - mdata_).imag().square() * n1 * n2 / (n1 + n2);
-            cdata_ += acc.cdata_ +
-                (acc.mdata_ + acc.shift_ - shift_ - mdata_).real() *
-                    (acc.mdata_ + acc.shift_ - shift_ - mdata_).imag() * n1 * n2 / (n1 + n2);
-            mdata_ = mdata_ * n1 / (n1 + n2) + (acc.mdata_ + acc.shift_ - shift_) * n2 / (n1 + n2);
+            const auto m = mdata_ * n1 / (n1 + n2) + (acc.mdata_ + acc.shift_ - shift_) * n2 / (n1 + n2);
+            rdata_ += acc.rdata_ + n1 * (mdata_ - m).real().square() +
+                n2 * (acc.shift_ - shift_ + acc.mdata_ - m).real().square();
+            idata_ += acc.idata_ + n1 * (mdata_ - m).imag().square() +
+                n2 * (acc.shift_ - shift_ + acc.mdata_ - m).imag().square();
+            cdata_ += acc.cdata_ + n1 * (mdata_ - m).real() * (mdata_ - m).imag() +
+                n2 * (acc.shift_ - shift_ + acc.mdata_ - m).real() * (acc.shift_ - shift_ + acc.mdata_ - m).imag();
+            mdata_ = m;
         }
         count_ += acc.count_;
         return *this;
@@ -289,7 +273,7 @@ public:
      *
      * @details The size of the range is assumed to be <= size() - idx.
      *
-     * @tparam R Input range.
+     * @tparam R Input range of value.
      * @param rg Range of values to be accumulated.
      * @param idx Starting index for the accumulator.
      */
@@ -299,20 +283,52 @@ public:
         ++count_;
         for (auto val : rg) {
             if constexpr (varalg() == accs::varalg::standard) {
-                const auto tmp = val - shift_[idx];
-                mdata_[idx] += tmp;
-                rdata_[idx] += std::real(tmp) * std::real(tmp);
-                idata_[idx] += std::imag(tmp) * std::imag(tmp);
-                cdata_[idx] += std::real(tmp) * std::imag(tmp);
+                const auto tmp = val - shift_(idx);
+                mdata_(idx) += tmp;
+                rdata_(idx) += std::real(tmp) * std::real(tmp);
+                idata_(idx) += std::imag(tmp) * std::imag(tmp);
+                cdata_(idx) += std::real(tmp) * std::imag(tmp);
             } else {
-                const auto tmp = val - shift_[idx] - mdata_[idx];
-                mdata_[idx] += tmp / static_cast<double>(count_);
-                const auto tmp2 = val - shift_[idx] - mdata_[idx];
-                rdata_[idx] += std::real(tmp) * std::real(tmp2);
-                idata_[idx] += std::imag(tmp) * std::imag(tmp2);
-                cdata_[idx] += std::real(tmp) * std::imag(tmp2);
+                const auto tmp = val - shift_(idx) - mdata_(idx);
+                mdata_(idx) += tmp / static_cast<double>(count_);
+                const auto tmp2 = val - shift_(idx) - mdata_(idx);
+                rdata_(idx) += std::real(tmp) * std::real(tmp2);
+                idata_(idx) += std::imag(tmp) * std::imag(tmp2);
+                cdata_(idx) += std::real(tmp) * std::imag(tmp2);
             }
             ++idx;
+        }
+    }
+
+    /**
+     * @brief Accumulate a range of values.
+     *
+     * @details The size of the range is assumed to be <= size() - idx and every index should
+     * only appear at most once.
+     *
+     * @tparam R1 Input range of value.
+     * @tparam R2 Input range of indices.
+     * @param rg Range of values to be accumulated.
+     * @param idxs Range of indices.
+     */
+    template <ranges::input_range R1, ranges::input_range R2>
+    void accumulate(R1&& rg, R2&& idxs) { // NOLINT (ranges need not be forwarded)
+        ++count_;
+        for (auto [val, idx] : ranges::views::zip(rg, idxs)) {
+            if constexpr (varalg() == accs::varalg::standard) {
+                const auto tmp = val - shift_(idx);
+                mdata_(idx) += tmp;
+                rdata_(idx) += std::real(tmp) * std::real(tmp);
+                idata_(idx) += std::imag(tmp) * std::imag(tmp);
+                cdata_(idx) += std::real(tmp) * std::imag(tmp);
+            } else {
+                const auto tmp = val - shift_(idx) - mdata_(idx);
+                mdata_(idx) += tmp / static_cast<double>(count_);
+                const auto tmp2 = val - shift_(idx) - mdata_(idx);
+                rdata_(idx) += std::real(tmp) * std::real(tmp2);
+                idata_(idx) += std::imag(tmp) * std::imag(tmp2);
+                cdata_(idx) += std::real(tmp) * std::imag(tmp2);
+            }
         }
     }
 
@@ -343,103 +359,95 @@ public:
      *
      * @return Constant shift applied to accumulated values.
      */
-    [[nodiscard]] const storage_type& shift() const { return shift_; }
+    [[nodiscard]] const cplx_array_type& shift() const { return shift_; }
 
     /**
      * @brief Get accumulated data used for estimating the mean.
      *
      * @return Data storage (content depends on the algorithm).
      */
-    [[nodiscard]] const storage_type& mdata() const { return mdata_; }
+    [[nodiscard]] const cplx_array_type& mdata() const { return mdata_; }
 
     /**
      * @brief Get accumulated data used for estimating the variance of the real part.
      *
      * @return Data storage (content depends on the algorithm).
      */
-    [[nodiscard]] const dbl_storage_type& rdata() const { return rdata_; }
+    [[nodiscard]] const dbl_array_type& rdata() const { return rdata_; }
 
     /**
      * @brief Get accumulated data used for estimating the variance of the imaginary part.
      *
      * @return Data storage (content depends on the algorithm).
      */
-    [[nodiscard]] const dbl_storage_type& idata() const { return idata_; }
+    [[nodiscard]] const dbl_array_type& idata() const { return idata_; }
 
     /**
      * @brief Get accumulated data used for estimating the covariance between the real and imaginary parts.
      *
      * @return Data storage (content depends on the algorithm).
      */
-    [[nodiscard]] const dbl_storage_type& cdata() const { return cdata_; }
+    [[nodiscard]] const dbl_array_type& cdata() const { return cdata_; }
 
     /**
      * @brief Calculate the sample mean from the accumulated data.
      *
      * @return Data storage with mean values.
      */
-    [[nodiscard]] storage_type mean() const {
+    [[nodiscard]] cplx_array_type mean() const {
         return simplemc::accs::mean<value_type, varalg()>(mdata_, count_, shift_);
     }
 
     /**
-     * @brief Calculate the sample variance of the mean.
-     *
-     * @details The sample variance of the mean \f$ \mathbf{s}^2_{\bar{\mathbf{Z}}j} \f$ is related to the
-     * standard error of the mean \f$ \mathbf{s}_{\bar{\mathbf{Z}}j} = \sqrt{\mathbf{s}^2_{\bar{\mathbf{Z}}j}}
-     * \f$ and to the variance of the data \f$ \mathbf{s}^2_{\mathbf{Z}j} = \mathbf{s}^2_{\bar{\mathbf{Z}}j} 
-     * * N \f$.
+     * @brief Calculate the diagonal of the sample covariance matrix of the mean.
      *
      * @return Data storage with variances.
      */
-    [[nodiscard]] storage_type variance() const {
+    [[nodiscard]] cplx_array_type variance() const {
         return (variance_of_real_data() + variance_of_imag_data()) / static_cast<value_type>(count_);
     }
 
     /**
-     * @brief Calculate the sample variance of the accumulated data.
-     *
-     * @details See var_acc::variance.
+     * @brief Calculate the diagonal of the sample covariance matrix of the accumulated data.
      *
      * @return Data storage with variances.
      */
-    [[nodiscard]] dbl_storage_type variance_of_data() const {
-        return variance_of_real_data() + variance_of_imag_data();
-    }
+    [[nodiscard]] dbl_array_type variance_of_data() const { return variance_of_real_data() + variance_of_imag_data(); }
 
     /**
-     * @brief Calculate the sample variance of the real part of the accumulated data.
+     * @brief Calculate the diagonal of the sample covariance matrix of the real part of the accumulated data.
      *
      * @return Data storage with variances.
      */
-    [[nodiscard]] dbl_storage_type variance_of_real_data() const {
+    [[nodiscard]] dbl_array_type variance_of_real_data() const {
         return simplemc::accs::diag_covariance<varalg()>(mdata_.real(), mdata_.real(), rdata_, count_);
     }
 
     /**
-     * @brief Calculate the sample variance of the imaginary part of the accumulated data.
+     * @brief Calculate the diagonal of the sample covariance matrix of the real part of the accumulated data.
      *
      * @return Data storage with variances.
      */
-    [[nodiscard]] dbl_storage_type variance_of_imag_data() const {
+    [[nodiscard]] dbl_array_type variance_of_imag_data() const {
         return simplemc::accs::diag_covariance<varalg()>(mdata_.imag(), mdata_.imag(), idata_, count_);
     }
 
     /**
-     * @brief Calculate the sample covariance of the real and imaginary parts of the accumulated data.
+     * @brief Calculate the diagonal of the sample covariance matrix between the real and imaginary part of the
+     * accumulated data.
      *
      * @return Data storage with covariances.
      */
-    [[nodiscard]] dbl_storage_type covariance_of_real_and_imag_data() const {
+    [[nodiscard]] dbl_array_type covariance_of_real_and_imag_data() const {
         return simplemc::accs::diag_covariance<varalg()>(mdata_.real(), mdata_.imag(), cdata_, count_);
     }
 
 private:
-    storage_type mdata_;
-    dbl_storage_type rdata_;
-    dbl_storage_type idata_;
-    dbl_storage_type cdata_;
-    storage_type shift_;
+    cplx_array_type mdata_;
+    dbl_array_type rdata_;
+    dbl_array_type idata_;
+    dbl_array_type cdata_;
+    cplx_array_type shift_;
     count_type count_;
     size_type idx_;
 };

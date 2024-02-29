@@ -1,10 +1,10 @@
 /**
- * @file var_acc_fwd.hpp
- * @brief Forward declaration of the variance accumulator.
+ * @file covar_acc_fwd.hpp
+ * @brief Forward declaration of the covariance accumulator.
  */
 
-#ifndef SIMPLEMC_ACCS_VAR_ACC_FWD_HPP
-#define SIMPLEMC_ACCS_VAR_ACC_FWD_HPP
+#ifndef SIMPLEMC_ACCS_COVAR_ACC_FWD_HPP
+#define SIMPLEMC_ACCS_COVAR_ACC_FWD_HPP
 
 #include <simplemc/accs/utils.hpp>
 #include <simplemc/utils/concepts.hpp>
@@ -12,10 +12,10 @@
 namespace simplemc {
 
 /**
- * @brief Variance accumulator for calculating sample means and variances.
+ * @brief Covariance accumulator for calculating arithmetic means and covariances.
  *
- * @details Naive estimation of the variance, i.e. the diagonal of the covariance matrix, is
- * available. It does not account for any correlation between the samples.
+ * @details Naive estimation of the covariance matrix is available. It does not account for
+ * any correlation between the samples.
  *
  * The user can choose between the standard and the more stable Welford algorithm and whether
  * to apply a constant shift to the accumulated data. This can sometimes improve the numerical
@@ -42,26 +42,24 @@ namespace simplemc {
  * }
  * @endcode
  *
- * If a range of values should be added at once, one can use the accumulate function.
+ * If a range of values should be added at once, one can use the accumulate function:
  * @code{.cpp}
- * acc.accumulate(range, idx);
+ * acc.accumulate(range, idx, count);
  * @endcode
- * Here, `idx` is either a scalar denoting the starting index or a range of indices of the same
- * size as the range of values.
  *
  * Results are always returned as Eigen::ArrayX or Eigen::ArrayXX objects. If e.g.
  * the size of the accumulator is 1, then we still need to access the array:
  * @code{.cpp}
  * auto mean = acc.mean()[0];
- * auto stderr = acc.stderr()[0];
+ * auto err = acc.stderror()[0];
  * @endcode
  *
  * @tparam T Type of accumulated values (either double or std::complex<double>).
- * @tparam A Algorithm (either standard or Welford).
+ * @tparam A Algorithm used to calculate the mean/variance.
  */
 template <double_or_complex T, accs::varalg A = accs::varalg::standard>
-class var_acc;
+class covar_acc;
 
 } // namespace simplemc
 
-#endif // SIMPLEMC_ACCS_VAR_ACC_FWD_HPP
+#endif // SIMPLEMC_ACCS_COVAR_ACC_FWD_HPP

@@ -1,6 +1,6 @@
 /**
  * @file mean_acc.hpp
- * @brief Mean accumulator for calculating arithmetic means.
+ * @brief Mean accumulator for calculating sample means.
  */
 
 #ifndef SIMPLEMC_ACCS_MEAN_ACC_HPP
@@ -13,6 +13,7 @@
 #include <simplemc/utils/simplemc_exception.hpp>
 
 #include <range/v3/range/concepts.hpp>
+#include <range/v3/view/zip.hpp>
 
 #include <cassert>
 #include <cstdint>
@@ -20,27 +21,13 @@
 namespace simplemc {
 
 /**
- * @brief Mean accumulator for calculating arithmetic means.
+ * @brief Mean accumulator for calculating sample means.
  *
  * @details No error estimation is available.
  *
  * The user can choose between the standard and the more stable Welford algorithm and whether
  * to apply a constant shift to the accumulated data. This can sometimes improve the numerical
  * accuracy.
- *
- * Let \f$ \{ \mathbf{x}^{(i)}: i = 1,\dots,N \} \f$ be the set of random vectors to accumulate and let
- * \f$ \mathbf{t} \f$ be the constant shift. We denote the data storage by \f$ \mathbf{m}^{(N)} \f$.
- * Depending on the alogorithm used, the following things are calculated:
- *
- * - Standard algorithm: The shifted sum of the accumulated vectors is stored in the data storage, i.e.
- * \f$ \mathbf{m}^{(N)} = \sum_{i=1}^N (\mathbf{x}^{(i)} - \mathbf{t}) = \mathbf{m}^{(N-1)} + 
- * (\mathbf{x}^{(N)} - \mathbf{t}) \f$. The mean is then estimated with \f$ \bar{\mathbf{X}} = 
- * \mathbf{m}^{(N)} / N + \mathbf{t} \f$.
- *
- * - Welford algorithm: The shifted mean is stored in the data storage, i.e. \f$ \mathbf{m}^{(N)} = 
- * \frac{1}{N} \sum_{i=1}^N (\mathbf{x}^{(i)} - \mathbf{t}) = \mathbf{m}^{(N-1)} + \frac{1}{N} \left( 
- * \mathbf{x}^{(N)} - \mathbf{t} - \mathbf{m}^{(N-1)} \right) \f$. The mean is then simply given by 
- * \f$ \bar{\mathbf{X}} = \mathbf{m}^{(N)} + \mathbf{t} \f$.
  *
  * If the size of the accumulator is 1, then values can be added with the stream operator:
  * @code{.cpp}
@@ -63,19 +50,21 @@ namespace simplemc {
  * }
  * @endcode
  *
- * If a range of values should be added at once, one can use the accumulate function:
+ * If a range of values should be added at once, one can use the accumulate function.
  * @code{.cpp}
- * acc.accumulate(range, idx, count);
+ * acc.accumulate(range, idx);
  * @endcode
+ * Here, `idx` is either a scalar denoting the starting index or a range of indices of the same
+ * size as the range of values.
  *
- * Results (mean, stderror, tau) are always returned as an Eigen::ArrayX object. If e.g.
+ * Results are always returned as Eigen::ArrayX or Eigen::ArrayXX objects. If e.g.
  * the size of the accumulator is 1, then we still need to access the array:
  * @code{.cpp}
  * auto mean = acc.mean()[0];
  * @endcode
  *
  * @tparam T Type of accumulated values (either double or std::complex<double>).
- * @tparam A Algorithm used to calculate the mean.
+ * @tparam A Algorithm (either standard or Welford).
  */
 template <double_or_complex T, accs::varalg A = accs::varalg::standard>
 class mean_acc {
@@ -96,12 +85,12 @@ public:
     using size_type = long;
 
     /**
-     * @brief Type for storing accumulated values.
+     * @brief Type for 1-dimensional arrays.
      */
-    using storage_type = Eigen::ArrayX<value_type>;
+    using array_type = Eigen::ArrayX<value_type>;
 
     /**
-     * @brief Get the algorithm used.
+     * @brief Get the algorithm.
      */
     static constexpr auto varalg() { return A; }
 
@@ -135,17 +124,17 @@ private:
         }
 
         /**
-         * @brief Accumulate data.
+         * @brief Accumulate a single value.
          *
          * @param val Value to be accumulated.
          * @return Reference to this object.
          */
         mean_mva& operator<<(value_type val) {
             if constexpr (varalg() == accs::varalg::standard) {
-                acc_.mdata_[idx_] += (val - acc_.shift_[idx_]);
+                acc_.mdata_(idx_) += (val - acc_.shift_(idx_));
             } else {
-                acc_.mdata_[idx_] +=
-                    (val - acc_.shift_[idx_] - acc_.mdata_[idx_]) / static_cast<double>(acc_.count_ + 1);
+                acc_.mdata_(idx_) +=
+                    (val - acc_.shift_(idx_) - acc_.mdata_(idx_)) / static_cast<double>(acc_.count_ + 1);
             }
             return *this;
         }
@@ -168,8 +157,8 @@ public:
      * @param shift A single constant shift applied to the accumulated values.
      */
     explicit mean_acc(size_type size = 1, value_type shift = 0.0) :
-        mdata_(storage_type::Zero(size)),
-        shift_(storage_type::Constant(size, shift)),
+        mdata_(array_type::Zero(size)),
+        shift_(array_type::Constant(size, shift)),
         count_(0),
         idx_(0) {
         if (size <= 0) {
@@ -184,8 +173,8 @@ public:
      *
      * @param shift Constant shift applied to the accumulated values.
      */
-    explicit mean_acc(storage_type shift) :
-        mdata_(storage_type::Zero(shift.size())),
+    explicit mean_acc(array_type shift) :
+        mdata_(array_type::Zero(shift.size())),
         shift_(std::move(shift)),
         count_(0),
         idx_(0) {
@@ -201,7 +190,7 @@ public:
      * @param shift Constant shift applied to the accumulated values.
      * @param count Number of accumulated values.
      */
-    mean_acc(storage_type mdata, storage_type shift, count_type count) :
+    mean_acc(array_type mdata, array_type shift, count_type count) :
         mdata_(std::move(mdata)),
         shift_(std::move(shift)),
         count_(count),
@@ -235,9 +224,9 @@ public:
     mean_acc& operator<<(value_type val) {
         ++count_;
         if constexpr (varalg() == accs::varalg::standard) {
-            mdata_[idx_] += (val - shift_[idx_]);
+            mdata_(idx_) += (val - shift_(idx_));
         } else {
-            mdata_[idx_] += (val - shift_[idx_] - mdata_[idx_]) / static_cast<value_type>(count_);
+            mdata_(idx_) += (val - shift_(idx_) - mdata_(idx_)) / static_cast<value_type>(count_);
         }
         return *this;
     }
@@ -268,7 +257,7 @@ public:
      *
      * @details The size of the range is assumed to be <= size() - idx.
      *
-     * @tparam R Input range.
+     * @tparam R Input range of value.
      * @param rg Range of values to be accumulated.
      * @param idx Starting index for the accumulator.
      */
@@ -278,11 +267,34 @@ public:
         ++count_;
         for (auto val : rg) {
             if constexpr (varalg() == accs::varalg::standard) {
-                mdata_[idx] += (val - shift_[idx]);
+                mdata_(idx) += (val - shift_(idx));
             } else {
-                mdata_[idx] += (val - shift_[idx] - mdata_[idx]) / static_cast<value_type>(count_);
+                mdata_(idx) += (val - shift_(idx) - mdata_(idx)) / static_cast<value_type>(count_);
             }
             ++idx;
+        }
+    }
+
+    /**
+     * @brief Accumulate a range of values.
+     *
+     * @details The size of the range is assumed to be <= size() - idx and every index should
+     * only appear at most once.
+     *
+     * @tparam R1 Input range of value.
+     * @tparam R2 Input range of indices.
+     * @param rg Range of values to be accumulated.
+     * @param idxs Range of indices.
+     */
+    template <ranges::input_range R1, ranges::input_range R2>
+    void accumulate(R1&& rg, R2&& idxs) { // NOLINT (ranges need not be forwarded)
+        ++count_;
+        for (auto [val, idx] : ranges::views::zip(rg, idxs)) {
+            if constexpr (varalg() == accs::varalg::standard) {
+                mdata_(idx) += (val - shift_(idx));
+            } else {
+                mdata_(idx) += (val - shift_(idx) - mdata_(idx)) / static_cast<value_type>(count_);
+            }
         }
     }
 
@@ -313,27 +325,25 @@ public:
      *
      * @return Constant shift vector applied to the accumulated values.
      */
-    [[nodiscard]] const storage_type& shift() const { return shift_; }
+    [[nodiscard]] const array_type& shift() const { return shift_; }
 
     /**
      * @brief Get accumulated data used for estimating the mean.
      *
      * @return Data storage (content depends on the algorithm).
      */
-    [[nodiscard]] const storage_type& mdata() const { return mdata_; }
+    [[nodiscard]] const array_type& mdata() const { return mdata_; }
 
     /**
      * @brief Calculate the sample mean from the accumulated data.
      *
      * @return Data storage with mean values.
      */
-    [[nodiscard]] storage_type mean() const {
-        return simplemc::accs::mean<value_type, varalg()>(mdata_, count_, shift_);
-    }
+    [[nodiscard]] array_type mean() const { return simplemc::accs::mean<value_type, varalg()>(mdata_, count_, shift_); }
 
 private:
-    storage_type mdata_;
-    storage_type shift_;
+    array_type mdata_;
+    array_type shift_;
     count_type count_;
     size_type idx_;
 };

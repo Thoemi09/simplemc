@@ -23,11 +23,11 @@ namespace simplemc::accs {
 enum class varalg { standard, welford };
 
 /**
- * @brief Make an Eigen::Array with NaNs.
+ * @brief Make an Eigen::ArrayX with NaNs.
  *
  * @tparam T Type of accumulated values (either double or std::complex<double>).
  * @param size Size of storage.
- * @return Eigen::Array with NaNs.
+ * @return Eigen::ArrayX with NaNs.
  */
 template <double_or_complex T>
 Eigen::ArrayX<T> make_nans(long size) {
@@ -36,6 +36,23 @@ Eigen::ArrayX<T> make_nans(long size) {
         return Eigen::ArrayX<T>::Constant(size, nan);
     } else {
         return Eigen::ArrayX<T>::Constant(size, std::complex<double> { nan, nan });
+    }
+}
+
+/**
+ * @brief Make an Eigen::ArrayXX with NaNs.
+ *
+ * @tparam T Type of accumulated values (either double or std::complex<double>).
+ * @param size Size of storage.
+ * @return Eigen::ArrayXX with NaNs.
+ */
+template <double_or_complex T>
+Eigen::ArrayXX<T> make_nans(long rows, long cols) {
+    constexpr auto nan = std::numeric_limits<double>::quiet_NaN();
+    if constexpr (std::is_same_v<T, double>) {
+        return Eigen::ArrayXX<T>::Constant(rows, cols, nan);
+    } else {
+        return Eigen::ArrayXX<T>::Constant(rows, cols, std::complex<double> { nan, nan });
     }
 }
 
@@ -65,7 +82,7 @@ Eigen::ArrayX<T> mean(const Eigen::ArrayX<T>& mdata, std::uint64_t count, const 
 }
 
 /**
- * @brief Calculate the diagonal elements of the covariance or cross-covariance matrix of
+ * @brief Calculate the diagonal elements of the sample covariance or cross-covariance matrix of
  * two random vectors.
  *
  * @tparam A Algorithm used to calculate the variance.
@@ -73,7 +90,7 @@ Eigen::ArrayX<T> mean(const Eigen::ArrayX<T>& mdata, std::uint64_t count, const 
  * @param mdata2 Accumulated mean data #2.
  * @param vdata Accumulated covariance/cross-covariance data.
  * @param count Number of accumulated values.
- * @return Sample variance or covariance.
+ * @return Diagonal of the sample covariance or cross-covariance matrix.
  */
 template <varalg A = varalg::standard>
 Eigen::ArrayX<double> diag_covariance([[maybe_unused]] const Eigen::ArrayX<double>& mdata1,

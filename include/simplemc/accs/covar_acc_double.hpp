@@ -1,20 +1,19 @@
 /**
- * @file var_acc_double.hpp
- * @brief Variance accumulator for calculating sample means and variances for double values.
+ * @file covar_acc_double.hpp
+ * @brief Accumulator for calculating the mean and covariance matrix for double values.
  */
 
-#ifndef SIMPLEMC_ACCS_VAR_ACC_DOUBLE_HPP
-#define SIMPLEMC_ACCS_VAR_ACC_DOUBLE_HPP
+#ifndef SIMPLEMC_ACCS_COVAR_ACC_DOUBLE_HPP
+#define SIMPLEMC_ACCS_COVAR_ACC_DOUBLE_HPP
 
+#include <simplemc/accs/covar_acc_fwd.hpp>
 #include <simplemc/accs/utils.hpp>
-#include <simplemc/accs/var_acc_fwd.hpp>
 #include <simplemc/numeric/eigen.hpp>
 #include <simplemc/numeric/utils.hpp>
 #include <simplemc/utils/concepts.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
 #include <range/v3/range/concepts.hpp>
-#include <range/v3/view/zip.hpp>
 
 #include <cassert>
 #include <cstdint>
@@ -23,15 +22,15 @@
 namespace simplemc {
 
 /**
- * @brief Variance accumulator specialized for accumulating double values.
+ * @brief Covariance accumulator specialized for accumulating double values.
  *
- * @tparam A Algorithm (either standard or Welford).
+ * @tparam A Algorithm for accumulating data.
  */
 template <accs::varalg A>
-class var_acc<double, A> {
+class covar_acc<double, A> {
 public:
     /**
-     * @brief Type of accumulated value.
+     * @brief Type of accumulated values.
      */
     using value_type = double;
 
@@ -46,31 +45,36 @@ public:
     using size_type = long;
 
     /**
-     * @brief Type for 1-dimensional arrays.
+     * @brief 1-dimensional array type.
      */
     using array_type = Eigen::ArrayX<value_type>;
 
     /**
-     * @brief Get the algorithm.
+     * @brief 2-dimensional array type.
+     */
+    using array2d_type = Eigen::ArrayXX<value_type>;
+
+    /**
+     * @brief Get the algorithm for accumulating data.
      */
     static constexpr auto varalg() { return A; }
 
 private:
     /**
-     * @brief Multi value accumulator for the variance accumulator.
+     * @brief Multi value accumulator for the covariance accumulator.
      *
-     * @details It holds a reference to a variance accumulator. It can be used to add multiple data points
+     * @details It holds a reference to a covariance accumulator. It can be used to add multiple data points
      * to the accumulator but only increase the count once (when it goes out of scope).
      */
-    class var_mva {
+    class covar_mva {
     public:
         /**
-         * @brief Construct a multi value accumulator for a given variance accumulator and a given index.
+         * @brief Construct a multi value accumulator for a given covariance accumulator and a given index.
          *
-         * @param acc Variance accumulator.
+         * @param acc Covariance accumulator.
          * @param idx Index.
          */
-        var_mva(var_acc& acc, size_type idx) : acc_(acc), idx_(idx) { assert(idx_ >= 0 && idx_ < acc_.size()); }
+        covar_mva(covar_acc& acc, size_type idx) : acc_(acc), idx_(idx) { assert(idx_ >= 0 && idx_ < acc_.size()); }
 
         /**
          * @brief Set index and return this object.
@@ -78,27 +82,27 @@ private:
          * @param idx Index.
          * @return Reference to this object.
          */
-        var_mva& operator[](size_type idx) {
+        covar_mva& operator[](size_type idx) {
             assert(idx >= 0 && idx < acc_.size());
             idx_ = idx;
             return *this;
         }
 
         /**
-         * @brief Accumulate a single value.
+         * @brief Accumulate data.
          *
          * @param val Value to be accumulated.
          * @return Reference to this object.
          */
-        var_mva& operator<<(value_type val) {
+        covar_mva& operator<<(value_type val) {
             if constexpr (varalg() == accs::varalg::standard) {
-                const auto tmp = val - acc_.shift_(idx_);
-                acc_.mdata_(idx_) += tmp;
-                acc_.vdata_(idx_) += tmp * tmp;
+                const auto tmp = val - acc_.shift_[idx_];
+                acc_.mdata_[idx_] += tmp;
+                acc_.vdata_[idx_] += tmp * tmp;
             } else {
-                const auto tmp = val - acc_.shift_(idx_) - acc_.mdata_(idx_);
-                acc_.mdata_(idx_) += tmp / static_cast<value_type>(acc_.count_ + 1);
-                acc_.vdata_(idx_) += tmp * (val - acc_.shift_(idx_) - acc_.mdata_(idx_));
+                const auto tmp = val - acc_.shift_[idx_] - acc_.mdata_[idx_];
+                acc_.mdata_[idx_] += tmp / static_cast<value_type>(acc_.count_ + 1);
+                acc_.vdata_[idx_] += tmp * (val - acc_.shift_[idx_] - acc_.mdata_[idx_]);
             }
             return *this;
         }
@@ -106,23 +110,23 @@ private:
         /**
          * @brief Destructor increases the count.
          */
-        ~var_mva() { acc_.count_ += 1; }
+        ~covar_mva() { acc_.count_ += 1; }
 
     private:
-        var_acc& acc_; // NOLINT (reference is wanted here)
+        covar_acc& acc_; // NOLINT (reference is wanted here)
         size_type idx_;
     };
 
 public:
     /**
-     * @brief Construct a variance accumulator with a given number of elements and a constant shift.
+     * @brief Construct a covariance accumulator with a given number of elements and a constant shift.
      *
      * @param size Number of elements.
      * @param shift A single constant shift applied to the accumulated values.
      */
-    explicit var_acc(size_type size = 1, value_type shift = 0.0) :
+    explicit covar_acc(size_type size = 1, value_type shift = 0.0) :
         mdata_(array_type::Zero(size)),
-        vdata_(array_type::Zero(size)),
+        cdata_(array2d_type::Zero(size, size)),
         shift_(array_type::Constant(size, shift)),
         count_(0),
         idx_(0) {
@@ -132,15 +136,15 @@ public:
     }
 
     /**
-     * @brief Construct a variance accumulator with a given constant shift.
+     * @brief Construct a covariance accumulator with a given constant shift.
      *
      * @details The size of the accumulator will be the same as the size of the shift vector.
      *
      * @param shift Constant shift applied to the accumulated values.
      */
-    explicit var_acc(array_type shift) :
+    explicit covar_acc(array_type shift) :
         mdata_(array_type::Zero(shift.size())),
-        vdata_(array_type::Zero(shift.size())),
+        cdata_(array2d_type::Zero(shift.size(), shift.size())),
         shift_(std::move(shift)),
         count_(0),
         idx_(0) {
@@ -150,23 +154,23 @@ public:
     }
 
     /**
-     * @brief Construct a variance accumulator with given data storages, a constant shift and a count.
+     * @brief Construct a covariance accumulator with given data storages, a constant shift and a count.
      *
      * @param mdata Accumulated mean data.
-     * @param vdata Accumulated variance data.
+     * @param cdata Accumulated covariance data.
      * @param shift Constant shift applied to the accumulated values.
      * @param count Number of accumulated values.
      */
-    var_acc(array_type mdata, array_type vdata, array_type shift, count_type count) :
+    covar_acc(array_type mdata, array2d_type cdata, array_type shift, count_type count) :
         mdata_(std::move(mdata)),
-        vdata_(std::move(vdata)),
+        cdata_(std::move(cdata)),
         shift_(std::move(shift)),
         count_(count),
         idx_(0) {
         if (mdata_.size() == 0) {
             throw simplemc_exception("Size == 0 in variance accumulator", "var_acc::var_acc");
         }
-        if (mdata_.size() != vdata_.size() || mdata_.size() != shift_.size()) {
+        if (mdata_.size() != cdata_.rows() || mdata_.size() != cdata_.cols() || mdata_.size() != shift_.size()) {
             throw simplemc_exception("Sizes of data storages do not match", "var_acc::var_acc");
         }
     }
@@ -177,7 +181,7 @@ public:
      * @param idx Index.
      * @return Reference to this object.
      */
-    var_acc& operator[](size_type idx) {
+    covar_acc& operator[](size_type idx) {
         assert(idx >= 0 && idx < size());
         idx_ = idx;
         return *this;
@@ -189,16 +193,16 @@ public:
      * @param val Value to be accumulated.
      * @return Reference to this object.
      */
-    var_acc& operator<<(value_type val) {
+    covar_acc& operator<<(value_type val) {
         ++count_;
         if constexpr (varalg() == accs::varalg::standard) {
             const auto tmp = val - shift_(idx_);
             mdata_(idx_) += tmp;
-            vdata_(idx_) += tmp * tmp;
+            cdata_(idx_, idx_) += tmp * tmp;
         } else {
             const auto tmp = val - shift_(idx_) - mdata_(idx_);
             mdata_(idx_) += tmp / static_cast<value_type>(count_);
-            vdata_(idx_) += tmp * (val - shift_(idx_) - mdata_(idx_));
+            cdata_(idx_) += tmp * (val - shift_(idx_) - mdata_(idx_));
         }
         return *this;
     }
@@ -211,18 +215,17 @@ public:
      * @param acc Variance accumulator to be incorporated.
      * @return Reference to this object.
      */
-    var_acc& operator<<(const var_acc& acc) {
+    covar_acc& operator<<(const covar_acc& acc) {
         assert(size() == acc.size());
         if constexpr (varalg() == accs::varalg::standard) {
             mdata_ += acc.mdata_ + acc.count_ * (acc.shift_ - shift_);
-            vdata_ +=
+            cdata_ +=
                 acc.vdata_ + 2.0 * (acc.shift_ - shift_) * acc.mdata_ + acc.count_ * (acc.shift_ - shift_).square();
         } else {
             const auto n1 = static_cast<value_type>(count_);
             const auto n2 = static_cast<value_type>(acc.count_);
-            const auto m = mdata_ * n1 / (n1 + n2) + (acc.mdata_ + acc.shift_ - shift_) * n2 / (n1 + n2);
-            vdata_ += acc.vdata_ + n1 * (mdata_ - m).square() + n2 * (acc.shift_ - shift_ + acc.mdata_ - m).square();
-            mdata_ = m;
+            cdata_ += acc.vdata_ + (acc.mdata_ + acc.shift_ - shift_ - mdata_).square() * n1 * n2 / (n1 + n2);
+            mdata_ = mdata_ * n1 / (n1 + n2) + (acc.mdata_ + acc.shift_ - shift_) * n2 / (n1 + n2);
         }
         count_ += acc.count_;
         return *this;
@@ -233,7 +236,7 @@ public:
      *
      * @details The size of the range is assumed to be <= size() - idx.
      *
-     * @tparam R Input range of value.
+     * @tparam R Input range.
      * @param rg Range of values to be accumulated.
      * @param idx Starting index for the accumulator.
      */
@@ -243,42 +246,15 @@ public:
         ++count_;
         for (auto val : rg) {
             if constexpr (varalg() == accs::varalg::standard) {
-                const auto tmp = val - shift_(idx);
-                mdata_(idx) += tmp;
-                vdata_(idx) += tmp * tmp;
+                const auto tmp = val - shift_[idx];
+                mdata_[idx] += tmp;
+                cdata_[idx] += tmp * tmp;
             } else {
-                const auto tmp = val - shift_(idx_) - mdata_(idx);
-                mdata_(idx) += tmp / static_cast<value_type>(count_);
-                vdata_(idx) += tmp * (val - shift_(idx_) - mdata_(idx));
+                const auto tmp = val - shift_[idx_] - mdata_[idx];
+                mdata_[idx] += tmp / static_cast<value_type>(count_);
+                cdata_[idx] += tmp * (val - shift_[idx_] - mdata_[idx]);
             }
             ++idx;
-        }
-    }
-
-    /**
-     * @brief Accumulate a range of values.
-     *
-     * @details The size of the range is assumed to be <= size() - idx and every index should
-     * only appear at most once.
-     *
-     * @tparam R1 Input range of value.
-     * @tparam R2 Input range of indices.
-     * @param rg Range of values to be accumulated.
-     * @param idxs Range of indices.
-     */
-    template <ranges::input_range R1, ranges::input_range R2>
-    void accumulate(R1&& rg, R2&& idxs) { // NOLINT (ranges need not be forwarded)
-        ++count_;
-        for (auto [val, idx] : ranges::views::zip(rg, idxs)) {
-            if constexpr (varalg() == accs::varalg::standard) {
-                const auto tmp = val - shift_(idx);
-                mdata_(idx) += tmp;
-                vdata_(idx) += tmp * tmp;
-            } else {
-                const auto tmp = val - shift_(idx_) - mdata_(idx);
-                mdata_(idx) += tmp / static_cast<value_type>(count_);
-                vdata_(idx) += tmp * (val - shift_(idx_) - mdata_(idx));
-            }
         }
     }
 
@@ -288,7 +264,7 @@ public:
      * @param idx Index.
      * @return Multi value accumulator.
      */
-    var_mva make_mva(size_type idx = 0) { return var_mva(*this, idx); }
+    covar_mva make_mva(size_type idx = 0) { return covar_mva(*this, idx); }
 
     /**
      * @brief Get the size of the accumulator.
@@ -319,11 +295,11 @@ public:
     [[nodiscard]] const array_type& mdata() const { return mdata_; }
 
     /**
-     * @brief Get accumulated data used for estimating the variance.
+     * @brief Get accumulated data used for estimating the covariance.
      *
      * @return Data storage (content depends on the algorithm).
      */
-    [[nodiscard]] const array_type& vdata() const { return vdata_; }
+    [[nodiscard]] const array2d_type& cdata() const { return cdata_; }
 
     /**
      * @brief Calculate the sample mean from the accumulated data.
@@ -333,27 +309,27 @@ public:
     [[nodiscard]] array_type mean() const { return simplemc::accs::mean<value_type, varalg()>(mdata_, count_, shift_); }
 
     /**
-     * @brief Calculate the diagonal of the sample covariance matrix of the mean.
+     * @brief Calculate the sample covariance matrix of the mean.
      *
      * @return Data storage with variances.
      */
-    [[nodiscard]] array_type variance() const {
-        return simplemc::accs::diag_covariance<varalg()>(mdata_, mdata_, vdata_, count_) /
+    [[nodiscard]] array_type covariance() const {
+        return simplemc::accs::diag_covariance<varalg()>(mdata_, mdata_, cdata_, count_) /
             static_cast<value_type>(count_);
     }
 
     /**
-     * @brief Calculate the diagonal of the sample covariance matrix of the accumulated data.
+     * @brief Calculate the sample covariance matrix of the accumulated data.
      *
-     * @return Data storage with variances.
+     * @return Data storage with covariances.
      */
     [[nodiscard]] array_type variance_of_data() const {
-        return simplemc::accs::diag_covariance<varalg()>(mdata_, mdata_, vdata_, count_);
+        return simplemc::accs::diag_covariance<varalg()>(mdata_, mdata_, cdata_, count_);
     }
 
 private:
     array_type mdata_;
-    array_type vdata_;
+    array2d_type cdata_;
     array_type shift_;
     count_type count_;
     size_type idx_;
@@ -361,4 +337,4 @@ private:
 
 } // namespace simplemc
 
-#endif // SIMPLEMC_ACCS_VAR_ACC_DOUBLE_HPP
+#endif // SIMPLEMC_ACCS_COVAR_ACC_DOUBLE_HPP
