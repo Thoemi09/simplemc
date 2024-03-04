@@ -67,6 +67,30 @@ public:
 
 private:
     /**
+     * @brief Add a single value to the accumulator without increasing the count.
+     *
+     * @param val Value to be added.
+     * @param idx Index.
+     * @param count Count including the new value.
+     */
+    void add_value(value_type val, size_type idx, count_type count) {
+        if constexpr (varalg() == accs::varalg::standard) {
+            const auto tmp = val - shift_(idx);
+            mdata_(idx) += tmp;
+            rdata_(idx) += std::real(tmp) * std::real(tmp);
+            idata_(idx) += std::imag(tmp) * std::imag(tmp);
+            cdata_(idx) += std::real(tmp) * std::imag(tmp);
+        } else {
+            const auto tmp = val - shift_(idx) - mdata_(idx);
+            mdata_(idx) += tmp / static_cast<double>(count);
+            const auto tmp2 = val - shift_(idx) - mdata_(idx);
+            rdata_(idx) += std::real(tmp) * std::real(tmp2);
+            idata_(idx) += std::imag(tmp) * std::imag(tmp2);
+            cdata_(idx) += std::real(tmp) * std::imag(tmp2);
+        }
+    }
+
+    /**
      * @brief Multi value accumulator for the variance accumulator.
      *
      * @details It holds a reference to a variance accumulator. It can be used to add multiple data points
@@ -101,20 +125,7 @@ private:
          * @return Reference to this object.
          */
         var_mva& operator<<(value_type val) {
-            if constexpr (varalg() == accs::varalg::standard) {
-                const auto tmp = val - acc_.shift_(idx_);
-                acc_.mdata_(idx_) += tmp;
-                acc_.rdata_(idx_) += std::real(tmp) * std::real(tmp);
-                acc_.idata_(idx_) += std::imag(tmp) * std::imag(tmp);
-                acc_.cdata_(idx_) += std::real(tmp) * std::imag(tmp);
-            } else {
-                const auto tmp = val - acc_.shift_(idx_) - acc_.mdata_(idx_);
-                acc_.mdata_(idx_) += tmp / static_cast<double>(acc_.count_ + 1);
-                const auto tmp2 = val - acc_.shift_(idx_) - acc_.mdata_(idx_);
-                acc_.rdata_(idx_) += std::real(tmp) * std::real(tmp2);
-                acc_.idata_(idx_) += std::imag(tmp) * std::imag(tmp2);
-                acc_.cdata_(idx_) += std::real(tmp) * std::imag(tmp2);
-            }
+            acc_.add_value(val, idx_, acc_.count_ + 1);
             return *this;
         }
 
@@ -216,20 +227,7 @@ public:
      */
     var_acc& operator<<(value_type val) {
         ++count_;
-        if constexpr (varalg() == accs::varalg::standard) {
-            const auto tmp = val - shift_(idx_);
-            mdata_(idx_) += tmp;
-            rdata_(idx_) += std::real(tmp) * std::real(tmp);
-            idata_(idx_) += std::imag(tmp) * std::imag(tmp);
-            cdata_(idx_) += std::real(tmp) * std::imag(tmp);
-        } else {
-            const auto tmp = val - shift_(idx_) - mdata_(idx_);
-            mdata_(idx_) += tmp / static_cast<double>(count_);
-            const auto tmp2 = val - shift_(idx_) - mdata_(idx_);
-            rdata_(idx_) += std::real(tmp) * std::real(tmp2);
-            idata_(idx_) += std::imag(tmp) * std::imag(tmp2);
-            cdata_(idx_) += std::real(tmp) * std::imag(tmp2);
-        }
+        add_value(val, idx_, count_);
         return *this;
     }
 
@@ -282,20 +280,7 @@ public:
         assert(idx >= 0 && idx < size());
         ++count_;
         for (auto val : rg) {
-            if constexpr (varalg() == accs::varalg::standard) {
-                const auto tmp = val - shift_(idx);
-                mdata_(idx) += tmp;
-                rdata_(idx) += std::real(tmp) * std::real(tmp);
-                idata_(idx) += std::imag(tmp) * std::imag(tmp);
-                cdata_(idx) += std::real(tmp) * std::imag(tmp);
-            } else {
-                const auto tmp = val - shift_(idx) - mdata_(idx);
-                mdata_(idx) += tmp / static_cast<double>(count_);
-                const auto tmp2 = val - shift_(idx) - mdata_(idx);
-                rdata_(idx) += std::real(tmp) * std::real(tmp2);
-                idata_(idx) += std::imag(tmp) * std::imag(tmp2);
-                cdata_(idx) += std::real(tmp) * std::imag(tmp2);
-            }
+            add_value(val, idx, count_);
             ++idx;
         }
     }
@@ -315,20 +300,7 @@ public:
     void accumulate(R1&& rg, R2&& idxs) { // NOLINT (ranges need not be forwarded)
         ++count_;
         for (auto [val, idx] : ranges::views::zip(rg, idxs)) {
-            if constexpr (varalg() == accs::varalg::standard) {
-                const auto tmp = val - shift_(idx);
-                mdata_(idx) += tmp;
-                rdata_(idx) += std::real(tmp) * std::real(tmp);
-                idata_(idx) += std::imag(tmp) * std::imag(tmp);
-                cdata_(idx) += std::real(tmp) * std::imag(tmp);
-            } else {
-                const auto tmp = val - shift_(idx) - mdata_(idx);
-                mdata_(idx) += tmp / static_cast<double>(count_);
-                const auto tmp2 = val - shift_(idx) - mdata_(idx);
-                rdata_(idx) += std::real(tmp) * std::real(tmp2);
-                idata_(idx) += std::imag(tmp) * std::imag(tmp2);
-                cdata_(idx) += std::real(tmp) * std::imag(tmp2);
-            }
+            add_value(val, idx, count_);
         }
     }
 

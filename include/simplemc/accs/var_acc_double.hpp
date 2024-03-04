@@ -57,6 +57,25 @@ public:
 
 private:
     /**
+     * @brief Add a single value to the accumulator without increasing the count.
+     *
+     * @param val Value to be added.
+     * @param idx Index.
+     * @param count Count including the new value.
+     */
+    void add_value(value_type val, size_type idx, count_type count) {
+        if constexpr (varalg() == accs::varalg::standard) {
+            const auto tmp = val - shift_(idx);
+            mdata_(idx) += tmp;
+            vdata_(idx) += tmp * tmp;
+        } else {
+            const auto tmp = val - shift_(idx) - mdata_(idx);
+            mdata_(idx) += tmp / static_cast<value_type>(count);
+            vdata_(idx) += tmp * (val - shift_(idx) - mdata_(idx));
+        }
+    }
+
+    /**
      * @brief Multi value accumulator for the variance accumulator.
      *
      * @details It holds a reference to a variance accumulator. It can be used to add multiple data points
@@ -91,15 +110,7 @@ private:
          * @return Reference to this object.
          */
         var_mva& operator<<(value_type val) {
-            if constexpr (varalg() == accs::varalg::standard) {
-                const auto tmp = val - acc_.shift_(idx_);
-                acc_.mdata_(idx_) += tmp;
-                acc_.vdata_(idx_) += tmp * tmp;
-            } else {
-                const auto tmp = val - acc_.shift_(idx_) - acc_.mdata_(idx_);
-                acc_.mdata_(idx_) += tmp / static_cast<value_type>(acc_.count_ + 1);
-                acc_.vdata_(idx_) += tmp * (val - acc_.shift_(idx_) - acc_.mdata_(idx_));
-            }
+            acc_.add_value(val, idx_, acc_.count_ + 1);
             return *this;
         }
 
@@ -191,15 +202,7 @@ public:
      */
     var_acc& operator<<(value_type val) {
         ++count_;
-        if constexpr (varalg() == accs::varalg::standard) {
-            const auto tmp = val - shift_(idx_);
-            mdata_(idx_) += tmp;
-            vdata_(idx_) += tmp * tmp;
-        } else {
-            const auto tmp = val - shift_(idx_) - mdata_(idx_);
-            mdata_(idx_) += tmp / static_cast<value_type>(count_);
-            vdata_(idx_) += tmp * (val - shift_(idx_) - mdata_(idx_));
-        }
+        add_value(val, idx_, count_);
         return *this;
     }
 
@@ -242,15 +245,7 @@ public:
         assert(idx >= 0 && idx < size());
         ++count_;
         for (auto val : rg) {
-            if constexpr (varalg() == accs::varalg::standard) {
-                const auto tmp = val - shift_(idx);
-                mdata_(idx) += tmp;
-                vdata_(idx) += tmp * tmp;
-            } else {
-                const auto tmp = val - shift_(idx_) - mdata_(idx);
-                mdata_(idx) += tmp / static_cast<value_type>(count_);
-                vdata_(idx) += tmp * (val - shift_(idx_) - mdata_(idx));
-            }
+            add_value(val, idx, count_);
             ++idx;
         }
     }
@@ -270,15 +265,7 @@ public:
     void accumulate(R1&& rg, R2&& idxs) { // NOLINT (ranges need not be forwarded)
         ++count_;
         for (auto [val, idx] : ranges::views::zip(rg, idxs)) {
-            if constexpr (varalg() == accs::varalg::standard) {
-                const auto tmp = val - shift_(idx);
-                mdata_(idx) += tmp;
-                vdata_(idx) += tmp * tmp;
-            } else {
-                const auto tmp = val - shift_(idx_) - mdata_(idx);
-                mdata_(idx) += tmp / static_cast<value_type>(count_);
-                vdata_(idx) += tmp * (val - shift_(idx_) - mdata_(idx));
-            }
+            add_value(val, idx, count_);
         }
     }
 

@@ -118,6 +118,7 @@ TEST_F(SimplemcAccs, MeanAccumulator) {
     using storage_d = typename acc_d::array_type;
     using storage_c = typename acc_c::array_type;
     double tol = 1e-2;
+    double tol_m = 1e-10;
     acc_d acc_sv_d(1, 5.0), acc_mva_d(size, 2.0), acc_rg_d(size, 1.0);
     acc_c acc_sv_c(1, { 5.0, 1.0 }), acc_mva_c(size, { -3.2, -2.2 }), acc_rg_c(size, 10.0);
 
@@ -184,8 +185,8 @@ TEST_F(SimplemcAccs, MeanAccumulator) {
     merge_1_c << merge_2_c;
     ASSERT_EQ(merge_1_d.count(), merge_size);
     ASSERT_EQ(merge_1_c.count(), merge_size);
-    check_range_near(merge_1_d.mdata(), merge_exp_d.mdata(), 1e-10);
-    check_range_near(merge_1_c.mdata(), merge_exp_c.mdata(), 1e-10);
+    check_range_near(merge_1_d.mdata(), merge_exp_d.mdata(), tol_m);
+    check_range_near(merge_1_c.mdata(), merge_exp_c.mdata(), tol_m);
 }
 
 // Test variance accumulator for double values.
@@ -195,6 +196,7 @@ TEST_F(SimplemcAccs, DoubleVarianceAccumulator) {
     using acc_wel = simplemc::var_acc<double, simplemc::accs::varalg::welford>;
     using storage_d = typename acc_std::array_type;
     double tol = 1e-2;
+    double tol_m = 1e-10;
     acc_std acc_sv_std(1, 5.0), acc_mva_std(size, 2.0), acc_rg_std(size, 1.0);
     acc_wel acc_sv_wel(1, 5.0), acc_mva_wel(size, 2.0), acc_rg_wel(size, 1.0);
 
@@ -268,10 +270,10 @@ TEST_F(SimplemcAccs, DoubleVarianceAccumulator) {
     merge_1_wel << merge_2_wel;
     ASSERT_EQ(merge_1_std.count(), merge_exp_std.count());
     ASSERT_EQ(merge_1_wel.count(), merge_exp_wel.count());
-    check_range_near(merge_1_std.mdata(), merge_exp_std.mdata(), 1e-10);
-    check_range_near(merge_1_std.vdata(), merge_exp_std.vdata(), 1e-10);
-    check_range_near(merge_1_wel.mdata(), merge_exp_wel.mdata(), 1e-10);
-    check_range_near(merge_1_wel.vdata(), merge_exp_wel.vdata(), 1e-10);
+    check_range_near(merge_1_std.mdata(), merge_exp_std.mdata(), tol_m);
+    check_range_near(merge_1_std.vdata(), merge_exp_std.vdata(), tol_m);
+    check_range_near(merge_1_wel.mdata(), merge_exp_wel.mdata(), tol_m);
+    check_range_near(merge_1_wel.vdata(), merge_exp_wel.vdata(), tol_m);
 }
 
 // Test variance accumulator for complex values.
@@ -281,6 +283,7 @@ TEST_F(SimplemcAccs, ComplexVarianceAccumulator) {
     using acc_wel = simplemc::var_acc<std::complex<double>, simplemc::accs::varalg::welford>;
     using storage_c = typename acc_std::cplx_array_type;
     double tol = 1e-2;
+    double tol_m = 1e-10;
     acc_std acc_sv_std(1, { 5.0, 1.0 }), acc_mva_std(size, { -3.2, -2.2 }), acc_rg_std(size, 10.0);
     acc_wel acc_sv_wel(1, { 5.0, 1.0 }), acc_mva_wel(size, { -3.2, -2.2 }), acc_rg_wel(size, 10.0);
 
@@ -369,12 +372,12 @@ TEST_F(SimplemcAccs, ComplexVarianceAccumulator) {
     merge_1_wel << merge_2_wel;
     ASSERT_EQ(merge_1_std.count(), merge_exp_std.count());
     ASSERT_EQ(merge_1_wel.count(), merge_exp_wel.count());
-    check_range_near(merge_1_std.mdata(), merge_exp_std.mdata(), 1e-10);
-    check_range_near(merge_1_std.rdata(), merge_exp_std.rdata(), 1e-10);
-    check_range_near(merge_1_std.idata(), merge_exp_std.idata(), 1e-10);
-    check_range_near(merge_1_std.cdata(), merge_exp_std.cdata(), 1e-10);
-    check_range_near(merge_1_wel.mdata(), merge_exp_wel.mdata(), 1e-10);
-    check_range_near(merge_1_wel.rdata(), merge_exp_wel.rdata(), 1e-10);
-    check_range_near(merge_1_wel.idata(), merge_exp_wel.idata(), 1e-10);
-    check_range_near(merge_1_wel.cdata(), merge_exp_wel.cdata(), 1e-10);
+    check_range_near(merge_1_std.mdata(), merge_exp_std.mdata(), tol_m);
+    check_range_near(merge_1_std.rdata(), merge_exp_std.rdata(), tol_m);
+    check_range_near(merge_1_std.idata(), merge_exp_std.idata(), tol_m);
+    check_range_near(merge_1_std.cdata(), merge_exp_std.cdata(), tol_m);
+    check_range_near(merge_1_wel.mdata(), merge_exp_wel.mdata(), tol_m);
+    check_range_near(merge_1_wel.rdata(), merge_exp_wel.rdata(), tol_m);
+    check_range_near(merge_1_wel.idata(), merge_exp_wel.idata(), tol_m);
+    check_range_near(merge_1_wel.cdata(), merge_exp_wel.cdata(), tol_m);
 }
