@@ -49,11 +49,11 @@ namespace simplemc {
  * Here, `idx` is either a scalar denoting the starting index or a range of indices of the same
  * size as the range of values.
  *
- * Results are always returned as Eigen::ArrayX or Eigen::ArrayXX objects. If e.g.
+ * Results are always returned as Eigen::VectorX or Eigen::MatrixX objects. If e.g.
  * the size of the accumulator is 1, then we still need to access the array:
  * @code{.cpp}
- * auto mean = acc.mean()[0];
- * auto stderr = acc.stderr()[0];
+ * auto mean = acc.mean()(0);
+ * auto variance = acc.variance()(0);
  * @endcode
  *
  * @tparam T Type of accumulated values (either double or std::complex<double>).

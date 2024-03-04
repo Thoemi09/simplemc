@@ -57,10 +57,10 @@ namespace simplemc {
  * Here, `idx` is either a scalar denoting the starting index or a range of indices of the same
  * size as the range of values.
  *
- * Results are always returned as Eigen::ArrayX or Eigen::ArrayXX objects. If e.g.
+ * Results are always returned as Eigen::VectorX or Eigen::MatrixX objects. If e.g.
  * the size of the accumulator is 1, then we still need to access the array:
  * @code{.cpp}
- * auto mean = acc.mean()[0];
+ * auto mean = acc.mean()(0);
  * @endcode
  *
  * @tparam T Type of accumulated values (either double or std::complex<double>).
@@ -85,9 +85,9 @@ public:
     using size_type = long;
 
     /**
-     * @brief Type for 1-dimensional arrays.
+     * @brief Vector type.
      */
-    using array_type = Eigen::ArrayX<value_type>;
+    using vec_type = Eigen::VectorX<value_type>;
 
     /**
      * @brief Get the algorithm.
@@ -100,7 +100,7 @@ private:
      * 
      * @param val Value to be added.
      * @param idx Index.
-     * @param count Count including the new value.
+     * @param count Already increased count.
      */
     void add_value(value_type val, size_type idx, count_type count) {
         if constexpr (varalg() == accs::varalg::standard) {
@@ -167,8 +167,8 @@ public:
      * @param shift A single constant shift applied to the accumulated values.
      */
     explicit mean_acc(size_type size = 1, value_type shift = 0.0) :
-        mdata_(array_type::Zero(size)),
-        shift_(array_type::Constant(size, shift)),
+        mdata_(vec_type::Zero(size)),
+        shift_(vec_type::Constant(size, shift)),
         count_(0),
         idx_(0) {
         if (size <= 0) {
@@ -183,8 +183,8 @@ public:
      *
      * @param shift Constant shift applied to the accumulated values.
      */
-    explicit mean_acc(array_type shift) :
-        mdata_(array_type::Zero(shift.size())),
+    explicit mean_acc(vec_type shift) :
+        mdata_(vec_type::Zero(shift.size())),
         shift_(std::move(shift)),
         count_(0),
         idx_(0) {
@@ -200,7 +200,7 @@ public:
      * @param shift Constant shift applied to the accumulated values.
      * @param count Number of accumulated values.
      */
-    mean_acc(array_type mdata, array_type shift, count_type count) :
+    mean_acc(vec_type mdata, vec_type shift, count_type count) :
         mdata_(std::move(mdata)),
         shift_(std::move(shift)),
         count_(count),
@@ -323,25 +323,25 @@ public:
      *
      * @return Constant shift vector applied to the accumulated values.
      */
-    [[nodiscard]] const array_type& shift() const { return shift_; }
+    [[nodiscard]] const vec_type& shift() const { return shift_; }
 
     /**
      * @brief Get accumulated data used for estimating the mean.
      *
      * @return Data storage (content depends on the algorithm).
      */
-    [[nodiscard]] const array_type& mdata() const { return mdata_; }
+    [[nodiscard]] const vec_type& mdata() const { return mdata_; }
 
     /**
      * @brief Calculate the sample mean from the accumulated data.
      *
      * @return Data storage with mean values.
      */
-    [[nodiscard]] array_type mean() const { return simplemc::accs::mean<value_type, varalg()>(mdata_, count_, shift_); }
+    [[nodiscard]] vec_type mean() const { return simplemc::accs::mean<value_type, varalg()>(mdata_, count_, shift_); }
 
 private:
-    array_type mdata_;
-    array_type shift_;
+    vec_type mdata_;
+    vec_type shift_;
     count_type count_;
     size_type idx_;
 };

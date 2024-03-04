@@ -11,6 +11,7 @@
 
 // accumulators
 #include <simplemc/accs/mean_acc.hpp>
+#include <simplemc/accs/covar_acc_double.hpp>
 #include <simplemc/accs/var_acc_double.hpp>
 #include <simplemc/accs/var_acc_complex.hpp>
 

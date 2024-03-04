@@ -46,9 +46,9 @@ public:
     using size_type = long;
 
     /**
-     * @brief Type for 1-dimensional arrays.
+     * @brief Vector type.
      */
-    using array_type = Eigen::ArrayX<value_type>;
+    using vec_type = Eigen::VectorX<value_type>;
 
     /**
      * @brief Get the algorithm.
@@ -61,7 +61,7 @@ private:
      *
      * @param val Value to be added.
      * @param idx Index.
-     * @param count Count including the new value.
+     * @param count Already increased count.
      */
     void add_value(value_type val, size_type idx, count_type count) {
         if constexpr (varalg() == accs::varalg::standard) {
@@ -132,9 +132,9 @@ public:
      * @param shift A single constant shift applied to the accumulated values.
      */
     explicit var_acc(size_type size = 1, value_type shift = 0.0) :
-        mdata_(array_type::Zero(size)),
-        vdata_(array_type::Zero(size)),
-        shift_(array_type::Constant(size, shift)),
+        mdata_(vec_type::Zero(size)),
+        vdata_(vec_type::Zero(size)),
+        shift_(vec_type::Constant(size, shift)),
         count_(0),
         idx_(0) {
         if (size <= 0) {
@@ -149,9 +149,9 @@ public:
      *
      * @param shift Constant shift applied to the accumulated values.
      */
-    explicit var_acc(array_type shift) :
-        mdata_(array_type::Zero(shift.size())),
-        vdata_(array_type::Zero(shift.size())),
+    explicit var_acc(vec_type shift) :
+        mdata_(vec_type::Zero(shift.size())),
+        vdata_(vec_type::Zero(shift.size())),
         shift_(std::move(shift)),
         count_(0),
         idx_(0) {
@@ -168,7 +168,7 @@ public:
      * @param shift Constant shift applied to the accumulated values.
      * @param count Number of accumulated values.
      */
-    var_acc(array_type mdata, array_type vdata, array_type shift, count_type count) :
+    var_acc(vec_type mdata, vec_type vdata, vec_type shift, count_type count) :
         mdata_(std::move(mdata)),
         vdata_(std::move(vdata)),
         shift_(std::move(shift)),
@@ -217,14 +217,15 @@ public:
     var_acc& operator<<(const var_acc& acc) {
         assert(size() == acc.size());
         if constexpr (varalg() == accs::varalg::standard) {
-            mdata_ += acc.mdata_ + acc.count_ * (acc.shift_ - shift_);
-            vdata_ +=
-                acc.vdata_ + 2.0 * (acc.shift_ - shift_) * acc.mdata_ + acc.count_ * (acc.shift_ - shift_).square();
+            const auto tmp = acc.shift_ - shift_;
+            mdata_ += acc.mdata_ + acc.count_ * tmp;
+            vdata_ += acc.vdata_ + 2.0 * tmp.cwiseProduct(acc.mdata_) + acc.count_ * tmp.cwiseProduct(tmp);
         } else {
             const auto n1 = static_cast<value_type>(count_);
             const auto n2 = static_cast<value_type>(acc.count_);
-            const auto m = mdata_ * n1 / (n1 + n2) + (acc.mdata_ + acc.shift_ - shift_) * n2 / (n1 + n2);
-            vdata_ += acc.vdata_ + n1 * (mdata_ - m).square() + n2 * (acc.shift_ - shift_ + acc.mdata_ - m).square();
+            const auto tmp = acc.shift_ - shift_ + acc.mdata_;
+            const auto m = mdata_ * n1 / (n1 + n2) + tmp * n2 / (n1 + n2);
+            vdata_ += acc.vdata_ + n1 * (mdata_ - m).cwiseProduct(mdata_ - m) + n2 * (tmp - m).cwiseProduct(tmp - m);
             mdata_ = m;
         }
         count_ += acc.count_;
@@ -296,35 +297,35 @@ public:
      *
      * @return Constant shift vector applied to accumulated values.
      */
-    [[nodiscard]] const array_type& shift() const { return shift_; }
+    [[nodiscard]] const vec_type& shift() const { return shift_; }
 
     /**
      * @brief Get accumulated data used for estimating the mean.
      *
      * @return Data storage (content depends on the algorithm).
      */
-    [[nodiscard]] const array_type& mdata() const { return mdata_; }
+    [[nodiscard]] const vec_type& mdata() const { return mdata_; }
 
     /**
      * @brief Get accumulated data used for estimating the variance.
      *
      * @return Data storage (content depends on the algorithm).
      */
-    [[nodiscard]] const array_type& vdata() const { return vdata_; }
+    [[nodiscard]] const vec_type& vdata() const { return vdata_; }
 
     /**
      * @brief Calculate the sample mean from the accumulated data.
      *
      * @return Data storage with mean values.
      */
-    [[nodiscard]] array_type mean() const { return simplemc::accs::mean<value_type, varalg()>(mdata_, count_, shift_); }
+    [[nodiscard]] vec_type mean() const { return simplemc::accs::mean<value_type, varalg()>(mdata_, count_, shift_); }
 
     /**
      * @brief Calculate the diagonal of the sample covariance matrix of the mean.
      *
      * @return Data storage with variances.
      */
-    [[nodiscard]] array_type variance() const {
+    [[nodiscard]] vec_type variance() const {
         return simplemc::accs::diag_covariance<varalg()>(mdata_, mdata_, vdata_, count_) /
             static_cast<value_type>(count_);
     }
@@ -334,14 +335,14 @@ public:
      *
      * @return Data storage with variances.
      */
-    [[nodiscard]] array_type variance_of_data() const {
+    [[nodiscard]] vec_type variance_of_data() const {
         return simplemc::accs::diag_covariance<varalg()>(mdata_, mdata_, vdata_, count_);
     }
 
 private:
-    array_type mdata_;
-    array_type vdata_;
-    array_type shift_;
+    vec_type mdata_;
+    vec_type vdata_;
+    vec_type shift_;
     count_type count_;
     size_type idx_;
 };

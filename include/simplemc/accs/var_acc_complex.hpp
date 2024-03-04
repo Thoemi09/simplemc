@@ -51,14 +51,14 @@ public:
     using size_type = long;
 
     /**
-     * @brief Type used for 1-dimensional complex arrays.
+     * @brief Complex vector type.
      */
-    using cplx_array_type = Eigen::ArrayX<value_type>;
+    using cplx_vec_type = Eigen::VectorX<value_type>;
 
     /**
-     * @brief Type used for 1-dimensional double arrays.
+     * @brief Double vector type.
      */
-    using dbl_array_type = Eigen::ArrayX<double>;
+    using dbl_vec_type = Eigen::VectorX<double>;
 
     /**
      * @brief Get the algorithm.
@@ -71,7 +71,7 @@ private:
      *
      * @param val Value to be added.
      * @param idx Index.
-     * @param count Count including the new value.
+     * @param count Already increased count.
      */
     void add_value(value_type val, size_type idx, count_type count) {
         if constexpr (varalg() == accs::varalg::standard) {
@@ -147,11 +147,11 @@ public:
      * @param shift A single constant shift applied to the accumulated values.
      */
     explicit var_acc(size_type size = 1, value_type shift = 0.0) :
-        mdata_(cplx_array_type::Zero(size)),
-        rdata_(dbl_array_type::Zero(size)),
-        idata_(dbl_array_type::Zero(size)),
-        cdata_(dbl_array_type::Zero(size)),
-        shift_(cplx_array_type::Constant(size, shift)),
+        mdata_(cplx_vec_type::Zero(size)),
+        rdata_(dbl_vec_type::Zero(size)),
+        idata_(dbl_vec_type::Zero(size)),
+        cdata_(dbl_vec_type::Zero(size)),
+        shift_(cplx_vec_type::Constant(size, shift)),
         count_(0),
         idx_(0) {
         if (size <= 0) {
@@ -166,11 +166,11 @@ public:
      *
      * @param shift Constant shift applied to the accumulated values.
      */
-    explicit var_acc(cplx_array_type shift) :
-        mdata_(cplx_array_type::Zero(shift.size())),
-        rdata_(dbl_array_type::Zero(shift.size())),
-        idata_(dbl_array_type::Zero(shift.size())),
-        cdata_(dbl_array_type::Zero(shift.size())),
+    explicit var_acc(cplx_vec_type shift) :
+        mdata_(cplx_vec_type::Zero(shift.size())),
+        rdata_(dbl_vec_type::Zero(shift.size())),
+        idata_(dbl_vec_type::Zero(shift.size())),
+        cdata_(dbl_vec_type::Zero(shift.size())),
         shift_(std::move(shift)),
         count_(0),
         idx_(0) {
@@ -189,8 +189,8 @@ public:
      * @param shift Constant shift applied to the accumulated values.
      * @param count Number of accumulated values.
      */
-    var_acc(cplx_array_type mdata, dbl_array_type rdata, dbl_array_type idata, dbl_array_type cdata,
-        cplx_array_type shift, count_type count) :
+    var_acc(cplx_vec_type mdata, dbl_vec_type rdata, dbl_vec_type idata, dbl_vec_type cdata, cplx_vec_type shift,
+        count_type count) :
         mdata_(std::move(mdata)),
         rdata_(std::move(rdata)),
         idata_(std::move(idata)),
@@ -242,24 +242,25 @@ public:
     var_acc& operator<<(const var_acc& acc) {
         assert(size() == acc.size());
         if constexpr (varalg() == accs::varalg::standard) {
-            mdata_ += acc.mdata_ + acc.count_ * (acc.shift_ - shift_);
-            rdata_ += acc.rdata_ + 2.0 * (acc.shift_ - shift_).real() * acc.mdata_.real() +
-                acc.count_ * (acc.shift_ - shift_).real().square();
-            idata_ += acc.idata_ + 2.0 * (acc.shift_ - shift_).imag() * acc.mdata_.imag() +
-                acc.count_ * (acc.shift_ - shift_).imag().square();
-            cdata_ += acc.cdata_ + (acc.shift_.imag() - shift_.imag()) * acc.mdata_.real() +
-                (acc.shift_.real() - shift_.real()) * acc.mdata_.imag() +
-                acc.count_ * (acc.shift_.real() - shift_.real()) * (acc.shift_.imag() - shift_.imag());
+            const auto tmp = acc.shift_ - shift_;
+            mdata_ += acc.mdata_ + acc.count_ * tmp;
+            rdata_ += acc.rdata_ + 2.0 * tmp.real().cwiseProduct(acc.mdata_.real()) +
+                acc.count_ * tmp.real().cwiseProduct(tmp.real());
+            idata_ += acc.idata_ + 2.0 * tmp.imag().cwiseProduct(acc.mdata_.imag()) +
+                acc.count_ * tmp.imag().cwiseProduct(tmp.imag());
+            cdata_ += acc.cdata_ + tmp.imag().cwiseProduct(acc.mdata_.real()) +
+                tmp.real().cwiseProduct(acc.mdata_.imag()) + acc.count_ * tmp.real().cwiseProduct(tmp.imag());
         } else {
             const auto n1 = static_cast<double>(count_);
             const auto n2 = static_cast<double>(acc.count_);
-            const auto m = mdata_ * n1 / (n1 + n2) + (acc.mdata_ + acc.shift_ - shift_) * n2 / (n1 + n2);
-            rdata_ += acc.rdata_ + n1 * (mdata_ - m).real().square() +
-                n2 * (acc.shift_ - shift_ + acc.mdata_ - m).real().square();
-            idata_ += acc.idata_ + n1 * (mdata_ - m).imag().square() +
-                n2 * (acc.shift_ - shift_ + acc.mdata_ - m).imag().square();
-            cdata_ += acc.cdata_ + n1 * (mdata_ - m).real() * (mdata_ - m).imag() +
-                n2 * (acc.shift_ - shift_ + acc.mdata_ - m).real() * (acc.shift_ - shift_ + acc.mdata_ - m).imag();
+            const auto tmp = acc.shift_ - shift_ + acc.mdata_;
+            const auto m = mdata_ * n1 / (n1 + n2) + tmp * n2 / (n1 + n2);
+            rdata_ += acc.rdata_ + n1 * (mdata_ - m).real().cwiseProduct((mdata_ - m).real()) +
+                n2 * (tmp - m).real().cwiseProduct((tmp - m).real());
+            idata_ += acc.idata_ + n1 * (mdata_ - m).imag().cwiseProduct((mdata_ - m).imag()) +
+                n2 * (tmp - m).imag().cwiseProduct((tmp - m).imag());
+            cdata_ += acc.cdata_ + n1 * (mdata_ - m).real().cwiseProduct((mdata_ - m).imag()) +
+                n2 * (tmp - m).real().cwiseProduct((tmp - m).imag());
             mdata_ = m;
         }
         count_ += acc.count_;
@@ -331,42 +332,42 @@ public:
      *
      * @return Constant shift applied to accumulated values.
      */
-    [[nodiscard]] const cplx_array_type& shift() const { return shift_; }
+    [[nodiscard]] const cplx_vec_type& shift() const { return shift_; }
 
     /**
      * @brief Get accumulated data used for estimating the mean.
      *
      * @return Data storage (content depends on the algorithm).
      */
-    [[nodiscard]] const cplx_array_type& mdata() const { return mdata_; }
+    [[nodiscard]] const cplx_vec_type& mdata() const { return mdata_; }
 
     /**
      * @brief Get accumulated data used for estimating the variance of the real part.
      *
      * @return Data storage (content depends on the algorithm).
      */
-    [[nodiscard]] const dbl_array_type& rdata() const { return rdata_; }
+    [[nodiscard]] const dbl_vec_type& rdata() const { return rdata_; }
 
     /**
      * @brief Get accumulated data used for estimating the variance of the imaginary part.
      *
      * @return Data storage (content depends on the algorithm).
      */
-    [[nodiscard]] const dbl_array_type& idata() const { return idata_; }
+    [[nodiscard]] const dbl_vec_type& idata() const { return idata_; }
 
     /**
      * @brief Get accumulated data used for estimating the covariance between the real and imaginary parts.
      *
      * @return Data storage (content depends on the algorithm).
      */
-    [[nodiscard]] const dbl_array_type& cdata() const { return cdata_; }
+    [[nodiscard]] const dbl_vec_type& cdata() const { return cdata_; }
 
     /**
      * @brief Calculate the sample mean from the accumulated data.
      *
      * @return Data storage with mean values.
      */
-    [[nodiscard]] cplx_array_type mean() const {
+    [[nodiscard]] cplx_vec_type mean() const {
         return simplemc::accs::mean<value_type, varalg()>(mdata_, count_, shift_);
     }
 
@@ -375,7 +376,7 @@ public:
      *
      * @return Data storage with variances.
      */
-    [[nodiscard]] cplx_array_type variance() const {
+    [[nodiscard]] dbl_vec_type variance() const {
         return (variance_of_real_data() + variance_of_imag_data()) / static_cast<value_type>(count_);
     }
 
@@ -384,14 +385,14 @@ public:
      *
      * @return Data storage with variances.
      */
-    [[nodiscard]] dbl_array_type variance_of_data() const { return variance_of_real_data() + variance_of_imag_data(); }
+    [[nodiscard]] dbl_vec_type variance_of_data() const { return variance_of_real_data() + variance_of_imag_data(); }
 
     /**
      * @brief Calculate the diagonal of the sample covariance matrix of the real part of the accumulated data.
      *
      * @return Data storage with variances.
      */
-    [[nodiscard]] dbl_array_type variance_of_real_data() const {
+    [[nodiscard]] dbl_vec_type variance_of_real_data() const {
         return simplemc::accs::diag_covariance<varalg()>(mdata_.real(), mdata_.real(), rdata_, count_);
     }
 
@@ -400,7 +401,7 @@ public:
      *
      * @return Data storage with variances.
      */
-    [[nodiscard]] dbl_array_type variance_of_imag_data() const {
+    [[nodiscard]] dbl_vec_type variance_of_imag_data() const {
         return simplemc::accs::diag_covariance<varalg()>(mdata_.imag(), mdata_.imag(), idata_, count_);
     }
 
@@ -410,16 +411,16 @@ public:
      *
      * @return Data storage with covariances.
      */
-    [[nodiscard]] dbl_array_type covariance_of_real_and_imag_data() const {
+    [[nodiscard]] dbl_vec_type covariance_of_real_and_imag_data() const {
         return simplemc::accs::diag_covariance<varalg()>(mdata_.real(), mdata_.imag(), cdata_, count_);
     }
 
 private:
-    cplx_array_type mdata_;
-    dbl_array_type rdata_;
-    dbl_array_type idata_;
-    dbl_array_type cdata_;
-    cplx_array_type shift_;
+    cplx_vec_type mdata_;
+    dbl_vec_type rdata_;
+    dbl_vec_type idata_;
+    dbl_vec_type cdata_;
+    cplx_vec_type shift_;
     count_type count_;
     size_type idx_;
 };
