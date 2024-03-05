@@ -21,7 +21,7 @@
 namespace simplemc {
 
 /**
- * @brief Mean accumulator for calculating sample means.
+ * @brief Mean accumulator for calculating the sample mean of a random vector.
  *
  * @details No error estimation is available.
  *
@@ -58,7 +58,7 @@ namespace simplemc {
  * size as the range of values.
  *
  * Results are always returned as Eigen::VectorX or Eigen::MatrixX objects. If e.g.
- * the size of the accumulator is 1, then we still need to access the array:
+ * the size of the accumulator is 1, then we still need to access the vector/matrix:
  * @code{.cpp}
  * auto mean = acc.mean()(0);
  * @endcode
@@ -97,12 +97,13 @@ public:
 private:
     /**
      * @brief Add a single value to the accumulator without increasing the count.
-     * 
+     *
      * @param val Value to be added.
      * @param idx Index.
      * @param count Already increased count.
      */
     void add_value(value_type val, size_type idx, count_type count) {
+        assert(idx >= 0 && idx < size());
         if constexpr (varalg() == accs::varalg::standard) {
             mdata_(idx) += (val - shift_(idx));
         } else {
@@ -133,7 +134,6 @@ private:
          * @return Reference to this object.
          */
         mean_mva& operator[](size_type idx) {
-            assert(idx >= 0 && idx < acc_.size());
             idx_ = idx;
             return *this;
         }
@@ -220,7 +220,6 @@ public:
      * @return Reference to this object.
      */
     mean_acc& operator[](size_type idx) {
-        assert(idx >= 0 && idx < size());
         idx_ = idx;
         return *this;
     }
@@ -269,7 +268,6 @@ public:
      */
     template <ranges::input_range R>
     void accumulate(R&& rg, size_type idx = 0) { // NOLINT (ranges need not be forwarded)
-        assert(idx >= 0 && idx < size());
         ++count_;
         for (auto val : rg) {
             add_value(val, idx, count_);
@@ -335,7 +333,7 @@ public:
     /**
      * @brief Calculate the sample mean from the accumulated data.
      *
-     * @return Data storage with mean values.
+     * @return Sample mean.
      */
     [[nodiscard]] vec_type mean() const { return simplemc::accs::mean<value_type, varalg()>(mdata_, count_, shift_); }
 

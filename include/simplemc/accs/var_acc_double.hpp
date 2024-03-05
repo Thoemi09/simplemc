@@ -1,6 +1,6 @@
 /**
  * @file var_acc_double.hpp
- * @brief Variance accumulator for calculating sample means and variances for double values.
+ * @brief Variance accumulator for double values.
  */
 
 #ifndef SIMPLEMC_ACCS_VAR_ACC_DOUBLE_HPP
@@ -64,6 +64,7 @@ private:
      * @param count Already increased count.
      */
     void add_value(value_type val, size_type idx, count_type count) {
+        assert(idx >= 0 && idx < size());
         if constexpr (varalg() == accs::varalg::standard) {
             const auto tmp = val - shift_(idx);
             mdata_(idx) += tmp;
@@ -189,7 +190,6 @@ public:
      * @return Reference to this object.
      */
     var_acc& operator[](size_type idx) {
-        assert(idx >= 0 && idx < size());
         idx_ = idx;
         return *this;
     }
@@ -243,7 +243,6 @@ public:
      */
     template <ranges::input_range R>
     void accumulate(R&& rg, size_type idx = 0) { // NOLINT (ranges need not be forwarded)
-        assert(idx >= 0 && idx < size());
         ++count_;
         for (auto val : rg) {
             add_value(val, idx, count_);
@@ -316,14 +315,14 @@ public:
     /**
      * @brief Calculate the sample mean from the accumulated data.
      *
-     * @return Data storage with mean values.
+     * @return Sample mean.
      */
     [[nodiscard]] vec_type mean() const { return simplemc::accs::mean<value_type, varalg()>(mdata_, count_, shift_); }
 
     /**
-     * @brief Calculate the diagonal of the sample covariance matrix of the mean.
+     * @brief Calculate the sample variance of the mean.
      *
-     * @return Data storage with variances.
+     * @return Diagonal of the sample covariance matrix of the mean.
      */
     [[nodiscard]] vec_type variance() const {
         return simplemc::accs::diag_covariance<varalg()>(mdata_, mdata_, vdata_, count_) /
@@ -331,9 +330,9 @@ public:
     }
 
     /**
-     * @brief Calculate the diagonal of the sample covariance matrix of the accumulated data.
+     * @brief Calculate the sample variance of the accumulated data.
      *
-     * @return Data storage with variances.
+     * @return Diagonal of the sample covariance matrix of the accumulated data.
      */
     [[nodiscard]] vec_type variance_of_data() const {
         return simplemc::accs::diag_covariance<varalg()>(mdata_, mdata_, vdata_, count_);

@@ -1,6 +1,6 @@
 /**
  * @file var_acc_complex.hpp
- * @brief Variance accumulator for calculating arithmetic means and variances for complex values.
+ * @brief Variance accumulator for complex values.
  */
 
 #ifndef SIMPLEMC_ACCS_VAR_ACC_COMPLEX_HPP
@@ -28,7 +28,8 @@ namespace simplemc {
  * @details The variance of a complex random variable is determined by the variance of its real and
  * imaginary parts as well as their covariance (see https://en.wikipedia.org/wiki/Complex_random_vector).
  * Note that in the following we only talk about the covariance of the real and imaginary part of a
- * single random complex variable, not the full covariance matrix of a complex random vector.
+ * single random complex variable, not the full covariance matrix of a complex random vector. For
+ * calulating the full covariance matrix, please use simplemc::covar_acc.
  *
  * @tparam A Algorithm (either standard or Welford).
  */
@@ -74,6 +75,7 @@ private:
      * @param count Already increased count.
      */
     void add_value(value_type val, size_type idx, count_type count) {
+        assert(idx >= 0 && idx < size());
         if constexpr (varalg() == accs::varalg::standard) {
             const auto tmp = val - shift_(idx);
             mdata_(idx) += tmp;
@@ -113,7 +115,6 @@ private:
          * @return Reference to this object.
          */
         var_mva& operator[](size_type idx) {
-            assert(idx >= 0 && idx < acc_.size());
             idx_ = idx;
             return *this;
         }
@@ -183,9 +184,9 @@ public:
      * @brief Construct a variance accumulator with given data storages, a constant shift and a count.
      *
      * @param mdata Accumulated mean data.
-     * @param rdata Accumulated real variance data.
-     * @param idata Accumulated imaginary variance data.
-     * @param cdata Accumulated covariance data.
+     * @param rdata Accumulated variance data of the real part.
+     * @param idata Accumulated variance data of the imaginary part.
+     * @param cdata Accumulated covariance data between the real and imaginary part.
      * @param shift Constant shift applied to the accumulated values.
      * @param count Number of accumulated values.
      */
@@ -214,7 +215,6 @@ public:
      * @return Reference to this object.
      */
     var_acc& operator[](size_type idx) {
-        assert(idx >= 0 && idx < size());
         idx_ = idx;
         return *this;
     }
@@ -278,7 +278,6 @@ public:
      */
     template <ranges::input_range R>
     void accumulate(R&& rg, size_type idx = 0) { // NOLINT (ranges need not be forwarded)
-        assert(idx >= 0 && idx < size());
         ++count_;
         for (auto val : rg) {
             add_value(val, idx, count_);
@@ -356,7 +355,7 @@ public:
     [[nodiscard]] const dbl_vec_type& idata() const { return idata_; }
 
     /**
-     * @brief Get accumulated data used for estimating the covariance between the real and imaginary parts.
+     * @brief Get accumulated data used for estimating the cross-covariance between the real and imaginary parts.
      *
      * @return Data storage (content depends on the algorithm).
      */
@@ -365,51 +364,51 @@ public:
     /**
      * @brief Calculate the sample mean from the accumulated data.
      *
-     * @return Data storage with mean values.
+     * @return Sample mean.
      */
     [[nodiscard]] cplx_vec_type mean() const {
         return simplemc::accs::mean<value_type, varalg()>(mdata_, count_, shift_);
     }
 
     /**
-     * @brief Calculate the diagonal of the sample covariance matrix of the mean.
+     * @brief Calculate the sample variance of the mean.
      *
-     * @return Data storage with variances.
+     * @return Diagonal of the sample covariance matrix of the mean.
      */
     [[nodiscard]] dbl_vec_type variance() const {
         return (variance_of_real_data() + variance_of_imag_data()) / static_cast<value_type>(count_);
     }
 
     /**
-     * @brief Calculate the diagonal of the sample covariance matrix of the accumulated data.
+     * @brief Calculate the sample variance of the accumulated data.
      *
-     * @return Data storage with variances.
+     * @return Diagonal of the sample covariance matrix of the accumulated data.
      */
     [[nodiscard]] dbl_vec_type variance_of_data() const { return variance_of_real_data() + variance_of_imag_data(); }
 
     /**
-     * @brief Calculate the diagonal of the sample covariance matrix of the real part of the accumulated data.
+     * @brief Calculate the sample variance of the real part of the accumulated data.
      *
-     * @return Data storage with variances.
+     * @return Diagonal of the sample covariance matrix of the real part of the accumulated data.
      */
     [[nodiscard]] dbl_vec_type variance_of_real_data() const {
         return simplemc::accs::diag_covariance<varalg()>(mdata_.real(), mdata_.real(), rdata_, count_);
     }
 
     /**
-     * @brief Calculate the diagonal of the sample covariance matrix of the real part of the accumulated data.
+     * @brief Calculate the sample variance of the imaginary part of the accumulated data.
      *
-     * @return Data storage with variances.
+     * @return Diagonal of the sample covariance matrix of the imaginary part of the accumulated data.
      */
     [[nodiscard]] dbl_vec_type variance_of_imag_data() const {
         return simplemc::accs::diag_covariance<varalg()>(mdata_.imag(), mdata_.imag(), idata_, count_);
     }
 
     /**
-     * @brief Calculate the diagonal of the sample covariance matrix between the real and imaginary part of the
-     * accumulated data.
+     * @brief Calculate the sample covariance between the real and imaginary part of the accumulated data.
      *
-     * @return Data storage with covariances.
+     * @return Diagonal of the sample cross-covariance matrix between the real and imaginary part of the accumulated
+     * data.
      */
     [[nodiscard]] dbl_vec_type covariance_of_real_and_imag_data() const {
         return simplemc::accs::diag_covariance<varalg()>(mdata_.real(), mdata_.imag(), cdata_, count_);

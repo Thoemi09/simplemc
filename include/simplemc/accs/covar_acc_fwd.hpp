@@ -12,7 +12,7 @@
 namespace simplemc {
 
 /**
- * @brief Covariance accumulator for calculating sample means and covariances.
+ * @brief Covariance accumulator for calculating the sample mean and covariance matrix of a random vector.
  *
  * @details Naive estimation of the covariance matrix is available. It does not account for
  * any correlation between the samples.
@@ -43,7 +43,7 @@ namespace simplemc {
  * size as the range of values.
  *
  * Results are always returned as Eigen::VectorX or Eigen::MatrixX objects. If e.g.
- * the size of the accumulator is 1, then we still need to access the array:
+ * the size of the accumulator is 1, then we still need to access the vector/matrix:
  * @code{.cpp}
  * auto mean = acc.mean()(0);
  * auto covariance = acc.covariance()(0,0);

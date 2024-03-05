@@ -63,7 +63,7 @@ Eigen::MatrixX<T> make_nans(long rows, long cols) {
  * @details We have to correct for the constant shift vector.
  *
  * @tparam T Type of accumulated values (either double or std::complex<double>).
- * @tparam A Algorithm used to calculate the mean.
+ * @tparam A Algorithm used to accumulate the data.
  * @param mdata Accumulated mean data.
  * @param count Number of accumulated values.
  * @param shift Constant shift vector applied to the accumulated values.
@@ -83,15 +83,16 @@ Eigen::VectorX<T> mean(const Eigen::VectorX<T>& mdata, std::uint64_t count, cons
 }
 
 /**
- * @brief Calculate the diagonal elements of the sample covariance or cross-covariance matrix of
- * two random vectors.
+ * @brief Calculate the diagonal elements of the sample (cross-)covariance of two random vectors.
  *
- * @tparam A Algorithm used to calculate the variance.
- * @param mdata1 Accumulated mean data #1.
- * @param mdata2 Accumulated mean data #2.
- * @param cdata Accumulated covariance/cross-covariance data.
+ * @details If the random vectors are the same, then the diagonal of the sample covariance matrix is calculated.
+ *
+ * @tparam A Algorithm used to accumulate the data.
+ * @param mdata1 Accumulated mean data of random vector #1.
+ * @param mdata2 Accumulated mean data of random vector #2.
+ * @param cdata Accumulated (cross-)covariance data.
  * @param count Number of accumulated values.
- * @return Diagonal of the sample covariance or cross-covariance matrix.
+ * @return Diagonal of the sample (cross-)covariance matrix.
  */
 template <varalg A = varalg::standard>
 Eigen::VectorX<double> diag_covariance([[maybe_unused]] const Eigen::VectorX<double>& mdata1,
@@ -110,14 +111,14 @@ Eigen::VectorX<double> diag_covariance([[maybe_unused]] const Eigen::VectorX<dou
 }
 
 /**
- * @brief Calculate the full sample covariance or cross-covariance matrix of two random vectors.
+ * @brief Calculate the full sample (cross-)covariance matrix of two random vectors.
  *
- * @tparam A Algorithm used to calculate the variance.
- * @param mdata1 Accumulated mean data #1.
- * @param mdata2 Accumulated mean data #2.
- * @param cdata Accumulated covariance/cross-covariance data.
+ * @tparam A Algorithm used to accumulate the data.
+ * @param mdata1 Accumulated mean data of random vector #1.
+ * @param mdata2 Accumulated mean data of random vector #2.
+ * @param cdata Accumulated (cross-)covariance data.
  * @param count Number of accumulated values.
- * @return Sample covariance or cross-covariance matrix.
+ * @return Sample (cross-)covariance matrix.
  */
 template <varalg A = varalg::standard>
 Eigen::MatrixX<double> covariance([[maybe_unused]] const Eigen::VectorX<double>& mdata1,

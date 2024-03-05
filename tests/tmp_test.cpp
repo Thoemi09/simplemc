@@ -7,10 +7,11 @@
 #include <fmt/ranges.h>
 #include <range/v3/all.hpp>
 
-#include <algorithm>
-#include <vector>
-
 int main() {
-    std::vector<int> v{ 1, 2, 1, 4, 5 };
-    std::cout << std::ranges::is_sorted(v) << std::endl;
+    Eigen::MatrixXd m(2, 2);
+    m << 1, 2, 3, 4;
+    std::cout << m << std::endl;
+    Eigen::MatrixXd t = m.triangularView<Eigen::Lower>();
+    Eigen::MatrixXd t2 = (m + m).triangularView<Eigen::Lower>();
+    std::cout << t2 << std::endl;
 }
