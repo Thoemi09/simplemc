@@ -34,18 +34,25 @@ protected:
         auto s2_d = state_d { 0.0, 1.0, 0.0 };
         auto s3_d = state_d { 0.0, 0.0, 1.0 };
         auto probs_d = std::vector<double> { 1.0, 1.0, 1.0 };
+        Eigen::MatrixXd mcmc_props_d(3, 3);
+        mcmc_props_d << 2, 3, 6, 1, 7, 4, 9, 9, 10;
         sp_d.set_states(std::vector<state_d> { s1_d, s2_d, s3_d });
         sp_d.set_weights(probs_d);
-        sp_d.run(steps);
+        sp_d.set_mcmc_proposal(mcmc_props_d);
+        sp_d.mcmc_warmup(steps);
+        sp_d.mcmc_run(steps);
 
         auto s1_c = state_c { 1.0 - 0.5i, 0.0 + 0.0i, 0.0 + 0.0i };
         auto s2_c = state_c { 0.0 + 0.0i, -0.3 + 0.8i, 0.0 + 0.0i };
         auto s3_c = state_c { 0.0 + 0.0i, 0.0 + 0.0i, 0.9 + 3.4i };
         auto probs_c = std::vector<double> { 1.0, 3.4, 0.6 };
-        ;
+        Eigen::MatrixXd mcmc_props_c(3, 3);
+        mcmc_props_d << 10, 3, 9, 8, 1, 2, 4, 4, 7;
         sp_c.set_states(std::vector<state_c> { s1_c, s2_c, s3_c });
         sp_c.set_weights(probs_c);
-        sp_c.run(steps);
+        sp_c.set_mcmc_proposal(mcmc_props_c);
+        sp_c.mcmc_warmup(steps);
+        sp_c.mcmc_run(steps);
     }
 
     proc_d sp_d;
@@ -118,7 +125,7 @@ TEST_F(SimplemcAccs, MeanAccumulator) {
     using acc_c = simplemc::mean_acc<std::complex<double>, simplemc::accs::varalg::welford>;
     using storage_d = typename acc_d::vec_type;
     using storage_c = typename acc_c::vec_type;
-    double tol = 1e-2;
+    double tol = 1e-10;
     double tol_m = 1e-10;
     acc_d acc_sv_d(1, 5.0), acc_mva_d(size, 2.0), acc_rg_d(size, 1.0);
     acc_c acc_sv_c(1, { 5.0, 1.0 }), acc_mva_c(size, { -3.2, -2.2 }), acc_rg_c(size, 10.0);
@@ -198,7 +205,7 @@ TEST_F(SimplemcAccs, DoubleVarianceAccumulator) {
     using acc_std = simplemc::var_acc<double, simplemc::accs::varalg::standard>;
     using acc_wel = simplemc::var_acc<double, simplemc::accs::varalg::welford>;
     using storage_d = typename acc_std::vec_type;
-    double tol = 1e-2;
+    double tol = 1e-10;
     double tol_m = 1e-10;
     acc_std acc_sv_std(1, 5.0), acc_mva_std(size, 2.0), acc_rg_std(size, 1.0);
     acc_wel acc_sv_wel(1, 5.0), acc_mva_wel(size, 2.0), acc_rg_wel(size, 1.0);
@@ -286,7 +293,7 @@ TEST_F(SimplemcAccs, ComplexVarianceAccumulator) {
     using acc_std = simplemc::var_acc<std::complex<double>, simplemc::accs::varalg::standard>;
     using acc_wel = simplemc::var_acc<std::complex<double>, simplemc::accs::varalg::welford>;
     using storage_c = typename acc_std::cplx_vec_type;
-    double tol = 1e-2;
+    double tol = 1e-10;
     double tol_m = 1e-10;
     acc_std acc_sv_std(1, { 5.0, 1.0 }), acc_mva_std(size, { -3.2, -2.2 }), acc_rg_std(size, 10.0);
     acc_wel acc_sv_wel(1, { 5.0, 1.0 }), acc_mva_wel(size, { -3.2, -2.2 }), acc_rg_wel(size, 10.0);
@@ -393,7 +400,7 @@ TEST_F(SimplemcAccs, DoubleCovarianceAccumulator) {
     using acc_std = simplemc::covar_acc<double, simplemc::accs::varalg::standard>;
     using acc_wel = simplemc::covar_acc<double, simplemc::accs::varalg::welford>;
     using storage_d = typename acc_std::vec_type;
-    double tol = 1e-2;
+    double tol = 1e-10;
     double tol_m = 1e-10;
     acc_std acc_sv_std(1, 5.0), acc_rg_std(size, 1.0);
     acc_wel acc_sv_wel(1, 5.0), acc_rg_wel(size, 1.0);
@@ -476,7 +483,7 @@ TEST_F(SimplemcAccs, ComplexCovarianceAccumulator) {
     using acc_std = simplemc::covar_acc<std::complex<double>, simplemc::accs::varalg::standard>;
     using acc_wel = simplemc::covar_acc<std::complex<double>, simplemc::accs::varalg::welford>;
     using storage_c = typename acc_std::cplx_vec_type;
-    double tol = 1e-2;
+    double tol = 1e-10;
     double tol_m = 1e-10;
     acc_std acc_sv_std(1, { 5.0, 1.0 }), acc_rg_std(size, 10.0);
     acc_wel acc_sv_wel(1, { 5.0, 1.0 }), acc_rg_wel(size, 10.0);
@@ -569,3 +576,42 @@ TEST_F(SimplemcAccs, ComplexCovarianceAccumulator) {
     check_range_near(simplemc::make_span(merge_1_wel.idata()), simplemc::make_span(merge_exp_wel.idata()), tol_m);
     check_range_near(simplemc::make_span(merge_1_wel.cdata()), simplemc::make_span(merge_exp_wel.cdata()), tol_m);
 }
+
+// // Test block accumulator.
+// TEST_F(SimplemcAccs, BlockAccumulator) {
+//     // general set up
+//     using acc_d = simplemc::block_acc<simplemc::var_acc<double>>;
+//     double tol = 1e-10;
+//     double tol_m = 1e-10;
+//     int bs_sv = 1;
+//     int bs_mva = 100;
+//     int bs_rg = 5000;
+//     acc_d acc_sv_d(1, 5.0), acc_mva_d(size, 2.0, bs_mva), acc_rg_d(size, 1.0, bs_rg);
+
+//     // fill accumulators
+//     fill_accs(acc_sv_d, acc_mva_d, acc_rg_d, sp_d.samples);
+
+//     // check size of filled accumulators
+//     ASSERT_EQ(acc_sv_d.count(), sp_d.total_count / bs_sv);
+//     ASSERT_EQ(acc_mva_d.count(), sp_d.total_count / bs_mva);
+//     ASSERT_EQ(acc_rg_d.count(), sp_d.total_count / bs_rg);
+
+//     // check mean
+//     auto bsp_d = block_samples(sp_d, 100);
+//     const auto m_d = sample_mean(sp_d);
+//     check_near(acc_sv_std.mean()[0], m_d[0], tol);
+//     check_range_near(acc_mva_std.mean(), m_d, tol);
+//     check_range_near(acc_rg_std.mean(), m_d, tol);
+//     check_near(acc_sv_wel.mean()[0], m_d[0], tol);
+//     check_range_near(acc_mva_wel.mean(), m_d, tol);
+//     check_range_near(acc_rg_wel.mean(), m_d, tol);
+
+//     // check stderror/variance
+//     const auto v_d = sample_variance(sp_d);
+//     check_near(acc_sv_std.variance_of_data()[0], v_d[0], tol);
+//     check_range_near(acc_mva_std.variance_of_data(), v_d, tol);
+//     check_range_near(acc_rg_std.variance_of_data(), v_d, tol);
+//     check_near(acc_sv_wel.variance_of_data()[0], v_d[0], tol);
+//     check_range_near(acc_mva_wel.variance_of_data(), v_d, tol);
+//     check_range_near(acc_rg_wel.variance_of_data(), v_d, tol);
+// }

@@ -184,6 +184,16 @@ public:
     }
 
     /**
+     * @brief Reset the accumulator to its initial state, i.e. no accumulated values.
+     */
+    void reset() {
+        mdata_.setZero();
+        vdata_.setZero();
+        count_ = 0;
+        idx_ = 0;
+    }
+
+    /**
      * @brief Subscript operator sets the index and returns a reference to this object.
      *
      * @param idx Index.

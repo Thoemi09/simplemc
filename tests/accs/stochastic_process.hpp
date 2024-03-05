@@ -9,6 +9,7 @@
 #include <simplemc/numeric/eigen.hpp>
 #include <simplemc/utils/concepts.hpp>
 
+#include <fmt/ranges.h>
 #include <range/v3/all.hpp>
 
 #include <complex>
@@ -51,11 +52,19 @@ struct stochastic_process {
         counts(states.size(), 0),
         dist(w.begin(), w.end()),
         probs(dist.probabilities()) {}
-    
+
     // Set weights.
     void set_weights(const std::vector<double>& w) {
         dist = dist_type(w.begin(), w.end());
         probs = dist.probabilities();
+    }
+
+    // Set MCMC proposal probabilities.
+    void set_mcmc_proposal(const Eigen::MatrixXd& p) {
+        mcmc_dists.clear();
+        for (int i = 0; i < p.cols(); ++i) {
+            mcmc_dists.emplace_back(p.col(i).begin(), p.col(i).end());
+        }
     }
 
     // Set states space.
@@ -75,6 +84,34 @@ struct stochastic_process {
         }
     }
 
+    // Make a single MCMC step.
+    void mcmc_step() {
+        auto new_state = mcmc_dists[current](eng);
+        double ratio = (probs[new_state] * mcmc_dists[new_state].probabilities()[current]) /
+            (probs[current] * mcmc_dists[current].probabilities()[new_state]);
+        if (uni01(eng) < ratio) {
+            current = new_state;
+        }
+    }
+
+    // Warm up the Markov chain.
+    void mcmc_warmup(int steps) {
+        for (int i = 0; i < steps; ++i) {
+            mcmc_step();
+        }
+    }
+
+    // Run an MCMC for a given number of steps.
+    void mcmc_run(int steps) {
+        samples.resize(steps);
+        for (int i = 0; i < steps; ++i) {
+            mcmc_step();
+            ++counts[current];
+            ++total_count;
+            samples[i] = states[current];
+        }
+    }
+
     std::vector<state_type> states {};
     std::vector<std::uint64_t> counts {};
     std::uint64_t total_count { 0 };
@@ -83,6 +120,8 @@ struct stochastic_process {
     dist_type dist {};
     std::vector<double> probs {};
     std::vector<state_type> samples {};
+    std::vector<dist_type> mcmc_dists {};
+    std::uniform_real_distribution<double> uni01 { 0.0, 1.0 };
 };
 
 // Calculate the analytic mean.
@@ -229,8 +268,24 @@ template <typename S>
     auto tc = static_cast<double>(sp.total_count);
     const auto re_var = ((re_sum_sq - (re_sum.matrix() * re_sum.matrix().transpose()).array() / tc) / (tc - 1)).eval();
     const auto im_var = ((im_sum_sq - (im_sum.matrix() * im_sum.matrix().transpose()).array() / tc) / (tc - 1)).eval();
-    const auto re_im_cov = ((re_im_sum - (re_sum.matrix() * im_sum.matrix().transpose()).array() / tc) / (tc - 1)).eval();
+    const auto re_im_cov =
+        ((re_im_sum - (re_sum.matrix() * im_sum.matrix().transpose()).array() / tc) / (tc - 1)).eval();
     return std::make_tuple(re_var, im_var, re_im_cov);
+}
+
+// Block the samples of a stochastic process.
+template <typename S>
+[[nodiscard]] auto block_samples(const S& sp, int blsize) {
+    stochastic_process bsp = sp;
+    bsp.samples.resize(sp.samples.size() / blsize);
+    for (std::size_t i = 0; i < bsp.samples.size(); ++i) {
+        auto sum = S::state_type::Zero();
+        for (int j = 0; j < blsize; ++j) {
+            sum += sp.samples[i * blsize + j];
+        }
+        bsp.samples[i] = sum / static_cast<double>(blsize);
+    }
+    return bsp;
 }
 
 #endif // SIMPLEMC_TESTS_ACCS_STOCHASTIC_PROCESS_HPP
