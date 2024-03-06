@@ -36,12 +36,13 @@ namespace simplemc {
  * If the size of the accumulator is > 1 and multiple values should be added at once,
  * then one can use a multi value accumulator together with the stream operator:
  * @code{.cpp}
- * {
- *     auto mva = acc.make_mva();
- *     mva[idx1] << val1;
- *     mva[idx2] << val2;
- * }
+ * auto mva = acc.make_mva();
+ * mva[idx1] << val1;
+ * mva[idx2] << val2;
+ * mva.increment_count();
  * @endcode
+ * Note that the increment count has to be called once after all values have been added.
+ * Otherwise, the result will most likely be incorrect.
  *
  * If a range of values should be added at once, one can use the accumulate function.
  * @code{.cpp}

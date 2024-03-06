@@ -71,6 +71,10 @@ void fill_accs(A& acc_sv, A& acc_mva, A& acc_rg, const std::vector<T>& samples) 
         for (int j = 0; j < size; ++j) {
             mva[j] << samples[i](j);
         }
+        mva.increment_count();
+        if constexpr (requires (A& a) { a.check_and_add_block(); }) {
+            acc_mva.check_and_add_block();
+        }
         acc_rg.accumulate(samples[i], idxs);
     }
 }
@@ -577,41 +581,34 @@ TEST_F(SimplemcAccs, ComplexCovarianceAccumulator) {
     check_range_near(simplemc::make_span(merge_1_wel.cdata()), simplemc::make_span(merge_exp_wel.cdata()), tol_m);
 }
 
-// // Test block accumulator.
-// TEST_F(SimplemcAccs, BlockAccumulator) {
-//     // general set up
-//     using acc_d = simplemc::block_acc<simplemc::var_acc<double>>;
-//     double tol = 1e-10;
-//     double tol_m = 1e-10;
-//     int bs_sv = 1;
-//     int bs_mva = 100;
-//     int bs_rg = 5000;
-//     acc_d acc_sv_d(1, 5.0), acc_mva_d(size, 2.0, bs_mva), acc_rg_d(size, 1.0, bs_rg);
+// Test block accumulator.
+TEST_F(SimplemcAccs, BlockAccumulator) {
+    // general set up
+    using acc_d = simplemc::block_acc<simplemc::var_acc<double>>;
+    double tol = 1e-10;
+    int bs_sv = 1;
+    int bs_mva = 100;
+    int bs_rg = 5000;
+    acc_d acc_sv_d(1, 5.0), acc_mva_d(size, 2.0, bs_mva), acc_rg_d(size, 1.0, bs_rg);
 
-//     // fill accumulators
-//     fill_accs(acc_sv_d, acc_mva_d, acc_rg_d, sp_d.samples);
+    // fill accumulators
+    fill_accs(acc_sv_d, acc_mva_d, acc_rg_d, sp_d.samples);
 
-//     // check size of filled accumulators
-//     ASSERT_EQ(acc_sv_d.count(), sp_d.total_count / bs_sv);
-//     ASSERT_EQ(acc_mva_d.count(), sp_d.total_count / bs_mva);
-//     ASSERT_EQ(acc_rg_d.count(), sp_d.total_count / bs_rg);
+    // check size of filled accumulators
+    ASSERT_EQ(acc_sv_d.count(), sp_d.total_count / bs_sv);
+    ASSERT_EQ(acc_mva_d.count(), sp_d.total_count / bs_mva);
+    ASSERT_EQ(acc_rg_d.count(), sp_d.total_count / bs_rg);
 
-//     // check mean
-//     auto bsp_d = block_samples(sp_d, 100);
-//     const auto m_d = sample_mean(sp_d);
-//     check_near(acc_sv_std.mean()[0], m_d[0], tol);
-//     check_range_near(acc_mva_std.mean(), m_d, tol);
-//     check_range_near(acc_rg_std.mean(), m_d, tol);
-//     check_near(acc_sv_wel.mean()[0], m_d[0], tol);
-//     check_range_near(acc_mva_wel.mean(), m_d, tol);
-//     check_range_near(acc_rg_wel.mean(), m_d, tol);
+    // check mean
+    const auto bsp_sv = block_samples(sp_d, bs_sv);
+    const auto bsp_mva = block_samples(sp_d, bs_mva);
+    const auto bsp_rg = block_samples(sp_d, bs_rg);
+    check_near(acc_sv_d.accumulator().mean()[0], sample_mean(bsp_sv)[0], tol);
+    check_range_near(acc_mva_d.accumulator().mean(), sample_mean(bsp_mva), tol);
+    check_range_near(acc_rg_d.accumulator().mean(), sample_mean(bsp_rg), tol);
 
-//     // check stderror/variance
-//     const auto v_d = sample_variance(sp_d);
-//     check_near(acc_sv_std.variance_of_data()[0], v_d[0], tol);
-//     check_range_near(acc_mva_std.variance_of_data(), v_d, tol);
-//     check_range_near(acc_rg_std.variance_of_data(), v_d, tol);
-//     check_near(acc_sv_wel.variance_of_data()[0], v_d[0], tol);
-//     check_range_near(acc_mva_wel.variance_of_data(), v_d, tol);
-//     check_range_near(acc_rg_wel.variance_of_data(), v_d, tol);
-// }
+    // check stderror/variance
+    check_near(acc_sv_d.accumulator().variance_of_data()[0], sample_variance(bsp_sv)[0], tol);
+    check_range_near(acc_mva_d.accumulator().variance_of_data(), sample_variance(bsp_mva), tol);
+    check_range_near(acc_rg_d.accumulator().variance_of_data(), sample_variance(bsp_rg), tol);
+}

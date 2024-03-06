@@ -276,10 +276,13 @@ template <typename S>
 // Block the samples of a stochastic process.
 template <typename S>
 [[nodiscard]] auto block_samples(const S& sp, int blsize) {
-    stochastic_process bsp = sp;
-    bsp.samples.resize(sp.samples.size() / blsize);
+    S bsp;
+    bsp.states = sp.states;
+    bsp.probs = sp.probs;
+    bsp.total_count = sp.total_count / blsize;
+    bsp.samples.resize(bsp.total_count);
     for (std::size_t i = 0; i < bsp.samples.size(); ++i) {
-        auto sum = S::state_type::Zero();
+        auto sum = S::state_type::Zero().eval();
         for (int j = 0; j < blsize; ++j) {
             sum += sp.samples[i * blsize + j];
         }

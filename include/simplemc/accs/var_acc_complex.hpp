@@ -96,7 +96,7 @@ private:
      * @brief Multi value accumulator for the variance accumulator.
      *
      * @details It holds a reference to a variance accumulator. It can be used to add multiple data points
-     * to the accumulator but only increase the count once (when it goes out of scope).
+     * to the accumulator without increasing the count automatically. This has to be done manually!!
      */
     class var_mva {
     public:
@@ -131,9 +131,11 @@ private:
         }
 
         /**
-         * @brief Destructor increases the count.
+         * @brief Increment the count of the accumulator.
+         * 
+         * @param inc Increment.
          */
-        ~var_mva() { acc_.count_ += 1; }
+        void increment_count(count_type inc = 1) { acc_.count_ += inc; }
 
     private:
         var_acc& acc_; // NOLINT (reference is wanted here)

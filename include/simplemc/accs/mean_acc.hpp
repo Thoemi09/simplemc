@@ -43,12 +43,13 @@ namespace simplemc {
  * If the size of the accumulator is > 1 and multiple values should be added at once,
  * then one can use a multi value accumulator together with the stream operator:
  * @code{.cpp}
- * {
- *     auto mva = acc.make_mva();
- *     mva[idx1] << val1;
- *     mva[idx2] << val2;
- * }
+ * auto mva = acc.make_mva();
+ * mva[idx1] << val1;
+ * mva[idx2] << val2;
+ * mva.increment_count();
  * @endcode
+ * Note that the increment count has to be called once after all values have been added.
+ * Otherwise, the result will most likely be incorrect.
  *
  * If a range of values should be added at once, one can use the accumulate function.
  * @code{.cpp}
@@ -115,7 +116,7 @@ private:
      * @brief Multi value accumulator for the mean accumulator.
      *
      * @details It holds a reference to a mean accumulator. It can be used to add multiple data points
-     * to the accumulator but only increase the count once (when it goes out of scope).
+     * to the accumulator without increasing the count automatically. This has to be done manually!!
      */
     class mean_mva {
     public:
@@ -150,9 +151,11 @@ private:
         }
 
         /**
-         * @brief Destructor increases the count.
+         * @brief Increment the count of the accumulator.
+         * 
+         * @param inc Increment.
          */
-        ~mean_mva() { acc_.count_ += 1; }
+        void increment_count(count_type inc = 1) { acc_.count_ += inc; }
 
     private:
         mean_acc& acc_; // NOLINT (reference is wanted here)

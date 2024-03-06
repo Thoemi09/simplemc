@@ -19,10 +19,19 @@ namespace simplemc {
  * @brief Wrapper class for other accumulators to put data into blocks of a given size to reduce
  * correlations.
  *
- * @details Functionality and usage depends on the wrapped accumulator. See simplemc::var_acc and
- * simplemc::covar_acc. It does not make sense to wrap a simplemc::mean_acc since it does not provide
- * any error estimation.
- *
+ * @details Functionality and usage is similar to the supported wrapped accumulators (simplemc::var_acc 
+ * and simplemc::covar_acc).
+ * 
+ * Multi value accumulators can be used for wrapped simplemc::var_acc. Remember to manually check and add
+ * full blocks after using them, otherwise the number of effective samples will not be correct:
+ * * @code{.cpp}
+ * auto mva = acc.make_mva();
+ * mva[idx1] << val1;
+ * mva[idx2] << val2;
+ * mva.increment_count();
+ * acc.check_and_add_block();
+ * @endcode
+ * 
  * @tparam T Type of accumulated values (either double or std::complex<double>).
  * @tparam A Algorithm (either standard or Welford).
  */
@@ -131,6 +140,14 @@ public:
     }
 
     /**
+     * @brief Reset the accumulator to its initial state, i.e. no accumulated values.
+     */
+    void reset() {
+        acc_.reset();
+        bldata_.reset();
+    }
+
+    /**
      * @brief Subscript operator sets the index of the mean accumulator for the block data.
      *
      * @param idx Index.
@@ -149,9 +166,7 @@ public:
      */
     block_acc& operator<<(value_type val) {
         bldata_ << val;
-        if (is_full()) {
-            add_block();
-        }
+        check_and_add_block();
         return *this;
     }
 
@@ -181,9 +196,7 @@ public:
     template <ranges::input_range R>
     void accumulate(R&& rg, size_type idx = 0) {
         bldata_.accumulate(std::forward<R>(rg), idx);
-        if (is_full()) {
-            add_block();
-        }
+        check_and_add_block();
     }
 
     /**
@@ -200,9 +213,7 @@ public:
     template <ranges::input_range R1, ranges::input_range R2>
     void accumulate(R1&& rg, R2&& idxs) {
         bldata_.accumulate(std::forward<R1>(rg), std::forward<R2>(idxs));
-        if (is_full()) {
-            add_block();
-        }
+        check_and_add_block();
     }
 
     /**
@@ -211,7 +222,7 @@ public:
      * @param idx Index.
      * @return Multi value accumulator.
      */
-    [[nodiscard]] auto make_mva(size_type idx = 0) { return acc_.make_mva(idx); }
+    [[nodiscard]] auto make_mva(size_type idx = 0) { return bldata_.make_mva(idx); }
 
     /**
      * @brief Get the size of the accumulator.
@@ -255,20 +266,14 @@ public:
      */
     [[nodiscard]] const auto& block_data() const { return bldata_; }
 
-private:
     /**
-     * @brief Check if the current block is full.
-     *
-     * @return True if the block is full, false otherwise.
+     * @brief Check if the current block is full and add it to the effective samples if so.
      */
-    [[nodiscard]] bool is_full() const { return bldata_.count() >= blsize_; }
-
-    /**
-     * @brief Add full block to effective samples.
-     */
-    void add_block() {
-        acc_.accumulate(bldata_.mean());
-        bldata_.reset();
+    void check_and_add_block() {
+        if (bldata_.count() >= blsize_) {
+            acc_.accumulate(bldata_.mean());
+            bldata_.reset();
+        }
     }
 
 private:
