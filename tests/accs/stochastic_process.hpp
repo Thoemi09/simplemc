@@ -275,15 +275,15 @@ template <typename S>
 
 // Block the samples of a stochastic process.
 template <typename S>
-[[nodiscard]] auto block_samples(const S& sp, int blsize) {
+[[nodiscard]] auto block_samples(const S& sp, std::uint64_t blsize) {
     S bsp;
     bsp.states = sp.states;
     bsp.probs = sp.probs;
     bsp.total_count = sp.total_count / blsize;
     bsp.samples.resize(bsp.total_count);
-    for (std::size_t i = 0; i < bsp.samples.size(); ++i) {
+    for (std::uint64_t i = 0; i < bsp.total_count; ++i) {
         auto sum = S::state_type::Zero().eval();
-        for (int j = 0; j < blsize; ++j) {
+        for (std::uint64_t j = 0; j < blsize; ++j) {
             sum += sp.samples[i * blsize + j];
         }
         bsp.samples[i] = sum / static_cast<double>(blsize);
@@ -291,4 +291,44 @@ template <typename S>
     return bsp;
 }
 
+// Calculate the sample autocorrelations and the integrated autocorrelation time (only for double).
+template <typename S>
+    requires std::is_same_v<typename S::value_type, double>
+[[nodiscard]] auto sample_autocorr(const S& sp, std::uint64_t num = 100) {
+    auto mean = analytic_mean(sp);
+    auto var = analytic_variance(sp);
+    std::vector<decltype(mean)> taus(num);
+    auto tau_int = S::vec_type::Constant(0.0).eval();
+    const auto tc = static_cast<double>(sp.total_count);
+    for (std::uint64_t i = 0; i < num; ++i) {
+        const auto id = static_cast<double>(i);
+        for (std::uint64_t j = 0; j < sp.total_count - i; ++j) {
+            taus[i] += (sp.samples[j] - mean) * (sp.samples[j + i] - mean);
+        }
+        taus[i] /= ((tc - id) * var);
+        tau_int += taus[i] * (1.0 - id / tc);
+    }
+    return std::make_tuple(taus, tau_int);
+}
+
+
+// Estimate autocorrelation using blocking method (only for double).
+template <typename S>
+    requires std::is_same_v<typename S::value_type, double>
+[[nodiscard]] auto blocking_autocorr(const S& sp, std::uint64_t blsize = 1, std::uint64_t fac = 2) {
+    std::vector<S> bsps;
+    std::vector<decltype(sample_variance(sp))> taus;
+    bsps.emplace_back(block_samples(sp, blsize));
+    const auto v0 = sample_variance(bsps[0]);
+    taus.emplace_back(0.0);
+    auto size = blsize * fac;
+    while (size < sp.total_count) {
+        auto bsp = block_samples(sp, size);
+        bsps.emplace_back(block_samples(sp, size));
+        auto vi = sample_variance(bsps.back());
+        taus.emplace_back(0.5 * ((vi * size) / (v0 * blsize) - 1));
+        size *= fac;
+    }
+    return std::make_tuple(bsps, taus);
+}
 #endif // SIMPLEMC_TESTS_ACCS_STOCHASTIC_PROCESS_HPP

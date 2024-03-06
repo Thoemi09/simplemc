@@ -11,10 +11,10 @@ int main() {
     using sp_type = stochastic_process<double, 1>;
     using state_type = sp_type::state_type;
     using mat_type = Eigen::MatrixXd;
-    std::vector<state_type> states{ state_type{ 1.0 }, state_type{ 2.0 } };
-    std::vector<double> weights{ 0.5, 0.5 };
+    std::vector<state_type> states { state_type { 1.0 }, state_type { 2.0 } };
+    std::vector<double> weights { 0.2, 0.8 };
     mat_type mcmc_props(2, 2);
-    mcmc_props << 0.9, 0.4, 0.1, 0.3;
+    mcmc_props << 10, 1, 1, 10;
     sp_type sp;
     sp.set_states(states);
     sp.set_weights(weights);
@@ -25,4 +25,15 @@ int main() {
     fmt::print("Analytic variance: {}\n", analytic_variance(sp));
     fmt::print("Sample mean: {}\n", sample_mean(sp));
     fmt::print("Sample variance: {}\n", sample_variance(sp));
+
+    auto [bsps, btaus] = blocking_autocorr(sp);
+    for (const auto& t : btaus) {
+        fmt::print("{}\n", t);
+    }
+
+    auto [staus, tau_int] = sample_autocorr(sp, 50);
+    fmt::print("Integrated autocorrelation time: {}\n", tau_int);
+    for (const auto& t : staus) {
+        fmt::print("{}\n", t);
+    }
 }
