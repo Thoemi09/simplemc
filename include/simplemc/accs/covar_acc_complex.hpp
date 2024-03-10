@@ -29,7 +29,7 @@ namespace simplemc {
 /**
  * @brief Covariance accumulator specialized for accumulating complex values.
  *
- * @tparam A Algorithm (either standard or Welford).
+ * @tparam A Algorithm (either standard or welford).
  */
 template <accs::varalg A>
 class covar_acc<std::complex<double>, A> {
@@ -80,7 +80,7 @@ private:
      *
      * @details For performance reasons, we assume that the range of indices is sorted and each index is unique.
      *
-     * @tparam R1 Input range of value.
+     * @tparam R1 Input range of values.
      * @tparam R2 Input range of indices.
      * @param rg Range of values to be accumulated.
      * @param idxs Range of indices.
@@ -153,7 +153,7 @@ public:
         count_(0),
         idx_(0) {
         if (size <= 0) {
-            throw simplemc_exception("Size <= 0 in covariance accumulator", "covar_acc::covar_acc");
+            throw simplemc_exception("Size <= 0", "covar_acc::covar_acc");
         }
     }
 
@@ -173,7 +173,7 @@ public:
         count_(0),
         idx_(0) {
         if (mdata_.size() <= 0) {
-            throw simplemc_exception("Size <= 0 in covariance accumulator", "covar_acc::covar_acc");
+            throw simplemc_exception("Size <= 0", "covar_acc::covar_acc");
         }
     }
 
@@ -197,7 +197,7 @@ public:
         count_(count),
         idx_(0) {
         if (mdata_.size() == 0) {
-            throw simplemc_exception("Size == 0 in covariance accumulator", "covar_acc::covar_acc");
+            throw simplemc_exception("Size == 0", "covar_acc::covar_acc");
         }
         if (mdata_.size() != rdata_.rows() || mdata_.size() != rdata_.cols() || mdata_.size() != idata_.rows() ||
             mdata_.size() != idata_.cols() || mdata_.size() != cdata_.rows() || mdata_.size() != cdata_.cols() ||
@@ -207,7 +207,7 @@ public:
     }
 
     /**
-     * @brief Reset the accumulator to its initial state, i.e. no accumulated values.
+     * @brief Reset the accumulator to its initial state, i.e. with no accumulated values.
      */
     void reset() {
         mdata_.setZero();
@@ -287,7 +287,7 @@ public:
      *
      * @details The size of the range is assumed to be <= size() - idx.
      *
-     * @tparam R Input range of value.
+     * @tparam R Input range of values.
      * @param rg Range of values to be accumulated.
      * @param idx Starting index for the accumulator.
      */
@@ -300,10 +300,10 @@ public:
     /**
      * @brief Accumulate a range of values.
      *
-     * @details The size of the range is assumed to be <= size() - idx. For performance reasonse, we further assume
-     * that the range of indices is sorted and each index is unique.
+     * @details The size of the range is assumed to be <= size() - idx. For performance reasonse,
+     * we further assume that the range of indices is sorted and each index is unique.
      *
-     * @tparam R1 Input range of value.
+     * @tparam R1 Input range of values.
      * @tparam R2 Input range of indices.
      * @param rg Range of values to be accumulated.
      * @param idxs Range of indices.
@@ -357,7 +357,8 @@ public:
     [[nodiscard]] const dbl_mat_type& idata() const { return idata_; }
 
     /**
-     * @brief Get accumulated data used for estimating the cross-covariance matrix of the real and imaginary part.
+     * @brief Get accumulated data used for estimating the cross-covariance matrix of the real and
+     * imaginary part.
      *
      * @details The real part is the row index and the imaginary part is the column index.
      *

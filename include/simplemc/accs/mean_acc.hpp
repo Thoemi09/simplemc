@@ -6,6 +6,7 @@
 #ifndef SIMPLEMC_ACCS_MEAN_ACC_HPP
 #define SIMPLEMC_ACCS_MEAN_ACC_HPP
 
+#include <simplemc/accs/multivalue_acc.hpp>
 #include <simplemc/accs/utils.hpp>
 #include <simplemc/numeric/eigen.hpp>
 #include <simplemc/numeric/utils.hpp>
@@ -17,6 +18,7 @@
 
 #include <cassert>
 #include <cstdint>
+#include <utility>
 
 namespace simplemc {
 
@@ -29,18 +31,18 @@ namespace simplemc {
  * to apply a constant shift to the accumulated data. This can sometimes improve the numerical
  * accuracy.
  *
- * If the size of the accumulator is 1, then values can be added with the stream operator:
+ * - If the size of the accumulator is 1, then values can be added with the stream operator:
  * @code{.cpp}
  * acc << val;
  * @endcode
  *
- * If the size of the accumulator is > 1 and only a single value should be added at once,
+ * - If the size of the accumulator is > 1 and only a single value should be added at once,
  * then one can use the subscript operator together with the stream operator:
  * @code{.cpp}
  * acc[idx] << val;
  * @endcode
  *
- * If the size of the accumulator is > 1 and multiple values should be added at once,
+ * - If the size of the accumulator is > 1 and multiple values should be added at once,
  * then one can use a multi value accumulator together with the stream operator:
  * @code{.cpp}
  * auto mva = acc.make_mva();
@@ -48,24 +50,25 @@ namespace simplemc {
  * mva[idx2] << val2;
  * mva.increment_count();
  * @endcode
- * Note that the increment count has to be called once after all values have been added.
- * Otherwise, the result will most likely be incorrect.
+ * Note that it is the user's responsibility to call the `increment_count` function of the multi
+ * value accumulator once after all values have been added. Otherwise, the result will most likely
+ * be incorrect.
  *
- * If a range of values should be added at once, one can use the accumulate function.
+ * - If a range of values should be added at once, one can use the accumulate function:
  * @code{.cpp}
  * acc.accumulate(range, idx);
  * @endcode
  * Here, `idx` is either a scalar denoting the starting index or a range of indices of the same
  * size as the range of values.
  *
- * Results are always returned as Eigen::VectorX or Eigen::MatrixX objects. If e.g.
- * the size of the accumulator is 1, then we still need to access the vector/matrix:
+ * Results are always returned as Eigen::VectorX or Eigen::MatrixX objects. If e.g. the size of the
+ * accumulator is 1, then we still need to access the vector/matrix:
  * @code{.cpp}
  * auto mean = acc.mean()(0);
  * @endcode
  *
  * @tparam T Type of accumulated values (either double or std::complex<double>).
- * @tparam A Algorithm (either standard or Welford).
+ * @tparam A Algorithm (either standard or welford).
  */
 template <double_or_complex T, accs::varalg A = accs::varalg::standard>
 class mean_acc {
@@ -91,9 +94,17 @@ public:
     using vec_type = Eigen::VectorX<value_type>;
 
     /**
+     * @brief Multi value accumulator type.
+     */
+    using mva_type = multivalue_acc<mean_acc>;
+
+    /**
      * @brief Get the algorithm.
      */
     static constexpr auto varalg() { return A; }
+
+    /* Friend declarations. */
+    friend class multivalue_acc<mean_acc>;
 
 private:
     /**
@@ -112,56 +123,6 @@ private:
         }
     }
 
-    /**
-     * @brief Multi value accumulator for the mean accumulator.
-     *
-     * @details It holds a reference to a mean accumulator. It can be used to add multiple data points
-     * to the accumulator without increasing the count automatically. This has to be done manually!!
-     */
-    class mean_mva {
-    public:
-        /**
-         * @brief Construct a multi value accumulator for a given mean accumulator and a given index.
-         *
-         * @param acc Mean accumulator.
-         * @param idx Index.
-         */
-        mean_mva(mean_acc& acc, size_type idx) : acc_(acc), idx_(idx) { assert(idx_ >= 0 && idx_ < acc_.size()); }
-
-        /**
-         * @brief Set index and return this object.
-         *
-         * @param idx Index.
-         * @return Reference to this object.
-         */
-        mean_mva& operator[](size_type idx) {
-            idx_ = idx;
-            return *this;
-        }
-
-        /**
-         * @brief Accumulate a single value.
-         *
-         * @param val Value to be accumulated.
-         * @return Reference to this object.
-         */
-        mean_mva& operator<<(value_type val) {
-            acc_.add_value(val, idx_, acc_.count_ + 1);
-            return *this;
-        }
-
-        /**
-         * @brief Increment the count of the accumulator.
-         * 
-         * @param inc Increment.
-         */
-        void increment_count(count_type inc = 1) { acc_.count_ += inc; }
-
-    private:
-        mean_acc& acc_; // NOLINT (reference is wanted here)
-        size_type idx_;
-    };
-
 public:
     /**
      * @brief Construct a mean accumulator with a given number of elements and a constant shift.
@@ -175,7 +136,7 @@ public:
         count_(0),
         idx_(0) {
         if (size <= 0) {
-            throw simplemc_exception("Size <= 0 in mean accumulator", "mean_acc::mean_acc");
+            throw simplemc_exception("Size <= 0", "mean_acc::mean_acc");
         }
     }
 
@@ -192,7 +153,7 @@ public:
         count_(0),
         idx_(0) {
         if (mdata_.size() == 0) {
-            throw simplemc_exception("Size <= 0 in mean accumulator", "mean_acc::mean_acc");
+            throw simplemc_exception("Size <= 0", "mean_acc::mean_acc");
         }
     }
 
@@ -209,15 +170,15 @@ public:
         count_(count),
         idx_(0) {
         if (mdata_.size() == 0) {
-            throw simplemc_exception("Size == 0 in mean accumulator", "mean_acc::mean_acc");
+            throw simplemc_exception("Size == 0", "mean_acc::mean_acc");
         }
         if (mdata_.size() != shift_.size()) {
-            throw simplemc_exception("Size of data != size of shift in mean accumulator", "mean_acc::mean_acc");
+            throw simplemc_exception("Size of data != size of shift", "mean_acc::mean_acc");
         }
     }
 
     /**
-     * @brief Reset the accumulator to its initial state, i.e. no accumulated values.
+     * @brief Reset the accumulator to its initial state, i.e. with no accumulated values.
      */
     void reset() {
         mdata_.setZero();
@@ -274,7 +235,7 @@ public:
      *
      * @details The size of the range is assumed to be <= size() - idx.
      *
-     * @tparam R Input range of value.
+     * @tparam R Input range of values.
      * @param rg Range of values to be accumulated.
      * @param idx Starting index for the accumulator.
      */
@@ -293,7 +254,7 @@ public:
      * @details The size of the range is assumed to be <= size() - idx and every index should
      * only appear at most once.
      *
-     * @tparam R1 Input range of value.
+     * @tparam R1 Input range of values.
      * @tparam R2 Input range of indices.
      * @param rg Range of values to be accumulated.
      * @param idxs Range of indices.
@@ -307,12 +268,11 @@ public:
     }
 
     /**
-     * @brief Create a multi value accumulator for a given index.
+     * @brief Create a multi value accumulator.
      *
-     * @param idx Index.
      * @return Multi value accumulator.
      */
-    mean_mva make_mva(size_type idx = 0) { return mean_mva(*this, idx); }
+    mva_type make_mva() { return mva_type(*this); }
 
     /**
      * @brief Get the size of the accumulator.

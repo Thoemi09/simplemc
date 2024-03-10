@@ -6,6 +6,7 @@
 #ifndef SIMPLEMC_ACCS_VAR_ACC_DOUBLE_HPP
 #define SIMPLEMC_ACCS_VAR_ACC_DOUBLE_HPP
 
+#include <simplemc/accs/multivalue_acc.hpp>
 #include <simplemc/accs/utils.hpp>
 #include <simplemc/accs/var_acc_fwd.hpp>
 #include <simplemc/numeric/eigen.hpp>
@@ -25,7 +26,7 @@ namespace simplemc {
 /**
  * @brief Variance accumulator specialized for accumulating double values.
  *
- * @tparam A Algorithm (either standard or Welford).
+ * @tparam A Algorithm (either standard or welford).
  */
 template <accs::varalg A>
 class var_acc<double, A> {
@@ -51,9 +52,17 @@ public:
     using vec_type = Eigen::VectorX<value_type>;
 
     /**
+     * @brief Multi value accumulator type.
+     */
+    using mva_type = multivalue_acc<var_acc>;
+
+    /**
      * @brief Get the algorithm.
      */
     static constexpr auto varalg() { return A; }
+
+    /* Friend declarations. */
+    friend class multivalue_acc<var_acc>;
 
 private:
     /**
@@ -76,57 +85,6 @@ private:
         }
     }
 
-    /**
-     * @brief Multi value accumulator for the variance accumulator.
-     *
-     * @details It holds a reference to a variance accumulator. It can be used to add multiple data points
-     * to the accumulator without increasing the count automatically. This has to be done manually!!
-     */
-    class var_mva {
-    public:
-        /**
-         * @brief Construct a multi value accumulator for a given variance accumulator and a given index.
-         *
-         * @param acc Variance accumulator.
-         * @param idx Index.
-         */
-        var_mva(var_acc& acc, size_type idx) : acc_(acc), idx_(idx) { assert(idx_ >= 0 && idx_ < acc_.size()); }
-
-        /**
-         * @brief Set index and return this object.
-         *
-         * @param idx Index.
-         * @return Reference to this object.
-         */
-        var_mva& operator[](size_type idx) {
-            assert(idx >= 0 && idx < acc_.size());
-            idx_ = idx;
-            return *this;
-        }
-
-        /**
-         * @brief Accumulate a single value.
-         *
-         * @param val Value to be accumulated.
-         * @return Reference to this object.
-         */
-        var_mva& operator<<(value_type val) {
-            acc_.add_value(val, idx_, acc_.count_ + 1);
-            return *this;
-        }
-
-        /**
-         * @brief Increment the count of the accumulator.
-         * 
-         * @param inc Increment.
-         */
-        void increment_count(count_type inc = 1) { acc_.count_ += inc; }
-
-    private:
-        var_acc& acc_; // NOLINT (reference is wanted here)
-        size_type idx_;
-    };
-
 public:
     /**
      * @brief Construct a variance accumulator with a given number of elements and a constant shift.
@@ -141,7 +99,7 @@ public:
         count_(0),
         idx_(0) {
         if (size <= 0) {
-            throw simplemc_exception("Size <= 0 in variance accumulator", "var_acc::var_acc");
+            throw simplemc_exception("Size <= 0", "var_acc::var_acc");
         }
     }
 
@@ -159,7 +117,7 @@ public:
         count_(0),
         idx_(0) {
         if (mdata_.size() <= 0) {
-            throw simplemc_exception("Size <= 0 in variance accumulator", "var_acc::var_acc");
+            throw simplemc_exception("Size <= 0", "var_acc::var_acc");
         }
     }
 
@@ -178,7 +136,7 @@ public:
         count_(count),
         idx_(0) {
         if (mdata_.size() == 0) {
-            throw simplemc_exception("Size == 0 in variance accumulator", "var_acc::var_acc");
+            throw simplemc_exception("Size == 0", "var_acc::var_acc");
         }
         if (mdata_.size() != vdata_.size() || mdata_.size() != shift_.size()) {
             throw simplemc_exception("Sizes of data storages do not match", "var_acc::var_acc");
@@ -186,7 +144,7 @@ public:
     }
 
     /**
-     * @brief Reset the accumulator to its initial state, i.e. no accumulated values.
+     * @brief Reset the accumulator to its initial state, i.e. with no accumulated values.
      */
     void reset() {
         mdata_.setZero();
@@ -249,7 +207,7 @@ public:
      *
      * @details The size of the range is assumed to be <= size() - idx.
      *
-     * @tparam R Input range of value.
+     * @tparam R Input range of values.
      * @param rg Range of values to be accumulated.
      * @param idx Starting index for the accumulator.
      */
@@ -268,7 +226,7 @@ public:
      * @details The size of the range is assumed to be <= size() - idx and every index should
      * only appear at most once.
      *
-     * @tparam R1 Input range of value.
+     * @tparam R1 Input range of values.
      * @tparam R2 Input range of indices.
      * @param rg Range of values to be accumulated.
      * @param idxs Range of indices.
@@ -282,12 +240,11 @@ public:
     }
 
     /**
-     * @brief Create a multi value accumulator for a given index.
+     * @brief Create a multi value accumulator.
      *
-     * @param idx Index.
      * @return Multi value accumulator.
      */
-    var_mva make_mva(size_type idx = 0) { return var_mva(*this, idx); }
+    mva_type make_mva() { return mva_type(*this); }
 
     /**
      * @brief Get the size of the accumulator.

@@ -26,7 +26,7 @@ enum class varalg { standard, welford };
  * @brief Make an Eigen::VectorX with NaNs.
  *
  * @tparam T Type of accumulated values (either double or std::complex<double>).
- * @param size Size of storage.
+ * @param size Size of the vector.
  * @return Eigen::VectorX with NaNs.
  */
 template <double_or_complex T>
@@ -83,9 +83,7 @@ Eigen::VectorX<T> mean(const Eigen::VectorX<T>& mdata, std::uint64_t count, cons
 }
 
 /**
- * @brief Calculate the diagonal elements of the sample (cross-)covariance of two random vectors.
- *
- * @details If the random vectors are the same, then the diagonal of the sample covariance matrix is calculated.
+ * @brief Calculate the diagonal elements of the sample (cross-)covariance matrix of two random vectors.
  *
  * @tparam A Algorithm used to accumulate the data.
  * @param mdata1 Accumulated mean data of random vector #1.

@@ -1,6 +1,6 @@
 /**
  * @file block_acc.hpp
- * @brief Wrapper for accumulators to block data.
+ * @brief Wrapper for simplemc::var_acc and simplemc::covar_acc to block data.
  */
 
 #ifndef SIMPLEMC_ACCS_BLOCK_ACC_HPP
@@ -16,24 +16,29 @@
 namespace simplemc {
 
 /**
- * @brief Wrapper class for other accumulators to put data into blocks of a given size to reduce
- * correlations.
+ * @brief Wrapper class for the simplemc::var_acc and simplemc::covar_acc accumulators to put data
+ * into blocks of a given size to reduce correlations.
  *
- * @details Functionality and usage is similar to the supported wrapped accumulators (simplemc::var_acc 
- * and simplemc::covar_acc).
- * 
- * Multi value accumulators can be used for wrapped simplemc::var_acc. Remember to manually check and add
- * full blocks after using them, otherwise the number of effective samples will not be correct:
- * * @code{.cpp}
+ * @details Functionality and usage is similar to the supported wrapped accumulators.
+ *
+ * Multi value accumulation can only be used for wrapped simplemc::var_acc. Remember to manually
+ * check and add full blocks after using them, otherwise the number of effective samples will not
+ * be correct:
+ * @code{.cpp}
  * auto mva = acc.make_mva();
  * mva[idx1] << val1;
  * mva[idx2] << val2;
  * mva.increment_count();
  * acc.check_and_add_block();
  * @endcode
- * 
- * @tparam T Type of accumulated values (either double or std::complex<double>).
- * @tparam A Algorithm (either standard or Welford).
+ *
+ * Results can be obtained from the wrapped accumulators directly. For example:
+ * @code{.cpp}
+ * auto mean = acc.accumulator().mean();
+ * auto covar = acc.accumulator().covariance();
+ * @endcode
+ *
+ * @tparam A Accumulator type.
  */
 template <typename A>
 class block_acc {
@@ -78,10 +83,10 @@ public:
      */
     explicit block_acc(size_type size = 1, value_type shift = 0.0, count_type blsize = 1) :
         acc_(size, shift),
-        bldata_(size, shift),
+        block_(size, shift),
         blsize_(blsize) {
         if (blsize_ == 0) {
-            throw simplemc_exception("Block size == 0 in block accumulator", "block_acc::block_acc");
+            throw simplemc_exception("Block size == 0", "block_acc::block_acc");
         }
     }
 
@@ -95,10 +100,10 @@ public:
      */
     explicit block_acc(const Eigen::VectorX<value_type>& shift, count_type blsize = 1) :
         acc_(shift),
-        bldata_(shift),
+        block_(shift),
         blsize_(blsize) {
         if (blsize_ == 0) {
-            throw simplemc_exception("Block size == 0 in block accumulator", "block_acc::block_acc");
+            throw simplemc_exception("Block size == 0", "block_acc::block_acc");
         }
     }
 
@@ -110,10 +115,10 @@ public:
      */
     explicit block_acc(acc_type acc, count_type blsize = 1) :
         acc_(std::move(acc)),
-        bldata_(acc_.size(), acc_.shift()),
+        block_(acc_.size(), acc_.shift()),
         blsize_(blsize) {
         if (blsize_ == 0) {
-            throw simplemc_exception("Block size == 0 in block accumulator", "block_acc::block_acc");
+            throw simplemc_exception("Block size == 0", "block_acc::block_acc");
         }
     }
 
@@ -126,25 +131,25 @@ public:
      */
     explicit block_acc(acc_type acc, mean_acc_type bldata, count_type blsize = 1) :
         acc_(std::move(acc)),
-        bldata_(std::move(bldata)),
+        block_(std::move(bldata)),
         blsize_(blsize) {
-        if (acc_.size() != bldata_.size()) {
+        if (acc_.size() != block_.size()) {
             throw simplemc_exception("Size mismatch between accumulator and block data", "block_acc::block_acc");
         }
-        if (acc_.shift() != bldata_.shift()) {
+        if (acc_.shift() != block_.shift()) {
             throw simplemc_exception("Shift mismatch between accumulator and block data", "block_acc::block_acc");
         }
         if (blsize_ == 0) {
-            throw simplemc_exception("Block size == 0 in block accumulator", "block_acc::block_acc");
+            throw simplemc_exception("Block size == 0", "block_acc::block_acc");
         }
     }
 
     /**
-     * @brief Reset the accumulator to its initial state, i.e. no accumulated values.
+     * @brief Reset the accumulator to its initial state, i.e. with no accumulated values.
      */
     void reset() {
         acc_.reset();
-        bldata_.reset();
+        block_.reset();
     }
 
     /**
@@ -154,7 +159,7 @@ public:
      * @return Reference to this object.
      */
     block_acc& operator[](size_type idx) {
-        bldata_[idx];
+        block_[idx];
         return *this;
     }
 
@@ -165,7 +170,7 @@ public:
      * @return Reference to this object.
      */
     block_acc& operator<<(value_type val) {
-        bldata_ << val;
+        block_ << val;
         check_and_add_block();
         return *this;
     }
@@ -173,7 +178,7 @@ public:
     /**
      * @brief Stream operator for incorporating the data from another block accumulator.
      *
-     * @details Ignores the data currently in blocks.
+     * @details Ignores the data in the current blocks.
      *
      * @param acc Block accumulator to be incorporated.
      * @return Reference to this object.
@@ -189,13 +194,13 @@ public:
      *
      * @details The size of the range is assumed to be <= size() - idx.
      *
-     * @tparam R Input range of value.
+     * @tparam R Input range of values.
      * @param rg Range of values to be accumulated.
      * @param idx Starting index for the accumulator.
      */
     template <ranges::input_range R>
     void accumulate(R&& rg, size_type idx = 0) {
-        bldata_.accumulate(std::forward<R>(rg), idx);
+        block_.accumulate(std::forward<R>(rg), idx);
         check_and_add_block();
     }
 
@@ -205,24 +210,23 @@ public:
      * @details The size of the range is assumed to be <= size() - idx and every index should
      * only appear at most once.
      *
-     * @tparam R1 Input range of value.
+     * @tparam R1 Input range of values.
      * @tparam R2 Input range of indices.
      * @param rg Range of values to be accumulated.
      * @param idxs Range of indices.
      */
     template <ranges::input_range R1, ranges::input_range R2>
     void accumulate(R1&& rg, R2&& idxs) {
-        bldata_.accumulate(std::forward<R1>(rg), std::forward<R2>(idxs));
+        block_.accumulate(std::forward<R1>(rg), std::forward<R2>(idxs));
         check_and_add_block();
     }
 
     /**
-     * @brief Create a multi value accumulator for a given index.
+     * @brief Create a multi value accumulator.
      *
-     * @param idx Index.
      * @return Multi value accumulator.
      */
-    [[nodiscard]] auto make_mva(size_type idx = 0) { return bldata_.make_mva(idx); }
+    [[nodiscard]] auto make_mva() { return block_.make_mva(); }
 
     /**
      * @brief Get the size of the accumulator.
@@ -264,21 +268,28 @@ public:
      *
      * @return Mean accumulator.
      */
-    [[nodiscard]] const auto& block_data() const { return bldata_; }
+    [[nodiscard]] const auto& block() const { return block_; }
+
+    /**
+     * @brief Check if the current block is full?
+     *
+     * @return True if the current block is full, false otherwise.
+     */
+    [[nodiscard]] auto is_full() const { return block_.count() >= blsize_; }
 
     /**
      * @brief Check if the current block is full and add it to the effective samples if so.
      */
     void check_and_add_block() {
-        if (bldata_.count() >= blsize_) {
-            acc_.accumulate(bldata_.mean());
-            bldata_.reset();
+        if (is_full()) {
+            acc_.accumulate(block_.mean());
+            block_.reset();
         }
     }
 
 private:
     acc_type acc_;
-    mean_acc_type bldata_;
+    mean_acc_type block_;
     count_type blsize_ { 1 };
 };
 

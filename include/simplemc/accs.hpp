@@ -10,6 +10,7 @@
 #include <simplemc/accs/utils.hpp>
 
 // accumulators
+#include <simplemc/accs/autocorr_acc.hpp>
 #include <simplemc/accs/mean_acc.hpp>
 #include <simplemc/accs/block_acc.hpp>
 #include <simplemc/accs/covar_acc_complex.hpp>
