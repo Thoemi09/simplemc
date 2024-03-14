@@ -22,7 +22,8 @@ namespace simplemc {
  * @details Functionality and usage is similar to the supported wrapped accumulators.
  *
  * Multi value accumulation can only be used for wrapped simplemc::var_acc. Remember to manually
- * check and add full blocks after using them, otherwise the number of effective samples will not
+ * call the `increment_count` method of the multi value accumulator as well as the `check_and_add_block`
+ * method of the block accumulator after using them, otherwise the number of effective samples will not
  * be correct:
  * @code{.cpp}
  * auto mva = acc.make_mva();

@@ -154,7 +154,7 @@ TEST_F(SimplemcAccs, MeanAccumulator) {
     fill_accs(acc_sv_d, acc_mva_d, acc_rg_d, sp_d.samples);
     fill_accs(acc_sv_c, acc_mva_c, acc_rg_c, sp_c.samples);
 
-    // check size of filled accumulators
+    // check count of filled accumulators
     ASSERT_EQ(acc_sv_d.count(), sp_d.total_count);
     ASSERT_EQ(acc_mva_d.count(), sp_d.total_count);
     ASSERT_EQ(acc_rg_d.count(), sp_d.total_count);
@@ -234,7 +234,7 @@ TEST_F(SimplemcAccs, DoubleVarianceAccumulator) {
     fill_accs(acc_sv_std, acc_mva_std, acc_rg_std, sp_d.samples);
     fill_accs(acc_sv_wel, acc_mva_wel, acc_rg_wel, sp_d.samples);
 
-    // check size of filled accumulators
+    // check count of filled accumulators
     ASSERT_EQ(acc_sv_std.count(), sp_d.total_count);
     ASSERT_EQ(acc_mva_std.count(), sp_d.total_count);
     ASSERT_EQ(acc_rg_std.count(), sp_d.total_count);
@@ -322,7 +322,7 @@ TEST_F(SimplemcAccs, ComplexVarianceAccumulator) {
     fill_accs(acc_sv_std, acc_mva_std, acc_rg_std, sp_c.samples);
     fill_accs(acc_sv_wel, acc_mva_wel, acc_rg_wel, sp_c.samples);
 
-    // check size of filled accumulators
+    // check count of filled accumulators
     ASSERT_EQ(acc_sv_std.count(), sp_c.total_count);
     ASSERT_EQ(acc_mva_std.count(), sp_c.total_count);
     ASSERT_EQ(acc_rg_std.count(), sp_c.total_count);
@@ -430,7 +430,7 @@ TEST_F(SimplemcAccs, DoubleCovarianceAccumulator) {
         acc_rg_wel.accumulate(s, idxs);
     }
 
-    // check size of filled accumulators
+    // check count of filled accumulators
     ASSERT_EQ(acc_sv_std.count(), sp_d.total_count);
     ASSERT_EQ(acc_rg_std.count(), sp_d.total_count);
     ASSERT_EQ(acc_sv_wel.count(), sp_d.total_count);
@@ -513,7 +513,7 @@ TEST_F(SimplemcAccs, ComplexCovarianceAccumulator) {
         acc_rg_wel.accumulate(s, idxs);
     }
 
-    // check size of filled accumulators
+    // check count of filled accumulators
     ASSERT_EQ(acc_sv_std.count(), sp_c.total_count);
     ASSERT_EQ(acc_rg_std.count(), sp_c.total_count);
     ASSERT_EQ(acc_sv_wel.count(), sp_c.total_count);
@@ -594,7 +594,7 @@ TEST_F(SimplemcAccs, BlockAccumulator) {
     // fill accumulators
     fill_accs(acc_sv_d, acc_mva_d, acc_rg_d, sp_d.samples);
 
-    // check size of filled accumulators
+    // check count of filled accumulators
     ASSERT_EQ(acc_sv_d.count(), sp_d.total_count / bs_sv);
     ASSERT_EQ(acc_mva_d.count(), sp_d.total_count / bs_mva);
     ASSERT_EQ(acc_rg_d.count(), sp_d.total_count / bs_rg);
@@ -611,4 +611,50 @@ TEST_F(SimplemcAccs, BlockAccumulator) {
     check_near(acc_sv_d.accumulator().variance_of_data()[0], sample_variance(bsp_sv)[0], tol);
     check_range_near(acc_mva_d.accumulator().variance_of_data(), sample_variance(bsp_mva), tol);
     check_range_near(acc_rg_d.accumulator().variance_of_data(), sample_variance(bsp_rg), tol);
+}
+
+// Test autocorrelation accumulator.
+TEST_F(SimplemcAccs, AutocorrelationAccumulator) {
+    // general set up
+    using acc_std = simplemc::autocorr_acc<simplemc::var_acc<double, simplemc::accs::varalg::standard>>;
+    using acc_wel = simplemc::autocorr_acc<simplemc::var_acc<double, simplemc::accs::varalg::welford>>;
+    double tol = 1e-10;
+    acc_std acc_sv_std(1, 5.0), acc_rg_std(size, 1.0);
+    acc_wel acc_sv_wel(1, 5.0), acc_rg_wel(size, 1.0);
+
+    // check size of empty accumulators
+    ASSERT_EQ(acc_sv_std.size(), 1);
+    ASSERT_EQ(acc_rg_std.size(), size);
+    ASSERT_EQ(acc_sv_wel.size(), 1);
+    ASSERT_EQ(acc_rg_wel.size(), size);
+
+    // check empty accumulators
+    check_empty(acc_sv_std);
+    check_empty(acc_rg_std);
+    check_empty(acc_sv_wel);
+    check_empty(acc_rg_wel);
+
+    // fill accumulators
+    const auto idxs = std::vector<long> { 0, 1, 2 };
+    for (auto& s : sp_d.samples) {
+        acc_sv_std << s(0);
+        acc_sv_wel << s(0);
+        acc_rg_std.accumulate(s, idxs);
+        acc_rg_wel.accumulate(s, idxs);
+    }
+
+    // check block variance accumulators with increasing block sizes and autocorrelation times
+    auto [bsp_d, btau_d] = blocking_autocorr(sp_d);
+    const auto max_level = acc_sv_std.find_level(2);
+    const auto v0 = acc_rg_wel.accumulators()[0].variance_of_data();
+    for (std::size_t i = 0; i < max_level; ++i) {
+        const auto v_d = sample_variance(bsp_d[i]);
+        check_near(acc_sv_std.accumulators()[i].variance_of_data()[0], v_d[0]);
+        check_near(acc_sv_wel.accumulators()[i].variance_of_data()[0], v_d[0]);
+        check_range_near(acc_rg_std.accumulators()[i].variance_of_data(), v_d);
+        check_range_near(acc_rg_wel.accumulators()[i].variance_of_data(), v_d);
+        const auto vi = acc_rg_wel.accumulators()[i].variance_of_data();
+        const auto tau = acc_rg_wel.tau(v0, vi, acc_rg_wel.block_size(i));
+        check_range_near(tau, btau_d[i], tol);
+    }
 }

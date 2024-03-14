@@ -41,7 +41,7 @@ namespace simplemc {
  * mva[idx2] << val2;
  * mva.increment_count();
  * @endcode
- * Note that it is the user's responsibility to call the `increment_count` function of the multi
+ * Note that it is the user's responsibility to call the `increment_count()` method of the multi
  * value accumulator once after all values have been added. Otherwise, the result will most likely
  * be incorrect.
  *
