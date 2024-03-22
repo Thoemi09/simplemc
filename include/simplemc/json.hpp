@@ -1,5 +1,5 @@
 /**
- * @file json.hpp
+ * @file
  * @brief Include all relevant header files from simpelmc-json.
  */
 

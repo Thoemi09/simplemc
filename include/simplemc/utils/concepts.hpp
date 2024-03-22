@@ -1,5 +1,5 @@
 /**
- * @file concepts.hpp
+ * @file
  * @brief Concepts and type traits for the simplemc library.
  */
 

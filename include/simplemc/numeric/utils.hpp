@@ -1,5 +1,5 @@
 /**
- * @file utils.hpp
+ * @file
  * @brief Utility functions for simplemc-numeric.
  */
 

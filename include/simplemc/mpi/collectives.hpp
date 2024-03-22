@@ -1,5 +1,5 @@
 /**
- * @file collectives.hpp
+ * @file
  * @brief Collective communications between MPI processes.
  * @details Only very few of the nonblocking communications are supported. If other
  * routines are needed, please call the MPI C library directly. No special attention is

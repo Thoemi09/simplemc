@@ -1,5 +1,5 @@
 /**
- * @file orthogonal_polynomials.cpp
+ * @file
  * @brief Implementation of orthogonal polynomials for estimating coefficients in a generalized Fourier series.
  */
 

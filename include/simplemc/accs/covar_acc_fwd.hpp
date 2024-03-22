@@ -1,5 +1,5 @@
 /**
- * @file covar_acc_fwd.hpp
+ * @file
  * @brief Forward declaration of the covariance accumulator.
  */
 
@@ -12,7 +12,7 @@
 namespace simplemc {
 
 /**
- * @brief Covariance accumulator for calculating the sample mean and covariance matrix of a 
+ * @brief Covariance accumulator for calculating the sample mean and covariance matrix of a
  * random vector.
  *
  * @details Naive estimation of the covariance matrix is available. It does not account for

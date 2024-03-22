@@ -1,5 +1,5 @@
 /**
- * @file quadrature.hpp
+ * @file
  * @brief Basic numeric quadrature routines.
  */
 

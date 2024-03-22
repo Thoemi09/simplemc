@@ -1,5 +1,5 @@
 /**
- * @file json_test.cpp
+ * @file
  * @brief Unit tests for simplemc-json.
  */
 

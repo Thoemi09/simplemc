@@ -1,5 +1,5 @@
 /**
- * @file eigen.hpp
+ * @file
  * @brief Include Eigen library with some useful extensions.
  */
 

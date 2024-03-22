@@ -1,5 +1,5 @@
 /**
- * @file mpi_fwd.hpp
+ * @file
  * @brief Forward declarations for simplemc-mpi.
  */
 

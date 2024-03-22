@@ -1,5 +1,5 @@
 /**
- * @file grid_base.cpp
+ * @file
  * @brief Base class used for all 1-dimensional grid types.
  */
 

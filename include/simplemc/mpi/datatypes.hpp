@@ -1,5 +1,5 @@
 /**
- * @file datatypes.hpp
+ * @file
  * @brief Mappings of MPI datatypes to C++ types.
  */
 

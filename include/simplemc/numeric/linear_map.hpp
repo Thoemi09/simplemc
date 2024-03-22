@@ -1,5 +1,5 @@
 /**
- * @file linear_map.hpp
+ * @file
  * @brief Linear map from a range [a, b] to another range [c, d] (and vice versa).
  */
 

@@ -1,5 +1,5 @@
 /**
- * @file cubic_spline_interpolation.hpp
+ * @file
  * @brief Cubic spline interpolation in 1D.
  */
 

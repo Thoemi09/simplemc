@@ -1,5 +1,5 @@
 /**
- * @file numeric.hpp
+ * @file
  * @brief Include all relevant header files from simplemc-numeric.
  */
 

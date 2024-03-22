@@ -1,5 +1,5 @@
 /**
- * @file var_acc_fwd.hpp
+ * @file
  * @brief Forward declaration of the variance accumulator.
  */
 

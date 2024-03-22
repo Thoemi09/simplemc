@@ -1,5 +1,5 @@
 /**
- * @file symmetric_power_grid.hpp
+ * @file
  * @brief 1-dimensional, symmetric power grid.
  */
 
@@ -15,10 +15,10 @@ namespace simplemc {
  *
  * @details The grid is defined by the value of the first grid point, the value of the
  * last grid point (!= first), its size (>= 2 && odd) and a power parameter (> 0).
- * Let `c` be the midpoint of the grid range, i.e. `c = 0.5 * (first() + last())`, and 
- * `i_c = floor(size() / 2) + 1` be the corresponding index. Let `g1` be the grid from `first()` 
- * to `c` with `i_c` points and let `g2` be the descending grid from `last()` to `c` with `i_c` 
- * points such that `g1(i_c) = g2(i_c)`. The grid points `y(i)` are calculated as follows 
+ * Let `c` be the midpoint of the grid range, i.e. `c = 0.5 * (first() + last())`, and
+ * `i_c = floor(size() / 2) + 1` be the corresponding index. Let `g1` be the grid from `first()`
+ * to `c` with `i_c` points and let `g2` be the descending grid from `last()` to `c` with `i_c`
+ * points such that `g1(i_c) = g2(i_c)`. The grid points `y(i)` are calculated as follows
  * `y(i) = g1(i)` if `i <= i_c` and `y(i) = g2(size() - 1 - i)` if `i > i_c`.
  */
 class symmetric_power_grid : public grid_base {
@@ -65,7 +65,7 @@ public:
             return g1_.at(idx);
         } else {
             return g2_.at(size_ - 1 - idx);
-        }   
+        }
     }
 
     /**

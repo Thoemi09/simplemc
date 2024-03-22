@@ -1,5 +1,5 @@
 /**
- * @file grids_test.cpp
+ * @file
  * @brief Unit tests for simplemc-grids.
  */
 

@@ -1,5 +1,5 @@
 /**
- * @file grid_fwd.hpp
+ * @file
  * @brief Forward declarations for simplemc-grids.
  */
 

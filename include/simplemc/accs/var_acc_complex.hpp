@@ -1,5 +1,5 @@
 /**
- * @file var_acc_complex.hpp
+ * @file
  * @brief Variance accumulator for complex values.
  */
 

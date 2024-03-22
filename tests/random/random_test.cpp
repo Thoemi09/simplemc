@@ -1,5 +1,5 @@
 /**
- * @file random_test.cpp
+ * @file
  * @brief Unit tests for simplemc-random.
  */
 

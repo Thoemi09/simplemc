@@ -8,6 +8,7 @@
 # SIMPLEMC_FETCH_RANGEV3: Fetch range-v3 from github.
 # SIMPLEMC_FETCH_EIGEN: Fetch eigen from gitlab.
 # SIMPLEMC_DISABLE_WARNINGS: Disable stricter compilation warnings.
+# SIMPLEMC_BUILD_DOC: Build documentation with Doxygen.
 # FETCHCONTENT_SOURCE_DIR_GOOGLETEST: Fetch googletest from local directory.
 # FETCHCONTENT_SOURCE_DIR_JSON: Fetch json from local directory.
 # FETCHCONTENT_SOURCE_DIR_FMTLIB: Fetch fmtlib from local directory.
@@ -33,10 +34,10 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(BuildAndInstallDirs)
 
 if(NOT DEFINED SIMPLEMC_MASTER_PROJECT)
-  set(SIMPLEMC_MASTER_PROJECT OFF)
-  if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
-    set(SIMPLEMC_MASTER_PROJECT ON)
-  endif()
+    set(SIMPLEMC_MASTER_PROJECT OFF)
+    if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+        set(SIMPLEMC_MASTER_PROJECT ON)
+    endif()
 endif()
 
 #########################
@@ -50,6 +51,7 @@ option(SIMPLEMC_FETCH_FMT "Fetch fmtlib from github" ON)
 option(SIMPLEMC_FETCH_RANGEV3 "Fetch range-v3 from github" ON)
 option(SIMPLEMC_FETCH_EIGEN "Fetch eigen from gitlab" ON)
 option(SIMPLEMC_DISABLE_WARNINGS "Disable stricter compilation warnings" OFF)
+option(SIMPLEMC_BUILD_DOC "Build documentation with Doxygen" OFF)
 
 # disable install target if any dependencies are fetched
 if(SIMPLEMC_FETCH_JSON OR SIMPLEMC_FETCH_FMT OR SIMPLEMC_FETCH_RANGEV3 OR SIMPLEMC_FETCH_EIGEN)
@@ -70,6 +72,7 @@ message(STATUS "Fetch fmtlib: ${SIMPLEMC_FETCH_FMT}")
 message(STATUS "Fetch range-v3: ${SIMPLEMC_FETCH_RANGEV3}")
 message(STATUS "Fetch eigen: ${SIMPLEMC_FETCH_EIGEN}")
 message(STATUS "Disable stricter compiler warnings: ${SIMPLEMC_DISABLE_WARNINGS}")
+message(STATUS "Build documentation: ${SIMPLEMC_BUILD_DOC}")
 
 #########################
 # Build targets
@@ -81,4 +84,7 @@ if(SIMPLEMC_BUILD_TESTS)
 endif()
 if(SIMPLEMC_BUILD_EXAMPLES)
     add_subdirectory(examples)
+endif()
+if(SIMPLEMC_BUILD_DOC AND SIMPLEMC_MASTER_PROJECT)
+    add_subdirectory(doc)
 endif()

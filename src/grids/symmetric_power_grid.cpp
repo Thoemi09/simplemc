@@ -1,5 +1,5 @@
 /**
- * @file symmetric_power_grid.cpp
+ * @file
  * @brief 1-dimensional, symmetric power grid.
  */
 

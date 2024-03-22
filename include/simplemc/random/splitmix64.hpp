@@ -1,5 +1,5 @@
 /**
- * @file splitmix.hpp
+ * @file
  * @brief Random number generator splitmix64.
  */
 

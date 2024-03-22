@@ -1,5 +1,5 @@
 /**
- * @file telegraph_process.hpp
+ * @file
  * @brief Implementation of a telegraph process for testing the accumulators.
  */
 

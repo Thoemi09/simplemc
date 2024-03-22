@@ -1,5 +1,5 @@
 /**
- * @file linear_grid.hpp
+ * @file
  * @brief 1-dimensional linear grid.
  */
 

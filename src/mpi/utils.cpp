@@ -1,5 +1,5 @@
 /**
- * @file utils.cpp
+ * @file
  * @brief Utility functions for simplemc-mpi.
  */
 

@@ -1,5 +1,5 @@
 /**
- * @file test_utils.hpp
+ * @file
  * @brief Some helper utilities for testing.
  */
 

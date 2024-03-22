@@ -1,5 +1,5 @@
 /**
- * @file indexing.hpp
+ * @file
  * @brief Convert flat indices to multi-dimensional indices and vice versa.
  */
 

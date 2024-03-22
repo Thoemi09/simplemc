@@ -1,5 +1,5 @@
 /**
- * @file uniform_real_distribution.hpp
+ * @file
  * @brief Uniform distribution on the real line.
  */
 

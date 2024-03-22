@@ -1,5 +1,5 @@
 /**
- * @file utils.hpp
+ * @file
  * @brief Include all relevant header files from simpelmc-utils.
  */
 

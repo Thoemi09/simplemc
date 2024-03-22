@@ -1,5 +1,5 @@
 /**
- * @file to_string.hpp
+ * @file
  * @brief Generic to_string function.
  */
 

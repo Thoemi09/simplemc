@@ -1,5 +1,5 @@
 /**
- * @file xoshiro256.hpp
+ * @file
  * @brief Random number generator xoshiro256.
  */
 

@@ -1,5 +1,5 @@
 /**
- * @file numeric_test.cpp
+ * @file
  * @brief Unit tests for simplemc-numeric.
  */
 

@@ -1,5 +1,5 @@
 /**
- * @file discrete_distribution.hpp
+ * @file
  * @brief Discrete distribution using a linear search.
  */
 
@@ -225,7 +225,7 @@ template <integer_only T>
 
 /**
  * @brief Discrete distribution based on std::discrete_distribution and
- * boost::discrete_distribution. 
+ * boost::discrete_distribution.
  *
  * @details Satisfies the requirements for a C++ RandomNumberDistribution.
  *
@@ -267,7 +267,7 @@ public:
     discrete_distribution(std::initializer_list<double> list) : param_(list) {};
 
     /**
-     * @brief Construct a distribution such that the weights are given as 
+     * @brief Construct a distribution such that the weights are given as
      * `w_i = unary_op(xmin + d/2 + i*d)` with `d = (xmax - xmin)/n` and `i = 0, ..., n`.
      *
      * @tparam UnaryOp Unary operation.

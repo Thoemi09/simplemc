@@ -1,5 +1,5 @@
 /**
- * @file basic_json.hpp
+ * @file
  * @brief Basic interface to support JSON IO.
  */
 
@@ -32,8 +32,8 @@ public:
     virtual void read_json([[maybe_unused]] const nlohmann::json& j) {}
 
     /**
-     * @brief User input in JSON format. 
-     * 
+     * @brief User input in JSON format.
+     *
      * @details Can be used to write default input files.
      *
      * @param j nlohmann::json object.
@@ -41,8 +41,8 @@ public:
     virtual void write_input_json([[maybe_unused]] nlohmann::json& j) const {}
 
     /**
-     * @brief User input in JSON format. 
-     * 
+     * @brief User input in JSON format.
+     *
      * @details Can be used to read in user input.
      *
      * @param j nlohmann::json object.

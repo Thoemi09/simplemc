@@ -1,5 +1,5 @@
 /**
- * @file bravais_lattice.cpp
+ * @file
  * @brief Bravais lattices in 1d, 2d and 3d.
  */
 

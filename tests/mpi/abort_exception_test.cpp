@@ -1,5 +1,5 @@
 /**
- * @file abort_exception_test.cpp
+ * @file
  * @brief Test to abort MPI program on exception.
  */
 

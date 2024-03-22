@@ -1,5 +1,5 @@
 /**
- * @file env_comm_test.cpp
+ * @file
  * @brief Unit tests for the simplemc-mpi library.
  */
 

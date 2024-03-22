@@ -1,5 +1,5 @@
 /**
- * @file generic_error.hpp
+ * @file
  * @brief Base class for more specific exceptions.
  */
 

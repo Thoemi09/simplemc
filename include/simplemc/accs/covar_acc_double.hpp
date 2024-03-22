@@ -1,5 +1,5 @@
 /**
- * @file covar_acc_double.hpp
+ * @file
  * @brief Covariance accumulator for double values.
  */
 

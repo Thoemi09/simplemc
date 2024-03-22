@@ -1,5 +1,5 @@
 /**
- * @file accs_test.cpp
+ * @file
  * @brief Unit tests for simplemc-accs.
  */
 

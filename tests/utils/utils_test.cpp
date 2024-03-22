@@ -1,5 +1,5 @@
 /**
- * @file utils_test.cpp
+ * @file
  * @brief Unit tests for simplemc-utils library.
  */
 

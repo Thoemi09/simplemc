@@ -1,5 +1,5 @@
 /**
- * @file grids.hpp
+ * @file
  * @brief Include all relevant header files from simpelmc-grids.
  */
 

@@ -1,5 +1,5 @@
 /**
- * @file polynomial_interpolation.hpp
+ * @file
  * @brief Polynomial interpolation of arbitrary degree in arbitrary dimensions.
  */
 

@@ -1,5 +1,5 @@
 /**
- * @file covar_acc_complex.hpp
+ * @file
  * @brief Covariance accumulator for complex values.
  */
 

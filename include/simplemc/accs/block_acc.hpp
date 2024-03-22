@@ -1,5 +1,5 @@
 /**
- * @file block_acc.hpp
+ * @file
  * @brief Wrapper for simplemc::var_acc and simplemc::covar_acc to block data.
  */
 

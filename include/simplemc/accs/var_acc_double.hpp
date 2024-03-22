@@ -1,5 +1,5 @@
 /**
- * @file var_acc_double.hpp
+ * @file
  * @brief Variance accumulator for double values.
  */
 

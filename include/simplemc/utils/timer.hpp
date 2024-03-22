@@ -1,5 +1,5 @@
 /**
- * @file timer.hpp
+ * @file
  * @brief Timer built on top of std::chrono.
  */
 

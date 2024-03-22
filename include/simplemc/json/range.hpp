@@ -1,5 +1,5 @@
 /**
- * @file range.hpp
+ * @file
  * @brief Serialize/Deserialize ranges to/from JSON.
  */
 

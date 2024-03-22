@@ -1,5 +1,5 @@
 /**
- * @file mpi.hpp
+ * @file
  * @brief Include all relevant header files from simplemc-mpi.
  */
 

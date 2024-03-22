@@ -1,17 +1,13 @@
 /**
- * @file autocorr_acc.hpp
+ * @file
  * @brief Wrapper for simplemc::var_acc and simplemc::covar_acc to estimate the autocorrelation time.
  */
 
 #ifndef SIMPLEMC_ACCS_AUTOCORR_ACC_HPP
 #define SIMPLEMC_ACCS_AUTOCORR_ACC_HPP
 
-#include <simplemc/accs/covar_acc_complex.hpp>
-#include <simplemc/accs/covar_acc_double.hpp>
 #include <simplemc/accs/mean_acc.hpp>
 #include <simplemc/accs/utils.hpp>
-#include <simplemc/accs/var_acc_complex.hpp>
-#include <simplemc/accs/var_acc_double.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
 #include <range/v3/range/concepts.hpp>

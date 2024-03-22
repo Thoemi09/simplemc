@@ -1,5 +1,5 @@
 /**
- * @file samples.hpp
+ * @file
  * @brief Often used probability density functions and random samples from distributions.
  */
 

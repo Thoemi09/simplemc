@@ -1,0 +1,15 @@
+#########################
+# Doxygen
+#########################
+find_package(Doxygen REQUIRED)
+
+# configure the Doxyfile
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+
+# add custom target for Doxygen
+add_custom_target(doxygen ALL
+    COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Generating Doxygen documentation"
+    VERBATIM
+)

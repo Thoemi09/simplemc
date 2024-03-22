@@ -1,5 +1,5 @@
 /**
- * @file generic_error.cpp
+ * @file
  * @brief Base class for more specific exceptions.
  */
 

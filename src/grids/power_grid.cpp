@@ -1,5 +1,5 @@
 /**
- * @file power_grid.cpp
+ * @file
  * @brief 1-dimensional power grid.
  */
 

@@ -1,5 +1,5 @@
 /**
- * @file stochastic_process.hpp
+ * @file
  * @brief Implementation of a simple discrete stochastic process for testing the accumulators.
  */
 

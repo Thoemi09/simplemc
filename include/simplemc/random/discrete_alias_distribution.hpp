@@ -1,5 +1,5 @@
 /**
- * @file discrecte_alias_distribution.hpp
+ * @file
  * @brief Discrete distribution based on the Walker-Alias-Algorithm.
  */
 

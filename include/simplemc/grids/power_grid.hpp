@@ -1,5 +1,5 @@
 /**
- * @file power_grid.hpp
+ * @file
  * @brief 1-dimensional power grid.
  */
 
@@ -15,7 +15,7 @@ namespace simplemc {
  *
  * @details The grid is defined by the value of the first grid point, the value of the
  * last grid point (!= first), its size (>= 2) and a power parameter (> 0). The grid points
- * `y(i)` are generated according to `y(i) = first + scale * i**power`, where `i in [0, 1, ..., size - 1]` 
+ * `y(i)` are generated according to `y(i) = first + scale * i**power`, where `i in [0, 1, ..., size - 1]`
  * and `scale = (last - first) / std::pow((size - 1), power)`.
  *
  * If last < first, then the grid is descending.

@@ -1,5 +1,5 @@
 /**
- * @file environment.hpp
+ * @file
  * @brief RAII MPI environment to handle initialization and finalization of MPI programs.
  */
 

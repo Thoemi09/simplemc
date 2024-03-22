@@ -1,5 +1,5 @@
 /**
- * @file json.hpp
+ * @file
  * @brief Additional serializers for the nlohmann-json library.
  */
 

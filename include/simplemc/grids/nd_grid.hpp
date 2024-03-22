@@ -1,5 +1,5 @@
 /**
- * @file nd_grid.hpp
+ * @file
  * @brief N-dimensional grid.
  */
 

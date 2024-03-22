@@ -1,5 +1,5 @@
 /**
- * @file multivalue_acc.hpp
+ * @file
  * @brief Wrapper for accumulators to add multiple values to them.
  */
 

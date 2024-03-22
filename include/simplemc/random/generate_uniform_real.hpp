@@ -1,5 +1,5 @@
 /**
- * @file generate_uniform_real.hpp
+ * @file
  * @brief Generate a uniform real number.
  */
 

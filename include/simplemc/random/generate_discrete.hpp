@@ -1,5 +1,5 @@
 /**
- * @file generate_discrete.hpp
+ * @file
  * @brief Generate an integer from a discrete distribution.
  */
 

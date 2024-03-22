@@ -1,5 +1,5 @@
 /**
- * @file communicator.hpp
+ * @file
  * @brief Wrapper for an MPI_Comm MPI communicator.
  */
 

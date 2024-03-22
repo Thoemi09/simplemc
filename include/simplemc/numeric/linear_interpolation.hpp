@@ -1,5 +1,5 @@
 /**
- * @file linear_interpolation.hpp
+ * @file
  * @brief Linear interpolation in arbitrary dimensions.
  */
 

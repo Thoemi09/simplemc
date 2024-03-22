@@ -1,5 +1,5 @@
 /**
- * @file mean_acc.hpp
+ * @file
  * @brief Mean accumulator for calculating sample means.
  */
 

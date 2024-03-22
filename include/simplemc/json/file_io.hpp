@@ -1,5 +1,5 @@
 /**
- * @file file_io.hpp
+ * @file
  * @brief JSON file IO operations.
  */
 

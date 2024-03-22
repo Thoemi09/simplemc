@@ -1,5 +1,5 @@
 /**
- * @file simplemc_exception.hpp
+ * @file
  * @brief General exception used in the simplemc library.
  */
 
