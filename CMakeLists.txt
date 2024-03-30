@@ -4,10 +4,10 @@
 # SIMPLEMC_BUILD_TESTS: Build unit tests with googletest.
 # SIMPLEMC_BUILD_EXAMPLES: Build examples.
 # SIMPLEMC_BUILD_DOC: Build documentation with Doxygen.
-# SIMPLEMC_FETCH_JSON: Fetch json library from github.
 # SIMPLEMC_FETCH_FMT: Fetch fmtlib from github.
 # SIMPLEMC_FETCH_RANGEV3: Fetch range-v3 from github.
 # SIMPLEMC_FETCH_EIGEN: Fetch eigen from gitlab.
+# SIMPLEMC_FETCH_JSON: Fetch json library from github.
 # SIMPLEMC_DISABLE_WARNINGS: Disable stricter compilation warnings.
 
 cmake_minimum_required(VERSION 3.24)
@@ -42,14 +42,14 @@ option(SIMPLEMC_ENABLE_INSTALL "Enable install target" ${SIMPLEMC_MASTER_PROJECT
 option(SIMPLEMC_BUILD_TESTS "Build unit tests" ${SIMPLEMC_MASTER_PROJECT})
 option(SIMPLEMC_BUILD_EXAMPLES "Build examples" ${SIMPLEMC_MASTER_PROJECT})
 option(SIMPLEMC_BUILD_DOC "Build documentation with Doxygen" OFF)
-option(SIMPLEMC_FETCH_JSON "Fetch json library from github" ON)
 option(SIMPLEMC_FETCH_FMT "Fetch fmtlib from github" ON)
 option(SIMPLEMC_FETCH_RANGEV3 "Fetch range-v3 from github" ON)
 option(SIMPLEMC_FETCH_EIGEN "Fetch eigen from gitlab" ON)
+option(SIMPLEMC_FETCH_JSON "Fetch json library from github" ON)
 option(SIMPLEMC_DISABLE_WARNINGS "Disable stricter compilation warnings" OFF)
 
 # disable install target if any dependencies are fetched
-if(SIMPLEMC_FETCH_JSON OR SIMPLEMC_FETCH_FMT OR SIMPLEMC_FETCH_RANGEV3 OR SIMPLEMC_FETCH_EIGEN)
+if(SIMPLEMC_FETCH_FMT OR SIMPLEMC_FETCH_RANGEV3 OR SIMPLEMC_FETCH_EIGEN OR SIMPLEMC_FETCH_JSON)
     message(STATUS "Disabling install target because some dependencies are fetched")
     set(SIMPLEMC_ENABLE_INSTALL OFF)
 endif()
@@ -64,10 +64,10 @@ message(STATUS "Enable install: ${SIMPLEMC_ENABLE_INSTALL}")
 message(STATUS "Build unit tests: ${SIMPLEMC_BUILD_TESTS}")
 message(STATUS "Build examples: ${SIMPLEMC_BUILD_EXAMPLES}")
 message(STATUS "Build documentation: ${SIMPLEMC_BUILD_DOC}")
-message(STATUS "Fetch nlohmann-json: ${SIMPLEMC_FETCH_JSON}")
 message(STATUS "Fetch fmtlib: ${SIMPLEMC_FETCH_FMT}")
 message(STATUS "Fetch range-v3: ${SIMPLEMC_FETCH_RANGEV3}")
 message(STATUS "Fetch eigen: ${SIMPLEMC_FETCH_EIGEN}")
+message(STATUS "Fetch nlohmann-json: ${SIMPLEMC_FETCH_JSON}")
 message(STATUS "Disable stricter compiler warnings: ${SIMPLEMC_DISABLE_WARNINGS}")
 
 #########################

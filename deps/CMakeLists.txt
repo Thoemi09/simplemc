@@ -14,17 +14,9 @@
 
 include(FetchContent)
 
-# googletest
-if(SIMPLEMC_BUILD_TESTS)
-    FetchContent_Declare(googletest
-        GIT_REPOSITORY https://github.com/google/googletest
-        GIT_TAG main) # 2dd1c13
-    set(INSTALL_GTEST OFF CACHE BOOL "")
-    set(BUILD_GMOCK OFF CACHE BOOL "")
-    message(STATUS "Fetching googletest ...")
-    FetchContent_MakeAvailable(googletest)
-    message(STATUS "googletest_SOURCE_DIR: ${googletest_SOURCE_DIR}")
-endif()
+#########################
+# Required dependencies
+#########################
 
 # fmtlib
 if(SIMPLEMC_FETCH_FMT)
@@ -60,22 +52,6 @@ else()
     message(STATUS "range-v3 found: Include directories = ${RANGEV3_TMP}")
 endif()
 
-# json
-if(SIMPLEMC_FETCH_JSON)
-    FetchContent_Declare(json
-        GIT_REPOSITORY https://github.com/nlohmann/json.git
-        GIT_TAG origin/develop) # edffad0
-    message(STATUS "Fetching json ...")
-    FetchContent_MakeAvailable(json)
-    message(STATUS "json_SOURCE_DIR: ${json_SOURCE_DIR}")
-else()
-    message(STATUS "Finding json: nlohmann_json_DIR = ${nlohmann_json_DIR}")
-    find_package(nlohmann_json REQUIRED)
-    set_target_properties(nlohmann_json::nlohmann_json PROPERTIES IMPORTED_GLOBAL TRUE)
-    get_target_property(JSON_TMP nlohmann_json::nlohmann_json INTERFACE_INCLUDE_DIRECTORIES)
-    message(STATUS "json found: Include directories = ${JSON_TMP}")
-endif()
-
 # mpi
 message(STATUS "Finding MPI ...")
 find_package(MPI REQUIRED)
@@ -97,4 +73,36 @@ else()
     set_target_properties(Eigen3::Eigen PROPERTIES IMPORTED_GLOBAL TRUE)
     get_target_property(EIGEN_TMP Eigen3::Eigen INTERFACE_INCLUDE_DIRECTORIES)
     message(STATUS "Eigen3 found: Include directories = ${EIGEN_TMP}")
+endif()
+
+# json
+if(SIMPLEMC_FETCH_JSON)
+    FetchContent_Declare(json
+        GIT_REPOSITORY https://github.com/nlohmann/json.git
+        GIT_TAG origin/develop) # edffad0
+    message(STATUS "Fetching json ...")
+    FetchContent_MakeAvailable(json)
+    message(STATUS "json_SOURCE_DIR: ${json_SOURCE_DIR}")
+else()
+    message(STATUS "Finding json: nlohmann_json_DIR = ${nlohmann_json_DIR}")
+    find_package(nlohmann_json REQUIRED)
+    set_target_properties(nlohmann_json::nlohmann_json PROPERTIES IMPORTED_GLOBAL TRUE)
+    get_target_property(JSON_TMP nlohmann_json::nlohmann_json INTERFACE_INCLUDE_DIRECTORIES)
+    message(STATUS "json found: Include directories = ${JSON_TMP}")
+endif()
+
+#########################
+# Optional dedendencies
+#########################
+
+# googletest
+if(SIMPLEMC_BUILD_TESTS)
+    FetchContent_Declare(googletest
+        GIT_REPOSITORY https://github.com/google/googletest
+        GIT_TAG main) # 2dd1c13
+    set(INSTALL_GTEST OFF CACHE BOOL "")
+    set(BUILD_GMOCK OFF CACHE BOOL "")
+    message(STATUS "Fetching googletest ...")
+    FetchContent_MakeAvailable(googletest)
+    message(STATUS "googletest_SOURCE_DIR: ${googletest_SOURCE_DIR}")
 endif()
