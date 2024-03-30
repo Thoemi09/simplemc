@@ -1,3 +1,17 @@
+# Find/Fetch various dependencies of simplemc.
+#
+# The following dependencies are required:
+# ---------------------------------
+# fmtlib: It is fetched from github if SIMPLEMC_FETCH_FMT is ON, otherwise it is found using find_package.
+# range-v3: It is fetched from github if SIMPLEMC_FETCH_RANGEV3 is ON, otherwise it is found using find_package.
+# mpi: It is found using find_package.
+# Eigen3: It is fetched from gitlab if SIMPLEMC_FETCH_EIGEN is ON, otherwise it is found using find_package.
+# nlohmann_json: It is fetched from github if SIMPLEMC_FETCH_JSON is ON, otherwise it is found using find_package.
+#
+# The following dependencies are optional:
+# ---------------------------------
+# googletest: It is fetched from github and built only if SIMPLEMC_BUILD_TESTS is ON.
+
 include(FetchContent)
 
 # googletest

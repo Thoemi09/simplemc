@@ -1,8 +1,8 @@
 # Build libraries for simplemc.
-# 
+#
 # The following targets are defined:
 # ---------------------------------
-# simplemc-basic (simplemc::simplemc-basic)
+# simplemc-basic (simplemc::simplemc-basic): Interface library specifying compiler warnings and include directories.
 
 # generate config.hpp header file
 configure_file(config.hpp.in ${PROJECT_BINARY_DIR}/include/simplemc/config.hpp)
@@ -11,7 +11,7 @@ configure_file(config.hpp.in ${PROJECT_BINARY_DIR}/include/simplemc/config.hpp)
 add_library(simplemc-basic INTERFACE)
 add_library(simplemc::simplemc-basic ALIAS simplemc-basic)
 if(NOT SIMPLEMC_DISABLE_WARNINGS)
-    target_compile_options(simplemc-basic 
+    target_compile_options(simplemc-basic
         INTERFACE
             -Wall
             -Wextra
