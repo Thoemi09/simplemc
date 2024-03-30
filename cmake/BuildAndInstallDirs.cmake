@@ -1,4 +1,4 @@
-# Define install directories from GNUInstallDirs module, rpaths and default install prefix.
+# Defines install directories from GNUInstallDirs module, rpaths and default install prefix.
 #
 # The following variables are set:
 # ---------------------------------

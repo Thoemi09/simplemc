@@ -2,9 +2,9 @@
 #
 # The following targets are defined:
 # ---------------------------------
-# simplemc-test
-
-include(UnitTests)
+# simplemc-test: Interface library to which other test targets link.
+# tmp-test: Executable for testing temporary code.
+# tmp-mpi-test: Executable for testing temporary MPI code.
 
 # create interface library for testing
 add_library(simplemc-test INTERFACE)
