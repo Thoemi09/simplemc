@@ -8,8 +8,10 @@
 
 #include <simplemc/utils/concepts.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cassert>
+#include <concepts>
 #include <cstddef>
 #include <functional>
 #include <numeric>
@@ -18,7 +20,7 @@
 namespace simplemc {
 
 /**
- * @brief Calculate size of a multi-dimensional array given its shape as a std::vector.
+ * @brief Calculate the size of a multi-dimensional array given its shape as a std::vector.
  *
  * @tparam T Integral type.
  * @param shape Shape of the multi-dimensional array.
@@ -34,7 +36,7 @@ template <std::integral T>
 }
 
 /**
- * @brief Calculate size of a multi-dimensional array given its shape as a std::array.
+ * @brief Calculate the size of a multi-dimensional array given its shape as a std::array.
  *
  * @tparam T Integral type.
  * @tparam N Number of dimensions.
@@ -54,10 +56,10 @@ template <std::integral T, std::size_t N>
  * @brief Convert a flat index to a multi-dimensional index w.r.t. to a given shape.
  *
  * @tparam T Integer type.
- * @tparam Order Order of the multi-dimensional array.
+ * @tparam Order Storage order of the multi-dimensional array.
  * @param flat_idx Flat index.
  * @param shape Shape of the underlying multi-dimensional array.
- * @param order Order of the multi-dimensional array (used only for type deduction).
+ * @param order Storage order of the multi-dimensional array (used only for type deduction).
  * @return Multi-dimensional index as a std::vector.
  */
 template <std::integral T, nd_order Order = column_major>
@@ -92,10 +94,10 @@ template <std::integral T, nd_order Order = column_major>
  *
  * @tparam T Integer type.
  * @tparam N Number of dimensions.
- * @tparam Order Order of the multi-dimensional array.
+ * @tparam Order Storage order of the multi-dimensional array.
  * @param flat_idx Flat index.
  * @param shape Shape of the underlying multi-dimensional array.
- * @param order Order of the multi-dimensional array (used only for type deduction).
+ * @param order Storage order of the multi-dimensional array (used only for type deduction).
  * @return Multi-dimensional index as a std::array.
  */
 template <std::integral T, std::size_t N, nd_order Order = column_major>
@@ -129,10 +131,10 @@ template <std::integral T, std::size_t N, nd_order Order = column_major>
  *
  * @tparam T1 Integer type.
  * @tparam T2 Integer type.
- * @tparam Order Order of the multi-dimensional array.
+ * @tparam Order Storage order of the multi-dimensional array.
  * @param idxs Multi-dimensional index.
  * @param shape Shape of the underlying multi-dimensional array.
- * @param order Order of the multi-dimensional array (used only for type deduction).
+ * @param order Storage order of the multi-dimensional array (used only for type deduction).
  * @return Flat index.
  */
 template <std::integral T1, std::integral T2, nd_order Order = column_major>
@@ -161,10 +163,10 @@ template <std::integral T1, std::integral T2, nd_order Order = column_major>
  * @tparam T1 Integer type.
  * @tparam T2 Integer type.
  * @tparam N Number of dimensions.
- * @tparam Order Order of the multi-dimensional array.
+ * @tparam Order Storage order of the multi-dimensional array.
  * @param idxs Multi-dimensional index.
  * @param shape Shape of the underlying multi-dimensional array.
- * @param order Order of the multi-dimensional array (used only for type deduction).
+ * @param order Storage order of the multi-dimensional array (used only for type deduction).
  * @return Flat index.
  */
 template <std::integral T1, std::integral T2, std::size_t N, nd_order Order = column_major>
@@ -196,13 +198,13 @@ template <std::integral T1, std::integral T2, std::size_t N, nd_order Order = co
  * then `j = l` if possible.
  *
  * @tparam T Integral type.
- * @param l Center of the subrange.
+ * @param l Center of the wanted subrange.
  * @param n Size of the larger range.
  * @param m Size of the wanted subrange.
  * @return Index `j` such that `l` lies in the middle of `(j, j+1, ..., j+m-1)`.
  */
 template <std::integral T>
-inline constexpr auto integer_subrange(T l, T n, T m) {
+[[nodiscard]] inline constexpr auto integer_subrange(T l, T n, T m) {
     assert(l >= 0 && l < n);
     assert(m > 0 && m <= n);
     return std::clamp(static_cast<T>(m % 2 == 0 ? l + 1 - m / 2 : l - m / 2), T { 0 }, n - m);

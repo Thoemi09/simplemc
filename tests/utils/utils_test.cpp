@@ -1,8 +1,3 @@
-/**
- * @file
- * @brief Unit tests for simplemc-utils library.
- */
-
 #include <gtest/gtest.h>
 
 #include <simplemc/config.hpp>

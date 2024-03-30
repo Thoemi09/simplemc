@@ -50,7 +50,7 @@ struct column_major {};
 struct row_major {};
 
 /**
- * @brief A concept that checks if a given type is either simplemc::column_major or simplemc::row_major.
+ * @brief A concept that checks if a given type is either a column_major or a row_major tag.
  *
  * @tparam T Type to check.
  */

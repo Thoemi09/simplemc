@@ -11,7 +11,7 @@
 namespace simplemc {
 
 /**
- * @brief Type aliases for different std::chrono::duration types.
+ * @brief Convenient type aliases for different std::chrono::duration types.
  */
 struct duration {
     using hour = std::chrono::duration<double, std::ratio<3600>>;
@@ -23,9 +23,9 @@ struct duration {
 };
 
 /**
- * @brief Elapsed time between two time points.
+ * @brief Get the elapsed time between two time points.
  *
- * @details The third parameter specifies the type of resulting duration.
+ * @details The third parameter specifies the type of the resulting duration.
  * It is only used for type deduction.
  *
  * @code{.cpp}
@@ -71,7 +71,7 @@ template <typename C, typename D1, typename D2, typename D = duration::sec>
  * auto since_start_in_sec = time_passed(t.start_time(), t.stop_time());
  * @endcode
  *
- * @tparam Clock Clock from std::chrono (default: std::chrono::steady_clock).
+ * @tparam Clock Clock type from std::chrono (default: std::chrono::steady_clock).
  */
 template <typename Clock = std::chrono::steady_clock>
 class timer {

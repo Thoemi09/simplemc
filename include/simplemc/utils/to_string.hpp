@@ -11,7 +11,7 @@
 namespace simplemc {
 
 /**
- * @brief Generic function that uses the stream operator<< to convert an object to a string.
+ * @brief Generic function that uses the stream `operator<<` to convert an object to a string.
  *
  * @param t Object to convert to a string.
  * @return String representation of the object.

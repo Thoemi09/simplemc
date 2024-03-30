@@ -12,7 +12,7 @@
 namespace simplemc {
 
 /**
- * @brief Opens a file.
+ * @brief Open a file and return the file pointer.
  *
  * @details Throws a simplemc::simplemc_exception if it fails.
  *
@@ -23,7 +23,7 @@ namespace simplemc {
 [[nodiscard]] std::FILE* open_file(const std::string& name, const std::string& mode);
 
 /**
- * @brief Closes a file.
+ * @brief Close an already opened file.
  *
  * @details Does nothing if the file pointer is equal to nullptr, stdout, stdin or stderr.
  * Throws a simplemc::simplemc_exception if it fails.

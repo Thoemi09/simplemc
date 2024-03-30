@@ -8,6 +8,8 @@
 
 #include <simplemc/utils/generic_error.hpp>
 
+#include <string_view>
+
 namespace simplemc {
 
 /**
@@ -16,12 +18,12 @@ namespace simplemc {
 class simplemc_exception : public generic_error {
 public:
     /**
-     * @brief Construct a new simplemc_exception object.
+     * @brief Construct a new exception object.
      *
      * @param err_msg Specific error message.
      * @param func_name Name of the function which throws.
      */
-    simplemc_exception(const std::string& err_msg, const std::string& func_name = "") :
+    simplemc_exception(std::string_view err_msg, std::string_view func_name = "") :
         generic_error("simplemc exception", err_msg, func_name) {}
 };
 

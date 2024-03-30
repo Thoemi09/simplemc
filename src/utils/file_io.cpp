@@ -1,8 +1,3 @@
-/**
- * @file
- * @brief Basic file input/output functions.
- */
-
 #include <simplemc/utils/file_io.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 

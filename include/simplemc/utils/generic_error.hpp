@@ -7,16 +7,16 @@
 #define SIMPLEMC_UTILS_GENERIC_ERROR_HPP
 
 #include <stdexcept>
-#include <string>
+#include <string_view>
 
 namespace simplemc {
 
 /**
  * @brief Generic base class for exceptions.
  *
- * @details This class serves as a base class for all exceptions in the simplemc library.
- * It inherits from std::runtime_error and provides a constructor and a virtual function
- * for constructing error messages.
+ * @details This class serves as a base class for all exceptions in the simplemc library but
+ * can also be used in other libraries. It inherits from std::runtime_error and provides a
+ * constructor and a virtual function for constructing error messages.
  */
 class generic_error : public std::runtime_error {
 public:
@@ -27,7 +27,7 @@ public:
      * @param err_msg Specific error message.
      * @param func_name Name of the function which throws.
      */
-    generic_error(const std::string& exc_name, const std::string& err_msg, const std::string& func_name = "");
+    generic_error(std::string_view exc_name, std::string_view err_msg, std::string_view func_name = "");
 
     /**
      * @brief Virtual destructor.
@@ -42,7 +42,7 @@ public:
      * @param func_name Name of the function which throws.
      */
     [[nodiscard]] virtual std::string make_msg(
-        const std::string& exc_name, const std::string& err_msg, const std::string& func_name) const;
+        std::string_view exc_name, std::string_view err_msg, std::string_view func_name) const;
 };
 
 } // namespace simplemc

@@ -7,7 +7,7 @@
 #include "../test_utils.hpp"
 
 #include <simplemc/accs.hpp>
-#include <simplemc/utils/format.hpp>
+#include <simplemc/utils/fmt_complex.hpp>
 
 #include <fmt/ranges.h>
 #include <range/v3/view/zip.hpp>

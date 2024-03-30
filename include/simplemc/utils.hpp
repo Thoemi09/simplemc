@@ -13,7 +13,7 @@
 #include <simplemc/utils/file_io.hpp>
 
 // fmtlib formatting
-#include <simplemc/utils/format.hpp>
+#include <simplemc/utils/fmt_complex.hpp>
 
 // multidimensional indexing
 #include <simplemc/utils/indexing.hpp>

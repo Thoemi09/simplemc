@@ -1,10 +1,10 @@
 /**
  * @file
- * @brief Some specialized formatters for fmtlib.
+ * @brief Specialized fmtlib formatter for std::complex.
  */
 
-#ifndef SIMPLEMC_UTILS_FORMAT_HPP
-#define SIMPLEMC_UTILS_FORMAT_HPP
+#ifndef SIMPLEMC_UTILS_FMT_COMPLEX_HPP
+#define SIMPLEMC_UTILS_FMT_COMPLEX_HPP
 
 #include <fmt/format.h>
 
@@ -26,7 +26,7 @@ struct formatter<std::complex<T>, Char> : public formatter<T, Char> {
     using base = formatter<T, Char>;
 
     /**
-     * @brief Parses the format string.
+     * @brief Parse the format string.
      *
      * @param ctx Format parse context.
      * @return Iterator to the end of the parsed range.
@@ -34,7 +34,7 @@ struct formatter<std::complex<T>, Char> : public formatter<T, Char> {
     constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return base::parse(ctx); }
 
     /**
-     * @brief Formats the std::complex<T> type.
+     * @brief Format the std::complex<T> type.
      *
      * @tparam FormatContext Format context type of fmtlib.
      * @param z std::complex value to format.
@@ -53,4 +53,4 @@ struct formatter<std::complex<T>, Char> : public formatter<T, Char> {
 
 } // namespace fmt
 
-#endif // SIMPLEMC_UTILS_FORMAT_HPP
+#endif // SIMPLEMC_UTILS_FMT_COMPLEX_HPP

@@ -2,7 +2,7 @@
 #include "./accs/stochastic_process.hpp"
 
 #include <simplemc/accs/utils.hpp>
-#include <simplemc/utils/format.hpp>
+#include <simplemc/utils/fmt_complex.hpp>
 #include <simplemc/utils/to_string.hpp>
 #include <fmt/ranges.h>
 #include <range/v3/all.hpp>
