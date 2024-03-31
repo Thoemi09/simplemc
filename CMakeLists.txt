@@ -4,10 +4,15 @@
 # SIMPLEMC_BUILD_TESTS: Build unit tests with googletest.
 # SIMPLEMC_BUILD_EXAMPLES: Build examples.
 # SIMPLEMC_BUILD_DOC: Build documentation with Doxygen.
-# SIMPLEMC_FETCH_FMT: Fetch fmtlib from github.
+# SIMPLEMC_WITH_TOMLPLUSPLUS: Use toml++ for TOML support.
+# SIMPLEMC_WITH_NLOHMANN_JSON: Use nlohmann_json for JSON support.
+# SIMPLEMC_WITH_HIGHFIVE: Use HighFive for HDF5 support.
+# SIMPLEMC_FETCH_FMT: Fetch fmt from github.
 # SIMPLEMC_FETCH_RANGEV3: Fetch range-v3 from github.
-# SIMPLEMC_FETCH_EIGEN: Fetch eigen from gitlab.
-# SIMPLEMC_FETCH_JSON: Fetch json library from github.
+# SIMPLEMC_FETCH_EIGEN3: Fetch Eigen3 from gitlab.
+# SIMPLEMC_FETCH_TOMLPLUSPLUS: Fetch toml++ library from github.
+# SIMPLEMC_FETCH_NLOHMANN_JSON: Fetch nlohmann_json library from github.
+# SIMPLEMC_FETCH_HIGHFIVE: Fetch HighFive library from github.
 # SIMPLEMC_DISABLE_WARNINGS: Disable stricter compilation warnings.
 
 cmake_minimum_required(VERSION 3.24)
@@ -42,17 +47,22 @@ option(SIMPLEMC_ENABLE_INSTALL "Enable install target" ${SIMPLEMC_MASTER_PROJECT
 option(SIMPLEMC_BUILD_TESTS "Build unit tests" ${SIMPLEMC_MASTER_PROJECT})
 option(SIMPLEMC_BUILD_EXAMPLES "Build examples" ${SIMPLEMC_MASTER_PROJECT})
 option(SIMPLEMC_BUILD_DOC "Build documentation with Doxygen" OFF)
-option(SIMPLEMC_FETCH_FMT "Fetch fmtlib from github" ON)
+option(SIMPLEMC_WITH_TOMLPLUSPLUS "Use toml++ for TOML support" ON)
+option(SIMPLEMC_WITH_NLOHMANN_JSON "Use nlohmann_json for JSON support" OFF)
+option(SIMPLEMC_WITH_HIGHFIVE "Use HighFive for HDF5 support" ON)
+option(SIMPLEMC_FETCH_FMT "Fetch fmt from github" ON)
 option(SIMPLEMC_FETCH_RANGEV3 "Fetch range-v3 from github" ON)
-option(SIMPLEMC_FETCH_EIGEN "Fetch eigen from gitlab" ON)
-option(SIMPLEMC_FETCH_JSON "Fetch json library from github" ON)
+option(SIMPLEMC_FETCH_EIGEN3 "Fetch Eigen3 from gitlab" ON)
+option(SIMPLEMC_FETCH_TOMLPLUSPLUS "Fetch toml++ library from github" ON)
+option(SIMPLEMC_FETCH_NLOHMANN_JSON "Fetch nlohmann_json library from github" ON)
+option(SIMPLEMC_FETCH_HIGHFIVE "Fetch HighFive library from github" ON)
 option(SIMPLEMC_DISABLE_WARNINGS "Disable stricter compilation warnings" OFF)
 
 # disable install target if any dependencies are fetched
-if(SIMPLEMC_FETCH_FMT OR SIMPLEMC_FETCH_RANGEV3 OR SIMPLEMC_FETCH_EIGEN OR SIMPLEMC_FETCH_JSON)
-    message(STATUS "Disabling install target because some dependencies are fetched")
-    set(SIMPLEMC_ENABLE_INSTALL OFF)
-endif()
+# if(SIMPLEMC_FETCH_FMT OR SIMPLEMC_FETCH_RANGEV3 OR SIMPLEMC_FETCH_EIGEN OR SIMPLEMC_FETCH_JSON)
+#     message(STATUS "Disabling install target because some dependencies are fetched")
+#     set(SIMPLEMC_ENABLE_INSTALL OFF)
+# endif()
 
 # output user options
 message(STATUS "Start configuring project ${PROJECT_NAME}")
@@ -64,10 +74,15 @@ message(STATUS "Enable install: ${SIMPLEMC_ENABLE_INSTALL}")
 message(STATUS "Build unit tests: ${SIMPLEMC_BUILD_TESTS}")
 message(STATUS "Build examples: ${SIMPLEMC_BUILD_EXAMPLES}")
 message(STATUS "Build documentation: ${SIMPLEMC_BUILD_DOC}")
-message(STATUS "Fetch fmtlib: ${SIMPLEMC_FETCH_FMT}")
+message(STATUS "TOML support: ${SIMPLEMC_WITH_TOMLPLUSPLUS}")
+message(STATUS "JSON support: ${SIMPLEMC_WITH_NLOHMANN_JSON}")
+message(STATUS "HDF5 support: ${SIMPLEMC_WITH_HIGHFIVE}")
+message(STATUS "Fetch fmt: ${SIMPLEMC_FETCH_FMT}")
 message(STATUS "Fetch range-v3: ${SIMPLEMC_FETCH_RANGEV3}")
-message(STATUS "Fetch eigen: ${SIMPLEMC_FETCH_EIGEN}")
-message(STATUS "Fetch nlohmann-json: ${SIMPLEMC_FETCH_JSON}")
+message(STATUS "Fetch Eigen3: ${SIMPLEMC_FETCH_EIGEN3}")
+message(STATUS "Fetch toml++: ${SIMPLEMC_FETCH_TOMLPLUSPLUS}")
+message(STATUS "Fetch nlohmann_json: ${SIMPLEMC_FETCH_NLOHMANN_JSON}")
+message(STATUS "Fetch HighFive: ${SIMPLEMC_FETCH_HIGHFIVE}")
 message(STATUS "Disable stricter compiler warnings: ${SIMPLEMC_DISABLE_WARNINGS}")
 
 #########################
