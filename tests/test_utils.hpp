@@ -8,29 +8,11 @@
 
 #include <gtest/gtest.h>
 #include <simplemc/utils/concepts.hpp>
-#include <simplemc/json/json.hpp>
 
 #include <fmt/ranges.h>
 #include <range/v3/all.hpp>
 
 #include <vector>
-
-// Check JSON serialization/deserialization of an object.
-template <typename T1, typename T2>
-void check_json(const T1& orig, T2& copy) {
-    nlohmann::json j;
-    j["orig"] = orig;
-    j.at("orig").get_to(copy);
-    j["copy"] = copy;
-    ASSERT_EQ(j["orig"], j["copy"]);
-}
-
-// Check JSON serialization/deserialization of an object (needs to be default constructible).
-template <typename T>
-void check_json(const T& orig) {
-    T copy;
-    check_json(orig, copy);
-}
 
 // Check for nearness.
 template <typename T1, typename T2>

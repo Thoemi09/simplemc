@@ -20,6 +20,23 @@ struct bar : public simplemc::basic_json {
 
 } // namespace foo
 
+// Check JSON serialization/deserialization of an object.
+template <typename T1, typename T2>
+void check_json(const T1& orig, T2& copy) {
+    nlohmann::json j;
+    j["orig"] = orig;
+    j.at("orig").get_to(copy);
+    j["copy"] = copy;
+    ASSERT_EQ(j["orig"], j["copy"]);
+}
+
+// Check JSON serialization/deserialization of an object (needs to be default constructible).
+template <typename T>
+void check_json(const T& orig) {
+    T copy;
+    check_json(orig, copy);
+}
+
 // Check if file IO in text mode works.
 void check_file_io(const nlohmann::json j, const std::string& fname, int w) {
     simplemc::write_json_file(j, fname, w);

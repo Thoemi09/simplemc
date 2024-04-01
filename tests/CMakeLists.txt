@@ -9,7 +9,7 @@
 # create interface library for testing
 add_library(simplemc-test INTERFACE)
 target_include_directories(simplemc-test INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(simplemc-test INTERFACE GTest::gtest_main simplemc::simplemc-json)
+target_link_libraries(simplemc-test INTERFACE GTest::gtest_main simplemc::simplemc-utils)
 
 # library specific tests
 add_subdirectory(utils)
