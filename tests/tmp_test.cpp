@@ -1,39 +1,62 @@
-#include "./test_utils.hpp"
-#include "./accs/stochastic_process.hpp"
+#include <nlohmann/json.hpp>
 
-#include <simplemc/accs/utils.hpp>
-#include <simplemc/utils/fmt_complex.hpp>
-#include <simplemc/utils/to_string.hpp>
-#include <fmt/ranges.h>
-#include <range/v3/all.hpp>
+#include <iostream>
+#include <utility>
+
+struct empty_serializer {
+    template <typename T>
+    void serialize([[maybe_unused]] const T& t) {
+        std::cout << "empty_serializer::serialize" << std::endl;
+    }
+
+    template <typename T>
+    void deserialize([[maybe_unused]] T& t) const {
+        std::cout << "empty_serializer::deserialize" << std::endl;
+    }
+};
+
+struct json_serializer {
+    nlohmann::json j;
+    template <typename T>
+    void serialize(const T& t) {
+        std::cout << "json_serializer::serialize" << std::endl;
+        j = t;
+        std::cout << j << std::endl;
+    }
+
+    template <typename T>
+    void deserialize(T& t) const {
+        std::cout << "json_serializer::deserialize" << std::endl;
+        j.get_to(t);
+    }
+};
+
+struct mc {
+    int steps = 0;
+
+    template <typename S>
+    void run(S&& s) {
+        for (; steps < 100; ++steps) {
+            if (steps % 10 == 0) {
+                checkpoint(std::forward<S>(s));
+            }
+        }
+    }
+
+    template <typename S>
+    void checkpoint(S&& s) {
+        std::forward<S>(s).serialize(*this);
+    }
+};
+
+void to_json(nlohmann::json& j, const mc& m) {
+    j["steps"] = m.steps;
+}
 
 int main() {
-    using sp_type = stochastic_process<double, 1>;
-    using state_type = sp_type::state_type;
-    using mat_type = Eigen::MatrixXd;
-    std::vector<state_type> states { state_type { 1.0 }, state_type { 2.0 } };
-    std::vector<double> weights { 0.2, 0.8 };
-    mat_type mcmc_props(2, 2);
-    mcmc_props << 10, 2, 6, 10;
-    sp_type sp;
-    sp.set_states(states);
-    sp.set_weights(weights);
-    sp.set_mcmc_proposal(mcmc_props);
-    sp.mcmc_warmup(10000);
-    sp.mcmc_run(1000000);
-    fmt::print("Analytic mean: {}\n", analytic_mean(sp));
-    fmt::print("Analytic variance: {}\n", analytic_variance(sp));
-    fmt::print("Sample mean: {}\n", sample_mean(sp));
-    fmt::print("Sample variance: {}\n", sample_variance(sp));
-
-    auto [bsps, btaus] = blocking_autocorr(sp);
-    for (const auto& t : btaus) {
-        fmt::print("{}\n", t);
-    }
-
-    auto [staus, tau_int] = sample_autocorr(sp, 50);
-    fmt::print("Integrated autocorrelation time: {}\n", tau_int);
-    for (const auto& t : staus) {
-        fmt::print("{}\n", t);
-    }
+    mc sim;
+    json_serializer js;
+    js.j = js.j["mc"];
+    sim.run(js);
+    std::cout << js.j << std::endl;
 }

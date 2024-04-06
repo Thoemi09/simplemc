@@ -48,7 +48,7 @@ option(SIMPLEMC_BUILD_TESTS "Build unit tests" ${SIMPLEMC_MASTER_PROJECT})
 option(SIMPLEMC_BUILD_EXAMPLES "Build examples" ${SIMPLEMC_MASTER_PROJECT})
 option(SIMPLEMC_BUILD_DOC "Build documentation with Doxygen" OFF)
 option(SIMPLEMC_WITH_TOMLPLUSPLUS "Use toml++ for TOML support" ON)
-option(SIMPLEMC_WITH_NLOHMANN_JSON "Use nlohmann_json for JSON support" OFF)
+option(SIMPLEMC_WITH_NLOHMANN_JSON "Use nlohmann_json for JSON support" ON)
 option(SIMPLEMC_WITH_HIGHFIVE "Use HighFive for HDF5 support" ON)
 option(SIMPLEMC_FETCH_FMT "Fetch fmt from github" ON)
 option(SIMPLEMC_FETCH_RANGEV3 "Fetch range-v3 from github" ON)
@@ -57,12 +57,6 @@ option(SIMPLEMC_FETCH_TOMLPLUSPLUS "Fetch toml++ library from github" ON)
 option(SIMPLEMC_FETCH_NLOHMANN_JSON "Fetch nlohmann_json library from github" ON)
 option(SIMPLEMC_FETCH_HIGHFIVE "Fetch HighFive library from github" ON)
 option(SIMPLEMC_DISABLE_WARNINGS "Disable stricter compilation warnings" OFF)
-
-# disable install target if any dependencies are fetched
-# if(SIMPLEMC_FETCH_FMT OR SIMPLEMC_FETCH_RANGEV3 OR SIMPLEMC_FETCH_EIGEN OR SIMPLEMC_FETCH_JSON)
-#     message(STATUS "Disabling install target because some dependencies are fetched")
-#     set(SIMPLEMC_ENABLE_INSTALL OFF)
-# endif()
 
 # output user options
 message(STATUS "Start configuring project ${PROJECT_NAME}")
