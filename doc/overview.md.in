@@ -1,0 +1,55 @@
+@mainpage Overview
+
+[TOC]
+
+[![build](https://github.com/TRIQS/mpi/workflows/build/badge.svg?branch=unstable)](https://github.com/TRIQS/mpi/actions?query=workflow%3Abuild)
+
+> This is the homepage of **@PROJECT_NAME@ v@PROJECT_VERSION@**. The source code can be found on [GitHub](https://github.com/Thoemi09/simplemc).
+
+```cpp
+#include <simplemc/mpi.hpp>
+#include <fmt/core.h>
+
+int main(int argc, char** argv) {
+  // initialize MPI environment and communicator
+  simplemc::mpi::environment env(argc, argv);
+  simplemc::mpi::communicator comm;
+
+  // print message on each process
+  fmt::print("Hello world, from {} of {} processes.\n", comm.rank(), comm.size());
+}
+```
+
+**simplemc** is a library written in C++ that provides various tools to simplify the implementation of Monte Carlo (MC) simulations
+with special focus on applications in computational physics.
+Its functionality is similar to other already established codes like [ALPSCore](https://alpscore.org/) or the MC part of
+[TRIQS](https://triqs.github.io/triqs/latest/).
+
+The main purpose of this library is to help the user with common tasks that are encountered in all but the most trivial MC
+implementations. Some examples include:
+* Accumulation of data
+* Statistical analysis of results and error propagation
+* Parallelization using MPI
+* Saving and loading the simulation state in order to resume a simulation (serialization)
+* Parsing user input and configuration files
+* Numerical procedures like interpolation, quadrature, etc.
+* and more...
+
+These tasks can take a considerable amount of effort and time to be implemented correctly and efficiently.
+Since they are rather mundane and not related to the actual (physics) problem, developers and especially researchers often tend
+to neglect them, which can lead to subtle errors and bad user experience.
+
+**simplemc** aims to make it easier for both, developers and users.
+
+@section start Where to start?
+
+The @ref installation section tells you how to get the library and make it available on your system.
+
+@ref integration explains how to integrate **simplemc** in your own C++ code.
+
+Then, you can start with the @ref tutorials section to get an overview of the library's features and how
+it can be used in practice.
+
+Furthermore, we provide a detailed reference @ref documentation to answer your questions.
+
+If you experience any problem with the library, you can post an @ref issues "Issue" on GitHub.
