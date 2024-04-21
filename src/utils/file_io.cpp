@@ -1,3 +1,8 @@
+/**
+ * @file
+ * @brief Implementation details for file_io.hpp.
+ */
+
 #include <simplemc/utils/file_io.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 

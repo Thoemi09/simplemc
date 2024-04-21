@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Generic to_string function.
+ * @brief Get string representation for types with an overloaded `operator<<`.
  */
 
 #ifndef SIMPLEMC_UTILS_TO_STRING_HPP

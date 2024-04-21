@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Concepts and type traits for the simplemc library.
+ * @brief Concepts, type traits and tags for the simplemc library.
  */
 
 #ifndef SIMPLEMC_UTILS_CONCEPTS_HPP
@@ -50,7 +50,8 @@ struct column_major {};
 struct row_major {};
 
 /**
- * @brief A concept that checks if a given type is either a column_major or a row_major tag.
+ * @brief A concept that checks if a given type is either a simplemc::column_major or a
+ * simplemc::row_major tag.
  *
  * @tparam T Type to check.
  */

@@ -81,9 +81,7 @@ TEST(SimplemcUtils, Timer) {
 // Test calculating the size from a shape.
 TEST(SimplemcUtils, SizeFromShape) {
     using namespace simplemc;
-    std::vector<int> shape;
-    ASSERT_EQ(size_from_shape(shape), 0);
-    shape = { 2, 3, 4 };
+    auto shape = std::vector<int>{ 2, 3, 4 };
     ASSERT_EQ(size_from_shape(shape), 24);
     constexpr std::array<int, 2> shape_arr_cepr { 2, 3 };
     constexpr auto size_cepr = size_from_shape(shape_arr_cepr);

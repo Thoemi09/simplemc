@@ -22,21 +22,22 @@ namespace simplemc {
 /**
  * @brief Calculate the size of a multi-dimensional array given its shape as a std::vector.
  *
+ * @note Empty shapes are not supported.
+ *
  * @tparam T Integral type.
  * @param shape Shape of the multi-dimensional array.
  * @return Number of elements in the array.
  */
 template <std::integral T>
 [[nodiscard]] constexpr auto size_from_shape(const std::vector<T>& shape) {
-    using return_type = T;
-    if (shape.empty()) {
-        return return_type { 0 };
-    }
-    return std::accumulate(shape.begin(), shape.end(), return_type { 1 }, std::multiplies {});
+    assert(!shape.empty());
+    return std::accumulate(shape.begin(), shape.end(), T { 1 }, std::multiplies {});
 }
 
 /**
  * @brief Calculate the size of a multi-dimensional array given its shape as a std::array.
+ *
+ * @note Empty shapes are not supported.
  *
  * @tparam T Integral type.
  * @tparam N Number of dimensions.
@@ -45,15 +46,14 @@ template <std::integral T>
  */
 template <std::integral T, std::size_t N>
 [[nodiscard]] constexpr auto size_from_shape(const std::array<T, N>& shape) {
-    using return_type = T;
-    if constexpr (N == 0) {
-        return return_type { 0 };
-    }
-    return std::accumulate(shape.begin(), shape.end(), return_type { 1 }, std::multiplies<T> {});
+    static_assert(N != 0, "Empty shapes are not supported");
+    return std::accumulate(shape.begin(), shape.end(), T { 1 }, std::multiplies<T> {});
 }
 
 /**
  * @brief Convert a flat index to a multi-dimensional index w.r.t. to a given shape.
+ *
+ * @note Empty shapes are not supported.
  *
  * @tparam T Integer type.
  * @tparam Order Storage order of the multi-dimensional array.
@@ -66,9 +66,6 @@ template <std::integral T, nd_order Order = column_major>
 [[nodiscard]] constexpr std::vector<T> multi_index(
     std::integral auto flat_idx, const std::vector<T>& shape, [[maybe_unused]] Order order = Order {}) {
     assert(flat_idx >= 0 && flat_idx < size_from_shape(shape));
-    if (shape.empty()) {
-        return std::vector<T> {};
-    }
     auto idxs = std::vector<T>(shape.size());
     auto fac = size_from_shape(shape);
     auto rem = flat_idx;
@@ -92,6 +89,8 @@ template <std::integral T, nd_order Order = column_major>
 /**
  * @brief Convert a flat index to a multi-dimensional index w.r.t. to a given shape.
  *
+ * @note Empty shapes are not supported.
+ *
  * @tparam T Integer type.
  * @tparam N Number of dimensions.
  * @tparam Order Storage order of the multi-dimensional array.
@@ -103,10 +102,8 @@ template <std::integral T, nd_order Order = column_major>
 template <std::integral T, std::size_t N, nd_order Order = column_major>
 [[nodiscard]] constexpr std::array<T, N> multi_index(
     std::integral auto flat_idx, const std::array<T, N>& shape, [[maybe_unused]] Order order = Order {}) {
+    static_assert(N != 0, "Empty shapes are not supported");
     assert(flat_idx >= 0 && flat_idx < size_from_shape(shape));
-    if constexpr (N == 0) {
-        return std::array<T, 0> {};
-    }
     auto idxs = std::array<T, N> {};
     auto fac = size_from_shape(shape);
     auto rem = flat_idx;
@@ -129,6 +126,8 @@ template <std::integral T, std::size_t N, nd_order Order = column_major>
 /**
  * @brief Convert a multi-dimensional index to a flat index w.r.t. to a given shape.
  *
+ * @note Empty shapes or empty multi-dimensional indices are not supported.
+ *
  * @tparam T1 Integer type.
  * @tparam T2 Integer type.
  * @tparam Order Storage order of the multi-dimensional array.
@@ -140,6 +139,7 @@ template <std::integral T, std::size_t N, nd_order Order = column_major>
 template <std::integral T1, std::integral T2, nd_order Order = column_major>
 [[nodiscard]] constexpr auto flat_index(
     const std::vector<T1>& idxs, const std::vector<T2>& shape, [[maybe_unused]] Order order = Order {}) {
+    assert(!shape.empty() && !idx.empty());
     assert(idxs.size() == shape.size());
     const auto size = shape.size();
     if constexpr (std::same_as<Order, column_major>) {
@@ -160,6 +160,8 @@ template <std::integral T1, std::integral T2, nd_order Order = column_major>
 /**
  * @brief Convert a multi-dimensional index to a flat index w.r.t. to a given shape.
  *
+ * @note Empty shapes or empty multi-dimensional indices are not supported.
+ *
  * @tparam T1 Integer type.
  * @tparam T2 Integer type.
  * @tparam N Number of dimensions.
@@ -172,6 +174,7 @@ template <std::integral T1, std::integral T2, nd_order Order = column_major>
 template <std::integral T1, std::integral T2, std::size_t N, nd_order Order = column_major>
 [[nodiscard]] constexpr auto flat_index(
     const std::array<T1, N>& idxs, const std::array<T2, N>& shape, [[maybe_unused]] Order order = Order {}) {
+    static_assert(N != 0, "Empty shapes or empty multi-dimensional indices are not supported.");
     if constexpr (std::same_as<Order, column_major>) {
         auto flat_idx = idxs.back();
         for (std::size_t i = 2; i <= N; ++i) {

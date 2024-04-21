@@ -13,7 +13,7 @@
 namespace fmt {
 
 /**
- * @brief Specalized formatter for std::complex.
+ * @brief Specalized fmtlib formatter for std::complex.
  *
  * @tparam T Value type of std::complex.
  * @tparam Char Character type.
@@ -34,7 +34,7 @@ struct formatter<std::complex<T>, Char> : public formatter<T, Char> {
     constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return base::parse(ctx); }
 
     /**
-     * @brief Format the std::complex<T> type.
+     * @brief Format the std::complex type.
      *
      * @tparam FormatContext Format context type of fmtlib.
      * @param z std::complex value to format.
