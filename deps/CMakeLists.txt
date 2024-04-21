@@ -6,13 +6,12 @@
 # range-v3: Range library since std::ranges is not yet fully supported.
 # mpi: MPI for parallelization.
 # Eigen3: Linear algebra library.
+# nlohmann_json: JSON parser for serialization and configuration.
 #
 # The following dependencies are optional:
 # ---------------------------------
 # googletest: For testing. Only used if SIMPLEMC_BUILD_TESTS is ON.
-# tomlplusplus: TOML parser. Only used if SIMPLEMC_WITH_TOMLPLUSPLUS is ON.
-# nlohmann_json: JSON parer. Only used if SIMPLEMC_WITH_NLOHMANN_JSON is ON.
-# HighFive: HDF5 wrapper. Only used if SIMPLEMC_WITH_HIGHFIVE is ON.
+# HighFive: HDF5 wrapper for serialization. Only used if SIMPLEMC_WITH_HIGHFIVE is ON.
 
 include(FetchContent)
 
@@ -77,6 +76,22 @@ else()
     message(STATUS "Eigen3 found: Include directories = ${EIGEN3_TMP}")
 endif()
 
+# nlohmann_json
+if(SIMPLEMC_FETCH_NLOHMANN_JSON)
+    FetchContent_Declare(nlohmann_json
+        GIT_REPOSITORY https://github.com/nlohmann/json.git
+        GIT_TAG origin/develop) # edffad0
+    message(STATUS "Fetching nlohmann_json ...")
+    FetchContent_MakeAvailable(nlohmann_json)
+    message(STATUS "nlohmann_json_SOURCE_DIR: ${nlohmann_json_SOURCE_DIR}")
+else()
+    message(STATUS "Finding nlohmann_json: nlohmann_json_DIR = ${nlohmann_json_DIR}")
+    find_package(nlohmann_json REQUIRED)
+    set_target_properties(nlohmann_json::nlohmann_json PROPERTIES IMPORTED_GLOBAL TRUE)
+    get_target_property(NLOHMANN_JSON_TMP nlohmann_json::nlohmann_json INTERFACE_INCLUDE_DIRECTORIES)
+    message(STATUS "nlohmann_json found: Include directories = ${NLOHMANN_JSON_TMP}")
+endif()
+
 #########################
 # Optional dedendencies
 #########################
@@ -91,42 +106,6 @@ if(SIMPLEMC_BUILD_TESTS)
     message(STATUS "Fetching googletest ...")
     FetchContent_MakeAvailable(googletest)
     message(STATUS "googletest_SOURCE_DIR: ${googletest_SOURCE_DIR}")
-endif()
-
-# toml++
-if(SIMPLEMC_WITH_TOMLPLUSPLUS)
-    if(SIMPLEMC_FETCH_TOMLPLUSPLUS)
-        FetchContent_Declare(tomlplusplus
-            GIT_REPOSITORY https://github.com/marzer/tomlplusplus.git
-            GIT_TAG origin/master) # 1f7884e
-        message(STATUS "Fetching tomlplusplus ...")
-        FetchContent_MakeAvailable(tomlplusplus)
-        message(STATUS "tomlplusplus_SOURCE_DIR: ${tomlplusplus_SOURCE_DIR}")
-    else()
-        message(STATUS "Finding toml++: tomlplusplus_DIR = ${tomlplusplus_DIR}")
-        find_package(tomlplusplus REQUIRED)
-        set_target_properties(tomlplusplus::tomlplusplus PROPERTIES IMPORTED_GLOBAL TRUE)
-        get_target_property(TOMLPLUSPLUS_TMP tomlplusplus::tomlplusplus INTERFACE_INCLUDE_DIRECTORIES)
-        message(STATUS "toml++ found: Include directories = ${TOMLPLUSPLUS_TMP}")
-    endif()
-endif()
-
-# nlohmann_json
-if(SIMPLEMC_WITH_NLOHMANN_JSON)
-    if(SIMPLEMC_FETCH_NLOHMANN_JSON)
-        FetchContent_Declare(nlohmann_json
-            GIT_REPOSITORY https://github.com/nlohmann/json.git
-            GIT_TAG origin/develop) # edffad0
-        message(STATUS "Fetching nlohmann_json ...")
-        FetchContent_MakeAvailable(nlohmann_json)
-        message(STATUS "nlohmann_json_SOURCE_DIR: ${nlohmann_json_SOURCE_DIR}")
-    else()
-        message(STATUS "Finding nlohmann_json: nlohmann_json_DIR = ${nlohmann_json_DIR}")
-        find_package(nlohmann_json REQUIRED)
-        set_target_properties(nlohmann_json::nlohmann_json PROPERTIES IMPORTED_GLOBAL TRUE)
-        get_target_property(NLOHMANN_JSON_TMP nlohmann_json::nlohmann_json INTERFACE_INCLUDE_DIRECTORIES)
-        message(STATUS "nlohmann_json found: Include directories = ${NLOHMANN_JSON_TMP}")
-    endif()
 endif()
 
 # HighFive

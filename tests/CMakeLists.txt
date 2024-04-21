@@ -13,17 +13,16 @@ target_link_libraries(simplemc-test INTERFACE GTest::gtest_main simplemc::simple
 
 # library specific tests
 add_subdirectory(utils)
-add_subdirectory(serialization)
+add_subdirectory(mpi)
 add_subdirectory(json)
 add_subdirectory(random)
 add_subdirectory(grids)
-add_subdirectory(mpi)
 add_subdirectory(numeric)
 add_subdirectory(accs)
 
 # temporary tests
 add_executable(tmp-test tmp_test.cpp)
-target_link_libraries(tmp-test PRIVATE simplemc-test simplemc::simplemc-serialization)
+target_link_libraries(tmp-test PRIVATE simplemc-test simplemc::simplemc-json)
 
 add_executable(tmp-mpi-test tmp_mpi_test.cpp)
 target_link_libraries(tmp-mpi-test PRIVATE simplemc::simplemc-mpi)

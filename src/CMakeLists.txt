@@ -26,10 +26,9 @@ target_include_directories(simplemc-basic
 
 # build simplemc libraries
 add_subdirectory(utils)
-add_subdirectory(serialization)
+add_subdirectory(mpi)
 add_subdirectory(json)
 add_subdirectory(random)
 add_subdirectory(grids)
-add_subdirectory(mpi)
 add_subdirectory(numeric)
 add_subdirectory(accs)
