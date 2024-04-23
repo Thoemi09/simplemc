@@ -15,6 +15,11 @@
 namespace simplemc {
 
 /**
+ * @addtogroup simplemc-numeric
+ * @{
+ */
+
+/**
  * @brief Check if an arithmetic value is finite.
  *
  * @details Simply calls std::isfinite.
@@ -156,6 +161,8 @@ template <typename T>
 [[nodiscard]] inline constexpr bool within_bounds(double val, double lower_bound, double upper_bound, double min_diff) {
     return val > lower_bound + min_diff && val < upper_bound - min_diff && isfinite(val);
 }
+
+/** @} */
 
 } // namespace simplemc
 

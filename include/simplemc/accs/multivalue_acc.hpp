@@ -12,6 +12,7 @@
 namespace simplemc {
 
 /**
+ * @ingroup simplemc-accs
  * @brief Multi value accumulator for various accumulators.
  *
  * @details It holds a reference to a accumulator and can be used to add multiple data points

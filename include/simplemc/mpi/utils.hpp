@@ -11,6 +11,7 @@
 namespace simplemc::mpi {
 
 /**
+ * @ingroup simplemc-mpi-utils
  * @brief Check the success of an MPI call.
  *
  * @details Throws a simplemc::simplemc_exception if the error code is != MPI_SUCCESS.

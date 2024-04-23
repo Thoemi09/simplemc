@@ -19,11 +19,21 @@
 
 namespace simplemc {
 
+/**
+ * @addtogroup simplemc-random
+ * @{
+ */
+
 /* Forward declarations. */
 template <integer_only T>
 class discrete_distribution;
 
 namespace detail {
+
+/**
+ * @addtogroup simplemc-random
+ * @{
+ */
 
 /**
  * @brief Parameter type of simplemc::discrete_distribution.
@@ -93,6 +103,7 @@ private:
     std::vector<double> accprobs_;
 };
 
+/// @cond
 template <integer_only T>
 dd_param_type<T>::dd_param_type() : probs_(1, 1.0) {
     initialize();
@@ -137,6 +148,7 @@ void dd_param_type<T>::initialize() {
     std::partial_sum(probs_.begin(), probs_.end(), std::back_inserter(accprobs_));
     accprobs_.back() = 1.0;
 }
+/// @endcond
 
 /**
  * @brief Write a textual representation of distribution parameters to std::ostream.
@@ -220,6 +232,8 @@ template <integer_only T>
 [[nodiscard]] bool operator!=(const dd_param_type<T>& lhs, const dd_param_type<T>& rhs) {
     return !(lhs == rhs);
 }
+
+/** @} */
 
 } // namespace detail
 
@@ -420,6 +434,8 @@ template <integer_only T>
 [[nodiscard]] bool operator!=(const discrete_distribution<T>& lhs, const discrete_distribution<T>& rhs) {
     return !(lhs == rhs);
 }
+
+/** @} */
 
 } // namespace simplemc
 

@@ -12,10 +12,20 @@
 
 namespace simplemc {
 
+/**
+ * @addtogroup simplemc-random
+ * @{
+ */
+
 /* Forward declarations. */
 class uniform_real_distribution;
 
 namespace detail {
+
+/**
+ * @addtogroup simplemc-random
+ * @{
+ */
 
 /**
  * @brief Parameter type of the simplemc::uniform_real_distribution.
@@ -95,6 +105,8 @@ std::istream& operator>>(std::istream& is, urd_param_type& param);
  * @return True if they represent distinct intervals.
  */
 [[nodiscard]] bool operator!=(const urd_param_type& lhs, const urd_param_type& rhs);
+
+/** @} */
 
 } // namespace detail
 
@@ -240,6 +252,8 @@ std::istream& operator>>(std::istream& is, uniform_real_distribution& ud);
  * @return True if the parameters of the distributions are distinct.
  */
 [[nodiscard]] bool operator!=(const uniform_real_distribution& lhs, const uniform_real_distribution& rhs);
+
+/** @} */
 
 } // namespace simplemc
 

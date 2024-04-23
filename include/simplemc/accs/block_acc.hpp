@@ -16,6 +16,11 @@
 namespace simplemc {
 
 /**
+ * @addtogroup simplemc-accs
+ * @{
+ */
+
+/**
  * @brief Wrapper class for the simplemc::var_acc and simplemc::covar_acc accumulators to put data
  * into blocks of a given size to reduce correlations.
  *
@@ -293,6 +298,8 @@ private:
     mean_acc_type block_;
     count_type blsize_ { 1 };
 };
+
+/** @} */
 
 } // namespace simplemc
 

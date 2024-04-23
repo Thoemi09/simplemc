@@ -12,6 +12,11 @@
 namespace simplemc {
 
 /**
+ * @addtogroup simplemc-utils
+ * @{
+ */
+
+/**
  * @brief A concept that checks if a type is any of the given types.
  *
  * @details Taken from cppreference.com.
@@ -57,6 +62,8 @@ struct row_major {};
  */
 template <typename T>
 concept nd_order = is_any_of<T, column_major, row_major>;
+
+/** @} */
 
 } // namespace simplemc
 

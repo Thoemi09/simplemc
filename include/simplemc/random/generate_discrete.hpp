@@ -14,6 +14,11 @@
 namespace simplemc::detail {
 
 /**
+ * @addtogroup simplemc-random
+ * @{
+ */
+
+/**
  * @brief Generate a discrete random integer using a linear search.
  *
  * @tparam IntType Integer type to be returned.
@@ -50,6 +55,8 @@ inline IntType generate_discrete_lb(RNG& rng, const std::vector<double>& vec) {
     auto pos = std::lower_bound(vec.begin(), vec.end(), r);
     return static_cast<IntType>(pos - vec.begin());
 }
+
+/** @} */
 
 } // namespace simplemc::detail
 

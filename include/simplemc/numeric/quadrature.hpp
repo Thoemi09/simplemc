@@ -16,6 +16,11 @@
 namespace simplemc {
 
 /**
+ * @addtogroup simplemc-numeric
+ * @{
+ */
+
+/**
  * @brief Simple class used in trapezoidal and Simpson's quadrature.
  *
  * @details It implements the extended trapezoidal quadrature rule, stores the upper and lower
@@ -177,6 +182,8 @@ auto simpson_quadrature(F&& f, double a, double b, double eps = 1e-7, int max = 
     }
     return std::make_tuple(current, std::abs(current - old), i);
 }
+
+/** @} */
 
 } // namespace simplemc
 

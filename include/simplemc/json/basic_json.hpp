@@ -11,6 +11,7 @@
 namespace simplemc {
 
 /**
+ * @ingroup simplemc-json
  * @brief Basic interface to support JSON IO.
  *
  * @details Classes can derive from this class if they want to support JSON IO.

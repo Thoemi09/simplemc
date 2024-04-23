@@ -18,6 +18,7 @@
 namespace simplemc {
 
 /**
+ * @ingroup simplemc-grids
  * @brief Base class for various 1-dimensional grid types.
  *
  * @details A grid is a collection of points on a real, closed interval. It is defined by

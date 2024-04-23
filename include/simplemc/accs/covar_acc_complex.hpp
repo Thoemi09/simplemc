@@ -27,6 +27,11 @@
 namespace simplemc {
 
 /**
+ * @addtogroup simplemc-accs
+ * @{
+ */
+
+/**
  * @brief Covariance accumulator specialized for accumulating complex values.
  *
  * @tparam A Algorithm (either standard or welford).
@@ -435,6 +440,8 @@ private:
     count_type count_;
     size_type idx_;
 };
+
+/** @} */
 
 } // namespace simplemc
 

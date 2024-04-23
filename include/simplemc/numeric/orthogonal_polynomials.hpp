@@ -14,6 +14,11 @@
 namespace simplemc {
 
 /**
+ * @addtogroup simplemc-numeric
+ * @{
+ */
+
+/**
  * @brief Base class for certain orthogonal polynomials.
  *
  * @details For implementation details see:
@@ -600,6 +605,8 @@ private:
     double cosx_;
     double sinx_;
 };
+
+/** @} */
 
 } // namespace simplemc
 

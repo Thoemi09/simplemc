@@ -11,14 +11,30 @@
 namespace simplemc {
 
 /**
+ * @addtogroup simplemc-utils
+ * @{
+ */
+
+/**
  * @brief Convenient type aliases for different std::chrono::duration types.
  */
 struct duration {
+    /// Duration type for hours.
     using hour = std::chrono::duration<double, std::ratio<3600>>;
+
+    /// Duration type for minutes.
     using min = std::chrono::duration<double, std::ratio<60>>;
+
+    /// Duration type for seconds.
     using sec = std::chrono::duration<double, std::ratio<1>>;
+
+    /// Duration type for milliseconds.
     using millisec = std::chrono::duration<double, std::milli>;
+
+    /// Duration type for microseconds.
     using microsec = std::chrono::duration<double, std::micro>;
+
+    /// Duration type for nanoseconds.
     using nanosec = std::chrono::duration<double, std::nano>;
 };
 
@@ -136,6 +152,8 @@ private:
     std::chrono::time_point<clock_type> stop_;
     std::chrono::time_point<clock_type> interim_;
 };
+
+/** @} */
 
 } // namespace simplemc
 

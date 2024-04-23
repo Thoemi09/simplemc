@@ -12,6 +12,11 @@
 namespace simplemc {
 
 /**
+ * @addtogroup simplemc-utils
+ * @{
+ */
+
+/**
  * @brief Open a file and return the file pointer.
  *
  * @details Throws a simplemc::simplemc_exception if it fails.
@@ -31,6 +36,8 @@ namespace simplemc {
  * @param fp File pointer.
  */
 void close_file(std::FILE* fp);
+
+/** @} */
 
 } // namespace simplemc
 

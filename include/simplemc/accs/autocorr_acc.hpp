@@ -21,6 +21,11 @@
 namespace simplemc {
 
 /**
+ * @addtogroup simplemc-accs
+ * @{
+ */
+
+/**
  * @brief Wrapper class for the simplemc::var_acc and simplemc::covar_acc accumulators to estimate
  * the autocorrelation time using the blocking method.
  *
@@ -435,6 +440,8 @@ private:
     count_type fac_ { 2 };
     std::size_t min_levels_ { 2 };
 };
+
+/** @} */
 
 } // namespace simplemc
 

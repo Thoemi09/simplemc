@@ -25,6 +25,7 @@
 namespace simplemc {
 
 /**
+ * @ingroup simplemc-accs
  * @brief Variance accumulator specialized for accumulating complex values.
  *
  * @details The variance of a complex random variable is determined by the variance of its real and

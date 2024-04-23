@@ -18,11 +18,21 @@
 
 namespace simplemc {
 
+/**
+ * @addtogroup simplemc-random
+ * @{
+ */
+
 /* Forward declarations. */
 template <integer_only T>
 class discrete_alias_distribution;
 
 namespace detail {
+
+/**
+ * @addtogroup simplemc-random
+ * @{
+ */
 
 /**
  * @brief Parameter type of simplemc::discrete_alias_distribution.
@@ -91,6 +101,7 @@ private:
     std::vector<double> probs_;
 };
 
+/// @cond
 template <integer_only T>
 dad_param_type<T>::dad_param_type() : probs_(1, 1.0) {}
 
@@ -129,6 +140,7 @@ void dad_param_type<T>::normalize() {
         p /= norm;
     }
 }
+/// @endcond
 
 /**
  * @brief Write a textual representation of distribution parameters to std::ostream.
@@ -211,6 +223,8 @@ template <integer_only T>
 [[nodiscard]] bool operator!=(const dad_param_type<T>& lhs, const dad_param_type<T>& rhs) {
     return !(lhs == rhs);
 }
+
+/** @} */
 
 } // namespace detail
 
@@ -354,6 +368,7 @@ private:
     std::vector<int> alias_;
 };
 
+/// @cond
 template <integer_only T>
 discrete_alias_distribution<T>::discrete_alias_distribution() : param_() {
     initialize();
@@ -440,6 +455,7 @@ discrete_alias_distribution<T>::result_type discrete_alias_distribution<T>::oper
     accprobs.back() = 1.0;
     return detail::generate_discrete_ls<result_type>(eng, accprobs);
 }
+/// @endcond
 
 /**
  * @brief Write a textual representation of a distribution to std::ostream.
@@ -505,6 +521,8 @@ template <integer_only T>
 [[nodiscard]] bool operator!=(const discrete_alias_distribution<T>& lhs, const discrete_alias_distribution<T>& rhs) {
     return !(lhs == rhs);
 }
+
+/** @} */
 
 } // namespace simplemc
 

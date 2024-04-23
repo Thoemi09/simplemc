@@ -13,6 +13,11 @@
 namespace fmt {
 
 /**
+ * @addtogroup simplemc-utils
+ * @{
+ */
+
+/**
  * @brief Specalized fmtlib formatter for std::complex.
  *
  * @tparam T Value type of std::complex.
@@ -50,6 +55,8 @@ struct formatter<std::complex<T>, Char> : public formatter<T, Char> {
         return fmt::format_to(ctx.out(), ")");
     }
 };
+
+/** @} */
 
 } // namespace fmt
 

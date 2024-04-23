@@ -11,6 +11,7 @@
 namespace simplemc {
 
 /**
+ * @ingroup simplemc-grids
  * @brief Lazy, 1-dimensional, symmetric power grid.
  *
  * @details The grid is defined by the value of the first grid point, the value of the

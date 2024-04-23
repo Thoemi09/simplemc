@@ -1,4 +1,4 @@
-@page tut1 Tutorial 1: Hello world!
+@page tut_mpi_1 MPI Tutorial 1: Hello world!
 
 [TOC]
 

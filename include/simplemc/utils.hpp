@@ -24,4 +24,7 @@
 // runtime timer
 #include <simplemc/utils/timer.hpp>
 
+// other
+#include <simplemc/utils/to_string.hpp>
+
 #endif // SIMPLEMC_UTILS_HPP

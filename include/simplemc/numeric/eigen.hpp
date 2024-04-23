@@ -18,6 +18,11 @@
 namespace simplemc {
 
 /**
+ * @addtogroup simplemc-numeric
+ * @{
+ */
+
+/**
  * @brief Templated, static, double, N-dimensional vector type.
  *
  * @tparam N Number of dimensions.
@@ -165,6 +170,8 @@ inline typename vector<3>::type cartesian_to_polar(const typename vector<3>::typ
     res << norm, std::acos(vec[2] / norm), std::atan2(vec[1], vec[0]);
     return res;
 }
+
+/** @} */
 
 } // namespace simplemc
 

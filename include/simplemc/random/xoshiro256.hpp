@@ -18,6 +18,11 @@
 namespace simplemc {
 
 /**
+ * @addtogroup simplemc-random
+ * @{
+ */
+
+/**
  * @brief Enumerate different types of the xoshiro256 RNG.
  */
 enum class xoshiro256_type { plus, plusplus, starstar };
@@ -339,6 +344,8 @@ using xoshiro256pp = xoshiro256<xoshiro256_type::plusplus>;
  * @brief xoshiro256**. Use for all purposes.
  */
 using xoshiro256ss = xoshiro256<xoshiro256_type::starstar>;
+
+/** @} */
 
 } // namespace simplemc
 

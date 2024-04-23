@@ -13,6 +13,11 @@
 namespace simplemc {
 
 /**
+ * @addtogroup simplemc-utils
+ * @{
+ */
+
+/**
  * @brief Exception class for the simplemc library.
  */
 class simplemc_exception : public generic_error {
@@ -26,6 +31,8 @@ public:
     simplemc_exception(std::string_view err_msg, std::string_view func_name = "") :
         generic_error("simplemc exception", err_msg, func_name) {}
 };
+
+/** @} */
 
 } // namespace simplemc
 

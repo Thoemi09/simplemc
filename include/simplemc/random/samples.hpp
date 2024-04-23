@@ -14,6 +14,11 @@
 namespace simplemc {
 
 /**
+ * @addtogroup simplemc-random
+ * @{
+ */
+
+/**
  * @brief Random sample from a uniform distribution defined on [min, max).
  *
  * @param r Uniform random number from [0, 1).
@@ -255,6 +260,8 @@ inline double exclusive_uniform_int_pdf(T min, T max) {
     assert(max > min);
     return 1.0 / (max - min);
 }
+
+/** @} */
 
 } // namespace simplemc
 

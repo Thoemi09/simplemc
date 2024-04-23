@@ -16,6 +16,11 @@
 
 namespace simplemc {
 
+/**
+ * @addtogroup simplemc-numeric
+ * @{
+ */
+
 namespace detail {
 
 /**
@@ -245,6 +250,8 @@ template <typename... Vals>
 double linear_interpolation_nd<Grid, Order>::operator()(Vals... xs) const {
     return this->operator()(typename grid_type::nd_value_type { xs... });
 }
+
+/** @} */
 
 } // namespace simplemc
 

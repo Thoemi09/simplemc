@@ -17,27 +17,108 @@
       </tab>
     </tab>
     <tab type="usergroup" url="@ref tutorials" title="Tutorials">
-      <tab type="user" url="@ref tutorial_compilation" title="Compiling the tutorials"/>
-      <tab type="user" url="@ref tut1" title="Tutorial 1: Hello world!"/>
+      <tab type="usergroup" url="@ref tut_utils" title="simplemc-utils">
+        <tab type="user" url="@ref tut_utils_1" title="Utilities Tutorial 1: Runtime measurement"/>
+        <tab type="user" url="@ref tut_utils_2" title="Utilities Tutorial 2: Multi-dimensional indexing"/>
+        <tab type="user" url="@ref tut_utils_3" title="Utilities Tutorial 3: Printing data with fmt"/>
+      </tab>
+      <tab type="usergroup" url="@ref tut_mpi" title="simplemc-mpi">
+        <tab type="user" url="@ref tut_mpi_1" title="MPI Tutorial 1: Hello world!"/>
+      </tab>
+      <tab type="user" url="@ref tut_compilation" title="Compiling the tutorials"/>
     </tab>
     <tab type="usergroup" url="@ref documentation" title="API Documentation">
-      <tab type="usergroup" url="@ref utilities" title="Utilities library">
+      <tab type="usergroup" url="@ref simplemc-utils" title="simplemc-utils">
+        <tab type="user" url="@ref simplemc::is_any_of" title="is_any_of"/>
+        <tab type="user" url="@ref simplemc::integer_only" title="integer_only"/>
+        <tab type="user" url="@ref simplemc::double_or_complex" title="double_or_complex"/>
+        <tab type="user" url="@ref simplemc::nd_order" title="nd_order"/>
+        <tab type="user" url="@ref fmt::formatter< std::complex< T >, Char >" title="formatter"/>
+        <tab type="user" url="@ref simplemc::column_major" title="column_major"/>
+        <tab type="user" url="@ref simplemc::duration" title="duration"/>
+        <tab type="user" url="@ref simplemc::generic_error" title="generic_error"/>
+        <tab type="user" url="@ref simplemc::row_major" title="row_major"/>
+        <tab type="user" url="@ref simplemc::simplemc_exception" title="simplemc_exception"/>
+        <tab type="user" url="@ref simplemc::timer" title="timer"/>
       </tab>
-      <tab type="usergroup" url="@ref random" title="Random library">
+      <tab type="usergroup" url="@ref simplemc-mpi" title="simplemc-mpi">
+        <tab type="user" url="@ref simplemc::mpi::communicator" title="mpi::communicator"/>
+        <tab type="user" url="@ref simplemc::mpi::environment" title="mpi::environment"/>
+        <tab type="user" url="@ref simplemc-mpi-coll" title="Collective communications"/>
+        <tab type="usergroup" url="@ref simplemc-mpi-types" title="MPI datatypes">
+          <tab type="user" url="@ref simplemc::mpi::mpi_compatible" title="mpi::mpi_compatible"/>
+          <tab type="user" url="@ref simplemc::mpi::mpi_range" title="mpi::mpi_range"/>
+          <tab type="user" url="@ref simplemc::mpi::is_mpi_datatype" title="mpi::is_mpi_datatype"/>
+          <tab type="user" url="@ref simplemc::mpi::is_mpi_datatype< bool >" title="mpi::is_mpi_datatype<bool>"/>
+          <tab type="user" url="@ref simplemc::mpi::is_mpi_datatype< char >" title="mpi::is_mpi_datatype<char>"/>
+          <tab type="user" url="@ref simplemc::mpi::is_mpi_datatype< double >" title="mpi::is_mpi_datatype<double>"/>
+          <tab type="user" url="@ref simplemc::mpi::is_mpi_datatype< float >" title="mpi::is_mpi_datatype<float>"/>
+          <tab type="user" url="@ref simplemc::mpi::is_mpi_datatype< int >" title="mpi::is_mpi_datatype<int>"/>
+          <tab type="user" url="@ref simplemc::mpi::is_mpi_datatype< long >" title="mpi::is_mpi_datatype<long>"/>
+          <tab type="user" url="@ref simplemc::mpi::is_mpi_datatype< long double >" title="mpi::is_mpi_datatype<long double>"/>
+          <tab type="user" url="@ref simplemc::mpi::is_mpi_datatype< long long >" title="mpi::is_mpi_datatype<long long>"/>
+          <tab type="user" url="@ref simplemc::mpi::is_mpi_datatype< short >" title="mpi::is_mpi_datatype<short>"/>
+          <tab type="user" url="@ref simplemc::mpi::is_mpi_datatype< signed char >" title="mpi::is_mpi_datatype<signed char>"/>
+          <tab type="user" url="@ref simplemc::mpi::is_mpi_datatype< std::byte >" title="mpi::is_mpi_datatype<std::byte>"/>
+          <tab type="user" url="@ref simplemc::mpi::is_mpi_datatype< std::complex< float > >" title="mpi::is_mpi_datatype<std::complex<double>>"/>
+          <tab type="user" url="@ref simplemc::mpi::is_mpi_datatype< std::complex< double > >" title="mpi::is_mpi_datatype<std::complex<float>>"/>
+          <tab type="user" url="@ref simplemc::mpi::is_mpi_datatype< std::complex< long double > >" title="mpi::is_mpi_datatype<std::complex<long double>>"/>
+          <tab type="user" url="@ref simplemc::mpi::is_mpi_datatype< unsigned char >" title="mpi::is_mpi_datatype<unsigned char>"/>
+          <tab type="user" url="@ref simplemc::mpi::is_mpi_datatype< unsigned int >" title="mpi::is_mpi_datatype<unsigned int>"/>
+          <tab type="user" url="@ref simplemc::mpi::is_mpi_datatype< unsigned long >" title="mpi::is_mpi_datatype<unsigned long>"/>
+          <tab type="user" url="@ref simplemc::mpi::is_mpi_datatype< unsigned long long >" title="mpi::is_mpi_datatype<unsigned long long>"/>
+          <tab type="user" url="@ref simplemc::mpi::is_mpi_datatype< unsigned short >" title="mpi::is_mpi_datatype<unsigned short>"/>
+          <tab type="user" url="@ref simplemc::mpi::mpi_type" title="mpi::mpi_type"/>
+          <tab type="user" url="@ref simplemc::mpi::mpi_type< bool >" title="mpi::mpi_type<bool>"/>
+          <tab type="user" url="@ref simplemc::mpi::mpi_type< char >" title="mpi::mpi_type<char>"/>
+          <tab type="user" url="@ref simplemc::mpi::mpi_type< double >" title="mpi::mpi_type<double>"/>
+          <tab type="user" url="@ref simplemc::mpi::mpi_type< float >" title="mpi::mpi_type<float>"/>
+          <tab type="user" url="@ref simplemc::mpi::mpi_type< int >" title="mpi::mpi_type<int>"/>
+          <tab type="user" url="@ref simplemc::mpi::mpi_type< long >" title="mpi::mpi_type<long>"/>
+          <tab type="user" url="@ref simplemc::mpi::mpi_type< long double >" title="mpi::mpi_type<long double>"/>
+          <tab type="user" url="@ref simplemc::mpi::mpi_type< long long >" title="mpi::mpi_type<long long>"/>
+          <tab type="user" url="@ref simplemc::mpi::mpi_type< short >" title="mpi::mpi_type<short>"/>
+          <tab type="user" url="@ref simplemc::mpi::mpi_type< signed char >" title="mpi::mpi_type<signed char>"/>
+          <tab type="user" url="@ref simplemc::mpi::mpi_type< std::byte >" title="mpi::mpi_type<std::byte>"/>
+          <tab type="user" url="@ref simplemc::mpi::mpi_type< std::complex< float > >" title="mpi::mpi_type<std::complex<double>>"/>
+          <tab type="user" url="@ref simplemc::mpi::mpi_type< std::complex< double > >" title="mpi::mpi_type<std::complex<float>>"/>
+          <tab type="user" url="@ref simplemc::mpi::mpi_type< std::complex< long double > >" title="mpi::mpi_type<std::complex<long double>>"/>
+          <tab type="user" url="@ref simplemc::mpi::mpi_type< unsigned char >" title="mpi::mpi_type<unsigned char>"/>
+          <tab type="user" url="@ref simplemc::mpi::mpi_type< unsigned int >" title="mpi::mpi_type<unsigned int>"/>
+          <tab type="user" url="@ref simplemc::mpi::mpi_type< unsigned long >" title="mpi::mpi_type<unsigned long>"/>
+          <tab type="user" url="@ref simplemc::mpi::mpi_type< unsigned long long >" title="mpi::mpi_type<unsigned long long>"/>
+          <tab type="user" url="@ref simplemc::mpi::mpi_type< unsigned short >" title="mpi::mpi_type<unsigned short>"/>
+        </tab>
+        <tab type="user" url="@ref simplemc-mpi-utils" title="MPI utilities"/>
       </tab>
-      <tab type="usergroup" url="@ref grids" title="Grid library">
+      <tab type="usergroup" url="@ref simplemc-json" title="simplemc-json">
+        <tab type="user" url="@ref nlohmann::adl_serializer< std::complex< T > >" title="nlohmann::adl_serializer"/>
+        <tab type="user" url="@ref simplemc::basic_json" title="basic_json"/>
       </tab>
-      <tab type="usergroup" url="@ref mpi" title="MPI library">
+      <tab type="usergroup" url="@ref simplemc-hdf5" title="simplemc-hdf5">
       </tab>
-      <tab type="usergroup" url="@ref numeric" title="Numerics library">
+      <tab type="usergroup" url="@ref simplemc-random" title="simplemc-random">
+        <tab type="user" url="@ref simplemc::detail::dad_param_type" title="detail::dad_param_type"/>
+        <tab type="user" url="@ref simplemc::detail::dd_param_type" title="detail::dd_param_type"/>
+        <tab type="user" url="@ref simplemc::detail::urd_param_type" title="detail::urd_param_type"/>
+        <tab type="user" url="@ref simplemc::discrete_alias_distribution" title="discrete_alias_distribution"/>
+        <tab type="user" url="@ref simplemc::discrete_distribution" title="discrete_distribution"/>
+        <tab type="user" url="@ref simplemc::splitmix64" title="splitmix64"/>
+        <tab type="user" url="@ref simplemc::uniform_real_distribution" title="uniform_real_distribution"/>
+        <tab type="user" url="@ref simplemc::xoshiro256" title="xoshiro256"/>
       </tab>
-      <tab type="usergroup" url="@ref accs" title="Accumulator library">
+      <tab type="usergroup" url="@ref simplemc-grids" title="simplemc-grids">
+        <tab type="user" url="@ref simplemc::grid_base" title="grid_base"/>
+        <tab type="user" url="@ref simplemc::linear_grid" title="linear_grid"/>
+        <tab type="user" url="@ref simplemc::nd_grid" title="nd_grid"/>
+        <tab type="user" url="@ref simplemc::power_grid" title="power_grid"/>
+        <tab type="user" url="@ref simplemc::symmetric_power_grid" title="symmetric_power_grid"/>
       </tab>
-      <tab type="usergroup" url="@ref json" title="JSON library">
+      <tab type="usergroup" url="@ref simplemc-numeric" title="simplemc-numeric">
       </tab>
-      <tab type="usergroup" url="@ref hdf5" title="HDF5 library">
+      <tab type="usergroup" url="@ref simplemc-accs" title="simplemc-accs">
       </tab>
-      <tab type="usergroup" url="@ref mc" title="Monte Carlo library">
+      <tab type="usergroup" url="@ref simplemc-mc" title="simplemc-mc">
       </tab>
       <tab type="filelist" visible="yes" title="" intro=""/>
     </tab>

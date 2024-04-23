@@ -12,6 +12,7 @@
 namespace simplemc {
 
 /**
+ * @ingroup simplemc-accs
  * @brief Covariance accumulator for calculating the sample mean and covariance matrix of a
  * random vector.
  *

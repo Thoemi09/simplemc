@@ -20,6 +20,11 @@
 namespace simplemc::mpi {
 
 /**
+ * @addtogroup simplemc-mpi-coll
+ * @{
+ */
+
+/**
  * @brief Reduce a specific number of values (on all processes).
  *
  * @details Calls MPI_Allreduce. If the MPI call fails, a simplemc::simplemc_exception is thrown.
@@ -405,6 +410,8 @@ void scatter(const communicator& comm, R1&& in_values, R2&& out_values, int root
     }
     scatter(comm, ranges::data(in_values), chunk_size, ranges::data(out_values), root);
 }
+
+/** @} */
 
 } // namespace simplemc::mpi
 

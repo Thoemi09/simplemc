@@ -11,6 +11,11 @@
 namespace simplemc {
 
 /**
+ * @addtogroup simplemc-utils
+ * @{
+ */
+
+/**
  * @brief Generic function that uses the stream `operator<<` to convert an object to a string.
  *
  * @param t Object to convert to a string.
@@ -22,6 +27,8 @@ template <typename T>
     ss << t;
     return ss.str();
 }
+
+/** @} */
 
 } // namespace simplemc
 

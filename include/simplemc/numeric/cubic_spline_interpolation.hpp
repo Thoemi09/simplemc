@@ -14,6 +14,11 @@
 
 namespace simplemc {
 
+/**
+ * @addtogroup simplemc-numeric
+ * @{
+ */
+
 namespace detail {
 
 /**
@@ -235,6 +240,8 @@ double cubic_spline_interpolation<Grid>::operator()(double x) const {
         ((a * a * a - a) * y2_[idx] + (b * b * b - b) * y2_[idx + 1]) * h * h / 6.0;
     return y;
 }
+
+/** @} */
 
 } // namespace simplemc
 

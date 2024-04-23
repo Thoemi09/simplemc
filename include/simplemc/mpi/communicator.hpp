@@ -11,6 +11,7 @@
 namespace simplemc::mpi {
 
 /**
+ * @ingroup simplemc-mpi
  * @brief A communicator that enables communication and synchronization among a set of
  * MPI processes.
  *

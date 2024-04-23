@@ -17,6 +17,11 @@
 
 namespace simplemc {
 
+/**
+ * @addtogroup simplemc-numeric
+ * @{
+ */
+
 namespace detail {
 
 /**
@@ -281,6 +286,8 @@ double polynomial_interpolation_nd<Grid, Order>::interp_poly_nd(const typename g
         return detail::neville(fvecs_[N], xvecs_[N], npoints_);
     }
 }
+
+/** @} */
 
 } // namespace simplemc
 

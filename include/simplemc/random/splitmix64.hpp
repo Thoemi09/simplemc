@@ -15,6 +15,7 @@
 namespace simplemc {
 
 /**
+ * @ingroup simplemc-random
  * @brief Fast random number generator for 64 bit unsigned integer values.
  *
  * @details Based on the C implementation by Sebastiano Vigna (http://prng.di.unimi.it/splitmix64.c).

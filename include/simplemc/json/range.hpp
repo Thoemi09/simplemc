@@ -14,6 +14,11 @@
 namespace simplemc {
 
 /**
+ * @addtogroup simplemc-json
+ * @{
+ */
+
+/**
  * @brief Serialize a range to JSON.
  *
  * @param j nlohmann::json object.
@@ -49,6 +54,8 @@ void range_from_json(const nlohmann::json& j, R&& rg) { // NOLINT (we don't want
         ++it;
     }
 }
+
+/** @} */
 
 } // namespace simplemc
 

@@ -20,6 +20,11 @@
 namespace simplemc {
 
 /**
+ * @addtogroup simplemc-utils
+ * @{
+ */
+
+/**
  * @brief Calculate the size of a multi-dimensional array given its shape as a std::vector.
  *
  * @note Empty shapes are not supported.
@@ -212,6 +217,8 @@ template <std::integral T>
     assert(m > 0 && m <= n);
     return std::clamp(static_cast<T>(m % 2 == 0 ? l + 1 - m / 2 : l - m / 2), T { 0 }, n - m);
 }
+
+/** @} */
 
 } // namespace simplemc
 

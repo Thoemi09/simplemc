@@ -16,6 +16,11 @@
 namespace simplemc::mpi {
 
 /**
+ * @addtogroup simplemc-mpi-types
+ * @{
+ */
+
+/**
  * @brief Determine if there is a mapping between the C++ type T and an MPI datatype.
  *
  * @details Types which have a corresponding MPI datatype specialize this struct and
@@ -54,7 +59,7 @@ struct mpi_type {};
             return __mpi_type__; \
         } \
     }; \
-    /** @brief Specialization of simplemc::mpi::is_mpi_type for __cxx_type__. */ \
+    /** @brief Specialization of simplemc::mpi::is_mpi_datatype for __cxx_type__. */ \
     template <> \
     struct is_mpi_datatype<__cxx_type__> : public std::true_type {};
 
@@ -106,6 +111,8 @@ concept mpi_compatible = is_mpi_datatype_v<T>;
  */
 template <typename R>
 concept mpi_range = ranges::contiguous_range<R> && mpi_compatible<ranges::range_value_t<R>> && ranges::sized_range<R>;
+
+/** @} */
 
 } // namespace simplemc::mpi
 

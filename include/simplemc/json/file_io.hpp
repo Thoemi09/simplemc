@@ -13,6 +13,11 @@
 namespace simplemc {
 
 /**
+ * @addtogroup simplemc-json
+ * @{
+ */
+
+/**
  * @brief Enumerate possible binary IO strategies for JSON files.
  *
  * @details The following binary formats are supported: BSON (bson),
@@ -71,6 +76,8 @@ void read_json_file(nlohmann::json& json, const std::string& fname);
  * @param mode Specific JSON binary mode.
  */
 void read_json_file(nlohmann::json& json, const std::string& fname, json_binary_mode mode);
+
+/** @} */
 
 } // namespace simplemc
 

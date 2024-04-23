@@ -12,6 +12,11 @@
 namespace simplemc {
 
 /**
+ * @addtogroup simplemc-utils
+ * @{
+ */
+
+/**
  * @brief Generic base class for exceptions.
  *
  * @details This class serves as a base class for all exceptions in the simplemc library but
@@ -44,6 +49,8 @@ public:
     [[nodiscard]] virtual std::string make_msg(
         std::string_view exc_name, std::string_view err_msg, std::string_view func_name) const;
 };
+
+/** @} */
 
 } // namespace simplemc
 

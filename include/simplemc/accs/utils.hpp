@@ -18,6 +18,10 @@
 namespace simplemc::accs {
 
 /**
+ * @addtogroup simplemc-accs
+ */
+
+/**
  * @brief Enumerate the different algorithms how to calculate means, variances, etc.
  */
 enum class varalg { standard, welford };
@@ -134,6 +138,8 @@ Eigen::MatrixX<double> covariance([[maybe_unused]] const Eigen::VectorX<double>&
         return cdata / (cd - 1);
     }
 }
+
+/** @} */
 
 } // namespace simplemc::accs
 

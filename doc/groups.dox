@@ -1,0 +1,110 @@
+/**
+ * @defgroup simplemc-utils simplemc-utils
+ * @brief A collection of convenience functions, definitions and various other tools used throughout the simplemc library.
+ *
+ * @details simplemc-utils forms the backbone of **simplemc**. All other sublibraries link to it.
+ *
+ * Besides offering some general functionality for the other libraries, it also provides a useful toolset for the user.
+ *
+ * For example,
+ * - simplemc::timer: A timer class that makes it easy to measure basic performance or runtime.
+ * - simplemc::multi_index and simplemc::flat_index: Functions to map multi-dimensional indices to a flat index and vice versa.
+ * - simplemc::open_file and simplemc::close_file: Open and close files.
+ */
+
+/**
+ * @defgroup simplemc-mpi simplemc-mpi
+ * @brief Highlevel C++ interface to MPI.
+ *
+ * @details **simplemc-mpi** is a minimal C++ wrapper around the MPI C library and provides only a small subset of the functionality
+ * defined in the MPI standard.
+ *
+ * The main purpose of the library is to simplify the most common tasks like initializing/finalizing the MPI execution environment or
+ * performing non-blocking collective communications.
+ *
+ * For more advanced tasks, the user can always resort to the underlying MPI C-implementation.
+ *
+ * A small motivating example:
+ *
+ * @code{.cpp}
+ * #include <simplemc/mpi.hpp>
+ * #include <fmt/core.h>
+ *
+ * int main(int argc, char** argv) {
+ *   // initialize MPI environment and communicator
+ *   simplemc::mpi::environment env(argc, argv);
+ *   simplemc::mpi::communicator comm;
+ *
+ *   // print message on each process
+ *   fmt::print("Hello world, from {} of {} processes.\n", comm.rank(), comm.size());
+ * }
+ * @endcode
+ *
+ * Output (depends on the number of processes and the order is arbitrary):
+ *
+ * ```
+ * Hello world, from processor 2 of 4 processes.
+ * Hello world, from processor 3 of 4 processes.
+ * Hello world, from processor 0 of 4 processes.
+ * Hello world, from processor 1 of 4 processes.
+ * ```
+ */
+
+/**
+ * @defgroup simplemc-mpi-coll Collective communications
+ * @ingroup simplemc-mpi
+ * @brief Non-blocking collective communications like broadcast, scatter, gather, reduce, etc.
+ */
+
+/**
+ * @defgroup simplemc-mpi-types MPI datatypes
+ * @ingroup simplemc-mpi
+ * @brief Mapping of supported C++ types to their corresponding MPI datatypes and tools to identify them.
+ */
+
+/**
+ * @defgroup simplemc-mpi-utils MPI utilities
+ * @ingroup simplemc-mpi
+ * @brief Utilities for the **simplemc-mpi** library.
+ */
+
+/**
+ * @defgroup simplemc-json simplemc-json
+ * @brief Extensions to the <a href="https://github.com/nlohmann/json">nlohmann_json</a> library.
+ *
+ * @details **simplemc-json** adds some additional functionality to the <a href="https://github.com/nlohmann/json">nlohmann_json</a>
+ * library.
+ */
+
+/**
+ * @defgroup simplemc-hdf5 simplemc-hdf5
+ * @brief HDF5 library.
+ */
+
+/**
+ * @defgroup simplemc-random simplemc-random
+ * @brief Tools for generating random numbers and sampling various probability distributions.
+ */
+
+/**
+ * @defgroup simplemc-grids simplemc-grids
+ * @brief Various grids that can be used in histograms.
+ *
+ * @details A grid is a strictly monotonous map from the integers `[0, N-1]` to the real numbers, where `N` is the size of the grid.
+ * The mapping defines the different grids.
+ */
+
+/**
+ * @defgroup simplemc-numeric simplemc-numeric
+ * @brief Basic tools and functionality useful in many numerical and physics related simulations.
+ */
+
+/**
+ * @defgroup simplemc-accs simplemc-accs
+ * @brief Various accumulators to collect and analyze data.
+ */
+
+/**
+ * @defgroup simplemc-mc simplemc-mc
+ * @brief Monte Carlo library.
+ */

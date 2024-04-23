@@ -24,6 +24,7 @@
 namespace simplemc {
 
 /**
+ * @ingroup simplemc-accs
  * @brief Variance accumulator specialized for accumulating double values.
  *
  * @tparam A Algorithm (either standard or welford).

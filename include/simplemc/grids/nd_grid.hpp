@@ -17,6 +17,7 @@
 namespace simplemc {
 
 /**
+ * @ingroup simplemc-grids
  * @brief N-dimensional grid consisting of N 1-dimensional grids.
  *
  * @details The grids need not be of the same type.

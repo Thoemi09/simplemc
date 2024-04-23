@@ -15,6 +15,7 @@
 namespace simplemc {
 
 /**
+ * @ingroup simplemc-random
  * @brief Seed RNG with a seed sequence depending on an input parameter (useful for parallelization).
  *
  * @tparam RNG Random number generator.

@@ -13,6 +13,7 @@
 namespace nlohmann {
 
 /**
+ * @ingroup simplemc-json
  * @brief Serialize/Deserialize std::complex<T> to/from JSON.
  *
  * @tparam T Value type of std::complex<T>.

@@ -23,6 +23,7 @@
 namespace simplemc {
 
 /**
+ * @ingroup simplemc-accs
  * @brief Mean accumulator for calculating the sample mean of a random vector.
  *
  * @details No error estimation is available.

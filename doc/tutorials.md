@@ -2,9 +2,17 @@
 
 [TOC]
 
-- @ref tut1
+@section tut_utils simplemc-utils
 
-@section tutorial_compilation Compiling the tutorials
+- @ref tut_utils_1
+- @ref tut_utils_2
+- @ref tut_utils_3
+
+@section tut_mpi simplemc-mpi
+
+- @ref tut_mpi_1
+
+@section tut_compilation Compiling the tutorials
 
 All tutorials have been compiled on a MacBook Pro with an Apple M2 Max chip and [open-mpi](https://www.open-mpi.org/) 4.1.5.
 We further used clang v17.0.6 together with cmake v3.29.1.
@@ -23,7 +31,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # fetch simplemc from github
 include(FetchContent)
 FetchContent_Declare(
-  simpelmc
+  simplemc
   GIT_REPOSITORY git@github.com:Thoemi09/simplemc.git
   GIT_TAG main
 )

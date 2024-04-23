@@ -13,6 +13,11 @@
 namespace simplemc {
 
 /**
+ * @addtogroup simplemc-numeric
+ * @{
+ */
+
+/**
  * @brief Bravais lattice class.
  *
  * @details A lattice is defined by d d-dimensional lattice vectors. One lattice point is
@@ -427,6 +432,8 @@ void check_3d_lattice_parameters(const bravais_lattice::params& p);
  */
 [[nodiscard]] bravais_lattice make_triclinic_lattice(
     double a, double b, double c, double alpha, double beta, double gamma);
+
+/** @} */
 
 } // namespace simplemc
 

@@ -12,6 +12,7 @@
 namespace simplemc {
 
 /**
+ * @ingroup simplemc-numeric
  * @brief Map a range [a, b] to another range [c, d] (and vice versa) via a linear function.
  *
  * @details The linear function is defined by `y(x) = alpha * x + beta` such that
