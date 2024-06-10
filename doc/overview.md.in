@@ -2,9 +2,11 @@
 
 [TOC]
 
-[![build](https://github.com/TRIQS/mpi/workflows/build/badge.svg?branch=unstable)](https://github.com/TRIQS/mpi/actions?query=workflow%3Abuild)
+[![build](https://github.com/TRIQS/mpi/workflows/build/badge.svg?branch=unstable)]
+(https://github.com/TRIQS/mpi/actions?query=workflow%3Abuild)
 
-> This is the homepage of **@PROJECT_NAME@ v@PROJECT_VERSION@**. The source code can be found on [GitHub](https://github.com/Thoemi09/simplemc).
+> This is the homepage of **@PROJECT_NAME@ v@PROJECT_VERSION@**. The source code can be found on
+> [GitHub](https://github.com/Thoemi09/simplemc).
 
 ```cpp
 #include <simplemc/mpi.hpp>
@@ -20,13 +22,13 @@ int main(int argc, char** argv) {
 }
 ```
 
-**simplemc** is a library written in C++ that provides various tools to simplify the implementation of Monte Carlo (MC) simulations
-with special focus on applications in computational physics.
-Its functionality is similar to other already established codes like [ALPSCore](https://alpscore.org/) or the MC part of
-[TRIQS](https://triqs.github.io/triqs/latest/).
+**simplemc** is a library written in C++ that provides various tools to simplify the implementation of
+Monte Carlo (MC) simulations with special focus on applications in computational physics.
+Its functionality is similar to other already established codes like [ALPSCore](https://alpscore.org/)
+or the MC part of [TRIQS](https://triqs.github.io/triqs/latest/).
 
-The main purpose of this library is to help the user with common tasks that are encountered in all but the most trivial MC
-implementations. Some examples include:
+The main purpose of this library is to help the user with common tasks that are encountered in all but
+the most trivial MC implementations. Some examples include:
 * Accumulation of data
 * Statistical analysis of results and error propagation
 * Parallelization using MPI
@@ -35,9 +37,11 @@ implementations. Some examples include:
 * Numerical procedures like interpolation, quadrature, etc.
 * and more...
 
-These tasks can take a considerable amount of effort and time to be implemented correctly and efficiently.
-Since they are rather mundane and not related to the actual (physics) problem, developers and especially researchers often tend
-to neglect them, which can lead to subtle errors and bad user experience.
+These tasks can take a considerable amount of effort and time to be implemented correctly and
+efficiently.
+Since they are rather mundane and not related to the actual (physics) problem, developers and
+especially researchers often tend to neglect them, which can lead to subtle errors and bad user
+experience.
 
 **simplemc** aims to make it easier for both, developers and users.
 
@@ -47,8 +51,8 @@ The @ref installation section tells you how to get the library and make it avail
 
 @ref integration explains how to integrate **simplemc** in your own C++ code.
 
-Then, you can start with the @ref tutorials section to get an overview of the library's features and how
-it can be used in practice.
+Then, you can start with the @ref tutorials section to get an overview of the library's features and
+how it can be used in practice.
 
 Furthermore, we provide a detailed reference @ref documentation to answer your questions.
 

@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief 1-dimensional, symmetric power grid.
+ * @brief Implementation details for simplemc/grids/symmetric_power_grid.hpp.
  */
 
 #include <simplemc/grids/symmetric_power_grid.hpp>

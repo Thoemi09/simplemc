@@ -1,9 +1,6 @@
-/**
- * @file
- * @brief Test to abort MPI program on exception.
- */
-
 #include <simplemc/mpi.hpp>
+
+#include <fmt/ostream.h>
 
 #include <chrono>
 #include <iostream>
@@ -18,8 +15,8 @@ int main(int argc, char** argv) {
             throw simplemc::simplemc_exception("This is a test exception");
         }
         std::this_thread::sleep_for(std::chrono::seconds(3));
-        std::cout << "Hello from rank " << rank << std::endl;
+        fmt::print("Hello from rank {}\n", rank);
     } catch(const simplemc::simplemc_exception& e) {
-        std::cerr << "Caught exception: " << e.what() << std::endl;
+        fmt::print(std::cerr, "Caught exception: {}\n", e.what());
     }
 }

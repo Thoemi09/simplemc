@@ -1,6 +1,6 @@
 # User options/variables:
 # ------------------------
-# SIMPLEMC_ENABLE_INSTALL: Enable install target (only if no dependencies are fetched).
+# SIMPLEMC_ENABLE_INSTALL: Enable install target.
 # SIMPLEMC_BUILD_TESTS: Build unit tests with googletest.
 # SIMPLEMC_BUILD_EXAMPLES: Build examples.
 # SIMPLEMC_BUILD_DOC: Build documentation with Doxygen.
@@ -8,8 +8,8 @@
 # SIMPLEMC_FETCH_FMT: Fetch fmt from github.
 # SIMPLEMC_FETCH_RANGEV3: Fetch range-v3 from github.
 # SIMPLEMC_FETCH_EIGEN3: Fetch Eigen3 from gitlab.
-# SIMPLEMC_FETCH_NLOHMANN_JSON: Fetch nlohmann_json library from github.
-# SIMPLEMC_FETCH_HIGHFIVE: Fetch HighFive library from github.
+# SIMPLEMC_FETCH_NLOHMANN_JSON: Fetch nlohmann_json from github.
+# SIMPLEMC_FETCH_HIGHFIVE: Fetch HighFive from github.
 # SIMPLEMC_DISABLE_WARNINGS: Disable stricter compilation warnings.
 
 cmake_minimum_required(VERSION 3.24)
@@ -41,16 +41,16 @@ endif()
 # User/Build options
 #########################
 option(SIMPLEMC_ENABLE_INSTALL "Enable install target" ${SIMPLEMC_MASTER_PROJECT})
-option(SIMPLEMC_BUILD_TESTS "Build unit tests" ${SIMPLEMC_MASTER_PROJECT})
+option(SIMPLEMC_BUILD_TESTS "Build unit tests with googletest" ${SIMPLEMC_MASTER_PROJECT})
 option(SIMPLEMC_BUILD_EXAMPLES "Build examples" ${SIMPLEMC_MASTER_PROJECT})
 option(SIMPLEMC_BUILD_DOC "Build documentation with Doxygen" OFF)
 option(SIMPLEMC_WITH_HIGHFIVE "Use HighFive for HDF5 support" ON)
 option(SIMPLEMC_FETCH_FMT "Fetch fmt from github" ON)
 option(SIMPLEMC_FETCH_RANGEV3 "Fetch range-v3 from github" ON)
 option(SIMPLEMC_FETCH_EIGEN3 "Fetch Eigen3 from gitlab" ON)
-option(SIMPLEMC_FETCH_NLOHMANN_JSON "Fetch nlohmann_json library from github" ON)
-option(SIMPLEMC_FETCH_HIGHFIVE "Fetch HighFive library from github" ON)
-option(SIMPLEMC_DISABLE_WARNINGS "Disable stricter compilation warnings" OFF)
+option(SIMPLEMC_FETCH_NLOHMANN_JSON "Fetch nlohmann_json from github" ON)
+option(SIMPLEMC_FETCH_HIGHFIVE "Fetch HighFive from github" ON)
+option(SIMPLEMC_DISABLE_WARNINGS "Disable stricter compilation warnings" ON)
 
 # output user options
 message(STATUS "Start configuring project ${PROJECT_NAME}")

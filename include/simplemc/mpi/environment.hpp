@@ -11,12 +11,12 @@
 namespace simplemc::mpi {
 
 /**
- * @ingroup simplemc-mpi
+ * @ingroup simplemc-mpi-commenv
  * @brief Initialize and finalize MPI execution environments.
  *
- * @details This is a short version of the boost::mpi::environment class. It is intended to be
- * used in the main() function of a program, where it calls MPI_Init on construction and MPI_Finalize
- * on destruction:
+ * @details This is a simplified version of the `boost::mpi::environment` class. It is intended to be
+ * used in the `main()` function of a program, where it calls `MPI_Init` on construction and
+ * `MPI_Finalize` on destruction:
  *
  * @code{.cpp}
  * int main(int argc, char** argv) {
@@ -27,44 +27,56 @@ namespace simplemc::mpi {
  * }
  * @endcode
  *
- * Only very basic MPI calls are supported. If more sophisticated functionality is needed,
- * e.g like threading, then the user is advised to call the MPI C library directly.
+ * Only very basic MPI calls are supported. For more advanced tasks, e.g. like threading support, the
+ * user is advised to use the MPI C library directly.
  */
 class environment {
 public:
     /**
      * @brief Check if the MPI environment is initialized.
      *
-     * @return True if MPI_Init has been called.
+     * @details Makes a call to `MPI_Initialized` and throws an exception if the call fails.
+     *
+     * @return True if `MPI_Init` has been called.
      */
     [[nodiscard]] static bool initialized();
 
     /**
      * @brief Check if the MPI environment is finalized.
      *
-     * @return True if MPI_Finalize has been called.
+     * @details Makes a call to `MPI_Finalized` and throws an exception if the call fails.
+     *
+     * @return True if `MPI_Finalize` has been called.
      */
     [[nodiscard]] static bool is_finalized();
 
     /**
-     * @brief Abort all MPI processes on MPI_COMM_WORLD.
+     * @brief Abort all MPI processes on `MPI_COMM_WORLD`.
      *
-     * @param errcode Error code that will be passed to the MPI_Abort function.
+     * @details Makes a call to `MPI_Abort` and throws an exception if the call fails.
+     *
+     * @param errcode Error code that will be passed to the `MPI_Abort` function.
      */
     static void abort(int errcode = 0);
 
     /**
-     * @brief Clean up all MPI processes with a call to MPI_Finalize.
+     * @brief Clean up all MPI processes with a call to `MPI_Finalize`.
+     *
+     * @details It first checks if MPI has already been finalized. If not, it calls `MPI_Finalize`. It
+     * throws an exception if the call fails.
      */
     static void finalize();
 
     /**
      * @brief Constructor to initialize the MPI environment.
      *
-     * @param argc The number of arguments passed to main() through argv.
-     * @param argv The arguments passed to main() as an array of strings.
-     * @param abort_on_exception If the environment is destroyed due to an uncaught exception,
-     * it will call MPI_Abort instead of MPI_Finalize in its destructor.
+     * @details If no MPI environment has been initialized, it calls `MPI_Init` with the given
+     * arguments. It throws an exception if the call fails.
+     *
+     * @param argc Number of arguments passed to `main()`.
+     * @param argv Arguments passed to `main()`.
+     * @param abort_on_exception If the environment is destroyed due to an uncaught exception, it will
+     * call `MPI_Abort` instead of `MPI_Finalize` in its destructor.
      */
     environment(int& argc, char**& argv, bool abort_on_exception = true);
 
@@ -79,8 +91,8 @@ public:
     environment& operator=(const environment&) = delete;
 
     /**
-     * @brief Clean up the MPI environment, either by calling MPI_Abort due to an uncaught exception
-     * or by calling MPI_Finalize.
+     * @brief Clean up the MPI environment, either by calling `MPI_Abort` due to an uncaught exception
+     * or by calling `MPI_Finalize`.
      */
     ~environment();
 

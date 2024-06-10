@@ -11,12 +11,14 @@
 namespace simplemc {
 
 /**
- * @addtogroup simplemc-utils
+ * @addtogroup simplemc-utils-general
  * @{
  */
 
 /**
  * @brief Generic function that uses the stream `operator<<` to convert an object to a string.
+ *
+ * @details It simply streams into a `std::stringstream` and returns the resulting string.
  *
  * @param t Object to convert to a string.
  * @return String representation of the object.

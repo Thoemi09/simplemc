@@ -1,12 +1,15 @@
 /**
  * @file
- * @brief Implementation details for file_io.hpp.
+ * @brief Implementation details for simplemc/utils/file_io.hpp.
  */
 
 #include <simplemc/utils/file_io.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
 #include <fmt/format.h>
+
+#include <cstdio>
+#include <string>
 
 namespace simplemc {
 

@@ -20,7 +20,23 @@ namespace simplemc {
  * @ingroup simplemc-grids
  * @brief N-dimensional grid consisting of N 1-dimensional grids.
  *
- * @details The grids need not be of the same type.
+ * @details The grids need not be of the same type as long as they have the same interface as
+ * simplemc::grid_base.
+ *
+ * It stores the 1-dimensional grids in a tuple.
+ *
+ * For example, a 2-dimensional, 3x3 linear grid can be constructed as follows:
+ * @code{.cpp}
+ * simplemc::linear_grid lg(0.0, 1.0, 3);
+ * simplemc::nd_grid grid_2d(lg, lg);
+ * fmt::print("{}\n", grid_2d.view());
+ * @endcode
+ *
+ * Output:
+ *
+ * ```
+ * [[0, 0], [0, 0.5], [0, 1], [0.5, 0], [0.5, 0.5], [0.5, 1], [1, 0], [1, 0.5], [1, 1]]
+ * ```
  *
  * @tparam Grids Grid types.
  */
@@ -42,94 +58,100 @@ public:
     using tuple_type = std::tuple<Grids...>;
 
     /**
-     * @brief Value type of each 1-dimensional grid.
+     * @brief Type of the range of the 1-dimensional grids.
      */
     using value_type = grid_base::value_type;
 
     /**
-     * @brief Size type of each 1-dimensional grid.
+     * @brief Type of the domain of the 1-dimensional grids.
      */
     using size_type = grid_base::size_type;
 
     /**
-     * @brief N-dimensional size type.
+     * @brief Type of the N-dimensional grid's range, i.e. the type of the grid points.
      */
     using nd_size_type = std::array<size_type, dim()>;
 
     /**
-     * @brief N-dimensional value type.
+     * @brief Type of the N-dimensional grid's domain, i.e. the type of the grid indices.
      */
     using nd_value_type = std::array<value_type, dim()>;
 
     /**
-     * @brief Constructor for an N-dimensional grid.
+     * @brief Construct an N-dimensional grid by specifying its 1-dimensional grids.
      *
      * @param gs 1-dimensional grids.
      */
     nd_grid(const Grids&... gs) : grids_(gs...) {}
 
     /**
-     * @brief Get all grids.
+     * @brief Get all 1-dimensional grids.
      *
-     * @return Reference to tuple of grids.
+     * @return Reference to the tuple of grids.
      */
     tuple_type& grids() { return grids_; }
 
-    /// See nd_grid::grids().
+    /**
+     * @brief Get all 1-dimensional grids.
+     *
+     * @return Const reference to the tuple of grids.
+     */
     const tuple_type& grids() const { return grids_; }
 
     /**
-     * @brief Get first grid point.
+     * @brief Get the first grid point.
      *
-     * @return First value of grid.
+     * @return First value of the grid.
      */
     [[nodiscard]] nd_value_type first() const {
         return std::apply([](const auto&... gs) { return nd_value_type { gs.first()... }; }, grids_);
     }
 
     /**
-     * @brief Get last grid point.
+     * @brief Get the last grid point.
      *
-     * @return Last value of grid.
+     * @return Last value of the grid.
      */
     [[nodiscard]] nd_value_type last() const {
         return std::apply([](const auto&... gs) { return nd_value_type { gs.last()... }; }, grids_);
     }
 
     /**
-     * @brief Get size of N-dimensional grid.
+     * @brief Get the grid size.
      *
-     * @return Total number of grid points.
+     * @return Number of grid points on the grid.
      */
     [[nodiscard]] size_type size() const {
         return std::apply([](const auto&... gs) { return (1 * ... * gs.size()); }, grids_);
     }
 
     /**
-     * @brief Get shape of the grid.
+     * @brief Get the shape of the N-dimensional grid.
      *
-     * @return Array containing the size in each dimension.
+     * @return 'std::array' containing the sizes of the 1-dimensional grids.
      */
     [[nodiscard]] nd_size_type shape() const {
         return std::apply([](const auto&... gs) { return nd_size_type { gs.size()... }; }, grids_);
     }
 
     /**
-     * @brief Get grid point at a given index array.
+     * @brief Get the grid point at a given index array.
      *
-     * @param idx_arr Index array.
-     * @return Grid point at that index array.
+     * @param idx_arr Index array specifying the grid point.
+     * @return Grid point at the given index array.
      */
     [[nodiscard]] nd_value_type at(const nd_size_type& idx_arr) const {
         return std::apply([this](const auto&... args) { return this->at(args...); }, idx_arr);
     }
 
     /**
-     * @brief Get grid point at the given indices.
+     * @brief Get the grid point at the given indices.
+     *
+     * @details It simply calls at() with an index array constructed from the given indices.
      *
      * @tparam Idxs Index types.
-     * @param idxs Indices for each dimension.
-     * @return Grid point at those indices.
+     * @param idxs Indices for all dimensions.
+     * @return Grid point at the given indices.
      */
     template <typename... Idxs>
     [[nodiscard]] nd_value_type at(Idxs... idxs) const {
@@ -137,21 +159,23 @@ public:
     }
 
     /**
-     * @brief Center of a given bin volume.
+     * @brief Get the center of the bin at a given index array.
      *
-     * @param idx_arr Index array.
-     * @return Center of bin specified by index array.
+     * @param idx_arr Index array specifying the bin.
+     * @return Center of the bin at the given index array.
      */
     [[nodiscard]] nd_value_type center(const nd_size_type& idx_arr) const {
         return std::apply([this](const auto&... args) { return this->center(args...); }, idx_arr);
     }
 
     /**
-     * @brief Center of a given bin volume.
+     * @brief Get the center of the bin at the given indices.
+     *
+     * @details It simply calls center() with an index array constructed from the given indices.
      *
      * @tparam Idxs Index types.
-     * @param idxs Indices for each dimension.
-     * @return Center of bin specified by indices.
+     * @param idxs Indices for all dimensions.
+     * @return Center of the bin at the given indices.
      */
     template <typename... Idxs>
     [[nodiscard]] nd_value_type center(Idxs... idxs) const {
@@ -159,21 +183,24 @@ public:
     }
 
     /**
-     * @brief Get index array of the bin to which a given value array belongs.
+     * @brief Get the index array of the bin to which a given N-dimensional point belongs.
      *
-     * @param val_arr Value array.
-     * @return Index array.
+     * @param val_arr Value array specifying an N-dimensional point in the range of the grid.
+     * @return Index array of the bin which contains the given point.
      */
     [[nodiscard]] nd_size_type index(const nd_value_type& val_arr) const {
         return std::apply([this](const auto&... args) { return this->index(args...); }, val_arr);
     }
 
     /**
-     * @brief Get index array of bin to which the given values belong.
+     * @brief Get the index array of the bin to which a given N-dimensional point belongs.
+     *
+     * @details It simply calls index() with a value array constructed from the given values.
      *
      * @tparam Vals Value types.
-     * @param vals Values for each dimension.
-     * @return Index array.
+     * @param vals Values for all dimensions specifying an N-dimensional point in the range of the
+     * grid.
+     * @return Index array of the bin which contains the given point.
      */
     template <typename... Vals>
     [[nodiscard]] nd_size_type index(Vals... vals) const {
@@ -181,23 +208,30 @@ public:
     }
 
     /**
-     * @brief Call grid_base::index_subrange for each grid for a given value array.
+     * @brief Find the subvolume of \f$ m - 1 \f$ consecutive bins such that the given N-dimensional
+     * point lies more or less in its middle.
      *
-     * @param m Size of subrange.
-     * @param val_array Value array.
-     * @return Index array.
+     * @details It simply calls simplemc::grid_base::index_subrange for each 1-dimensional grid.
+     *
+     * @param m Size of the wanted subrange.
+     * @param val_arr Value array specifying an N-dimensional point in the range of the grid.
+     * @return Index array of the bin of the subvolume with the smallest indices.
      */
     [[nodiscard]] nd_size_type index_subrange(size_type m, const nd_value_type& val_arr) const {
         return std::apply([m, this](const auto&... args) { return this->index_subrange(m, args...); }, val_arr);
     }
 
     /**
-     * @brief Call grid_base::index_subrange for each grid for the given values.
+     * @brief Find the subvolume of \f$ m - 1 \f$ consecutive bins such that the given N-dimensional
+     * point lies more or less in its middle.
+     *
+     * @details It simply calls simplemc::grid_base::index_subrange for each 1-dimensional grid.
      *
      * @tparam Vals Value types.
-     * @param m Size of subrange.
-     * @param vals Values for each dimension.
-     * @return Index array.
+     * @param m Size of the wanted subrange.
+     * @param vals Values for all dimensions specifying an N-dimensional point in the range of the
+     * grid.
+     * @return Index array of the bin of the subvolume with the smallest indices.
      */
     template <typename... Vals>
     [[nodiscard]] nd_size_type index_subrange(size_type m, Vals... vals) const {
@@ -206,21 +240,21 @@ public:
     }
 
     /**
-     * @brief Get bin volume at a given index array.
+     * @brief Get the volume of the bin at the given index array.
      *
-     * @param idx_arr Index array
-     * @return Volume of bin.
+     * @param idx_arr Index array specifying the bin.
+     * @return Bin volume at the given index array.
      */
     [[nodiscard]] value_type bin_volume(const nd_size_type& idx_arr) const {
         return std::apply([this](const auto&... args) { return this->bin_volume(args...); }, idx_arr);
     }
 
     /**
-     * @brief Get bin volume at the given indices.
+     * @brief Get the volume of the bin at the given indices.
      *
      * @tparam Idxs Index types.
-     * @param idxs Indices for each dimension.
-     * @return Volume of bin.
+     * @param idxs Indices for all dimensions.
+     * @return Bin volume at the given indices.
      */
     template <typename... Idxs>
     [[nodiscard]] value_type bin_volume(Idxs... idxs) const {
@@ -228,12 +262,12 @@ public:
     }
 
     /**
-     * @brief Get a view on the grid.
+     * @brief Get a lazy view on the grid.
      *
-     * @details The grid is traversed in row-major order, i.e. the last dimension is the fastest varying one and
-     * the first dimension is the slowest varying one.
+     * @details The grid is traversed in row-major (C) order, i.e. the last dimension is the fastest
+     * varying one and the first dimension is the slowest varying one.
      *
-     * @return View on the N-dimensional grid.
+     * @return 'ranges::view' on the N-dimensional grid points.
      */
     [[nodiscard]] auto view() const {
         return std::apply(
@@ -246,12 +280,12 @@ public:
     }
 
     /**
-     * @brief Get a view on the centered grid.
+     * @brief Get a lazy view on the bin centers
      *
-     * @details The grid is traversed in row-major order, i.e. the last dimension is the fastest varying one and
-     * the first dimension is the slowest varying one.
+     * @details The grid is traversed in row-major (C) order, i.e. the last dimension is the fastest
+     * varying one and the first dimension is the slowest varying one.
      *
-     * @return View on the N-dimensional centered grid.
+     * @return 'ranges::view' on the N-dimensional bin centers.
      */
     [[nodiscard]] auto view_center() const {
         return std::apply(
@@ -265,12 +299,12 @@ public:
     }
 
     /**
-     * @brief Get a view on the bin volumes.
+     * @brief Get a lazy view on the bin volumes.
      *
-     * @details The grid is traversed in row-major order, i.e. the last dimension is the fastest varying one and
-     * the first dimension is the slowest varying one.
+     * @details The grid is traversed in row-major (C) order, i.e. the last dimension is the fastest
+     * varying one and the first dimension is the slowest varying one.
      *
-     * @return View on the bin volumes.
+     * @return 'ranges::view' on the N-dimensional bin volumes.
      */
     [[nodiscard]] auto view_bin_volumes() const {
         return std::apply(

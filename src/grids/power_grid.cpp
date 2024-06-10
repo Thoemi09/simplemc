@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief 1-dimensional power grid.
+ * @brief Implementation details for simplemc/grids/power_grid.hpp.
  */
 
 #include <simplemc/grids/power_grid.hpp>

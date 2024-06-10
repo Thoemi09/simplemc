@@ -14,27 +14,33 @@ namespace simplemc {
  * @ingroup simplemc-grids
  * @brief Lazy, 1-dimensional linear grid.
  *
- * @details The grid is defined by the value of the first grid point, the value of the
- * last grid point (!= first) and its size (>= 2). The grid points `y(i)` are generated
- * according to `y(i) = first + step * i`, where `i in [0, 1, ..., size - 1]` and
- * `step = (last - first) / (size - 1)`.
+ * @details This class inherits from simplemc::grid_base and represents a uniform grid of size
+ * \f$ N \geq 2 \f$ on the interval \f$ [a, b] \f$ (or \f$ [b, a] \f$ if \f$ b < a \f$).
  *
- * If last < first, then the grid is descending.
+ * It uses the map
+ * \f[
+ *   g(i) = a + i * \Delta \;,
+ * \f]
+ * with the step size \f$ \Delta = \frac{b - a}{N - 1} \f$ and the corresponding inverse map
+ * \f[
+ *   g^{-1}(x) = \left\lfloor \frac{x - a}{\Delta} \right\rfloor \;,
+ * \f]
+ * with \f$ x \in [a, b] \f$.
  */
 class linear_grid : public grid_base {
 public:
     /**
-     * @brief Value type of the grid.
+     * @brief Type of the grid's range, i.e. the type of the grid points.
      */
     using value_type = grid_base::value_type;
 
     /**
-     * @brief Size type of the grid.
+     * @brief Type of the grid's domain, i.e. the type of the grid indices.
      */
     using size_type = grid_base::size_type;
 
     /**
-     * @brief Constructor for a linear grid.
+     * @brief Construct a linear grid by specifying its first and last grid points and its size.
      *
      * @param first First value of the grid.
      * @param last Last value of the grid.
@@ -43,7 +49,7 @@ public:
     linear_grid(value_type first, value_type last, size_type size);
 
     /**
-     * @brief Reset the grid.
+     * @brief Reset the linear grid by specifying its first and last grid points and its size.
      *
      * @param first First value of the grid.
      * @param last Last value of the grid.
@@ -52,10 +58,10 @@ public:
     void reset(value_type first, value_type last, size_type size);
 
     /**
-     * @brief Get grid point at a certain index.
+     * @brief Get the grid point at a given index.
      *
-     * @param idx Index of grid point.
-     * @return Value at that index.
+     * @param idx Index of the grid point.
+     * @return Grid point at the given index.
      */
     [[nodiscard]] value_type at(size_type idx) const override {
         assert(idx >= 0 && idx < size_);
@@ -63,10 +69,10 @@ public:
     }
 
     /**
-     * @brief Get index of bin to which the value belongs.
+     * @brief Get the index of the bin to which a given value belongs.
      *
-     * @param value Input value.
-     * @return Index of bin, which contains the supplied value.
+     * @param value A value in the range of the grid.
+     * @return Index of the bin which contains the given value.
      */
     [[nodiscard]] size_type index(value_type value) const override {
         assert((first_ <= value && value <= last_) || (first_ >= value && value >= last_));
@@ -74,10 +80,10 @@ public:
     }
 
     /**
-     * @brief Get volume of the bin at a certain index.
+     * @brief Get the volume (size) of the bin at a given index.
      *
-     * @param idx Index of bin.
-     * @return Bin volume at that index.
+     * @param idx Bin index.
+     * @return Bin volume (size) at the given index.
      */
     [[nodiscard]] value_type bin_volume([[maybe_unused]] size_type idx) const override {
         assert(idx >= 0 && idx + 1 < size_);
@@ -85,10 +91,10 @@ public:
     }
 
     /**
-     * @brief Get the center of the bin at a certain index.
+     * @brief Get the center of the bin at a given index.
      *
-     * @param idx Index of bin.
-     * @return Center of bin at that index.
+     * @param idx Bin index
+     * @return Center of the bin at the given index.
      */
     [[nodiscard]] value_type center(size_type idx) const override {
         assert(idx >= 0 && idx + 1 < size_);
@@ -96,7 +102,7 @@ public:
     }
 
     /**
-     * @brief Get step size.
+     * @brief Get the step size between two adjacent grid points.
      *
      * @return Distance between two adjacent grid points.
      */

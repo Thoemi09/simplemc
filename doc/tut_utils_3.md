@@ -2,12 +2,16 @@
 
 [TOC]
 
-In this tutorial, we show how to use the [fmt](https://github.com/fmtlib/fmt) library to output formatted data.
+In this tutorial, we show how to use the [fmt](https://github.com/fmtlib/fmt) library to output
+formatted data.
 
 For further examples, please look at the official [fmt documentation](https://fmt.dev/latest/index.html).
 
 ```cpp
 #include <simplemc/utils.hpp>
+
+#include <fmt/core.h>
+
 #include <cmath>
 #include <complex>
 #include <iostream>

@@ -14,27 +14,37 @@ namespace simplemc {
  * @ingroup simplemc-grids
  * @brief Lazy, 1-dimensional power grid.
  *
- * @details The grid is defined by the value of the first grid point, the value of the
- * last grid point (!= first), its size (>= 2) and a power parameter (> 0). The grid points
- * `y(i)` are generated according to `y(i) = first + scale * i**power`, where `i in [0, 1, ..., size - 1]`
- * and `scale = (last - first) / std::pow((size - 1), power)`.
+ * @details This class inherits from simplemc::grid_base and represents a power grid of size
+ * \f$ N \geq 2 \f$ on the interval \f$ [a, b] \f$ (or \f$ [b, a] \f$ if \f$ b < a \f$).
  *
- * If last < first, then the grid is descending.
+ * It uses the map
+ * \f[
+ *   g(i) = a + i^p * \sigma \;,
+ * \f]
+ * with the power parameter \f$ p > 0 \f$ and the scale factor \f$ \sigma = \frac{b - a}{(N - 1)^p}
+ * \f$.
+ *
+ * The inverse map is given by
+ * \f[
+ *   g^{-1}(x) = \left\lfloor \left( \frac{x - a}{\sigma} \right)^{1/p} \right\rfloor \;,
+ * \f]
+ * with \f$ x \in [a, b] \f$.
  */
 class power_grid : public grid_base {
 public:
     /**
-     * @brief Value type of the grid.
+     * @brief Type of the grid's range, i.e. the type of the grid points.
      */
     using value_type = grid_base::value_type;
 
     /**
-     * @brief Size type of the grid.
+     * @brief Type of the grid's domain, i.e. the type of the grid indices.
      */
     using size_type = grid_base::size_type;
 
     /**
-     * @brief Constructor for a power grid.
+     * @brief Construct a power grid by specifying its first and last grid points, its size and the
+     * power parameter.
      *
      * @param first First value of the grid.
      * @param last Last value of the grid.
@@ -44,7 +54,8 @@ public:
     power_grid(value_type first, value_type last, size_type size, value_type power);
 
     /**
-     * @brief Reset the grid.
+     * @brief Reset a power grid by specifying its first and last grid points, its size and the power
+     * parameter.
      *
      * @param first First value of the grid.
      * @param last Last value of the grid.
@@ -54,10 +65,10 @@ public:
     void reset(value_type first, value_type last, size_type size, value_type power);
 
     /**
-     * @brief Get grid point at a certain index.
+     * @brief Get the grid point at a given index.
      *
-     * @param idx Index of grid point.
-     * @return Value at that index.
+     * @param idx Index of the grid point.
+     * @return Grid point at the given index.
      */
     [[nodiscard]] value_type at(size_type idx) const override {
         assert(idx >= 0 && idx < size_);
@@ -65,10 +76,10 @@ public:
     }
 
     /**
-     * @brief Get index of bin to which the value belongs.
+     * @brief Get the index of the bin to which a given value belongs.
      *
-     * @param value Input value.
-     * @return Index of bin, which contains the supplied value.
+     * @param value A value in the range of the grid.
+     * @return Index of the bin which contains the given value.
      */
     [[nodiscard]] size_type index(value_type value) const override {
         assert((first_ <= value && value <= last_) || (first_ >= value && value >= last_));
@@ -83,7 +94,7 @@ public:
     [[nodiscard]] value_type power() const { return power_; }
 
     /**
-     * @brief Get the scale parameter of the grid.
+     * @brief Get the scale factor of the grid.
      *
      * @return Scaling of the distance between two grid points.
      */

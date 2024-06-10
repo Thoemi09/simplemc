@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Utility functions for simplemc-mpi.
+ * @brief Implementation details for simplemc/mpi/utils.hpp.
  */
 
 #include <simplemc/mpi/utils.hpp>

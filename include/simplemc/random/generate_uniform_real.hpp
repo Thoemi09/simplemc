@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Generate a uniform real number.
+ * @brief Generate a random uniform real number.
  */
 
 #ifndef SIMPLEMC_RANDOM_GENERATE_UNIFORM_REAL_HPP
@@ -11,17 +11,8 @@
 
 namespace simplemc::detail {
 
-/**
- * @ingroup simplemc-random
- * @brief Generate a double value on the interval [min, max) given a random
- * 64-bit unsigned integer RNG (see http://prng.di.unimi.it/).
- *
- * @tparam RNG 64-bit random number generator.
- * @param rng RNG object.
- * @param min Lower bound.
- * @param max Upper bound.
- * @return Double value on the specified interval.
- */
+// Generate a double value on the interval [min, max) given a random 64-bit unsigned integer RNG
+// (see http://prng.di.unimi.it/).
 template <typename RNG>
     requires std::is_same_v<typename RNG::result_type, std::uint64_t>
 [[nodiscard]] inline double generate_uniform_real(RNG& rng, double min, double max) {

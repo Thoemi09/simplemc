@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Timer built on top of std::chrono.
+ * @brief Timer built on top of `std::chrono`.
  */
 
 #ifndef SIMPLEMC_UTILS_TIMER_HPP
@@ -11,12 +11,12 @@
 namespace simplemc {
 
 /**
- * @addtogroup simplemc-utils
+ * @addtogroup simplemc-utils-timer
  * @{
  */
 
 /**
- * @brief Convenient type aliases for different std::chrono::duration types.
+ * @brief Convenient type aliases for different `std::chrono::duration` types.
  */
 struct duration {
     /// Duration type for hours.
@@ -41,27 +41,26 @@ struct duration {
 /**
  * @brief Get the elapsed time between two time points.
  *
- * @details The third parameter specifies the type of the resulting duration.
- * It is only used for type deduction.
+ * @details The third parameter specifies the type of the resulting duration. It is only used for type
+ * deduction.
  *
  * @code{.cpp}
  * auto measured_time = time_passed(tp1, tp2, duration::millisec{});
  * @endcode
  *
- * Note that this implementation is different from std::chrono::duration_cast,
- * where the resulting duration type has to be given explictly as a template
- * parameter. This enables us to use a default duration (duration::sec).
+ * Note that this implementation is different from `std::chrono::duration_cast`, where the resulting
+ * duration type has to be given explictly as a template parameter. This enables us to use a default
+ * duration (simplemc::duration::sec).
  *
  * @tparam C Clock type.
  * @tparam D1 Duration type of first point in time.
  * @tparam D2 Duration type of second point in time.
- * @tparam D Duration type of result (default: duration::sec).
+ * @tparam D Duration type of result (default: simplemc::duration::sec).
  *
  * @param time_point1 First point in time.
  * @param time_point2 Second point in time.
  * @param to_duration Instance of the duration type of the result (used for type deduction).
- * @return Time difference between the two points in time. If t1 > t2, then the
- * result is negative.
+ * @return Time difference between the two points in time (can be negative).
  */
 template <typename C, typename D1, typename D2, typename D = duration::sec>
 [[nodiscard]] auto time_passed(const std::chrono::time_point<C, D1>& time_point1,
@@ -72,9 +71,10 @@ template <typename C, typename D1, typename D2, typename D = duration::sec>
 /**
  * @brief Measure time and record points in time.
  *
- * @details This timer is based on the clocks of std::chrono. The clock can be
- * specified via the template parameter. It can store three different points in
- * time (std::chrono::time_point): start, stop and interim.
+ * @details This timer is based on the clocks of `std::chrono`. The clock can be specified via the
+ * template parameter.
+ *
+ * It can store three different points in time (`std::chrono::time_point`): start, stop and interim.
  *
  * @code{.cpp}
  * timer t;
@@ -87,7 +87,7 @@ template <typename C, typename D1, typename D2, typename D = duration::sec>
  * auto since_start_in_sec = time_passed(t.start_time(), t.stop_time());
  * @endcode
  *
- * @tparam Clock Clock type from std::chrono (default: std::chrono::steady_clock).
+ * @tparam Clock Clock type from `std::chrono` (default: `std::chrono::steady_clock`).
  */
 template <typename Clock = std::chrono::steady_clock>
 class timer {
@@ -107,7 +107,7 @@ public:
     /**
      * @brief Default constructor.
      *
-     * @details All three members are set to the current time point.
+     * @details All three members are set to the current time point by calling now().
      */
     timer() : start_(now()), stop_(start_), interim_(start_) {}
 
@@ -133,17 +133,17 @@ public:
     [[nodiscard]] std::chrono::time_point<clock_type> interim_time() const { return interim_; }
 
     /**
-     * @brief Set starting time point to now().
+     * @brief Set starting time point by calling now().
      */
     void start() { start_ = now(); }
 
     /**
-     * @brief Set stopping time point to now().
+     * @brief Set stopping time point by calling now().
      */
     void stop() { stop_ = now(); }
 
     /**
-     * @brief Set interim time point to now().
+     * @brief Set interim time point by calling now().
      */
     void interim() { interim_ = now(); }
 

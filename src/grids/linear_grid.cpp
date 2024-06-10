@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief 1-dimensional linear grid.
+ * @brief Implementation details for simplemc/grids/linear_grid.hpp.
  */
 
 #include <simplemc/grids/linear_grid.hpp>

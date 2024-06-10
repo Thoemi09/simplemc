@@ -10,18 +10,7 @@
 
 namespace simplemc {
 
-// Distribution parameter types.
-namespace detail {
-
-template <integer_only T>
-class dad_param_type;
-
-template <integer_only T>
-class dd_param_type;
-
-class urd_param_type;
-
-} // namespace detail
+/// @cond
 
 // Distributions.
 template <integer_only T>
@@ -39,6 +28,8 @@ enum class xoshiro256_type;
 
 template <xoshiro256_type>
 class xoshiro256;
+
+/// @endcond
 
 } // namespace simplemc
 

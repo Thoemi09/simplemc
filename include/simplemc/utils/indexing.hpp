@@ -20,12 +20,83 @@
 namespace simplemc {
 
 /**
- * @addtogroup simplemc-utils
+ * @addtogroup simplemc-utils-indexing
  * @{
  */
 
 /**
- * @brief Calculate the size of a multi-dimensional array given its shape as a std::vector.
+ * @brief Tag indicating column-major order.
+ *
+ * @details Column-major order is the default order in Fortran. The first index varies the fastest and
+ * the last index varies the slowest.
+ *
+ * Let \f$ \mathbf{i} = (i_1, i_2, \ldots, i_d) \f$ be a d-dimensional index and let \f$ \mathbf{N} =
+ * (N_1, N_2, \ldots, N_d) \f$ be the shape of a d-dimensional array. The function \f$ f \f$ that maps
+ * the multi-dimensional index to the linear/flat index is
+ * \f[
+ *   f(\mathbf{i}) = i_1 + i_2 N_1 + i_3 N_1 N_2 + \ldots + i_d N_1 N_2 \ldots N_{d-1}
+ *   = \sum_{j=1}^{d} i_j \left( \prod_{k=1}^{j-1} N_k \right) \; .
+ * \f]
+ * To convert a flat index to its multi-dimensional index, we use the fact that the contribution of
+ * the first \f$ m \f$ indices is smaller than the product of their extents, i.e.
+ * \f[
+ *   i_1 + i_2 N_1 + i_3 N_1 N_2 + \ldots + i_m N_1 N_2 \ldots N_{m-1} < N_1 N_2 \ldots N_m \; .
+ * \f]
+ * This leads us to the following algorithm:
+ * -# set \f$ t = N_1 N_2 \ldots N_{d-1} \f$ and \f$ m = d \f$
+ * -# \f$ i_m = \lfloor \frac{f}{t} \rfloor \f$
+ * -# \f$ f \to f - i_m t \f$
+ * -# \f$ t \to \frac{t}{N_m} \f$
+ * -# \f$ m \to m - 1 \f$
+ * -# go to step 2 and repeat until \f$ m = 1 \f$
+ */
+struct column_major {};
+
+/**
+ * @brief Tag indicating row-major order.
+ *
+ * @details Row-major order is the default order in C and C++. The last index varies the fastest and
+ * the first index varies the slowest.
+ *
+ * Let \f$ \mathbf{i} = (i_1, i_2, \ldots, i_d) \f$ be a d-dimensional index and let \f$ \mathbf{N} =
+ * (N_1, N_2, \ldots, N_d) \f$ be the shape of a d-dimensional array. The function \f$ f \f$ that maps
+ * the multi-dimensional index to the linear/flat index is
+ * \f[
+ *   f(\mathbf{i}) = i_d + i_{d-1} N_d + i_{d-2} N_d N_{d-1} + \ldots + i_1 N_2 N_3 \ldots N_d
+ *   = \sum_{j=1}^{d} i_j \left( \prod_{k=j+1}^{d} N_k \right) \; .
+ * \f]
+ * To convert a flat index to its multi-dimensional index, we use the fact that the contribution of
+ * the last \f$ m \f$ indices is smaller than the product of their extents, i.e.
+ * \f[
+ *   i_d + i_{d-1} N_d + i_{d-2} N_d N_{d-1} + \ldots + i_{d-m+1} N_d N_{d-1} \ldots N_{d-m+1} <
+ *   N_d N_{d-1} \ldots N_{d-m} \; .
+ * \f]
+ * This leads us to the following algorithm:
+ * -# set \f$ t = N_2 N_3 \ldots N_{d} \f$ and \f$ m = 1 \f$
+ * -# \f$ i_m = \lfloor \frac{f}{t} \rfloor \f$
+ * -# \f$ f \to f - i_m t \f$
+ * -# \f$ t \to \frac{t}{N_{d-m+1}} \f$
+ * -# \f$ m \to m + 1 \f$
+ * -# go to step 2 and repeat until \f$ m = d \f$
+ */
+struct row_major {};
+
+/**
+ * @brief A concept that checks if a given type is either a simplemc::column_major or a
+ * simplemc::row_major tag.
+ *
+ * @tparam T Type to check.
+ */
+template <typename T>
+concept nd_order = is_any_of<T, column_major, row_major>;
+
+/**
+ * @brief Calculate the size of a multi-dimensional array given its shape as a `std::vector`.
+ *
+ * @details The size of a multi-dimensional array with shape \f$ (N_1, N_2, \ldots, N_d) \f$ is
+ * \f[
+ *   s = \prod_{j=1}^{d} N_j \; .
+ * \f]
  *
  * @note Empty shapes are not supported.
  *
@@ -40,7 +111,12 @@ template <std::integral T>
 }
 
 /**
- * @brief Calculate the size of a multi-dimensional array given its shape as a std::array.
+ * @brief Calculate the size of a multi-dimensional array given its shape as a `std::array`.
+ *
+ * @details The size of a multi-dimensional array with shape \f$ (N_1, N_2, \ldots, N_d) \f$ is
+ * \f[
+ *   s = \prod_{j=1}^{d} N_j \; .
+ * \f]
  *
  * @note Empty shapes are not supported.
  *
@@ -58,6 +134,8 @@ template <std::integral T, std::size_t N>
 /**
  * @brief Convert a flat index to a multi-dimensional index w.r.t. to a given shape.
  *
+ * @details See simplemc::column_major and simplemc::row_major for more information.
+ *
  * @note Empty shapes are not supported.
  *
  * @tparam T Integer type.
@@ -65,7 +143,7 @@ template <std::integral T, std::size_t N>
  * @param flat_idx Flat index.
  * @param shape Shape of the underlying multi-dimensional array.
  * @param order Storage order of the multi-dimensional array (used only for type deduction).
- * @return Multi-dimensional index as a std::vector.
+ * @return Multi-dimensional index as a `std::vector`.
  */
 template <std::integral T, nd_order Order = column_major>
 [[nodiscard]] constexpr std::vector<T> multi_index(
@@ -94,6 +172,8 @@ template <std::integral T, nd_order Order = column_major>
 /**
  * @brief Convert a flat index to a multi-dimensional index w.r.t. to a given shape.
  *
+ * @details See simplemc::column_major and simplemc::row_major for more information.
+ *
  * @note Empty shapes are not supported.
  *
  * @tparam T Integer type.
@@ -102,7 +182,7 @@ template <std::integral T, nd_order Order = column_major>
  * @param flat_idx Flat index.
  * @param shape Shape of the underlying multi-dimensional array.
  * @param order Storage order of the multi-dimensional array (used only for type deduction).
- * @return Multi-dimensional index as a std::array.
+ * @return Multi-dimensional index as a `std::array`.
  */
 template <std::integral T, std::size_t N, nd_order Order = column_major>
 [[nodiscard]] constexpr std::array<T, N> multi_index(
@@ -130,6 +210,8 @@ template <std::integral T, std::size_t N, nd_order Order = column_major>
 
 /**
  * @brief Convert a multi-dimensional index to a flat index w.r.t. to a given shape.
+ *
+ * @details See simplemc::column_major and simplemc::row_major for more information.
  *
  * @note Empty shapes or empty multi-dimensional indices are not supported.
  *
@@ -164,6 +246,8 @@ template <std::integral T1, std::integral T2, nd_order Order = column_major>
 
 /**
  * @brief Convert a multi-dimensional index to a flat index w.r.t. to a given shape.
+ *
+ * @details See simplemc::column_major and simplemc::row_major for more information.
  *
  * @note Empty shapes or empty multi-dimensional indices are not supported.
  *
@@ -202,8 +286,8 @@ template <std::integral T1, std::integral T2, std::size_t N, nd_order Order = co
  * @details Let `R = (0, 1, ..., n-1)` be the larger integer range of size `n`. Given the integer `l`,
  * we want to find the integer range `(j, j+1, ..., j+m-1)` such that `l` lies in the center of it
  * (insofar as this is possible considering the boundaries, i.e. `j >= 0` and `j <= n-1`). `m` is the
- * size of the wanted subrange. If `m` is even, the larger possible `j` value is chosen, e.g. if m = 2,
- * then `j = l` if possible.
+ * size of the wanted subrange. If `m` is even, the larger possible `j` value is chosen, e.g. if
+ * `m = 2`, then `j = l` if possible.
  *
  * @tparam T Integral type.
  * @param l Center of the wanted subrange.

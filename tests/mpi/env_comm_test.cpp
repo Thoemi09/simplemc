@@ -1,8 +1,3 @@
-/**
- * @file
- * @brief Unit tests for the simplemc-mpi library.
- */
-
 #include <gtest/gtest.h>
 
 #include <simplemc/mpi.hpp>

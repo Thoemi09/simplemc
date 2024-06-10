@@ -18,36 +18,35 @@
 namespace simplemc {
 
 /**
- * @addtogroup simplemc-random
+ * @addtogroup simplemc-random-rngs
  * @{
  */
 
 /**
- * @brief Enumerate different types of the xoshiro256 RNG.
+ * @brief Enumerate different types of the simplemc::xoshiro256 RNG.
+ *
+ * @details The following types are available:
+ * - `plus` (simplemc::xoshiro256p): The fastest xoshiro256 RNG. Suitable for floating-point number
+ * generation.
+ * - `plusplus` (simplemc::xoshiro256pp): General-purpose RNG.
+ * - `starstar` (simplemc::xoshiro256ss): General-purpose RNG.
  */
 enum class xoshiro256_type { plus, plusplus, starstar };
 
-/* Forward declarations. */
-template <xoshiro256_type X>
-class xoshiro256;
-template <xoshiro256_type X>
-std::ostream& operator<<(std::ostream&, const xoshiro256<X>&);
-template <xoshiro256_type X>
-std::istream& operator>>(std::istream&, xoshiro256<X>&);
-template <xoshiro256_type X>
-bool operator==(const xoshiro256<X>&, const xoshiro256<X>&);
-template <xoshiro256_type X>
-bool operator!=(const xoshiro256<X>&, const xoshiro256<X>&);
-
 /**
- * @brief Xoshiro256 random number generators.
+ * @brief %xoshiro256 random number generators for 64 bit unsigned integer values.
  *
- * @details Based on the C implementation by Sebastiano Vigna (http://prng.di.unimi.it/xoshiro256plus.c).
- * It satisfies the C++ requirements for a RandomNumberEngine and can be used for floating point number
- * generation (xoshiro256+) as well as general purposes (xoshiro256++/xoshiro256**). The internal state
- * is stored in 256 bits.
+ * @details Based on the <a href="http://prng.di.unimi.it/xoshiro256plus.c">C implementation</a> by
+ * Sebastiano Vigna.
  *
- * @tparam X Type of xoshiro256.
+ * It satisfies the C++ named requirements: <a href="https://en.cppreference.com/w/cpp/named_req/
+ * RandomNumberEngine">RandomNumberEngine</a> and can be used for floating point number generation
+ * (simplemc::xoshiro256p) as well as general purposes like Monte Carlo simulations
+ * (simplemc::xoshiro256pp and simplemc::xoshiro256ss).
+ *
+ * The internal state is stored in 256 bits.
+ *
+ * @tparam X The simplemc::xoshiro256_type.
  */
 template <xoshiro256_type X>
 class xoshiro256 {
@@ -69,26 +68,32 @@ public:
 
     /**
      * @brief Lower bound of generated random numbers.
+     *
+     * @returns Zero.
      */
     [[nodiscard]] static constexpr result_type min() { return 0; }
 
     /**
      * @brief Upper bound of generated random numbers.
+     *
+     * @returns `std::numeric_limits<std::uint64_t>::%max()`.
      */
     [[nodiscard]] static constexpr result_type max() { return std::numeric_limits<result_type>::max(); }
 
     /**
-     * @brief Construct a RNG from a single std::uint64_t seed.
+     * @brief Construct a RNG from a single `std::uint64_t` seed.
      *
-     * @details The value is used to seed a splitmix64 RNG, which in turn is used to seed
-     * the internal state of the xoshiro256 RNG.
+     * @details The value is used to seed a simplemc::splitmix64 RNG, which in turn is used to set
+     * the internal state.
      *
      * @param s 64-bit unsigned integer seed.
      */
     explicit xoshiro256(std::uint64_t s = default_seed) { seed(s); }
 
     /**
-     * @brief Construct a RNG from four std::uint64_t.
+     * @brief Construct a RNG from four `std::uint64_t` values.
+     *
+     * @details It simply sets the internal state to the given values.
      *
      * @param s0 64-bit unsigned integer.
      * @param s1 64-bit unsigned integer.
@@ -99,10 +104,12 @@ public:
         state_(state_type { s0, s1, s2, s3 }) {}
 
     /**
-     * @brief Construct a RNG from a SeedSequence.
+     * @brief Construct a RNG from a seed sequence.
+     *
+     * @details It forwards the given seed sequence to seed(SeedSeq&) to set the internal state.
      *
      * @tparam SeedSeq Type of the seed sequence.
-     * @param seq Seed sequence.
+     * @param seq Seed sequence object.
      */
     template <typename SeedSeq>
         requires(!std::is_same_v<SeedSeq, xoshiro256<X>> && !std::is_arithmetic_v<SeedSeq>)
@@ -111,10 +118,10 @@ public:
     }
 
     /**
-     * @brief Set the internal state using a single std::uint64_t.
+     * @brief Set the internal state using a single `std::uint64_t` value.
      *
-     * @details The value is used to seed a splitmix64 RNG, which in turn is used to seed
-     * the internal state of the xoshiro256 RNG.
+     * @details The value is used to seed a simplemc::splitmix64 RNG, which in turn is used to set
+     * the internal state.
      *
      * @param s 64-bit unsigned integer.
      */
@@ -127,7 +134,7 @@ public:
     }
 
     /**
-     * @brief Set the internal state with four std::uint64_t directly.
+     * @brief Set the internal state to the given four `std::uint64_t` values.
      *
      * @param s0 64-bit unsigned integer.
      * @param s1 64-bit unsigned integer.
@@ -139,10 +146,13 @@ public:
     }
 
     /**
-     * @brief Set the internal state using a SeedSequence.
+     * @brief Set the internal state using a seed sequence.
+     *
+     * @details It uses the seed sequence to generate eight `std::uint32_t` numbers and writes them
+     * into the 256 bits of the internal state.
      *
      * @tparam SeedSeq Type of the seed sequence.
-     * @param seq Seed sequence.
+     * @param seq Seed sequence object.
      */
     template <typename SeedSeq>
         requires(!std::is_same_v<SeedSeq, xoshiro256<X>> && !std::is_arithmetic_v<SeedSeq>)
@@ -155,7 +165,7 @@ public:
     /**
      * @brief Get the current internal state.
      *
-     * @return Internal state.
+     * @return `std::array<std::uint64_t, 4>` representing the internal state.
      */
     [[nodiscard]] const state_type& internal_state() const { return state_; }
 
@@ -177,7 +187,7 @@ public:
     }
 
     /**
-     * @brief Advance the internal state as if the operator() has been called z times.
+     * @brief Advance the internal state as if the operator()() has been called `z` times.
      *
      * @param z Number of steps to jump ahead.
      */
@@ -188,7 +198,7 @@ public:
     }
 
     /**
-     * @brief Advance the internal state 2^128 steps.
+     * @brief Advance the internal state \f$ 2^{128} \f$ steps.
      */
     void jump() {
         static const state_type arr =
@@ -197,7 +207,7 @@ public:
     }
 
     /**
-     * @brief Advance the internal state 2^192 steps.
+     * @brief Advance the internal state \f$ 2^{192} \f$ steps.
      */
     void long_jump() {
         static const state_type arr =
@@ -205,26 +215,70 @@ public:
         base_jump(arr);
     }
 
-    /* Friend declarations. */
-    friend std::ostream& operator<< <X>(std::ostream&, const xoshiro256&);
-    friend std::istream& operator>> <X>(std::istream&, xoshiro256&);
-    friend bool operator== <X>(const xoshiro256&, const xoshiro256&);
-    friend bool operator!= <X>(const xoshiro256&, const xoshiro256&);
+    /**
+     * @brief Compare two simplemc::xoshiro256 objects for equalitiy.
+     *
+     * @param lhs Left-hand side RNG.
+     * @param rhs Right-hand side RNG.
+     * @return True if their internal states are equal.
+     */
+    [[nodiscard]] friend bool operator==(const xoshiro256& lhs, const xoshiro256& rhs) {
+        return lhs.state_ == rhs.state_;
+    }
+
+    /**
+     * @brief Compare two simplemc::xoshiro256 objects for inequality.
+     *
+     * @param lhs Left-hand side RNG.
+     * @param rhs Right-hand side RNG.
+     * @return True if their internal states are distinct.
+     */
+    [[nodiscard]] friend bool operator!=(const xoshiro256& lhs, const xoshiro256& rhs) { return !(lhs == rhs); }
+
+    /**
+     * @brief Write a textual representation of a simplemc::xoshiro256 object to `std::ostream`.
+     *
+     * @details Throws an exception, if writing to `std::ostream` fails.
+     *
+     * @param os `std::ostream` to write to.
+     * @param eng RNG to be written.
+     * @return Reference to the `std::ostream`.
+     */
+    friend std::ostream& operator<<(std::ostream& os, const xoshiro256& eng) {
+        const auto& state = eng.internal_state();
+        if (!(os << state[0] << ' ' << state[1] << ' ' << state[2] << ' ' << state[3])) {
+            throw simplemc_exception("Error writing a simplemc::xoshiro256 to ostream.");
+        }
+        return os;
+    }
+
+    /**
+     * @brief Read a textual representation of a simplemc::xoshiro256 object from `std::istream`.
+     *
+     * @details Throws an exception, if reading from `std::istream` fails.
+     *
+     * @param is `std::istream` to read from.
+     * @param eng RNG to read into.
+     * @return Reference to the `std::istream`.
+     */
+    friend std::istream& operator>>(std::istream& is, xoshiro256& eng) {
+        typename xoshiro256<X>::state_type arr;
+        if (is >> arr[0] >> std::ws >> arr[1] >> std::ws >> arr[2] >> std::ws >> arr[3]) {
+            eng.seed(arr[0], arr[1], arr[2], arr[3]);
+        } else {
+            throw simplemc_exception("Error reading a simplemc::xoshiro256 from istream.");
+        }
+        return is;
+    }
 
 private:
-    /**
-     * @brief Perform a left rotation.
-     */
+    // Perform a left rotation.
     [[nodiscard]] std::uint64_t rotl(std::uint64_t x, int k) { return (x << k) | (x >> (64 - k)); }
 
-    /**
-     * @brief Operation dependent on the xoshiro256_type.
-     */
+    // Operation dependent on the xoshiro256_type.
     [[nodiscard]] std::uint64_t type_specific();
 
-    /**
-     * @brief Perform the actual jump.
-     */
+    // Perform the actual jump.
     void base_jump(const state_type& arr) {
         std::uint64_t s0 = 0;
         std::uint64_t s1 = 0;
@@ -266,82 +320,17 @@ inline std::uint64_t xoshiro256<xoshiro256_type::starstar>::type_specific() {
 }
 
 /**
- * @brief Write a textual representation of a random number generator to std::ostream.
- *
- * @details Throws an exception, if writing to std::ostream fails.
- *
- * @tparam X xoshiro256 type.
- * @param os std::ostream to write to.
- * @param eng RNG to be written.
- * @return Reference to the std::ostream.
- */
-template <xoshiro256_type X>
-std::ostream& operator<<(std::ostream& os, const xoshiro256<X>& eng) {
-    if (!(os << eng.state_[0] << ' ' << eng.state_[1] << ' ' << eng.state_[2] << ' ' << eng.state_[3])) {
-        throw simplemc_exception("Error writing xoshiro256 to ostream.");
-    }
-    return os;
-}
-
-/**
- * @brief Read a textual representation of a random number generator from std::istream.
- *
- * @details Throws an exception, if reading from std::istream fails.
- *
- * @tparam X xoshiro256 type.
- * @param is std::istream to read from.
- * @param eng RNG to read into.
- * @return Reference to the std::istream.
- */
-template <xoshiro256_type X>
-std::istream& operator>>(std::istream& is, xoshiro256<X>& eng) {
-    typename xoshiro256<X>::state_type arr;
-    if (is >> arr[0] >> std::ws >> arr[1] >> std::ws >> arr[2] >> std::ws >> arr[3]) {
-        eng.state_ = arr;
-    } else {
-        throw simplemc_exception("Error reading xoshiro256 from istream.");
-    }
-    return is;
-}
-
-/**
- * @brief Compare two RNGs for equalitiy.
- *
- * @tparam X xoshiro256 type.
- * @param lhs Left-hand side RNG.
- * @param rhs Right-hand side RNG.
- * @return True if their internal states are equal.
- */
-template <xoshiro256_type X>
-[[nodiscard]] bool operator==(const xoshiro256<X>& lhs, const xoshiro256<X>& rhs) {
-    return lhs.state_ == rhs.state_;
-}
-
-/**
- * @brief Compare two RNGs for inequality.
- *
- * @tparam X xoshiro256 type.
- * @param lhs Left-hand side RNG.
- * @param rhs Right-hand side RNG.
- * @return True if their internal states are distinct.
- */
-template <xoshiro256_type X>
-[[nodiscard]] bool operator!=(const xoshiro256<X>& lhs, const xoshiro256<X>& rhs) {
-    return !(lhs == rhs);
-}
-
-/**
- * @brief xoshiro256+. Use only for floating-point generation.
+ * @brief xoshiro256+ RNG suitable for floating-point number generation.
  */
 using xoshiro256p = xoshiro256<xoshiro256_type::plus>;
 
 /**
- * @brief xoshiro256++. Use for all purposes.
+ * @brief xoshiro256++ RNG for general purposes.
  */
 using xoshiro256pp = xoshiro256<xoshiro256_type::plusplus>;
 
 /**
- * @brief xoshiro256**. Use for all purposes.
+ * @brief xoshiro256** RNG for general purposes.
  */
 using xoshiro256ss = xoshiro256<xoshiro256_type::starstar>;
 

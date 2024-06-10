@@ -11,13 +11,19 @@
 @section tut_mpi simplemc-mpi
 
 - @ref tut_mpi_1
+- @ref tut_mpi_2
+- @ref tut_mpi_3
 
 @section tut_compilation Compiling the tutorials
 
-All tutorials have been compiled on a MacBook Pro with an Apple M2 Max chip and [open-mpi](https://www.open-mpi.org/) 4.1.5.
-We further used clang v17.0.6 together with cmake v3.29.1.
+All tutorials have been compiled on a MacBook Pro with an Apple M2 Max chip and clang v18.1.7 together
+with cmake v3.29.1.
 
-Assuming that the actual tutorial code is in a file `main.cpp`, the following generic `CMakeLists.txt` should work for all tutorials:
+Furhtermore, the following dependencies have been used:
+- [open-mpi](https://www.open-mpi.org/) 5.0.1 (installed with brew)
+
+Assuming that the actual tutorial code is in a file `main.cpp`, the following generic `CMakeLists.txt`
+should work for all tutorials:
 
 ```cmake
 cmake_minimum_required(VERSION 3.24)

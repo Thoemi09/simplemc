@@ -12,6 +12,11 @@
 // Test if the config header is generated correctly.
 TEST(SimplemcUtils, ConfigHeader) {
     fmt::print("VERSION: {}\n", SIMPLEMC_VERSION);
+#ifdef SIMPLEMC_WITH_HIGHFIVE
+    fmt::print("SIMPLEMC_WITH_HIGHFIVE: True\n");
+#else
+    fmt::print("SIMPLEMC_WITH_HIGHFIVE: False\n");
+#endif // SIMPLEMC_WITH_HIGHFIVE
 }
 
 // Test concepts.
@@ -81,7 +86,7 @@ TEST(SimplemcUtils, Timer) {
 // Test calculating the size from a shape.
 TEST(SimplemcUtils, SizeFromShape) {
     using namespace simplemc;
-    auto shape = std::vector<int>{ 2, 3, 4 };
+    auto shape = std::vector<int> { 2, 3, 4 };
     ASSERT_EQ(size_from_shape(shape), 24);
     constexpr std::array<int, 2> shape_arr_cepr { 2, 3 };
     constexpr auto size_cepr = size_from_shape(shape_arr_cepr);

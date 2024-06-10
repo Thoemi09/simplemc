@@ -1,9 +1,6 @@
 /**
  * @file
  * @brief Collective communications between MPI processes.
- * @details Only very few of the nonblocking communications are supported. If other
- * routines are needed, please call the MPI C library directly. No special attention is
- * paid to the performance of these functions.
  */
 
 #ifndef SIMPLEMC_MPI_COLLECTIVES_HPP
@@ -27,11 +24,12 @@ namespace simplemc::mpi {
 /**
  * @brief Reduce a specific number of values (on all processes).
  *
- * @details Calls MPI_Allreduce. If the MPI call fails, a simplemc::simplemc_exception is thrown.
+ * @details It calls `MPI_Allreduce` if `count > 0`, otherwise it does nothing.
+ *
+ * If the MPI call fails, a simplemc::simplemc_exception is thrown.
+ *
  * The MPI operation should be one of the following: `MPI_MAX`, `MPI_MIN`, `MPI_SUM`, `MPI_PROD`,
  * `MPI_LAND`, `MPI_BAND`, `MPI_LOR`, `MPI_BOR`, `MPI_LXOR`, `MPI_BXOR`.
- *
- * Does nothing if count is <= 0.
  *
  * @tparam T simplemc::mpi::mpi_compatible type.
  * @param comm simplemc::mpi::communicator object.
@@ -51,6 +49,8 @@ void all_reduce(const communicator& comm, const T* in_values, int count, T* out_
 /**
  * @brief Reduce a single value (on all processes).
  *
+ * @details It calls simplemc::mpi::all_reduce with a count of 1.
+ *
  * @tparam T simplemc::mpi::mpi_compatible type.
  * @param comm simplemc::mpi::communicator object.
  * @param in_value Value to be reduced.
@@ -65,9 +65,13 @@ void all_reduce(const communicator& comm, const T& in_value, T& out_value, MPI_O
 /**
  * @brief Check if a value is equal across all processes (on all processes).
  *
+ * @details It makes two calls to simplemc::mpi::all_reduce, one with `MPI_MIN` and the other with
+ * `MPI_MAX`, and compares their results. If the results are equal, the function returns true,
+ * otherwise false.
+ *
  * @tparam T simplemc::mpi::mpi_compatible type.
  * @param comm simplemc::mpi::communicator object.
- * @param value Value to be compared.
+ * @param in_value Value to be compared.
  * @return True if the value is equal on all processes.
  */
 template <mpi_compatible T>
@@ -81,6 +85,11 @@ template <mpi_compatible T>
 /**
  * @brief Reduce a range (on all processes).
  *
+ * @details It calls simplemc::mpi::all_reduce.
+ *
+ * The input and output ranges must have the same size across all processes, otherwise a
+ * simplemc::simplemc_exception is thrown.
+ *
  * @tparam R1 Input range.
  * @tparam R2 Output range.
  * @param comm simplemc::mpi::communicator object.
@@ -92,7 +101,7 @@ template <mpi_range R1, mpi_range R2>
 void all_reduce(
     const communicator& comm, R1&& in_values, R2&& out_values, MPI_Op op) { // NOLINT (ranges need not be forwarded)
     if (!all_equal(comm, ranges::size(in_values))) {
-        throw simplemc_exception("Range sizes are not equal across all processes", "mpi::all_reduce");
+        throw simplemc_exception("Input range sizes are not equal across all processes", "mpi::all_reduce");
     }
     if (ranges::size(in_values) != ranges::size(out_values)) {
         throw simplemc_exception("Input and output range sizes are not equal", "mpi::all_reduce");
@@ -101,10 +110,11 @@ void all_reduce(
 }
 
 /**
- * @brief Gather a specified number of values (on all processes).
+ * @brief Gather a specific number of values (on all processes).
  *
- * @details Calls MPI_Allgather. If the MPI call fails, a simplemc::simplemc_exception is thrown.
- * Does nothing if count is <= 0.
+ * @details It calls `MPI_Allgather` if `count > 0`, otherwise it does nothing.
+ *
+ * If the MPI call fails, a simplemc::simplemc_exception is thrown.
  *
  * @tparam T simplemc::mpi::mpi_compatible type.
  * @param comm simplemc::mpi::communicator object.
@@ -124,6 +134,11 @@ void all_gather(const communicator& comm, const T* in_values, int count, T* out_
 /**
  * @brief Gather a single value (on all processes).
  *
+ * @details It calls simplemc::mpi::all_gather with a count of 1.
+ *
+ * The size of the output range has to be equal to the communicator size, otherwise a
+ * simplemc::simplemc_exception is thrown.
+ *
  * @tparam R Output range.
  * @param comm simplemc::mpi::communicator object.
  * @param in_value Value to be gathered.
@@ -133,13 +148,19 @@ template <mpi_range R>
 void all_gather(const communicator& comm, const ranges::range_value_t<R>& in_value,
     R&& out_values) { // NOLINT (ranges need not be forwarded)
     if (comm.size() != static_cast<int>(ranges::size(out_values))) {
-        throw simplemc_exception("Range size is not equal to communicator size", "mpi::all_gather");
+        throw simplemc_exception("Output range size is not equal to communicator size", "mpi::all_gather");
     }
     all_gather(comm, &in_value, 1, ranges::data(out_values));
 }
 
 /**
  * @brief Gather a range (on all processes).
+ *
+ * @details It calls simplemc::mpi::all_gather.
+ *
+ * The input ranges must have the same size across all processes and the size of the output range
+ * must be equal to the size of the input range times the number of processes, otherwise a
+ * simplemc::simplemc_exception is thrown.
  *
  * @tparam R1 Input range.
  * @tparam R2 Output range.
@@ -159,10 +180,15 @@ void all_gather(const communicator& comm, R1&& in_values, R2&& out_values) { // 
 }
 
 /**
- * @brief Reduce a specific number of values (only on root).
+ * @brief Reduce a specific number of values (only on root process).
  *
- * @details Calls MPI_Reduce. If the MPI call fails, a simplemc::simplemc_exceptions is thrown.
- * Does nothing if count is <= 0.
+ * @details It calls `MPI_Reduce` if `count > 0`, otherwise it does nothing.
+ *
+ * If the MPI call fails or if `root` is not a valid process ID, a simplemc::simplemc_exception is
+ * thrown.
+ *
+ * The MPI operation should be one of the following: `MPI_MAX`, `MPI_MIN`, `MPI_SUM`, `MPI_PROD`,
+ * `MPI_LAND`, `MPI_BAND`, `MPI_LOR`, `MPI_BOR`, `MPI_LXOR`, `MPI_BXOR`.
  *
  * @tparam T simplemc::mpi::mpi_compatible type.
  * @param comm simplemc::mpi::communicator object.
@@ -184,7 +210,9 @@ void reduce(const communicator& comm, const T* in_values, int count, T* out_valu
 }
 
 /**
- * @brief Reduce a single value (only on root).
+ * @brief Reduce a single value (only on root process).
+ *
+ * @details It calls simplemc::mpi::reduce with a count of 1.
  *
  * @tparam T simplemc::mpi::mpi_compatible type.
  * @param comm simplemc::mpi::communicator object.
@@ -199,7 +227,13 @@ void reduce(const communicator& comm, const T& in_value, T& out_value, MPI_Op op
 }
 
 /**
- * @brief Reduce a range (only on root).
+ * @brief Reduce a range (only on root process).
+ *
+ * @details It calls simplemc::mpi::reduce.
+ *
+ * The input ranges must have the same size across all processes and the size of the output range on
+ * the root process must be equal to the size of the input range, otherwise a
+ * simplemc::simplemc_exception is thrown.
  *
  * @tparam R1 Input range.
  * @tparam R2 Output range.
@@ -212,21 +246,23 @@ void reduce(const communicator& comm, const T& in_value, T& out_value, MPI_Op op
 template <mpi_range R1, mpi_range R2>
 void reduce(const communicator& comm, R1&& in_values, R2&& out_values, MPI_Op op, int root) { // NOLINT
     if (!all_equal(comm, ranges::size(in_values))) {
-        throw simplemc_exception("Range sizes are not equal across all processes", "mpi::reduce");
+        throw simplemc_exception("Input range sizes are not equal across all processes", "mpi::reduce");
     }
     if (comm.rank() == root) {
         if (ranges::size(in_values) != ranges::size(out_values)) {
-            throw simplemc_exception("Input and output range sizes are not equal", "mpi::all_reduce");
+            throw simplemc_exception("Input and output range sizes are not equal", "mpi::reduce");
         }
     }
     reduce(comm, ranges::data(in_values), ranges::size(in_values), ranges::data(out_values), op, root);
 }
 
 /**
- * @brief Gather a specific number of values (only on root).
+ * @brief Gather a specific number of values (only on root process).
  *
- * @details Calls MPI_Gather. If the MPI call fails, a simplemc::simplemc_exception is thrown.
- * Does nothing if count is <= 0.
+ * @details It calls `MPI_Gather` if `count > 0`, otherwise it does nothing.
+ *
+ * If the MPI call fails or if `root` is not a valid process ID, a simplemc::simplemc_exception is
+ * thrown.
  *
  * @tparam T simplemc::mpi::mpi_compatible type.
  * @param comm simplemc::mpi::communicator object.
@@ -248,7 +284,12 @@ void gather(const communicator& comm, const T* in_values, int count, T* out_valu
 }
 
 /**
- * @brief Gather a single value (only on root).
+ * @brief Gather a single value (only on root process).
+ *
+ * @details It calls simplemc::mpi::gather with a count of 1.
+ *
+ * The size of the output range on the root process has to be equal to the communicator size,
+ * otherwise a simplemc::simplemc_exception is thrown.
  *
  * @tparam R Output range.
  * @param comm simplemc::mpi::communicator object.
@@ -260,14 +301,20 @@ template <mpi_range R>
 void gather(const communicator& comm, const ranges::range_value_t<R>& in_value, R&& out_values, int root) { // NOLINT
     if (comm.rank() == root) {
         if (comm.size() != static_cast<int>(ranges::size(out_values))) {
-            throw simplemc_exception("Range size is not equal to communicator size", "mpi::gather");
+            throw simplemc_exception("Output range size is not equal to communicator size", "mpi::gather");
         }
     }
     gather(comm, &in_value, 1, ranges::data(out_values), root);
 }
 
 /**
- * @brief Gather a range (only on root).
+ * @brief Gather a range (only on root process).
+ *
+ * @details It calls simplemc::mpi::gather.
+ *
+ * The input ranges must have the same size across all processes and the size of the output range on
+ * the root process must be equal to the size of the input range times the number of processes,
+ * otherwise a simplemc::simplemc_exception is thrown.
  *
  * @tparam R1 Input range.
  * @tparam R2 Output range.
@@ -279,7 +326,7 @@ void gather(const communicator& comm, const ranges::range_value_t<R>& in_value, 
 template <mpi_range R1, mpi_range R2>
 void gather(const communicator& comm, R1&& in_values, R2&& out_values, int root) { // NOLINT
     if (!all_equal(comm, ranges::size(in_values))) {
-        throw simplemc_exception("Range sizes are not equal across all processes", "mpi::gather");
+        throw simplemc_exception("Input range sizes are not equal across all processes", "mpi::gather");
     }
     if (comm.rank() == root) {
         if (comm.size() * ranges::size(in_values) != ranges::size(out_values)) {
@@ -292,8 +339,10 @@ void gather(const communicator& comm, R1&& in_values, R2&& out_values, int root)
 /**
  * @brief Broadcast a specific number of values.
  *
- * @details Calls MPI_Bcast. If the MPI call fails, a simplemc::simplemc_exceptions is thrown.
- * Does nothing if count is <= 0.
+ * @details It calls `MPI_Bcast` if `count > 0`, otherwise it does nothing.
+ *
+ * If the MPI call fails or if `root` is not a valid process ID, a simplemc::simplemc_exception is
+ * thrown.
  *
  * @tparam T simplemc::mpi::mpi_compatible type.
  * @param comm simplemc::mpi::communicator object.
@@ -315,6 +364,8 @@ void broadcast(const communicator& comm, T* values, int count, int root) {
 /**
  * @brief Broadcast a single value.
  *
+ * @details It calls simplemc::mpi::broadcast with a count of 1.
+ *
  * @tparam T simplemc::mpi::mpi_compatible type.
  * @param comm simplemc::mpi::communicator object.
  * @param value Value to be broadcasted from/into.
@@ -328,7 +379,12 @@ void broadcast(const communicator& comm, T& value, int root) {
 /**
  * @brief Broadcast a range.
  *
- * @tparam R Range.
+ * @details It calls simplemc::mpi::broadcast.
+ *
+ * The ranges must have the same size across all processes, otherwise a simplemc::simplemc_exception
+ * is thrown.
+ *
+ * @tparam R Input/Output range.
  * @param comm simplemc::mpi::communicator object.
  * @param rg Range to be broadcasted from/into.
  * @param root Root process.
@@ -342,15 +398,17 @@ void broadcast(const communicator& comm, R&& rg, int root) { // NOLINT
 }
 
 /**
- * @brief Scatter values.
+ * @brief Scatter a specific number of values.
  *
- * @details Calls MPI_Scatter. If the MPI call fails, a simplemc::simplemc_exceptions is thrown.
- * Does nothing if count <= 0.
+ * @details It calls `MPI_Scatter` if `count > 0`, otherwise it does nothing.
+ *
+ * If the MPI call fails or if `root` is not a valid process ID, a simplemc::simplemc_exception is
+ * thrown.
  *
  * @tparam T simplemc::mpi::mpi_compatible type.
  * @param comm simplemc::mpi::communicator object.
  * @param in_values Pointer to the memory to be scattered.
- * @param count Number of values to be scattered.
+ * @param count Number of values to be scattered to each process.
  * @param out_values Pointer to the memory to be scattered into.
  * @param root Root process.
  */
@@ -367,9 +425,14 @@ void scatter(const communicator& comm, const T* in_values, int count, T* out_val
 }
 
 /**
- * @brief Scatter N values, where N is equal to the communicator size.
+ * @brief Scatter `N` values, where `N` is equal to the communicator size.
  *
- * @tparam R Range.
+ * @details It calls simplemc::mpi::scatter with a count of 1.
+ *
+ * The size of the input range on the root process has to be equal to the communicator size, otherwise
+ * a simplemc::simplemc_exception is thrown.
+ *
+ * @tparam R Input range.
  * @param comm simplemc::mpi::communicator object.
  * @param in_values Values to be scattered.
  * @param out_value Value to be scattered into.
@@ -379,20 +442,26 @@ template <mpi_range R>
 void scatter(const communicator& comm, R&& in_values, ranges::range_value_t<R>& out_value, int root) { // NOLINT
     if (comm.rank() == root) {
         if (comm.size() != static_cast<int>(ranges::size(in_values))) {
-            throw simplemc_exception("Range size is not equal to communicator size", "mpi::scatter");
+            throw simplemc_exception("Input range size is not equal to communicator size", "mpi::scatter");
         }
     }
     scatter(comm, ranges::data(in_values), 1, &out_value, root);
 }
 
 /**
- * @brief Scatter M*N values, where N is equal to the communicator size.
+ * @brief Scatter `M * N` values, where `N` is equal to the communicator size.
+ *
+ * @details It calls simplemc::mpi::scatter with a count of `M`, where `M` is some positive integer.
+ *
+ * The size of the input range on the root process has to be a multiple (`M`) of the communicator size
+ * and the size of the output range on each process has to be equal to `M`, otherwise a
+ * simplemc::simplemc_exception is thrown.
  *
  * @tparam R1 Input range.
  * @tparam R2 Output range.
  * @param comm simplemc::mpi::communicator object.
- * @param in_values Values to be scattered.
- * @param out_value Value to be scattered into.
+ * @param in_values Range to be scattered.
+ * @param out_values Range to be scattered into.
  * @param root Root process.
  */
 template <mpi_range R1, mpi_range R2>

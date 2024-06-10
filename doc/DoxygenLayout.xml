@@ -24,27 +24,39 @@
       </tab>
       <tab type="usergroup" url="@ref tut_mpi" title="simplemc-mpi">
         <tab type="user" url="@ref tut_mpi_1" title="MPI Tutorial 1: Hello world!"/>
+        <tab type="user" url="@ref tut_mpi_2" title="MPI Tutorial 2: Exception handling"/>
+        <tab type="user" url="@ref tut_mpi_3" title="MPI Tutorial 3: Collective communication"/>
       </tab>
       <tab type="user" url="@ref tut_compilation" title="Compiling the tutorials"/>
     </tab>
     <tab type="usergroup" url="@ref documentation" title="API Documentation">
       <tab type="usergroup" url="@ref simplemc-utils" title="simplemc-utils">
-        <tab type="user" url="@ref simplemc::is_any_of" title="is_any_of"/>
-        <tab type="user" url="@ref simplemc::integer_only" title="integer_only"/>
-        <tab type="user" url="@ref simplemc::double_or_complex" title="double_or_complex"/>
-        <tab type="user" url="@ref simplemc::nd_order" title="nd_order"/>
-        <tab type="user" url="@ref fmt::formatter< std::complex< T >, Char >" title="formatter"/>
-        <tab type="user" url="@ref simplemc::column_major" title="column_major"/>
-        <tab type="user" url="@ref simplemc::duration" title="duration"/>
-        <tab type="user" url="@ref simplemc::generic_error" title="generic_error"/>
-        <tab type="user" url="@ref simplemc::row_major" title="row_major"/>
-        <tab type="user" url="@ref simplemc::simplemc_exception" title="simplemc_exception"/>
-        <tab type="user" url="@ref simplemc::timer" title="timer"/>
+        <tab type="usergroup" url="@ref simplemc-utils-exceptions" title="Exceptions">
+          <tab type="user" url="@ref simplemc::generic_error" title="generic_error"/>
+          <tab type="user" url="@ref simplemc::simplemc_exception" title="simplemc_exception"/>
+        </tab>
+        <tab type="usergroup" url="@ref simplemc-utils-general" title="General utilities">
+          <tab type="user" url="@ref simplemc::is_any_of" title="is_any_of"/>
+          <tab type="user" url="@ref simplemc::integer_only" title="integer_only"/>
+          <tab type="user" url="@ref simplemc::double_or_complex" title="double_or_complex"/>
+          <tab type="user" url="@ref fmt::formatter< std::complex< T >, Char >" title="formatter"/>
+        </tab>
+        <tab type="usergroup" url="@ref simplemc-utils-indexing" title="Multi-dimensional indexing">
+          <tab type="user" url="@ref simplemc::nd_order" title="nd_order"/>
+          <tab type="user" url="@ref simplemc::column_major" title="column_major"/>
+          <tab type="user" url="@ref simplemc::row_major" title="row_major"/>
+        </tab>
+        <tab type="usergroup" url="@ref simplemc-utils-timer" title="Timer">
+          <tab type="user" url="@ref simplemc::timer" title="timer"/>
+          <tab type="user" url="@ref simplemc::duration" title="duration"/>
+        </tab>
       </tab>
       <tab type="usergroup" url="@ref simplemc-mpi" title="simplemc-mpi">
-        <tab type="user" url="@ref simplemc::mpi::communicator" title="mpi::communicator"/>
-        <tab type="user" url="@ref simplemc::mpi::environment" title="mpi::environment"/>
         <tab type="user" url="@ref simplemc-mpi-coll" title="Collective communications"/>
+        <tab type="usergroup" url="@ref simplemc-mpi-commenv" title="Communicator and environment">
+          <tab type="user" url="@ref simplemc::mpi::communicator" title="mpi::communicator"/>
+          <tab type="user" url="@ref simplemc::mpi::environment" title="mpi::environment"/>
+        </tab>
         <tab type="usergroup" url="@ref simplemc-mpi-types" title="MPI datatypes">
           <tab type="user" url="@ref simplemc::mpi::mpi_compatible" title="mpi::mpi_compatible"/>
           <tab type="user" url="@ref simplemc::mpi::mpi_range" title="mpi::mpi_range"/>
@@ -91,21 +103,20 @@
         </tab>
         <tab type="user" url="@ref simplemc-mpi-utils" title="MPI utilities"/>
       </tab>
-      <tab type="usergroup" url="@ref simplemc-json" title="simplemc-json">
-        <tab type="user" url="@ref nlohmann::adl_serializer< std::complex< T > >" title="nlohmann::adl_serializer"/>
-        <tab type="user" url="@ref simplemc::basic_json" title="basic_json"/>
-      </tab>
-      <tab type="usergroup" url="@ref simplemc-hdf5" title="simplemc-hdf5">
-      </tab>
       <tab type="usergroup" url="@ref simplemc-random" title="simplemc-random">
-        <tab type="user" url="@ref simplemc::detail::dad_param_type" title="detail::dad_param_type"/>
-        <tab type="user" url="@ref simplemc::detail::dd_param_type" title="detail::dd_param_type"/>
-        <tab type="user" url="@ref simplemc::detail::urd_param_type" title="detail::urd_param_type"/>
-        <tab type="user" url="@ref simplemc::discrete_alias_distribution" title="discrete_alias_distribution"/>
-        <tab type="user" url="@ref simplemc::discrete_distribution" title="discrete_distribution"/>
-        <tab type="user" url="@ref simplemc::splitmix64" title="splitmix64"/>
-        <tab type="user" url="@ref simplemc::uniform_real_distribution" title="uniform_real_distribution"/>
-        <tab type="user" url="@ref simplemc::xoshiro256" title="xoshiro256"/>
+        <tab type="usergroup" url="@ref simplemc-random-dists" title="Probability distributions">
+          <tab type="user" url="@ref simplemc::discrete_alias_distribution" title="discrete_alias_distribution"/>
+          <tab type="user" url="@ref simplemc::discrete_alias_distribution::param_type" title="discrete_alias_distribution::param_type"/>
+          <tab type="user" url="@ref simplemc::discrete_distribution" title="discrete_distribution"/>
+          <tab type="user" url="@ref simplemc::discrete_distribution::param_type" title="discrete_distribution::param_type"/>
+          <tab type="user" url="@ref simplemc::uniform_real_distribution" title="uniform_real_distribution"/>
+          <tab type="user" url="@ref simplemc::uniform_real_distribution::param_type" title="uniform_real_distribution::param_type"/>
+        </tab>
+        <tab type="usergroup" url="@ref simplemc-random-rngs" title="Random number generators">
+          <tab type="user" url="@ref simplemc::splitmix64" title="splitmix64"/>
+          <tab type="user" url="@ref simplemc::xoshiro256" title="xoshiro256"/>
+        </tab>
+        <tab type="user" url="@ref simplemc-random-samples" title="Random samples"/>
       </tab>
       <tab type="usergroup" url="@ref simplemc-grids" title="simplemc-grids">
         <tab type="user" url="@ref simplemc::grid_base" title="grid_base"/>
@@ -118,8 +129,12 @@
       </tab>
       <tab type="usergroup" url="@ref simplemc-accs" title="simplemc-accs">
       </tab>
-      <tab type="usergroup" url="@ref simplemc-mc" title="simplemc-mc">
+      <tab type="usergroup" url="@ref simplemc-json" title="simplemc-json">
+        <tab type="user" url="@ref nlohmann::adl_serializer< std::complex< T > >" title="nlohmann::adl_serializer"/>
+        <tab type="user" url="@ref simplemc::basic_json" title="basic_json"/>
       </tab>
+      <!-- <tab type="usergroup" url="@ref simplemc-mc" title="simplemc-mc">
+      </tab> -->
       <tab type="filelist" visible="yes" title="" intro=""/>
     </tab>
     <tab type="user" url="@ref changelog" title="Changelog"/>

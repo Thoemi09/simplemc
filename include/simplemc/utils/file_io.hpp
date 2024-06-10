@@ -12,7 +12,7 @@
 namespace simplemc {
 
 /**
- * @addtogroup simplemc-utils
+ * @addtogroup simplemc-utils-general
  * @{
  */
 
@@ -30,7 +30,7 @@ namespace simplemc {
 /**
  * @brief Close an already opened file.
  *
- * @details Does nothing if the file pointer is equal to nullptr, stdout, stdin or stderr.
+ * @details Does nothing if the file pointer is equal to `nullptr`, `stdout`, `stdin` or `stderr`.
  * Throws a simplemc::simplemc_exception if it fails.
  *
  * @param fp File pointer.

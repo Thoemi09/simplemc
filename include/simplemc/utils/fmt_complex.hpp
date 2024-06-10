@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Specialized fmtlib formatter for std::complex.
+ * @brief Specialized fmt formatter for `std::complex`.
  */
 
 #ifndef SIMPLEMC_UTILS_FMT_COMPLEX_HPP
@@ -13,14 +13,29 @@
 namespace fmt {
 
 /**
- * @addtogroup simplemc-utils
+ * @addtogroup simplemc-utils-general
  * @{
  */
 
 /**
- * @brief Specalized fmtlib formatter for std::complex.
+ * @brief Specalized **fmt** formatter for `std::complex`.
  *
- * @tparam T Value type of std::complex.
+ * @details The format specifier is simply applied to both the real and imaginary parts:
+ *
+ * @code{.cpp}
+ * std::complex<double> z(1.0003, 2.00041291823);
+ * fmt::print("z = {:^30.15}\n", z);
+ * @endcode
+ *
+ * Output:
+ *
+ * ```
+ * z = (            1.0003            ,        2.00041291823         )
+ * ```
+ *
+ * See <a href="https://fmt.dev/latest/index.html">fmt documentation</a> for more information.
+ *
+ * @tparam T Value type of `std::complex`.
  * @tparam Char Character type.
  */
 template <typename T, typename Char>
@@ -39,10 +54,10 @@ struct formatter<std::complex<T>, Char> : public formatter<T, Char> {
     constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return base::parse(ctx); }
 
     /**
-     * @brief Format the std::complex type.
+     * @brief Format the `std::complex` type.
      *
-     * @tparam FormatContext Format context type of fmtlib.
-     * @param z std::complex value to format.
+     * @tparam FormatContext Format context type of **fmt**.
+     * @param z Complex value to format.
      * @param ctx Format context.
      * @return Iterator to the end of the formatted range.
      */

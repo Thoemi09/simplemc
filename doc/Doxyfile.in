@@ -180,7 +180,9 @@ FULL_PATH_NAMES        = YES
 # will be relative from the directory where doxygen is started.
 # This tag requires that the tag FULL_PATH_NAMES is set to YES.
 
-STRIP_FROM_PATH        = @CMAKE_SOURCE_DIR@/include
+STRIP_FROM_PATH        = @CMAKE_SOURCE_DIR@/include \
+                         @CMAKE_BINARY_DIR@/include \
+                         @CMAKE_SOURCE_DIR@/src
 
 # The STRIP_FROM_INC_PATH tag can be used to strip a user-defined part of the
 # path mentioned in the documentation of a class, which tells the reader which
@@ -189,7 +191,9 @@ STRIP_FROM_PATH        = @CMAKE_SOURCE_DIR@/include
 # specify the list of include paths that are normally passed to the compiler
 # using the -I flag.
 
-STRIP_FROM_INC_PATH    = @CMAKE_SOURCE_DIR@/include
+STRIP_FROM_INC_PATH    = @CMAKE_SOURCE_DIR@/include \
+                         @CMAKE_BINARY_DIR@/include \
+                         @CMAKE_SOURCE_DIR@/src
 
 # If the SHORT_NAMES tag is set to YES, doxygen will generate much shorter (but
 # less readable) file names. This can be useful is your file systems doesn't
@@ -658,7 +662,7 @@ SHOW_INCLUDE_FILES     = YES
 # which file to include in order to use the member.
 # The default value is: NO.
 
-SHOW_GROUPED_MEMB_INC  = YES
+SHOW_GROUPED_MEMB_INC  = NO
 
 # If the FORCE_LOCAL_INCLUDES tag is set to YES then doxygen will list include
 # files with double quotes in the documentation rather than with sharp brackets.
@@ -940,6 +944,7 @@ WARN_LOGFILE           =
 # Note: If this tag is empty the current directory is searched.
 
 INPUT                  = @CMAKE_CURRENT_SOURCE_DIR@/../include \
+                         @CMAKE_CURRENT_SOURCE_DIR@/../src \
                          @CMAKE_CURRENT_BINARY_DIR@/../include \
                          @CMAKE_CURRENT_SOURCE_DIR@ \
                          @CMAKE_CURRENT_BINARY_DIR@

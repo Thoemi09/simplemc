@@ -1,8 +1,3 @@
-/**
- * @file
- * @brief Unit tests for the simplemc-mpi library.
- */
-
 #include "../gtest-mpi-listener.hpp"
 
 #include <simplemc/mpi.hpp>
@@ -115,7 +110,7 @@ protected:
     [[nodiscard]] std::string str_val() const { return "my test string"; }
 
     template <typename T>
-    std::vector<T> make_vec(int size, T t) {
+    [[nodiscard]] std::vector<T> make_vec(int size, T t) {
         return std::vector<T>(size, t);
     }
 
@@ -134,15 +129,32 @@ TEST_F(SimplemcMPI, HelloWorldWithMPI) {
 
 // Test concepts and traits involving MPI datatypes.
 TEST_F(SimplemcMPI, ConceptsAndTraits) {
-    using darray_type = std::array<double, 10>;
-    using farray_type = std::array<foo, 10>;
-    ASSERT_TRUE(simplemc::mpi::mpi_range<std::vector<double>>);
-    ASSERT_FALSE(simplemc::mpi::mpi_range<std::vector<foo>>);
-    ASSERT_TRUE(simplemc::mpi::mpi_range<darray_type>);
-    ASSERT_FALSE(simplemc::mpi::mpi_range<farray_type>);
-    ASSERT_FALSE(simplemc::mpi::mpi_range<std::list<double>>);
-    ASSERT_TRUE(simplemc::mpi::mpi_range<std::span<double>>);
-    ASSERT_FALSE(simplemc::mpi::mpi_range<std::span<foo>>);
+    static_assert(simplemc::mpi::mpi_compatible<char>);
+    static_assert(simplemc::mpi::mpi_compatible<signed char>);
+    static_assert(simplemc::mpi::mpi_compatible<unsigned char>);
+    static_assert(simplemc::mpi::mpi_compatible<short>);
+    static_assert(simplemc::mpi::mpi_compatible<unsigned short>);
+    static_assert(simplemc::mpi::mpi_compatible<int>);
+    static_assert(simplemc::mpi::mpi_compatible<unsigned int>);
+    static_assert(simplemc::mpi::mpi_compatible<long>);
+    static_assert(simplemc::mpi::mpi_compatible<unsigned long>);
+    static_assert(simplemc::mpi::mpi_compatible<long long>);
+    static_assert(simplemc::mpi::mpi_compatible<unsigned long long>);
+    static_assert(simplemc::mpi::mpi_compatible<float>);
+    static_assert(simplemc::mpi::mpi_compatible<double>);
+    static_assert(simplemc::mpi::mpi_compatible<bool>);
+    static_assert(simplemc::mpi::mpi_compatible<std::complex<double>>);
+    static_assert(!simplemc::mpi::mpi_compatible<std::string>);
+    static_assert(!simplemc::mpi::mpi_compatible<foo>);
+
+    static_assert(simplemc::mpi::mpi_range<std::vector<double>>);
+    static_assert(!simplemc::mpi::mpi_range<std::vector<foo>>);
+    static_assert(simplemc::mpi::mpi_range<std::array<double, 10>>);
+    static_assert(!simplemc::mpi::mpi_range<std::array<foo, 10>>);
+    static_assert(!simplemc::mpi::mpi_range<std::list<double>>);
+    static_assert(simplemc::mpi::mpi_range<std::span<double>>);
+    static_assert(!simplemc::mpi::mpi_range<std::span<foo>>);
+    static_assert(simplemc::mpi::mpi_range<std::string>);
 }
 
 // Test broadcasting a single value.

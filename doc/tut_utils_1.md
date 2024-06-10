@@ -2,11 +2,17 @@
 
 [TOC]
 
-In this tutorial, we show how to measure the runtime of a program using the simplemc::timer class from the
-@ref simplemc-utils library.
+In this tutorial, we show how to measure the runtime of a program using the simplemc::timer class from
+the @ref simplemc-utils library.
+
+After constructing a simplemc::timer object, its member functions `start()` and `stop()` are used
+to start and stop the timer, repsectively.
+The corresponding time points are stored in the timer and can then be pass to the
+simplemc::time_passed function to get the duration between them.
 
 ```cpp
 #include <simplemc/utils.hpp>
+
 #include <thread>
 
 int main() {
@@ -18,7 +24,7 @@ int main() {
     // create a timer
     simplemc::timer timer;
 
-    // sleep for 100 millisecond and print the time passed in milliseconds
+    // sleep for 100 millisecond and print the time passed in seconds
     fmt::print("Sleeping for 1 second...\n");
     timer.start();
     std::this_thread::sleep_for(millisec(100));

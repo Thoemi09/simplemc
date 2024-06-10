@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Implementation details for generic_error.hpp.
+ * @brief Implementation details for simplemc/utils/generic_error.hpp.
  */
 
 #include <simplemc/utils/generic_error.hpp>

@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief RAII MPI environment to handle initialization and finalization of MPI programs.
+ * @brief Implementation details for simplemc/mpi/environment.hpp.
  */
 
 #include <simplemc/mpi/environment.hpp>
@@ -40,8 +40,7 @@ environment::environment(int& argc, char**& argv, bool abort_on_exception) :
 }
 
 environment::~environment() {
-    // should we also check the MPI calls in the destructor and potentially
-    // throw an exception?
+    // should we also check the MPI calls in the destructor and potentially throw an exception?
     if (init_) {
         if (abort_on_exception_ && std::uncaught_exceptions()) {
             MPI_Abort(MPI_COMM_WORLD, -1);

@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Base class used for all 1-dimensional grid types.
+ * @brief Implementation details for simplemc/grids/grid_base.hpp.
  */
 
 #include <simplemc/grids/grid_base.hpp>
