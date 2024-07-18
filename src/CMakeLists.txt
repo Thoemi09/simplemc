@@ -2,7 +2,8 @@
 #
 # The following targets are defined:
 # ---------------------------------
-# simplemc-basic (simplemc::simplemc-basic): Interface library specifying compiler warnings and include directories.
+# simplemc-basic (simplemc::simplemc-basic): Interface library specifying compiler warnings and
+# include directories.
 
 # generate config.hpp header file
 configure_file(config.hpp.in ${PROJECT_BINARY_DIR}/include/simplemc/config.hpp)
@@ -26,9 +27,9 @@ target_include_directories(simplemc-basic
 
 # build simplemc libraries
 add_subdirectory(utils)
-add_subdirectory(mpi)
-add_subdirectory(random)
-add_subdirectory(grids)
+# add_subdirectory(mpi)
+# add_subdirectory(random)
+# add_subdirectory(grids)
 # add_subdirectory(numeric)
 # add_subdirectory(accs)
 # add_subdirectory(json)

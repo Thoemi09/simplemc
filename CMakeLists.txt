@@ -53,8 +53,11 @@ option(SIMPLEMC_FETCH_HIGHFIVE "Fetch HighFive from github" ON)
 option(SIMPLEMC_DISABLE_WARNINGS "Disable stricter compilation warnings" ON)
 
 # output user options
+message(STATUS "===============================================")
 message(STATUS "Start configuring project ${PROJECT_NAME}")
 message(STATUS "Version: ${PROJECT_VERSION}")
+message(STATUS "Master project: ${SIMPLEMC_MASTER_PROJECT}")
+message(STATUS "===============================================")
 message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "Build shared libs: ${BUILD_SHARED_LIBS}")
 message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
@@ -69,6 +72,7 @@ message(STATUS "Fetch Eigen3: ${SIMPLEMC_FETCH_EIGEN3}")
 message(STATUS "Fetch nlohmann_json: ${SIMPLEMC_FETCH_NLOHMANN_JSON}")
 message(STATUS "Fetch HighFive: ${SIMPLEMC_FETCH_HIGHFIVE}")
 message(STATUS "Disable stricter compiler warnings: ${SIMPLEMC_DISABLE_WARNINGS}")
+message(STATUS "===============================================")
 
 #########################
 # Build targets
