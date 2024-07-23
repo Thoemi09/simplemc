@@ -146,7 +146,7 @@ template <std::integral T, std::size_t N>
  * @return Multi-dimensional index as a `std::vector`.
  */
 template <std::integral T, nd_order Order = column_major>
-[[nodiscard]] constexpr std::vector<T> multi_index(
+[[nodiscard]] constexpr auto multi_index(
     std::integral auto flat_idx, const std::vector<T>& shape, [[maybe_unused]] Order order = Order {}) {
     assert(flat_idx >= 0 && flat_idx < size_from_shape(shape));
     auto idxs = std::vector<T>(shape.size());
@@ -185,7 +185,7 @@ template <std::integral T, nd_order Order = column_major>
  * @return Multi-dimensional index as a `std::array`.
  */
 template <std::integral T, std::size_t N, nd_order Order = column_major>
-[[nodiscard]] constexpr std::array<T, N> multi_index(
+[[nodiscard]] constexpr auto multi_index(
     std::integral auto flat_idx, const std::array<T, N>& shape, [[maybe_unused]] Order order = Order {}) {
     static_assert(N != 0, "Empty shapes are not supported");
     assert(flat_idx >= 0 && flat_idx < size_from_shape(shape));

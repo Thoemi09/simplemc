@@ -13,6 +13,21 @@
  * @defgroup simplemc-utils-exceptions Exceptions
  * @ingroup simplemc-utils
  * @brief Generic exception classes used by the other **simplemc** libraries.
+ *
+ * @details
+ * @code{.cpp}
+ * try {
+ *     throw simplemc::simplemc_exception("This is my error message", "main");
+ * } catch (const simplemc::simplemc_exception& e) {
+ *     fmt::print("Caught exception: {}\n", e.what());
+ * }
+ * @endcode
+ *
+ * Output:
+ *
+ * ```
+ * Caught exception: simplemc exception in function main: This is my error message
+ * ```
  */
 
 /**
@@ -25,12 +40,36 @@
  * @defgroup simplemc-utils-indexing Multi-dimensional indexing
  * @ingroup simplemc-utils
  * @brief Functions to map multi-dimensional indices to a flat index and vice versa.
+ *
+ * @details **simplemc** supports two different indexing schemes:
+ * - Fortran style indexing (see simplemc::column_major)
+ * - C style indexing (see simplemc::row_major)
+ *
+ * See @ref tut_utils_2 for a detailed example.
  */
 
 /**
  * @defgroup simplemc-utils-timer Timer
  * @ingroup simplemc-utils
  * @brief Simple timer class for easy performance or runtime measurements.
+ *
+ * @details Here is a basic example how the simplemc::timer could be used in practice:
+ *
+ * @code{.cpp}
+ * simplemc::timer t;
+ * // code segment to be measured
+ * t.interim();
+ * // code segment to be measured
+ * t.stop();
+ * auto until_interim_in_millisec = simplemc::time_passed(t.start_time(), t.interim_time(), duration::millisec{});
+ * auto since_interim_in_min = simplemc::time_passed(t.interim_time(), t.stop_time(), duration::min{});
+ * auto since_start_in_sec = simplemc::time_passed(t.start_time(), t.stop_time());
+ * @endcode
+ *
+ * Note that the timer starts automatically when it is created. simplemc::time_passed makes it easy to
+ * get the time difference between two time points.
+ *
+ * See @ref tut_utils_1 for a detailed example.
  */
 
 /**

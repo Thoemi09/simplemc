@@ -48,6 +48,8 @@ struct duration {
  * auto measured_time = time_passed(tp1, tp2, duration::millisec{});
  * @endcode
  *
+ * Here, tp1 and tp2 are two `std::chrono::time_point` instances.
+ *
  * Note that this implementation is different from `std::chrono::duration_cast`, where the resulting
  * duration type has to be given explictly as a template parameter. This enables us to use a default
  * duration (simplemc::duration::sec).
@@ -76,16 +78,7 @@ template <typename C, typename D1, typename D2, typename D = duration::sec>
  *
  * It can store three different points in time (`std::chrono::time_point`): start, stop and interim.
  *
- * @code{.cpp}
- * timer t;
- * // code segment to be measured
- * t.interim();
- * // code segment to be measured
- * t.stop();
- * auto until_interim_in_millisec = time_passed(t.start_time(), t.interim_time(), duration::millisec{});
- * auto since_interim_in_min = time_passed(t.interim_time(), t.stop_time(), duration::min{});
- * auto since_start_in_sec = time_passed(t.start_time(), t.stop_time());
- * @endcode
+ * See @ref tut_utils_1 for a detailed example.
  *
  * @tparam Clock Clock type from `std::chrono` (default: `std::chrono::steady_clock`).
  */
@@ -100,9 +93,9 @@ public:
     /**
      * @brief Get current point in time.
      *
-     * @return Time point representing the current time.
+     * @return `std::chrono::time_point<clock_type>` representing the current time.
      */
-    [[nodiscard]] static std::chrono::time_point<clock_type> now() { return clock_type::now(); }
+    [[nodiscard]] static auto now() { return clock_type::now(); }
 
     /**
      * @brief Default constructor.
@@ -114,23 +107,23 @@ public:
     /**
      * @brief Get starting time point.
      *
-     * @return Starting time point.
+     * @return `std::chrono::time_point<clock_type>` representing the starting time point.
      */
-    [[nodiscard]] std::chrono::time_point<clock_type> start_time() const { return start_; }
+    [[nodiscard]] auto start_time() const { return start_; }
 
     /**
      * @brief Get stopping time point.
      *
-     * @return Stopping time point.
+     * @return `std::chrono::time_point<clock_type>` representing the stopping time point.
      */
-    [[nodiscard]] std::chrono::time_point<clock_type> stop_time() const { return stop_; }
+    [[nodiscard]] auto stop_time() const { return stop_; }
 
     /**
      * @brief Get interim time point.
      *
-     * @return Interim time point.
+     * @return `std::chrono::time_point<clock_type>` representing the interim time point.
      */
-    [[nodiscard]] std::chrono::time_point<clock_type> interim_time() const { return interim_; }
+    [[nodiscard]] auto interim_time() const { return interim_; }
 
     /**
      * @brief Set starting time point by calling now().

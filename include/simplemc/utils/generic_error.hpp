@@ -20,8 +20,10 @@ namespace simplemc {
  * @brief Generic base class for exceptions.
  *
  * @details This class serves as a base class for all exceptions in the **simplemc** library but can
- * also be used in other libraries. It inherits from `std::runtime_error` and provides a constructor
- * and a virtual function for constructing error messages.
+ * also be used in other libraries.
+ *
+ * It inherits from `std::runtime_error` and provides a constructor and a virtual function for
+ * constructing error messages.
  */
 class generic_error : public std::runtime_error {
 public:

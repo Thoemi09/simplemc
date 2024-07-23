@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief General concepts, type traits and tags for the simplemc library.
+ * @brief General concepts for the simplemc library.
  */
 
 #ifndef SIMPLEMC_UTILS_CONCEPTS_HPP

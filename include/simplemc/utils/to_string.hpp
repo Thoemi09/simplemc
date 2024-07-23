@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Get string representation for types with an overloaded `operator<<`.
+ * @brief Get a string representation for types with an overloaded `operator<<`.
  */
 
 #ifndef SIMPLEMC_UTILS_TO_STRING_HPP
