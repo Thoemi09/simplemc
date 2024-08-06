@@ -1,13 +1,9 @@
+#include "./simplemcmpi_fixture.hpp"
 #include "../gtest-mpi-listener.hpp"
 
 #include <simplemc/mpi.hpp>
 
-#include <fmt/ranges.h>
-
-#include <array>
-#include <list>
 #include <numeric>
-#include <span>
 #include <vector>
 
 // Broadcast a single value or a range of values.
@@ -87,74 +83,6 @@ void reduce_check(const simplemc::mpi::communicator& comm, const T& in, const T&
             ASSERT_EQ(res, T(res.size(), typename T::value_type()));
         }
     }
-}
-
-// Fixture class for testing the collective communications.
-class SimplemcMPI : public ::testing::Test {
-protected:
-    [[nodiscard]] char char_val() const { return 'x'; }
-    [[nodiscard]] signed char schar_val() const { return 'u'; }
-    [[nodiscard]] unsigned char uchar_val() const { return 'P'; }
-    [[nodiscard]] short short_val() const { return -1234; }
-    [[nodiscard]] unsigned short ushort_val() const { return 1234; }
-    [[nodiscard]] int int_val() const { return -123456; }
-    [[nodiscard]] unsigned int uint_val() const { return 123456; }
-    [[nodiscard]] long long_val() const { return -123456789012; }
-    [[nodiscard]] unsigned long ulong_val() const { return 123456789012; }
-    [[nodiscard]] long long llong_val() const { return -123456789012; }
-    [[nodiscard]] unsigned long long ullong_val() const { return 123456789012; }
-    [[nodiscard]] float float_val() const { return 12.3456789; }
-    [[nodiscard]] double double_val() const { return 12.3456789012; }
-    [[nodiscard]] bool bool_val() const { return true; }
-    [[nodiscard]] std::complex<double> cdouble_val() const { return { 1.2345, 6.7890 }; }
-    [[nodiscard]] std::string str_val() const { return "my test string"; }
-
-    template <typename T>
-    [[nodiscard]] std::vector<T> make_vec(int size, T t) {
-        return std::vector<T>(size, t);
-    }
-
-    simplemc::mpi::communicator comm;
-};
-
-// Custom type for testing MPI datatypes.
-struct foo {
-    int x;
-};
-
-// Test MPI with a hello world program.
-TEST_F(SimplemcMPI, HelloWorldWithMPI) {
-    fmt::print("Hello world, from {} of {} processes.\n", comm.rank(), comm.size());
-}
-
-// Test concepts and traits involving MPI datatypes.
-TEST_F(SimplemcMPI, ConceptsAndTraits) {
-    static_assert(simplemc::mpi::mpi_compatible<char>);
-    static_assert(simplemc::mpi::mpi_compatible<signed char>);
-    static_assert(simplemc::mpi::mpi_compatible<unsigned char>);
-    static_assert(simplemc::mpi::mpi_compatible<short>);
-    static_assert(simplemc::mpi::mpi_compatible<unsigned short>);
-    static_assert(simplemc::mpi::mpi_compatible<int>);
-    static_assert(simplemc::mpi::mpi_compatible<unsigned int>);
-    static_assert(simplemc::mpi::mpi_compatible<long>);
-    static_assert(simplemc::mpi::mpi_compatible<unsigned long>);
-    static_assert(simplemc::mpi::mpi_compatible<long long>);
-    static_assert(simplemc::mpi::mpi_compatible<unsigned long long>);
-    static_assert(simplemc::mpi::mpi_compatible<float>);
-    static_assert(simplemc::mpi::mpi_compatible<double>);
-    static_assert(simplemc::mpi::mpi_compatible<bool>);
-    static_assert(simplemc::mpi::mpi_compatible<std::complex<double>>);
-    static_assert(!simplemc::mpi::mpi_compatible<std::string>);
-    static_assert(!simplemc::mpi::mpi_compatible<foo>);
-
-    static_assert(simplemc::mpi::mpi_range<std::vector<double>>);
-    static_assert(!simplemc::mpi::mpi_range<std::vector<foo>>);
-    static_assert(simplemc::mpi::mpi_range<std::array<double, 10>>);
-    static_assert(!simplemc::mpi::mpi_range<std::array<foo, 10>>);
-    static_assert(!simplemc::mpi::mpi_range<std::list<double>>);
-    static_assert(simplemc::mpi::mpi_range<std::span<double>>);
-    static_assert(!simplemc::mpi::mpi_range<std::span<foo>>);
-    static_assert(simplemc::mpi::mpi_range<std::string>);
 }
 
 // Test broadcasting a single value.

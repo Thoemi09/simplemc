@@ -6,6 +6,8 @@
 #include <simplemc/mpi/communicator.hpp>
 #include <simplemc/mpi/utils.hpp>
 
+#include <mpi.h>
+
 namespace simplemc::mpi {
 
 communicator::communicator(MPI_Comm comm) : comm_(comm) {}

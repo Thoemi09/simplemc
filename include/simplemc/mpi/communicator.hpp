@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Wrapper for an MPI_Comm MPI communicator.
+ * @brief Wrapper around an `MPI_Comm` MPI communicator.
  */
 
 #ifndef SIMPLEMC_MPI_COMMUNICATOR_HPP
@@ -17,6 +17,8 @@ namespace simplemc::mpi {
  * @details It is implemented as a very thin wrapper around the actual `MPI_Comm` object. Only the
  * most basic functionality is supported (`MPI_Comm_rank`, `MPI_Comm_size`, `MPI_Barrier`).
  *
+ * Implicit conversions to and from `MPI_Comm` objects are allowed.
+ *
  * For more advanced tasks, the user is advised to use the MPI C library directly.
  */
 class communicator {
@@ -25,13 +27,12 @@ public:
      * @brief Construct a new communicator instance.
      *
      * @details The given `MPI_Comm` is copied and stored in this communicator instance. By default,
-     * i.e. if no `MPI_Comm` object is provided, `MPI_COMM_WORLD` is used. Implicit conversions from
-     * `MPI_Comm` objects to communicator objects are allowed.
+     * i.e. if no `MPI_Comm` object is provided, `MPI_COMM_WORLD` is used.
      *
      * @note No call to `MPI_Comm_dup` is made. If this is needed, it is the responsibility of the
      * user to do so.
      *
-     * @param comm MPI_Comm object.
+     * @param comm `MPI_Comm` object.
      */
     communicator(MPI_Comm comm = MPI_COMM_WORLD);
 
@@ -61,7 +62,7 @@ public:
     void barrier() const;
 
     /**
-     * @brief Implicit conversion to the underlying `MPI_Comm` object.
+     * @brief Implicit conversion function to the underlying `MPI_Comm` object.
      */
     operator MPI_Comm() const { return comm_; }
 

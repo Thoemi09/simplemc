@@ -6,6 +6,10 @@
 #include <simplemc/mpi/environment.hpp>
 #include <simplemc/mpi/utils.hpp>
 
+#include <mpi.h>
+
+#include <exception>
+
 namespace simplemc::mpi {
 
 bool environment::initialized() {

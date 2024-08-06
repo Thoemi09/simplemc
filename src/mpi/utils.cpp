@@ -9,9 +9,11 @@
 #include <fmt/format.h>
 #include <mpi.h>
 
+#include <string_view>
+
 namespace simplemc::mpi {
 
-void check_mpi_call(int errcode, const std::string& mpi_routine) {
+void check_mpi_call(int errcode, std::string_view mpi_routine) {
     if (errcode != MPI_SUCCESS) {
         throw simplemc_exception(fmt::format("MPI error code: {}", errcode), mpi_routine);
     }

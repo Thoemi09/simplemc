@@ -117,7 +117,42 @@
  * @details Only very few of the non-blocking communications are supported. If other routines are
  * needed, please call the MPI C library directly.
  *
- * No special attention is paid to the performance of these functions.
+ * No special attention is paid to the performance of these functions. For example, some of the
+ * functions will make multiple MPI calls to check that sizes of buffers are consistent.
+ *
+ * @code{.cpp}
+ * #include <simplemc/mpi.hpp>
+ * #include <fmt/ranges.h>
+ * #include <vector>
+ *
+ * int main(int argc, char** argv) {
+ *     // initialize MPI environment and communicator
+ *     simplemc::mpi::environment env(argc, argv);
+ *     simplemc::mpi::communicator comm;
+ *     constexpr int root = 0;
+ *
+ *     // create a vector and initialize it on root
+ *     std::vector<int> data(5);
+ *     if (comm.rank() == root) {
+ *         data = {1, 2, 3, 4, 5};
+ *     }
+ *
+ *     // broadcast the data from root to all other processes
+ *     simplemc::mpi::broadcast(comm, data, root);
+ *
+ *     // print the data on all processes
+ *     fmt::print("Rank {}: {}\n", comm.rank(), data);
+ * }
+ * @endcode
+ *
+ * Output (running on 4 processes):
+ *
+ * ```
+ * Rank 3: [1, 2, 3, 4, 5]
+ * Rank 2: [1, 2, 3, 4, 5]
+ * Rank 1: [1, 2, 3, 4, 5]
+ * Rank 0: [1, 2, 3, 4, 5]
+ * ```
  */
 
 /**

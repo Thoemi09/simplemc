@@ -13,6 +13,7 @@
 
 #include <mpi.h>
 #include <range/v3/range/concepts.hpp>
+#include <range/v3/range/primitives.hpp>
 
 namespace simplemc::mpi {
 
@@ -470,7 +471,7 @@ void scatter(const communicator& comm, R1&& in_values, R2&& out_values, int root
     auto chunk_size = in_size / comm.size();
     if (comm.rank() == root) {
         if (in_size != comm.size() * chunk_size) {
-            throw simplemc_exception("Input range size is not a mulitple of communicator size", "mpi::scatter");
+            throw simplemc_exception("Input range size is not a mulitple of the communicator size", "mpi::scatter");
         }
     }
     broadcast(comm, chunk_size, root);

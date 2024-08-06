@@ -6,8 +6,8 @@ In this tutorial, we show how the variable `abort_on_exception` influences the b
 simplemc::mpi::environment.
 
 A simplemc::mpi::environment takes 3 arguments in its constructor.
-The first two are the arguments passed to the `main` function, which are simply forwarded to the
-`MPI_Init` call.
+The first two are the usual arguments (`argc` and `argv`) passed to the `main` function, which are
+simply forwarded to the `MPI_Init` call.
 The third one, called `abort_on_exception`, is a boolean value that determines how an environment
 object should behave when an exception is encountered.
 More specifically, it determines the behavior of its destructor.
@@ -16,8 +16,9 @@ By default, `abort_on_exception` is set to `true`.
 That means the environment object will use `std::uncaught_exceptions()` in its destructor to check if
 an exception has been thrown somewhere and has not been caught.
 If this is the case, it will call `MPI_Abort`.
+
 On the other hand, if there are no uncaught exceptions or if `abort_on_exception` is set to `false`,
-it will call `MPI_Finialize`.
+the destructor will call `MPI_Finialize`.
 
 The following code demonstrates the default behaviour:
 
@@ -51,7 +52,11 @@ int main(int argc, char** argv) {
 }
 ```
 
-Output using 4 processes:
+Here, we wrap our simplemc::mpi::environment object in a `try-catch` block.
+Rank 0 throws an exception, while the other ranks use `std::this_thread::sleep_for` to sleep for 3
+seconds before they print a message to `stdout`.
+
+Let's run this code with 4 processes:
 
 ```
 --------------------------------------------------------------------------
@@ -70,40 +75,19 @@ This is expected as rank 0 throws an exception and due to stack unwinding the
 simplemc::mpi::environment object gets destroyed.
 It sees an uncaught exception in its destructor and therefore invokes `MPI_Abort`.
 
-Now, let's see what happens when we set `abort_on_exception` to false:
+Now, let's see what happens when we set `abort_on_exception` to false, i.e. simply change the line
 
 ```cpp
-#include <simplemc/mpi.hpp>
-
-#include <fmt/ostream.h>
-
-#include <chrono>
-#include <iostream>
-#include <thread>
-
-int main(int argc, char** argv) {
-    try {
-        // initialize MPI environment and communicator
-        simplemc::mpi::environment env(argc, argv, /* abort_on_exception */ false);
-        simplemc::mpi::communicator comm;
-
-        // throw an exception on rank 0
-        if (comm.rank() == 0) {
-            throw simplemc::simplemc_exception("This is a test exception on rank 0");
-        }
-
-        // on all other ranks, sleep for 3 seconds and print a message
-        std::this_thread::sleep_for(std::chrono::seconds(3));
-        fmt::print("Hello from rank {}\n", comm.rank());
-    } catch(const simplemc::simplemc_exception& e) {
-        // catch any exceptions (rank 0 should catch the exception thrown above)
-        fmt::print(std::cerr, "{}\n", e.what());
-    }
-}
-
+simplemc::mpi::environment env(argc, argv);
 ```
 
-Output using 4 processes:
+to
+
+```cpp
+simplemc::mpi::environment env(argc, argv, /* abort_on_exception */ false);
+```
+
+If we run the program again, we get
 
 ```
 Hello from rank 2
@@ -124,4 +108,4 @@ their work.
 >
 > In the example above, if there would be another (collective) MPI call after the line where rank 0
 > throws the exception, all other ranks would be deadlocked in this call waiting for rank 0 which
-> itself will be deadlocked in the destructor of the environment object.
+> itself would be deadlocked in the destructor of the environment object.

@@ -62,8 +62,9 @@ public:
     /**
      * @brief Clean up all MPI processes with a call to `MPI_Finalize`.
      *
-     * @details It first checks if MPI has already been finalized. If not, it calls `MPI_Finalize`. It
-     * throws an exception if the call fails.
+     * @details It first checks if MPI has already been finalized. If not, it calls `MPI_Finalize`.
+     *
+     * It throws an exception if any MPI call fails.
      */
     static void finalize();
 
@@ -71,7 +72,9 @@ public:
      * @brief Constructor to initialize the MPI environment.
      *
      * @details If no MPI environment has been initialized, it calls `MPI_Init` with the given
-     * arguments. It throws an exception if the call fails.
+     * arguments.
+     *
+     * It throws an exception if any MPI call fails.
      *
      * @param argc Number of arguments passed to `main()`.
      * @param argv Arguments passed to `main()`.
@@ -91,8 +94,10 @@ public:
     environment& operator=(const environment&) = delete;
 
     /**
-     * @brief Clean up the MPI environment, either by calling `MPI_Abort` due to an uncaught exception
-     * or by calling `MPI_Finalize`.
+     * @brief Clean up the MPI environment.
+     *
+     * @details It either calls `MPI_Abort` due to an uncaught exception (if `abort_on_exception` is
+     * set to `true`) or by calling `MPI_Finalize`.
      */
     ~environment();
 

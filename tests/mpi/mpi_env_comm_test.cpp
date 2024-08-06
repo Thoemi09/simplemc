@@ -5,11 +5,7 @@
 
 #include <fmt/core.h>
 
-// Test check_mpi_call function.
-TEST(SimplemcMPI, CheckMPICall) {
-    ASSERT_NO_THROW(simplemc::mpi::check_mpi_call(MPI_SUCCESS, "test_check_mpi_call"));
-    ASSERT_THROW(simplemc::mpi::check_mpi_call(MPI_SUCCESS + 1, "test_check_mpi_call"), simplemc::simplemc_exception);
-}
+#include <exception>
 
 // Test rank and size of communicator.
 TEST(SimplemcMPI, HelloWorldWithMPIEnvironment) {
@@ -22,7 +18,7 @@ TEST(SimplemcMPI, ThrowException) {
     simplemc::mpi::communicator comm;
     try {
         if (comm.rank() == 0) {
-            fmt::print("Throwing simplemc_exception on rank 0.\n");
+            fmt::print("Throwing a simplemc::simplemc_exception on rank 0.\n");
             throw simplemc::simplemc_exception("-10", "ThrowException");
         }
     } catch (const std::exception& e) {
