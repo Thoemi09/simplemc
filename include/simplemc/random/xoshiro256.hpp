@@ -26,7 +26,7 @@ namespace simplemc {
  * @brief Enumerate different types of the simplemc::xoshiro256 RNG.
  *
  * @details The following types are available:
- * - `plus` (simplemc::xoshiro256p): The fastest xoshiro256 RNG. Suitable for floating-point number
+ * - `plus` (simplemc::xoshiro256p): The fastest %xoshiro256 RNG. Suitable for floating-point number
  * generation.
  * - `plusplus` (simplemc::xoshiro256pp): General-purpose RNG.
  * - `starstar` (simplemc::xoshiro256ss): General-purpose RNG.
@@ -34,7 +34,7 @@ namespace simplemc {
 enum class xoshiro256_type { plus, plusplus, starstar };
 
 /**
- * @brief %xoshiro256 random number generators for 64 bit unsigned integer values.
+ * @brief %xoshiro256 random number generators for 64-bit unsigned integer values.
  *
  * @details Based on the <a href="http://prng.di.unimi.it/xoshiro256plus.c">C implementation</a> by
  * Sebastiano Vigna.
@@ -62,7 +62,7 @@ public:
     using result_type = std::uint64_t;
 
     /**
-     * @brief Default seed.
+     * @brief Default seed for a simplemc::splitmix64 RNG which is used to set the internal state.
      */
     static constexpr std::uint64_t default_seed = 0x8a34e2345234fdb1;
 
@@ -81,7 +81,7 @@ public:
     [[nodiscard]] static constexpr result_type max() { return std::numeric_limits<result_type>::max(); }
 
     /**
-     * @brief Construct a RNG from a single `std::uint64_t` seed.
+     * @brief Construct an RNG from a single `std::uint64_t` seed.
      *
      * @details The value is used to seed a simplemc::splitmix64 RNG, which in turn is used to set
      * the internal state.
@@ -91,7 +91,7 @@ public:
     explicit xoshiro256(std::uint64_t s = default_seed) { seed(s); }
 
     /**
-     * @brief Construct a RNG from four `std::uint64_t` values.
+     * @brief Construct an RNG from four `std::uint64_t` values.
      *
      * @details It simply sets the internal state to the given values.
      *
@@ -104,7 +104,7 @@ public:
         state_(state_type { s0, s1, s2, s3 }) {}
 
     /**
-     * @brief Construct a RNG from a seed sequence.
+     * @brief Construct an RNG from a seed sequence.
      *
      * @details It forwards the given seed sequence to seed(SeedSeq&) to set the internal state.
      *
@@ -216,10 +216,10 @@ public:
     }
 
     /**
-     * @brief Compare two simplemc::xoshiro256 objects for equalitiy.
+     * @brief Compare two simplemc::xoshiro256 objects for equality.
      *
-     * @param lhs Left-hand side RNG.
-     * @param rhs Right-hand side RNG.
+     * @param lhs Left hand side RNG.
+     * @param rhs Right hand side RNG.
      * @return True if their internal states are equal.
      */
     [[nodiscard]] friend bool operator==(const xoshiro256& lhs, const xoshiro256& rhs) {
@@ -229,8 +229,8 @@ public:
     /**
      * @brief Compare two simplemc::xoshiro256 objects for inequality.
      *
-     * @param lhs Left-hand side RNG.
-     * @param rhs Right-hand side RNG.
+     * @param lhs Left hand side RNG.
+     * @param rhs Right hand side RNG.
      * @return True if their internal states are distinct.
      */
     [[nodiscard]] friend bool operator!=(const xoshiro256& lhs, const xoshiro256& rhs) { return !(lhs == rhs); }
@@ -284,9 +284,9 @@ private:
         std::uint64_t s1 = 0;
         std::uint64_t s2 = 0;
         std::uint64_t s3 = 0;
-        for (std::size_t i = 0; i < arr.size(); i++) {
+        for (unsigned long long a : arr) {
             for (int b = 0; b < 64; b++) {
-                if (arr[i] & static_cast<std::uint64_t>(1) << b) {
+                if (a & static_cast<std::uint64_t>(1) << b) {
                     s0 ^= state_[0];
                     s1 ^= state_[1];
                     s2 ^= state_[2];

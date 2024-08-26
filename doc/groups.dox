@@ -234,9 +234,9 @@
  * @details The following RNGs are provided:
  * - simplemc::splitmix64 is a lightweight RNG that is intended to be used for simple tasks like
  * seeding other more sophisticated RNGs.
- * - simplemc::xoshiro256 has better statistics than @ref simplemc::splitmix64 and comes in 3
- * different flavors:
- *   - simplemc::xoshiro256p: The fastest xoshiro256 RNG. Suitable for floating-point number
+ * - simplemc::xoshiro256 has better statistics than the %splitmix64 RNG and comes in 3 different
+ * flavors:
+ *   - simplemc::xoshiro256p: The fastest %xoshiro256 RNG. Suitable for floating-point number
  *   generation.
  *   - simplemc::xoshiro256pp: General-purpose RNG.
  *   - simplemc::xoshiro256ss: General-purpose RNG.
@@ -277,7 +277,8 @@
 /**
  * @defgroup simplemc-random-samples Random samples
  * @ingroup simplemc-random
- * @brief Functions to generate random samples from often used probability density functions.
+ * @brief Generate random samples from often used probability distribution and evaluate the
+ * corresponding probability densities.
  */
 
 /**

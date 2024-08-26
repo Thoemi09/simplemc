@@ -39,7 +39,7 @@ public:
     /**
      * @brief Parameter type of a simplemc::uniform_real_distribution.
      *
-     * @details It models an closed-open interval on the real line and defines the domain of the
+     * @details It represents a closed-open interval on the real line and defines the domain of the
      * distribution.
      */
     class param_type {
@@ -77,8 +77,8 @@ public:
         /**
          * @brief Compare two simplemc::uniform_real_distribution::param_type obejcts for equality.
          *
-         * @param lhs Left-hand side distribution parameters.
-         * @param rhs Right-hand side distribution parameters.
+         * @param lhs Left hand side distribution parameters.
+         * @param rhs Right hand side distribution parameters.
          * @return True if they represent the same interval/domain.
          */
         [[nodiscard]] friend bool operator==(const param_type& lhs, const param_type& rhs) {
@@ -88,8 +88,8 @@ public:
         /**
          * @brief Compare two simplemc::uniform_real_distribution::param_type objects for inequality.
          *
-         * @param lhs Left-hand side distribution parameters.
-         * @param rhs Right-hand side distribution parameters.
+         * @param lhs Left hand side distribution parameters.
+         * @param rhs Right hand side distribution parameters.
          * @return True if they represent distinct intervals/domains.
          */
         [[nodiscard]] friend bool operator!=(const param_type& lhs, const param_type& rhs) { return !(lhs == rhs); }
@@ -143,7 +143,7 @@ public:
     void param(const param_type& param) { param_ = param; }
 
     /**
-     * @brief Reset the internal state of distribution.
+     * @brief Reset the internal state of the distribution.
      */
     void reset() {}
 
@@ -179,8 +179,8 @@ public:
     /**
      * @brief Compare two simplemc::uniform_real_distribution objects for equality.
      *
-     * @param lhs Left-hand side distribution.
-     * @param rhs Right-hand side distribution.
+     * @param lhs Left hand side distribution.
+     * @param rhs Right hand side distribution.
      * @return True if the parameters of the distributions are the same.
      */
     [[nodiscard]] friend bool operator==(const uniform_real_distribution& lhs, const uniform_real_distribution& rhs) {
@@ -189,8 +189,8 @@ public:
     /**
      * @brief Compare two simplemc::uniform_real_distribution objects for inequality.
      *
-     * @param lhs Left-hand side distribution.
-     * @param rhs Right-hand side distribution.
+     * @param lhs Left hand side distribution.
+     * @param rhs Right hand side distribution.
      * @return True if the parameters of the distributions are distinct.
      */
     [[nodiscard]] friend bool operator!=(const uniform_real_distribution& lhs, const uniform_real_distribution& rhs) {
@@ -205,7 +205,7 @@ public:
      *
      * @param os `std::ostream` to write to.
      * @param ud Distribution to be written.
-     * @return Reference to the `std::ostream` object.
+     * @return Reference to the `std::ostream`.
      */
     friend std::ostream& operator<<(std::ostream& os, const uniform_real_distribution& ud) {
         auto prec = os.precision();
@@ -225,7 +225,7 @@ public:
      *
      * @param is `std::istream` to read from.
      * @param ud Distribution to be read into.
-     * @return Reference to the `std::istream` object.
+     * @return Reference to the `std::istream`.
      */
     friend std::istream& operator>>(std::istream& is, uniform_real_distribution& ud) {
         double min = 0, max = 0;

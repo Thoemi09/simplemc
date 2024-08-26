@@ -18,7 +18,7 @@ namespace simplemc {
 
 /**
  * @ingroup simplemc-random-rngs
- * @brief Fast random number generator for 64 bit unsigned integer values.
+ * @brief Fast random number generator for 64-bit unsigned integer values.
  *
  * @details Based on the <a href="http://prng.di.unimi.it/splitmix64.c">C implementation</a> by
  * Sebastiano Vigna.
@@ -42,7 +42,7 @@ public:
     using result_type = std::uint64_t;
 
     /**
-     * @brief Default seed.
+     * @brief Default seed for the internal state.
      */
     static constexpr std::uint64_t default_seed = 0x8a34e2345234fdb1;
 
@@ -61,7 +61,7 @@ public:
     [[nodiscard]] static constexpr result_type max() { return std::numeric_limits<result_type>::max(); }
 
     /**
-     * @brief Construct a RNG from a single `std::uint64_t` seed.
+     * @brief Construct an RNG from a single `std::uint64_t` seed.
      *
      * @details It simply sets the internal state to the given seed.
      *
@@ -70,7 +70,7 @@ public:
     explicit splitmix64(std::uint64_t s = default_seed) : state_(s) {}
 
     /**
-     * @brief Construct a RNG from a seed sequence.
+     * @brief Construct an RNG from a seed sequence.
      *
      * @details It forwards the given seed sequence to seed(SeedSeq&) to set the internal state.
      *
@@ -140,10 +140,10 @@ public:
     }
 
     /**
-     * @brief Compare two simplemc::splitmix64 objects for equalitiy.
+     * @brief Compare two simplemc::splitmix64 objects for equality.
      *
-     * @param lhs Left-hand side RNG.
-     * @param rhs Right-hand side RNG.
+     * @param lhs Left hand side RNG.
+     * @param rhs Right hand side RNG.
      * @return True if their internal states are equal.
      */
     [[nodiscard]] friend bool operator==(const splitmix64& lhs, const splitmix64& rhs) {
@@ -153,8 +153,8 @@ public:
     /**
      * @brief Compare two simplemc::splitmix64 objects for inequality.
      *
-     * @param lhs Left-hand side RNG.
-     * @param rhs Right-hand side RNG.
+     * @param lhs Left hand side RNG.
+     * @param rhs Right hand side RNG.
      * @return True if their internal states are distinct.
      */
     [[nodiscard]] friend bool operator!=(const splitmix64& lhs, const splitmix64& rhs) { return !(lhs == rhs); }

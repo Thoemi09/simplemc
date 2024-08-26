@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Discrete distribution based on the Walker-Alias-Algorithm.
+ * @brief Discrete distribution using the Walker-Alias-Algorithm.
  */
 
 #ifndef SIMPLEMC_RANDOM_DISCRETE_ALIAS_DISTRIBUTION_HPP
@@ -59,13 +59,13 @@ public:
         param_type() : probs_(1, 1.0) {}
 
         /**
-         * @brief Constructs distribution parameters from a range of weights.
+         * @brief Construct distribution parameters from a range of weights.
          *
          * @details It normalizes the weights and stores the probabilities.
          *
          * @tparam InputIt Iterator type.
-         * @param first Beginning of the range.
-         * @param last End of the range.
+         * @param first Iterator to the beginning of the range.
+         * @param last Iterator to the end of the range.
          */
         template <typename InputIt>
         param_type(InputIt first, InputIt last) : probs_(first, last) {
@@ -73,7 +73,7 @@ public:
         }
 
         /**
-         * @brief Constructs distribution parameters from a list of weights.
+         * @brief Construct distribution parameters from a list of weights.
          *
          * @details It normalizes the weights and stores the probabilities.
          *
@@ -82,8 +82,8 @@ public:
         param_type(std::initializer_list<double> list) : probs_(list) { normalize(); }
 
         /**
-         * @brief Constructs distribution parameters such that the weights are given as
-         * `w_i = unary_op(xmin + d/2 + i*d)` with `d = (xmax - xmin)/n` and `i = 0, ..., n`.
+         * @brief Construct distribution parameters such that the weights are given as
+         * `w_i = unary_op(xmin + d / 2 + i * d)` with `d = (xmax - xmin) / n` and `i = 0, ..., n`.
          *
          * @tparam UnaryOp Unary operation.
          * @param n Number of weights.
@@ -112,9 +112,8 @@ public:
         /**
          * @brief Compare two simplemc::discrete_alias_distribution::param_type objects for equality.
          *
-         * @tparam T Integral type.
-         * @param lhs Left-hand side distribution.
-         * @param rhs Right-hand side distribution.
+         * @param lhs Left hand side distribution.
+         * @param rhs Right hand side distribution.
          * @return True if their probabilities are equal.
          */
         [[nodiscard]] friend bool operator==(const param_type& lhs, const param_type& rhs) {
@@ -125,9 +124,8 @@ public:
          * @brief Compare two simplemc::discrete_alias_distribution::param_type objects for
          * inequality.
          *
-         * @tparam T Integral type.
-         * @param lhs Left-hand side distribution.
-         * @param rhs Right-hand side distribution.
+         * @param lhs Left hand side distribution.
+         * @param rhs Right hand side distribution.
          * @return True if their probabilities are not equal.
          */
         [[nodiscard]] friend bool operator!=(const param_type& lhs, const param_type& rhs) { return !(lhs == rhs); }
@@ -162,8 +160,8 @@ public:
      * @brief Construct a distribution from a range of weights.
      *
      * @tparam InputIt Iterator type.
-     * @param first Beginning of the range.
-     * @param last End of the range.
+     * @param first Iterator to the beginning of the range.
+     * @param last Iterator to the end of the range.
      */
     template <typename InputIt>
     discrete_alias_distribution(InputIt first, InputIt last) : param_(first, last) {
@@ -179,7 +177,7 @@ public:
 
     /**
      * @brief Construct a distribution such that the weights are given as
-     * `w_i = unary_op(xmin + d/2 + i*d)` with `d = (xmax - xmin)/n` and `i = 0, ..., n`.
+     * `w_i = unary_op(xmin + d / 2 + i * d)` with `d = (xmax - xmin) / n` and `i = 0, ..., n`.
      *
      * @tparam UnaryOp Unary operation.
      * @param n Number of weights.
@@ -222,14 +220,14 @@ public:
     [[nodiscard]] const std::vector<double>& probabilities() const { return param_.probabilities(); }
 
     /**
-     * @brief Get the distribution parameters.
+     * @brief Get the distribution parameters, i.e. the weights/probabilities of the distribution.
      *
      * @return Distribution parameters.
      */
     [[nodiscard]] const param_type& param() const { return param_; }
 
     /**
-     * @brief Set the distribution parameters.
+     * @brief Set the distribution parameters, i.e. the weights/probabilities of the distribution.
      *
      * @param param Distribution parameters.
      */
@@ -239,7 +237,7 @@ public:
     }
 
     /**
-     * @brief Reset the internal state of distribution.
+     * @brief Reset the internal state of the distribution.
      */
     void reset() {}
 
@@ -279,8 +277,8 @@ public:
     /**
      * @brief Compare two simplemc::discrete_alias_distribution objects for equality.
      *
-     * @param lhs Left-hand side distribution.
-     * @param rhs Right-hand side distribution.
+     * @param lhs Left hand side distribution.
+     * @param rhs Right hand side distribution.
      * @return True if the parameters of the distributions are the same.
      */
     [[nodiscard]] friend bool operator==(
@@ -291,8 +289,8 @@ public:
     /**
      * @brief Compare two simplemc::discrete_alias_distribution objects for inequality.
      *
-     * @param lhs Left-hand side distribution.
-     * @param rhs Right-hand side distribution.
+     * @param lhs Left hand side distribution.
+     * @param rhs Right hand side distribution.
      * @return True if the parameters of the distributions are distinct.
      */
     [[nodiscard]] friend bool operator!=(
@@ -308,7 +306,7 @@ public:
      *
      * @param os `std::ostream` to write to.
      * @param dad Distribution to be written.
-     * @return Reference to the `std::ostream` object.
+     * @return Reference to the `std::ostream`.
      */
     friend std::ostream& operator<<(std::ostream& os, const discrete_alias_distribution& dad) {
         auto prec = os.precision();
@@ -332,10 +330,9 @@ public:
      *
      * @details Throws an exception, if reading from `std::istream` fails.
      *
-     * @tparam T Integral type.
      * @param is `std::istream` to read from.
      * @param dad Distribution to be read into.
-     * @return Reference to the `std::istream` object.
+     * @return Reference to the `std::istream` .
      */
     friend std::istream& operator>>(std::istream& is, discrete_alias_distribution& dad) {
         auto check_is = [](const std::istream& is) {
