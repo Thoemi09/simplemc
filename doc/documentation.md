@@ -59,8 +59,8 @@ It provides
 
 ## Grid library
 
-@ref simplemc-grids implements various grids on the real line. They can be further combined to form
-grids in higher dimensions.
+@ref simplemc-grids implements various @ref simplemc-grids-1d on the real line. They can be further
+combined to form @ref simplemc-grids-nd.
 
 A 1-dimensional grid is a strictly monotone map \f$ g : \mathrm{I} \to \mathbb{R} \f$ from the integer
 set \f$ \mathrm{I} = \{0, 1, \ldots, M-1\} \f$ to a closed interval on the real line (see
