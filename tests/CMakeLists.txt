@@ -15,7 +15,7 @@ target_link_libraries(simplemc-test INTERFACE GTest::gtest_main simplemc::simple
 add_subdirectory(utils)
 add_subdirectory(mpi)
 add_subdirectory(random)
-# add_subdirectory(grids)
+add_subdirectory(grids)
 # add_subdirectory(numeric)
 # add_subdirectory(accs)
 # add_subdirectory(json)

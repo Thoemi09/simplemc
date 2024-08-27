@@ -277,33 +277,91 @@
 /**
  * @defgroup simplemc-random-samples Random samples
  * @ingroup simplemc-random
- * @brief Generate random samples from often used probability distribution and evaluate the
- * corresponding probability densities.
+ * @brief Generate random samples from often used probability distributions and evaluate the
+ * corresponding probability density functions.
  */
 
 /**
  * @defgroup simplemc-grids simplemc-grids
- * @brief Various grids that can be used in histograms.
+ * @brief Various grids on \f$ \mathbb{R}^1 \f$ and a generic grid on \f$ \mathbb{R}^N \f$.
  *
- * @details A grid is a monotonous map \f$ g \f$ from the integer set \f$ \{0, 1, \ldots, N-1\} \f$ to
- * a closed, real interval \f$ [a, b] \f$.
+ * @details In this example, we first create a linear 1-dimensional grid with 3 grid points and then
+ * combine two instances to form a \f$ 3 \times 3 \f$ 2-dimensional grid:
+ *
+ * @code{.cpp}
+ * #include <simplemc/grids.hpp>
+ * #include <fmt/ranges.h>
+ *
+ * int main() {
+ *     // create a 1-dimensional grid of size 3
+ *     simplemc::linear_grid lg(0.0, 1.0, 3);
+ *     fmt::print("1d: {}\n", lg.view());
+ *
+ *     // create a 2-dimensional grid of size 3x3
+ *     simplemc::nd_grid grid_2d(lg, lg);
+ *     fmt::print("2d: {}\n", grid_2d.view());
+ * }
+ * @endcode
+ *
+ * Output:
+ *
+ * ```
+ * 1d: [0, 0.5, 1]
+ * 2d: [[0, 0], [0, 0.5], [0, 1], [0.5, 0], [0.5, 0.5], [0.5, 1], [1, 0], [1, 0.5], [1, 1]]
+ * ```
+ */
+
+/**
+ * @defgroup simplemc-grids-1d 1-dimensional grids
+ * @ingroup simplemc-grids
+ * @brief Various grids on \f$ \mathbb{R}^1 \f$.
+ *
+ * @details A 1-dimensional grid is a strictly monotone map \f$ g : \mathrm{I} \to \mathbb{R} \f$ from
+ * the integer set \f$ \mathrm{I} = \{0, 1, \ldots, M-1\} \f$ to a closed interval \f$ [a, b] \f$ on
+ * the real line.
  *
  * It is defined by
  * - the first grid point, \f$ g(0) = a \f$,
- * - the last grid point, \f$ g(N-1) = b \neq a \f$,
- * - the size of the grid, \f$ N \geq 2 \f$ and
+ * - the last grid point, \f$ g(M-1) = b \neq a \f$,
+ * - the size of the grid, \f$ M \geq 2 \f$ and
  * - the map \f$ g \f$.
  *
- * A grid with \f$ N \f$ grid points can also be thought of as \f$ N - 1 \f$ bins. Two consecutive
- * grid points then enclose a bin: \f$ b_i = [g(i), g(i+1)) \f$.
+ * A grid with \f$ M \f$ grid points can also be thought of as \f$ M - 1 \f$ bins. Two consecutive
+ * grid points, \f$ g(i) \f$ and \f$ g(i+1) \f$, then enclose the bin \f$ b_i \f$, i.e. \f$ b_i =
+ * [g(i), g(i+1)) \f$.
  *
- * Since the map is monotonous, one can always define the inverse map \f$ g^{-1} \f$, which maps a
- * given point on the grid to the corresponding grid index.
+ * Since the map is strictly monotone, one can always define the inverse map \f$ g^{-1} \f$, which
+ * maps a given point on the grid to the corresponding grid index.
  *
  * The above is also true for decreasing grids, i.e. in the case that \f$ b < a \f$. The range of the
  * grid is then \f$ [b, a] \f$ and the bins are the intervals \f$ b_i = (g(i+1), g(i)] \f$.
  *
  * Depending on the map, one can define different grids.
+ */
+
+/**
+ * @defgroup simplemc-grids-nd N-dimensional grids
+ * @ingroup simplemc-grids
+ * @brief A generic grid on \f$ \mathbb{R}^N \f$.
+ *
+ * @details An N-dimensional grid consists of \f$ N \f$ @ref simplemc-grids-1d, i.e. along the first
+ * dimension lies the grid \f$ g_1 : \mathrm{I}_1 \to \mathbb{R} \f$, along the second dimension lies
+ * grid \f$ g_2 : \mathrm{I}_2 \to \mathbb{R} \f$ and so on.
+ *
+ * The map \f$ g : \mathrm{I} \to \mathbb{R}^N \f$ from the set \f$ \mathrm{I} = \mathrm{I}_1 \times
+ * \dots \times \mathrm{I}_N \f$ to \f$ \mathbb{R}^N \f$ is then defined by \f$ g(i_1, \dots, i_N) =
+ * (g_1(i_1), \dots, g_N(i_N)) \f$. The same goes for the inverse map \f$ g^{-1}(x_1, \dots, x_N) =
+ * (g^{-1}_1(x_1), \dots, g^{-1}_N(x_N)) \f$.
+ *
+ * The size of the grid, i.e. the total number of grid points, is given by \f$ M = M_1 \times \dots
+ * \times M_N \f$.
+ *
+ * Similar to the 1-dimensional case, we can also think of the grid as a collection of \f$ (M_1 - 1)
+ * \times \dots \times (M_N - 1) \f$ bins or hyperrectangles. Such a hyperrectangle is simply the
+ * cartesian product of the 1-dimensional bins: \f$ b_{i_1, \dots, i_N} = b_{i_1} \times \dots \times
+ * b_{i_N} \f$.
+ *
+ * Users are free to combine any of the @ref simplemc-grids-1d to create an N-dimensional grid.
  */
 
 /**

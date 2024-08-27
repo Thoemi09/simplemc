@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief N-dimensional grid.
+ * @brief Generic N-dimensional grid.
  */
 
 #ifndef SIMPLEMC_GRIDS_ND_GRID_HPP
@@ -17,8 +17,8 @@
 namespace simplemc {
 
 /**
- * @ingroup simplemc-grids
- * @brief N-dimensional grid consisting of N 1-dimensional grids.
+ * @ingroup simplemc-grids-nd
+ * @brief Generic N-dimensional grid consisting of \f$ N \f$ 1-dimensional grids.
  *
  * @details The grids need not be of the same type as long as they have the same interface as
  * simplemc::grid_base.
@@ -26,6 +26,7 @@ namespace simplemc {
  * It stores the 1-dimensional grids in a tuple.
  *
  * For example, a 2-dimensional, 3x3 linear grid can be constructed as follows:
+ *
  * @code{.cpp}
  * simplemc::linear_grid lg(0.0, 1.0, 3);
  * simplemc::nd_grid grid_2d(lg, lg);
@@ -280,7 +281,7 @@ public:
     }
 
     /**
-     * @brief Get a lazy view on the bin centers
+     * @brief Get a lazy view on the bin centers.
      *
      * @details The grid is traversed in row-major (C) order, i.e. the last dimension is the fastest
      * varying one and the first dimension is the slowest varying one.

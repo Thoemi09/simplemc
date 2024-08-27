@@ -7,6 +7,7 @@
 #define SIMPLEMC_GRIDS_GRID_BASE_HPP
 
 #include <simplemc/utils/indexing.hpp>
+#include <simplemc/utils/simplemc_exception.hpp>
 
 #include <range/v3/view/iota.hpp>
 #include <range/v3/view/transform.hpp>
@@ -18,30 +19,15 @@
 namespace simplemc {
 
 /**
- * @ingroup simplemc-grids
+ * @ingroup simplemc-grids-1d
  * @brief Base class for various 1-dimensional grid types.
  *
- * @details A grid is a strictly monotone map \f$ g \f$ from the integer set \f$ \{0, 1, \ldots, N-1\}
- * \f$ to a closed, real interval \f$ [a, b] \f$.
+ * @details A basic grid is defined by its first and last grid points and its size, i.e. the number of
+ * grid points.
  *
- * It is defined by
- * - the first grid point, \f$ g(0) = a \f$,
- * - the last grid point, \f$ g(N-1) = b \neq a \f$,
- * - the size of the grid, \f$ N \geq 2 \f$ and
- * - the map \f$ g \f$.
- *
- * A grid with \f$ N \f$ grid points can also be thought of as \f$ N - 1 \f$ bins. Two consecutive
- * grid points, \f$ g(i) \f$ and \f$ g(i+1) \f$, then enclose the bin \f$ b_i \f$, i.e. \f$ b_i =
- * [g(i), g(i+1)) \f$.
- *
- * Since the map is monotone, one can always define the inverse map \f$ g^{-1} \f$, which maps a
- * given point on the grid to the corresponding grid index.
- *
- * The above is also true for decreasing grids, i.e. in the case that \f$ b < a \f$. The range of the
- * grid is then \f$ [b, a] \f$ and the bins are the intervals \f$ b_i = (g(i+1), g(i)] \f$.
- *
- * Depending on the map, one can define various grids, see e.g. simplemc::linear_grid or
- * simplemc::power_grid.
+ * Specific grids should inherit from this class and provide implementations for the pure virtual
+ * grid_base::at and grid_base::index methods. All other virtual methods have reasonable default
+ * implementations although they can be overriden if necessary.
  */
 class grid_base {
 public:
@@ -74,7 +60,7 @@ public:
      * @param last Last value of the grid.
      * @param size Number of grid points.
      */
-    grid_base(value_type first, value_type last, size_type size);
+    grid_base(value_type first, value_type last, size_type size) { reset(first, last, size); }
 
     /**
      * @brief Reset the base grid by specifying its first and last grid points and its size.
@@ -83,7 +69,17 @@ public:
      * @param last Last value of the grid.
      * @param size Number of grid points.
      */
-    void reset(value_type first, value_type last, size_type size);
+    void reset(value_type first, value_type last, size_type size) {
+        if (size < 2) {
+            throw simplemc_exception("Grid size must be >= 2", "grid_base::reset");
+        }
+        if (first == last) {
+            throw simplemc_exception("First and last grid value have to be different", "grid_base::reset");
+        }
+        first_ = first;
+        last_ = last;
+        size_ = size;
+    }
 
     /**
      * @brief Default virtual destructor.
@@ -136,15 +132,16 @@ public:
 
     /**
      * @brief Find the subrange of \f$ m \f$ consecutive grid points such that the given value lies
-     * more or less in the middle of the interval \f$ [g(i), g(i+m-1)] \f$.
+     * more or less in the middle of the interval \f$ [g(i), g(i+m-1)] \f$ (or \f$ [g(i+m-1), g(i)]
+     * \f$ for decreasing grids).
      *
      * @details It first calls grid_base::index with the given value and then forwards the result to
      * simplemc::integer_subrange.
      *
      * @param m Size of the wanted subrange.
      * @param value A value in the range of the grid.
-     * @return Index of bin \f$ i \f$ such that the value lies in the "middle" of \f$ [g(i),
-     * g(i+m-1)] \f$.
+     * @return Index of bin \f$ i \f$ such that the value lies in the middle of \f$ [g(i), g(i+m-1)]
+     * \f$ (or \f$ [g(i+m-1), g(i)] \f$ for decreasing grids)
      */
     [[nodiscard]] virtual size_type index_subrange(size_type m, value_type value) const {
         return integer_subrange(index(value), size(), m);
@@ -164,7 +161,7 @@ public:
     /**
      * @brief Get the center of the bin at a given index.
      *
-     * @param idx Bin index
+     * @param idx Bin index.
      * @return Center of the bin at the given index.
      */
     [[nodiscard]] virtual value_type center(size_type idx) const {

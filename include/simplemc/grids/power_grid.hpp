@@ -7,21 +7,22 @@
 #define SIMPLEMC_GRIDS_POWER_GRID_HPP
 
 #include <simplemc/grids/grid_base.hpp>
+#include <simplemc/utils/simplemc_exception.hpp>
 
 namespace simplemc {
 
 /**
- * @ingroup simplemc-grids
- * @brief Lazy, 1-dimensional power grid.
+ * @ingroup simplemc-grids-1d
+ * @brief 1-dimensional power grid.
  *
  * @details This class inherits from simplemc::grid_base and represents a power grid of size
- * \f$ N \geq 2 \f$ on the interval \f$ [a, b] \f$ (or \f$ [b, a] \f$ if \f$ b < a \f$).
+ * \f$ M \geq 2 \f$ on the interval \f$ [a, b] \f$ (or \f$ [b, a] \f$ if \f$ b < a \f$).
  *
  * It uses the map
  * \f[
  *   g(i) = a + i^p * \sigma \;,
  * \f]
- * with the power parameter \f$ p > 0 \f$ and the scale factor \f$ \sigma = \frac{b - a}{(N - 1)^p}
+ * with the power parameter \f$ p > 0 \f$ and the scale factor \f$ \sigma = \frac{b - a}{(M - 1)^p}
  * \f$.
  *
  * The inverse map is given by
@@ -51,7 +52,7 @@ public:
      * @param size Number of grid points.
      * @param power Power parameter.
      */
-    power_grid(value_type first, value_type last, size_type size, value_type power);
+    power_grid(value_type first, value_type last, size_type size, value_type power) { reset(first, last, size, power); }
 
     /**
      * @brief Reset a power grid by specifying its first and last grid points, its size and the power
@@ -62,7 +63,14 @@ public:
      * @param size Number of grid points.
      * @param power Power parameter.
      */
-    void reset(value_type first, value_type last, size_type size, value_type power);
+    void reset(value_type first, value_type last, size_type size, value_type power) {
+        if (power <= 0.0) {
+            throw simplemc_exception("Power parameter must be > 0", "power_grid::reset");
+        }
+        grid_base::reset(first, last, size);
+        power_ = power;
+        scale_ = (last_ - first_) / std::pow(size_ - 1, power_);
+    }
 
     /**
      * @brief Get the grid point at a given index.

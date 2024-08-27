@@ -11,17 +11,17 @@
 namespace simplemc {
 
 /**
- * @ingroup simplemc-grids
- * @brief Lazy, 1-dimensional linear grid.
+ * @ingroup simplemc-grids-1d
+ * @brief 1-dimensional linear grid.
  *
  * @details This class inherits from simplemc::grid_base and represents a uniform grid of size
- * \f$ N \geq 2 \f$ on the interval \f$ [a, b] \f$ (or \f$ [b, a] \f$ if \f$ b < a \f$).
+ * \f$ M \geq 2 \f$ on the interval \f$ [a, b] \f$ (or \f$ [b, a] \f$ if \f$ b < a \f$).
  *
  * It uses the map
  * \f[
  *   g(i) = a + i * \Delta \;,
  * \f]
- * with the step size \f$ \Delta = \frac{b - a}{N - 1} \f$ and the corresponding inverse map
+ * with the step size \f$ \Delta = \frac{b - a}{M - 1} \f$ and the corresponding inverse map
  * \f[
  *   g^{-1}(x) = \left\lfloor \frac{x - a}{\Delta} \right\rfloor \;,
  * \f]
@@ -46,7 +46,7 @@ public:
      * @param last Last value of the grid.
      * @param size Number of grid points.
      */
-    linear_grid(value_type first, value_type last, size_type size);
+    linear_grid(value_type first, value_type last, size_type size) { reset(first, last, size); }
 
     /**
      * @brief Reset the linear grid by specifying its first and last grid points and its size.
@@ -55,7 +55,10 @@ public:
      * @param last Last value of the grid.
      * @param size Number of grid points.
      */
-    void reset(value_type first, value_type last, size_type size);
+    void reset(value_type first, value_type last, size_type size) {
+        grid_base::reset(first, last, size);
+        step_ = (last_ - first_) / (static_cast<double>(size_) - 1.0);
+    }
 
     /**
      * @brief Get the grid point at a given index.
@@ -93,7 +96,7 @@ public:
     /**
      * @brief Get the center of the bin at a given index.
      *
-     * @param idx Bin index
+     * @param idx Bin index.
      * @return Center of the bin at the given index.
      */
     [[nodiscard]] value_type center(size_type idx) const override {

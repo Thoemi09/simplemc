@@ -59,22 +59,26 @@ It provides
 
 ## Grid library
 
-@ref simplemc-grids implements various grids that can be used in histograms.
+@ref simplemc-grids implements various grids on the real line. They can be further combined to form
+grids in higher dimensions.
 
-A grid is a monotonous map \f$ g \f$ from the integer set \f$ \{0, 1, \ldots, N-1\} \f$ to a closed,
-real interval.
+A 1-dimensional grid is a strictly monotone map \f$ g : \mathrm{I} \to \mathbb{R} \f$ from the integer
+set \f$ \mathrm{I} = \{0, 1, \ldots, M-1\} \f$ to a closed interval on the real line (see
+@ref simplemc-grids-1d).
 
-The mapping defines different grids:
+Depending on the map, one can define different grids:
 
 - @ref simplemc::linear_grid uses a linear map with equally spaced grid points.
-- @ref simplemc::nd_grid is a generic extension to multi dimensions.
 - @ref simplemc::power_grid uses a mapping which takes a non-negative power \f$ p \f$ of the integer
 variable. It reduces to the simplemc::linear_grid in case that \f$ p = 1.0 \f$.
 - @ref simplemc::symmetric_power_grid consists of two simplemc::power_grid which are symmetric with
 respect to the center of the interval.
 
-User can define their own grids by simply inheriting from simplemc::grid_base and implementing the
+Users can define their own grids by simply inheriting from simplemc::grid_base and implementing the
 purely virtual methods.
+
+Furthermore, the simplemc::nd_grid class lets the user combine an arbitrary number of 1-dimensional
+grids to form @ref simplemc-grids-nd.
 
 ## Numerics library
 

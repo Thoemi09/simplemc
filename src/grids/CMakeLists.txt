@@ -2,16 +2,10 @@
 #
 # The following targets are defined:
 # ---------------------------------
-# simplemc-grids (simplemc::simplemc-grids)
+# simplemc-grids (simplemc::simplemc-grids): Various grids in R^1 and R^N.
 
-add_library(simplemc-grids)
+add_library(simplemc-grids INTERFACE)
 add_library(simplemc::simplemc-grids ALIAS simplemc-grids)
-target_sources(simplemc-grids
-    PRIVATE
-        grid_base.cpp
-        linear_grid.cpp
-        power_grid.cpp
-        symmetric_power_grid.cpp)
 target_link_libraries(simplemc-grids
-    PUBLIC
+    INTERFACE
         simplemc::simplemc-utils)
