@@ -159,9 +159,9 @@ TEST(SimplemcNumeric, EigenFunctions) {
     // isfinite
     constexpr auto inf = std::numeric_limits<double>::infinity();
     constexpr auto nan = std::numeric_limits<double>::quiet_NaN();
-    typename vector<3>::type v { 1.0, 2.0, 3.0 };
-    typename vector<3>::type v_inf { 1.0, 2.0, inf };
-    typename vector<3>::type v_nan { 1.0, nan, 3.0 };
+    Eigen::Vector3d v { 1.0, 2.0, 3.0 };
+    Eigen::Vector3d v_inf { 1.0, 2.0, inf };
+    Eigen::Vector3d v_nan { 1.0, nan, 3.0 };
     ASSERT_TRUE(simplemc::isfinite(v));
     ASSERT_FALSE(simplemc::isfinite(v_inf));
     ASSERT_FALSE(simplemc::isfinite(v_nan));
@@ -171,20 +171,20 @@ TEST(SimplemcNumeric, EigenFunctions) {
     ASSERT_FALSE(simplemc::isfinite(mat));
 
     // abs_diff and rel_diff
-    typename vector<3>::type v1 { 1.0, 2.0, 3.0 };
-    typename vector<3>::type v2 { 1.0, 2.0, 3.0 + 1e-5 };
+    Eigen::Vector3d v1 { 1.0, 2.0, 3.0 };
+    Eigen::Vector3d v2 { 1.0, 2.0, 3.0 + 1e-5 };
     check_near(abs_diff(v1, v2), 1e-5);
     ASSERT_TRUE(rel_diff(v1, v2) < 1e-5);
 }
 
 // Test conversion between cartesian and polar coordinates.
 TEST(SimplemcNumeric, PolarCartesianConversion) {
-    vector<3>::type v3_c { 1.0, 0.0, 0.0 };
-    vector<3>::type v3_p { 1.0, std::numbers::pi / 2, 0.0 };
+    Eigen::Vector3d v3_c { 1.0, 0.0, 0.0 };
+    Eigen::Vector3d v3_p { 1.0, std::numbers::pi / 2, 0.0 };
     check_range_near(cartesian_to_polar(v3_c), v3_p);
     // check_range_near(polar_to_cartesian(v3_p), v3_c);
-    vector<2>::type v2_p { std::numbers::sqrt2, std::numbers::pi / 4 };
-    vector<2>::type v2_c { 1.0, 1.0 };
+    Eigen::Vector2d v2_p { std::numbers::sqrt2, std::numbers::pi / 4 };
+    Eigen::Vector2d v2_c { 1.0, 1.0 };
     check_range_near(polar_to_cartesian(v2_p), v2_c);
     check_range_near(cartesian_to_polar(v2_c), v2_p);
 }
@@ -204,9 +204,6 @@ TEST(SimplemcNumeric, LinearLattice) {
     ASSERT_NEAR(exp_real_vol, lat.real_cell_volume(), tol);
     double exp_rec_vol = pi;
     ASSERT_NEAR(exp_rec_vol, lat.reciprocal_cell_volume(), tol);
-    matrix_type trans_lat =
-        lat.calculate_transformation_matrix(lat.reciprocal_lattice_vectors()) * lat.reciprocal_lattice_vectors();
-    check_range_near(make_span(unit_matrix_1d), make_span(trans_lat), tol);
     ASSERT_EQ(std::string("linear_1d"), std::string(lattice_tag_to_string(lat.get_lattice_parameters().tag)));
     ASSERT_EQ(bravais_lattice::lattice_tag::linear_1d, string_to_lattice_tag("linear_1d"));
 }
@@ -226,9 +223,6 @@ TEST(SimplemcNumeric, SquareLattice) {
     ASSERT_NEAR(exp_real_vol, lat.real_cell_volume(), tol);
     double exp_rec_vol = pi * pi;
     ASSERT_NEAR(exp_rec_vol, lat.reciprocal_cell_volume(), tol);
-    matrix_type trans_lat =
-        lat.calculate_transformation_matrix(lat.reciprocal_lattice_vectors()) * lat.reciprocal_lattice_vectors();
-    check_range_near(make_span(unit_matrix_2d), make_span(trans_lat), tol);
     ASSERT_EQ(std::string("square_2d"), std::string(lattice_tag_to_string(lat.get_lattice_parameters().tag)));
     ASSERT_EQ(bravais_lattice::lattice_tag::square_2d, string_to_lattice_tag("square_2d"));
 }
@@ -248,9 +242,6 @@ TEST(SimplemcNumeric, Hexagonal2dLattice) {
     ASSERT_NEAR(exp_real_vol, lat.real_cell_volume(), tol);
     double exp_rec_vol = 11.396437515528111;
     ASSERT_NEAR(exp_rec_vol, lat.reciprocal_cell_volume(), tol);
-    matrix_type trans_lat =
-        lat.calculate_transformation_matrix(lat.reciprocal_lattice_vectors()) * lat.reciprocal_lattice_vectors();
-    check_range_near(make_span(unit_matrix_2d), make_span(trans_lat), tol);
     ASSERT_EQ(std::string("hexagonal_2d"), std::string(lattice_tag_to_string(lat.get_lattice_parameters().tag)));
     ASSERT_EQ(bravais_lattice::lattice_tag::hexagonal_2d, string_to_lattice_tag("hexagonal_2d"));
 }
@@ -270,9 +261,6 @@ TEST(SimplemcNumeric, RectangularLattice) {
     ASSERT_NEAR(exp_real_vol, lat.real_cell_volume(), tol);
     double exp_rec_vol = pi * pi * 0.5;
     ASSERT_NEAR(exp_rec_vol, lat.reciprocal_cell_volume(), tol);
-    matrix_type trans_lat =
-        lat.calculate_transformation_matrix(lat.reciprocal_lattice_vectors()) * lat.reciprocal_lattice_vectors();
-    check_range_near(make_span(unit_matrix_2d), make_span(trans_lat), tol);
     ASSERT_EQ(std::string("rectangular_2d"), std::string(lattice_tag_to_string(lat.get_lattice_parameters().tag)));
     ASSERT_EQ(bravais_lattice::lattice_tag::rectangular_2d, string_to_lattice_tag("rectangular_2d"));
 }
@@ -292,9 +280,6 @@ TEST(SimplemcNumeric, RectangularCenteredLattice) {
     ASSERT_NEAR(exp_real_vol, lat.real_cell_volume(), tol);
     double exp_rec_vol = pi * pi;
     ASSERT_NEAR(exp_rec_vol, lat.reciprocal_cell_volume(), tol);
-    matrix_type trans_lat =
-        lat.calculate_transformation_matrix(lat.reciprocal_lattice_vectors()) * lat.reciprocal_lattice_vectors();
-    check_range_near(make_span(unit_matrix_2d), make_span(trans_lat), tol);
     ASSERT_EQ(
         std::string("rectangular_centered_2d"), std::string(lattice_tag_to_string(lat.get_lattice_parameters().tag)));
     ASSERT_EQ(bravais_lattice::lattice_tag::rectangular_centered_2d, string_to_lattice_tag("rectangular_centered_2d"));
@@ -315,9 +300,6 @@ TEST(SimplemcNumeric, ObliqueLattice) {
     ASSERT_NEAR(exp_real_vol, lat.real_cell_volume(), tol);
     double exp_rec_vol = 10.2931567119095;
     ASSERT_NEAR(exp_rec_vol, lat.reciprocal_cell_volume(), tol);
-    matrix_type trans_lat =
-        lat.calculate_transformation_matrix(lat.reciprocal_lattice_vectors()) * lat.reciprocal_lattice_vectors();
-    check_range_near(make_span(unit_matrix_2d), make_span(trans_lat), tol);
     ASSERT_EQ(std::string("oblique_2d"), std::string(lattice_tag_to_string(lat.get_lattice_parameters().tag)));
     ASSERT_EQ(bravais_lattice::lattice_tag::oblique_2d, string_to_lattice_tag("oblique_2d"));
 }
@@ -337,9 +319,6 @@ TEST(SimplemcNumeric, CubicLattice) {
     ASSERT_NEAR(exp_real_vol, lat.real_cell_volume(), tol);
     double exp_rec_vol = pi * pi * pi;
     ASSERT_NEAR(exp_rec_vol, lat.reciprocal_cell_volume(), tol);
-    matrix_type trans_lat =
-        lat.calculate_transformation_matrix(lat.reciprocal_lattice_vectors()) * lat.reciprocal_lattice_vectors();
-    check_range_near(make_span(unit_matrix_3d), make_span(trans_lat), tol);
     ASSERT_EQ(std::string("cubic_3d"), std::string(lattice_tag_to_string(lat.get_lattice_parameters().tag)));
     ASSERT_EQ(bravais_lattice::lattice_tag::cubic_3d, string_to_lattice_tag("cubic_3d"));
 }
@@ -359,9 +338,6 @@ TEST(SimplemcNumeric, FCCLattice) {
     ASSERT_NEAR(exp_real_vol, lat.real_cell_volume(), tol);
     double exp_rec_vol = 124.02510672119922;
     ASSERT_NEAR(exp_rec_vol, lat.reciprocal_cell_volume(), tol);
-    matrix_type trans_lat =
-        lat.calculate_transformation_matrix(lat.reciprocal_lattice_vectors()) * lat.reciprocal_lattice_vectors();
-    check_range_near(make_span(unit_matrix_3d), make_span(trans_lat), tol);
     ASSERT_EQ(std::string("fcc_3d"), std::string(lattice_tag_to_string(lat.get_lattice_parameters().tag)));
     ASSERT_EQ(bravais_lattice::lattice_tag::fcc_3d, string_to_lattice_tag("fcc_3d"));
 }
@@ -381,9 +357,6 @@ TEST(SimplemcNumeric, BCCLattice) {
     ASSERT_NEAR(exp_real_vol, lat.real_cell_volume(), tol);
     double exp_rec_vol = 62.01255336059966;
     ASSERT_NEAR(exp_rec_vol, lat.reciprocal_cell_volume(), tol);
-    matrix_type trans_lat =
-        lat.calculate_transformation_matrix(lat.reciprocal_lattice_vectors()) * lat.reciprocal_lattice_vectors();
-    check_range_near(make_span(unit_matrix_3d), make_span(trans_lat), tol);
     ASSERT_EQ(std::string("bcc_3d"), std::string(lattice_tag_to_string(lat.get_lattice_parameters().tag)));
     ASSERT_EQ(bravais_lattice::lattice_tag::bcc_3d, string_to_lattice_tag("bcc_3d"));
 }
@@ -403,9 +376,6 @@ TEST(SimplemcNumeric, Hexagonal3dLattice) {
     ASSERT_NEAR(exp_real_vol, lat.real_cell_volume(), tol);
     double exp_rec_vol = 17.901482187939116;
     ASSERT_NEAR(exp_rec_vol, lat.reciprocal_cell_volume(), tol);
-    matrix_type trans_lat =
-        lat.calculate_transformation_matrix(lat.reciprocal_lattice_vectors()) * lat.reciprocal_lattice_vectors();
-    check_range_near(make_span(unit_matrix_3d), make_span(trans_lat), tol);
     ASSERT_EQ(std::string("hexagonal_3d"), std::string(lattice_tag_to_string(lat.get_lattice_parameters().tag)));
     ASSERT_EQ(bravais_lattice::lattice_tag::hexagonal_3d, string_to_lattice_tag("hexagonal_3d"));
 }
@@ -425,9 +395,6 @@ TEST(SimplemcNumeric, RhombohedralLattice) {
     ASSERT_NEAR(exp_real_vol, lat.real_cell_volume(), tol);
     double exp_rec_vol = 53.70444656381732;
     ASSERT_NEAR(exp_rec_vol, lat.reciprocal_cell_volume(), tol);
-    matrix_type trans_lat =
-        lat.calculate_transformation_matrix(lat.reciprocal_lattice_vectors()) * lat.reciprocal_lattice_vectors();
-    check_range_near(make_span(unit_matrix_3d), make_span(trans_lat), tol);
     ASSERT_EQ(std::string("rhombohedral_3d"), std::string(lattice_tag_to_string(lat.get_lattice_parameters().tag)));
     ASSERT_EQ(bravais_lattice::lattice_tag::rhombohedral_3d, string_to_lattice_tag("rhombohedral_3d"));
 }
@@ -447,9 +414,6 @@ TEST(SimplemcNumeric, TetragonalLattice) {
     ASSERT_NEAR(exp_real_vol, lat.real_cell_volume(), tol);
     double exp_rec_vol = pi * pi * pi / 2;
     ASSERT_NEAR(exp_rec_vol, lat.reciprocal_cell_volume(), tol);
-    matrix_type trans_lat =
-        lat.calculate_transformation_matrix(lat.reciprocal_lattice_vectors()) * lat.reciprocal_lattice_vectors();
-    check_range_near(make_span(unit_matrix_3d), make_span(trans_lat), tol);
     ASSERT_EQ(std::string("tetragonal_3d"), std::string(lattice_tag_to_string(lat.get_lattice_parameters().tag)));
     ASSERT_EQ(bravais_lattice::lattice_tag::tetragonal_3d, string_to_lattice_tag("tetragonal_3d"));
 }
@@ -469,9 +433,6 @@ TEST(SimplemcNumeric, TetragonalBCLattice) {
     ASSERT_NEAR(exp_real_vol, lat.real_cell_volume(), tol);
     double exp_rec_vol = 31.006276680299827;
     ASSERT_NEAR(exp_rec_vol, lat.reciprocal_cell_volume(), tol);
-    matrix_type trans_lat =
-        lat.calculate_transformation_matrix(lat.reciprocal_lattice_vectors()) * lat.reciprocal_lattice_vectors();
-    check_range_near(make_span(unit_matrix_3d), make_span(trans_lat), tol);
     ASSERT_EQ(std::string("tetragonal_bc_3d"), std::string(lattice_tag_to_string(lat.get_lattice_parameters().tag)));
     ASSERT_EQ(bravais_lattice::lattice_tag::tetragonal_bc_3d, string_to_lattice_tag("tetragonal_bc_3d"));
 }
@@ -491,9 +452,6 @@ TEST(SimplemcNumeric, OrthorhombicLattice) {
     ASSERT_NEAR(exp_real_vol, lat.real_cell_volume(), tol);
     double exp_rec_vol = pi * 2 * pi / 3 * pi / 2;
     ASSERT_NEAR(exp_rec_vol, lat.reciprocal_cell_volume(), tol);
-    matrix_type trans_lat =
-        lat.calculate_transformation_matrix(lat.reciprocal_lattice_vectors()) * lat.reciprocal_lattice_vectors();
-    check_range_near(make_span(unit_matrix_3d), make_span(trans_lat), tol);
     ASSERT_EQ(std::string("orthorhombic_3d"), std::string(lattice_tag_to_string(lat.get_lattice_parameters().tag)));
     ASSERT_EQ(bravais_lattice::lattice_tag::orthorhombic_3d, string_to_lattice_tag("orthorhombic_3d"));
 }
@@ -513,9 +471,6 @@ TEST(SimplemcNumeric, OrthorhombicFCLattice) {
     ASSERT_NEAR(exp_real_vol, lat.real_cell_volume(), tol);
     double exp_rec_vol = 41.34170224039976;
     ASSERT_NEAR(exp_rec_vol, lat.reciprocal_cell_volume(), tol);
-    matrix_type trans_lat =
-        lat.calculate_transformation_matrix(lat.reciprocal_lattice_vectors()) * lat.reciprocal_lattice_vectors();
-    check_range_near(make_span(unit_matrix_3d), make_span(trans_lat), tol);
     ASSERT_EQ(std::string("orthorhombic_fc_3d"), std::string(lattice_tag_to_string(lat.get_lattice_parameters().tag)));
     ASSERT_EQ(bravais_lattice::lattice_tag::orthorhombic_fc_3d, string_to_lattice_tag("orthorhombic_fc_3d"));
 }
@@ -535,9 +490,6 @@ TEST(SimplemcNumeric, OrthorhombicBCLattice) {
     ASSERT_NEAR(exp_real_vol, lat.real_cell_volume(), tol);
     double exp_rec_vol = 20.67085112019988;
     ASSERT_NEAR(exp_rec_vol, lat.reciprocal_cell_volume(), tol);
-    matrix_type trans_lat =
-        lat.calculate_transformation_matrix(lat.reciprocal_lattice_vectors()) * lat.reciprocal_lattice_vectors();
-    check_range_near(make_span(unit_matrix_3d), make_span(trans_lat), tol);
     ASSERT_EQ(std::string("orthorhombic_bc_3d"), std::string(lattice_tag_to_string(lat.get_lattice_parameters().tag)));
     ASSERT_EQ(bravais_lattice::lattice_tag::orthorhombic_bc_3d, string_to_lattice_tag("orthorhombic_bc_3d"));
 }
@@ -557,9 +509,6 @@ TEST(SimplemcNumeric, OrthorhombicBaseCenteredLattice) {
     ASSERT_NEAR(exp_real_vol, lat.real_cell_volume(), tol);
     double exp_rec_vol = 20.67085112019988;
     ASSERT_NEAR(exp_rec_vol, lat.reciprocal_cell_volume(), tol);
-    matrix_type trans_lat =
-        lat.calculate_transformation_matrix(lat.reciprocal_lattice_vectors()) * lat.reciprocal_lattice_vectors();
-    check_range_near(make_span(unit_matrix_3d), make_span(trans_lat), tol);
     ASSERT_EQ(std::string("orthorhombic_base_centered_3d"),
         std::string(lattice_tag_to_string(lat.get_lattice_parameters().tag)));
     ASSERT_EQ(bravais_lattice::lattice_tag::orthorhombic_base_centered_3d,
@@ -581,9 +530,6 @@ TEST(SimplemcNumeric, MonoclinicLattice) {
     ASSERT_NEAR(exp_real_vol, lat.real_cell_volume(), tol);
     double exp_rec_vol = 21.557937005588904;
     ASSERT_NEAR(exp_rec_vol, lat.reciprocal_cell_volume(), tol);
-    matrix_type trans_lat =
-        lat.calculate_transformation_matrix(lat.reciprocal_lattice_vectors()) * lat.reciprocal_lattice_vectors();
-    check_range_near(make_span(unit_matrix_3d), make_span(trans_lat), tol);
     ASSERT_EQ(std::string("monoclinic_3d"), std::string(lattice_tag_to_string(lat.get_lattice_parameters().tag)));
     ASSERT_EQ(bravais_lattice::lattice_tag::monoclinic_3d, string_to_lattice_tag("monoclinic_3d"));
 }
@@ -603,9 +549,6 @@ TEST(SimplemcNumeric, MonoclinicBaseCenteredLattice) {
     ASSERT_NEAR(exp_real_vol, lat.real_cell_volume(), tol);
     double exp_rec_vol = 43.11587401117781;
     ASSERT_NEAR(exp_rec_vol, lat.reciprocal_cell_volume(), tol);
-    matrix_type trans_lat =
-        lat.calculate_transformation_matrix(lat.reciprocal_lattice_vectors()) * lat.reciprocal_lattice_vectors();
-    check_range_near(make_span(unit_matrix_3d), make_span(trans_lat), tol);
     ASSERT_EQ(std::string("monoclinic_base_centered_3d"),
         std::string(lattice_tag_to_string(lat.get_lattice_parameters().tag)));
     ASSERT_EQ(bravais_lattice::lattice_tag::monoclinic_base_centered_3d,
@@ -627,9 +570,6 @@ TEST(SimplemcNumeric, TriclinicLattice) {
     ASSERT_NEAR(exp_real_vol, lat.real_cell_volume(), tol);
     double exp_rec_vol = 7.326602738000903;
     ASSERT_NEAR(exp_rec_vol, lat.reciprocal_cell_volume(), tol);
-    matrix_type trans_lat =
-        lat.calculate_transformation_matrix(lat.reciprocal_lattice_vectors()) * lat.reciprocal_lattice_vectors();
-    check_range_near(make_span(unit_matrix_3d), make_span(trans_lat), tol);
     ASSERT_EQ(std::string("triclinic_3d"), std::string(lattice_tag_to_string(lat.get_lattice_parameters().tag)));
     ASSERT_EQ(bravais_lattice::lattice_tag::triclinic_3d, string_to_lattice_tag("triclinic_3d"));
 }

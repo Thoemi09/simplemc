@@ -370,6 +370,63 @@
  */
 
 /**
+ * @defgroup simplemc-numeric-lattices Bravais lattices
+ * @ingroup simplemc-numeric
+ * @brief Bravais lattices in 1D, 2D and 3D.
+ */
+
+/**
+ * @defgroup simplemc-numeric-lattices-1d Bravais lattices in 1D
+ * @ingroup simplemc-numeric-lattices
+ * @brief Bravais lattices in 1D.
+ */
+
+/**
+ * @defgroup simplemc-numeric-lattices-1d Bravais lattices in 2D
+ * @ingroup simplemc-numeric-lattices
+ * @brief Bravais lattices in 2D.
+ */
+
+/**
+ * @defgroup simplemc-numeric-lattices-3d Bravais lattices in 3D
+ * @ingroup simplemc-numeric-lattices
+ * @brief Bravais lattices in 3D.
+ */
+
+/**
+ * @defgroup simplemc-numeric-interpolation Interpolation tools
+ * @ingroup simplemc-numeric
+ * @brief Basic interpolation strategies in N-dimensions.
+ */
+
+/**
+ * @defgroup simplemc-numeric-utils Numeric utilities
+ * @ingroup simplemc-numeric
+ * @brief General utilities for numerical calculations.
+ *
+ * @details It includes the Eigen library and provides some useful functions like
+ *
+ * - simplemc::abs_diff: Absolute difference between two (complex) numbers, vectors or matrices.
+ * - simplemc::rel_diff: Relative difference between two (complex) numbers, vectors or matrices.
+ * - simplemc::cartesian_to_polar and simplemc::polar_to_cartesian: Convert between cartesian and
+ * polar/spherical coordinates.
+ * - simplemc::make_span: Convenience function to create a span from Eigen objects.
+ * - and more.
+ */
+
+/**
+ * @defgroup simplemc-numeric-quadrature Quadrature tools
+ * @ingroup simplemc-numeric
+ * @brief Basic numerical quadrature techniques in 1D.
+ */
+
+/**
+ * @defgroup simplemc-numeric-functions Special functions
+ * @ingroup simplemc-numeric
+ * @brief Implementation of special functions.
+ */
+
+/**
  * @defgroup simplemc-accs simplemc-accs
  * @brief Various accumulators to collect and analyze data.
  */

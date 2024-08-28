@@ -130,6 +130,31 @@
         </tab>
       </tab>
       <tab type="usergroup" url="@ref simplemc-numeric" title="simplemc-numeric">
+        <tab type="usergroup" url="@ref simplemc-numeric-lattices" title="Bravais lattices">
+          <tab type="user" url="@ref simplemc::bravais_lattice" title="bravais_lattices"/>
+        </tab>
+        <tab type="usergroup" url="@ref simplemc-numeric-interpolation" title="Interpolation tools">
+          <tab type="user" url="@ref simplemc::cubic_spline_interpolation" title="cubic_spline_interpolation"/>
+          <tab type="user" url="@ref simplemc::linear_interpolation" title="linear_interpolation"/>
+          <tab type="user" url="@ref simplemc::linear_interpolation_nd" title="linear_interpolation_nd"/>
+          <tab type="user" url="@ref simplemc::polynomial_interpolation" title="polynomial_interpolation"/>
+          <tab type="user" url="@ref simplemc::polynomial_interpolation_nd" title="polynomial_interpolation_nd"/>
+        </tab>
+        <tab type="user" url="@ref simplemc-numeric-utils" title="Numeric utilities"/>
+        <tab type="usergroup" url="@ref simplemc-numeric-quadrature" title="Quadrature tools">
+          <tab type="user" url="@ref simplemc::basic_quadrature" title="basic_quadrature"/>
+        </tab>
+        <tab type="usergroup" url="@ref simplemc-numeric-functions" title="Special functions">
+          <tab type="user" url="@ref simplemc::chebyshev_polynomial_first" title="chebyshev_polynomial_first"/>
+          <tab type="user" url="@ref simplemc::chebyshev_polynomial_second" title="chebyshev_polynomial_second"/>
+          <tab type="user" url="@ref simplemc::cosine" title="cosine"/>
+          <tab type="user" url="@ref simplemc::hermite_polynomial" title="hermite_polynomial"/>
+          <tab type="user" url="@ref simplemc::laguerre_polynomial" title="laguerre_polynomial"/>
+          <tab type="user" url="@ref simplemc::legendre_polynomial" title="legendre_polynomial"/>
+          <tab type="user" url="@ref simplemc::linear_map" title="linear_map"/>
+          <tab type="user" url="@ref simplemc::orthogonal_polynomial" title="orthogonal_polynomial"/>
+          <tab type="user" url="@ref simplemc::sine" title="sine"/>
+        </tab>
       </tab>
       <tab type="usergroup" url="@ref simplemc-accs" title="simplemc-accs">
       </tab>

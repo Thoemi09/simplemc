@@ -82,21 +82,18 @@ grids to form @ref simplemc-grids-nd.
 
 ## Numerics library
 
-@ref simplemc-numeric contains some basic tools and functionality useful in many numerical and physics related simulations:
+@ref simplemc-numeric contains some basic tools and functionality useful in many numerical and physics
+related simulations.
 
-- @ref simplemc::bravais_lattice defines all the Bravais lattice types and functions to easily construct them.
-- @ref simplemc::cubic_spline_interpolation takes a grid and function values as input and performs cubic spline interpolation.
-- @ref simplemc::linear_interpolation and @ref simplemc::linear_interpolation_nd performs linear interpolation in 1- and N-dimensional
-space, respectively.
-- @ref simplemc::polynomial_interpolation and @ref simplemc::polynomial_interpolation_nd performs polynomial interpolation to an arbitrary
-order in 1- and N-dimensional space, respectively.
-- Numerical quadrature can be done with @ref simplemc::trapezs_quadrature and @ref simplemc::simpson_quadrature.
-- Various orthogonal polynomials are implemented and can be used in general Fourier series:
-  - @ref simplemc::legendre_polynomial
-  - @ref simplemc::chebyshev_polynomial_first and @ref simplemc::chebyshev_polynomial_second
-  - @ref simplemc::hermite_polynomial
-  - @ref simplemc::laguerre_polynomial
-  - @ref simplemc::cosine and @ref simpelmc::sine
+It provides
+
+- Various @ref simplemc-numeric-lattices in 1D, 2D and 3D.
+- @ref simplemc-numeric-interpolation to perform linear and polynomial interpolation of arbitrary
+order (in N-dimensions) as well as cubic spline interpolation (only in 1D).
+- General @ref simplemc-numeric-utils that include the Eigen library.
+- @ref simplemc-numeric-quadrature to do basic numerical integration in 1D.
+- Some @ref simplemc-numeric-functions (orthogonal polynomials), like Legendre polynomials or
+Chebyshev polynomials, that are especially useful for general Fourier series.
 
 ## Accumulator library
 

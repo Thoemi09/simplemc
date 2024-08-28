@@ -30,8 +30,9 @@ double bravais_lattice::calculate_cell_volume(const matrix_type& mat) {
 bravais_lattice::matrix_type bravais_lattice::calculate_reciprocal_lattice(const matrix_type& mat) {
     using std::numbers::pi;
     bravais_lattice::check_lattice_vector_dims(mat);
-    matrix_type B = vector_type::Constant(mat.rows(), 2 * pi).asDiagonal();
-    return mat.transpose().fullPivLu().solve(B);
+    // matrix_type B = vector_type::Constant(mat.rows(), 2 * pi).asDiagonal();
+    // return mat.transpose().fullPivLu().solve(B);
+    return mat.transpose().fullPivLu().inverse() * 2.0 * pi;
 }
 
 bravais_lattice::matrix_type bravais_lattice::calculate_cell_vertices(const matrix_type& mat) {
@@ -59,61 +60,12 @@ bravais_lattice::matrix_type bravais_lattice::calculate_cell_vertices(const matr
     }
 }
 
-bravais_lattice::matrix_type bravais_lattice::calculate_transformation_matrix(const matrix_type& mat) {
-    bravais_lattice::check_lattice_vector_dims(mat);
-    if (mat.rows() == 1) {
-        matrix_type res(1, 1);
-        res(0, 0) = 1.0 / mat(0, 0);
-        return res;
-    } else if (mat.rows() == 2) {
-        matrix_type a = matrix_type::Zero(4, 4);
-        a.block<1, 2>(0, 0) = mat.col(0);
-        a.block<1, 2>(1, 0) = mat.col(1);
-        a.block<1, 2>(2, 2) = mat.col(0);
-        a.block<1, 2>(3, 2) = mat.col(1);
-        vector_type b(4);
-        b << 1, 0, 0, 1;
-        vector_type x = a.fullPivLu().solve(b);
-        matrix_type res(2, 2);
-        res << x(0), x(1), x(2), x(3);
-        return res;
-    } else {
-        matrix_type a = matrix_type::Zero(9, 9);
-        a.block<1, 3>(0, 0) = mat.col(0);
-        a.block<1, 3>(1, 0) = mat.col(1);
-        a.block<1, 3>(2, 0) = mat.col(2);
-        a.block<1, 3>(3, 3) = mat.col(0);
-        a.block<1, 3>(4, 3) = mat.col(1);
-        a.block<1, 3>(5, 3) = mat.col(2);
-        a.block<1, 3>(6, 6) = mat.col(0);
-        a.block<1, 3>(7, 6) = mat.col(1);
-        a.block<1, 3>(8, 6) = mat.col(2);
-        vector_type b(9);
-        b << 1, 0, 0, 0, 1, 0, 0, 0, 1;
-        vector_type x = a.fullPivLu().solve(b);
-        matrix_type res(3, 3);
-        res << x(0), x(1), x(2), x(3), x(4), x(5), x(6), x(7), x(8);
-        return res;
-    }
-}
-
 bravais_lattice::bravais_lattice(matrix_type mat, const params& p) :
     params_(p),
     real_lat_(std::move(mat)),
     rec_lat_(calculate_reciprocal_lattice(real_lat_)),
     real_vol_(calculate_cell_volume(real_lat_)),
     rec_vol_(calculate_cell_volume(rec_lat_)) {}
-
-void bravais_lattice::set_lattice_vectors(matrix_type mat) {
-    rec_lat_ = calculate_reciprocal_lattice(mat);
-    real_vol_ = calculate_cell_volume(mat);
-    rec_vol_ = calculate_cell_volume(mat);
-    real_lat_ = std::move(mat);
-}
-
-void bravais_lattice::set_lattice_parameters(const params& p) {
-    params_ = p;
-}
 
 std::string lattice_tag_to_string(const bravais_lattice::lattice_tag& tag) {
     if (tag == bravais_lattice::lattice_tag::linear_1d) {

@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Bravais lattices in 1d, 2d and 3d.
+ * @brief Bravais lattices in 1D, 2D and 3D.
  */
 
 #ifndef SIMPLEMC_NUMERIC_BRAVAIS_LATTICE_HPP
@@ -13,22 +13,23 @@
 namespace simplemc {
 
 /**
- * @addtogroup simplemc-numeric
+ * @addtogroup simplemc-numeric-lattices
  * @{
  */
 
 /**
- * @brief Bravais lattice class.
+ * @brief Class representing a Bravais lattice in 1D, 2D and 3D.
  *
- * @details A lattice is defined by d d-dimensional lattice vectors. One lattice point is
- * in the origin and all others are obtained by translating the origin using the lattice
- * vectors.
+ * @details A lattice is defined by \f$ N \f$ N-dimensional lattice vectors. One lattice point is in
+ * the origin and all others are obtained by translating the origin using linear combinations of the
+ * lattice vectors.
  *
  * The lattice can be in 1, 2 or 3 dimensions. Other dimensions are not supported.
  *
- * It is assumed that the lattice vectors are linearly independent and that the lattice
- * parameters are correctly set. It is recommended to use the make_***_lattice functions
- * instead of manually creating a lattice.
+ * It is assumed that the lattice vectors are linearly independent and that the lattice parameters are
+ * correctly set. It is recommended to use the provided factory functions instead of manually creating
+ * a lattice (see @ref simplemc-numeric-lattices-1d, @ref simplemc-numeric-lattices-2d and
+ * @ref simplemc-numeric-lattices-3d).
  */
 class bravais_lattice {
 public:
@@ -43,7 +44,7 @@ public:
     using matrix_type = Eigen::MatrixXd;
 
     /**
-     * @brief Tags for different bravais lattices.
+     * @brief Tags for the different Bravais lattices.
      */
     enum class lattice_tag {
         linear_1d,
@@ -70,17 +71,17 @@ public:
     };
 
     /**
-     * @brief Parameters specifying a bravais lattice.
+     * @brief Parameters specifying a Bravais lattice.
      *
      * @details The following parameters are stored:
      *
-     * - a: Lattice constant in direction #1.
-     * - b: Lattice constant in direction #2 (only in 2d and 3d).
-     * - c: Lattice constant in direction #3 (only in 3d).
-     * - alpha: Angle between b and c (only in 3d).
-     * - beta: Angle between a and c (only in 3d).
-     * - gamma: Angle between a and b (only in 2d and 3d).
-     * - tag: Tag specifying the type of lattice.
+     * - \f$ a \f$: Lattice constant in direction #1.
+     * - \f$ b \f$: Lattice constant in direction #2 (only in 2D and 3D).
+     * - \f$ c \f$: Lattice constant in direction #3 (only in 3D).
+     * - \f$ \alpha \f$: Angle between \f$ \mathbf{b} \f$ and \f$ \mathbf{c} \f$ (only in 3D).
+     * - \f$ \beta \f$: Angle between \f$ \mathbf{a} \f$ and \f$ \mathbf{c} \f$ (only in 3D).
+     * - \f$ \gamma \f$: Angle between \f$ \mathbf{a} \f$ and \f$ \mathbf{b} \f$ (in 2D and 3D).
+     * - `tag`: Tag specifying the type of Bravais lattice.
      */
     struct params {
         double a { 0.0 };
@@ -93,110 +94,96 @@ public:
     };
 
     /**
-     * @brief Check dimensions of lattice vector matrix. Throws an exception if dimensions are
-     * not supported, i.e. if the matrix is neither 1x1, 2x2 or 3x3.
+     * @brief Check dimensions of the lattice vector matrix.
      *
-     * @param mat Matrix with lattice vectors in columns.
+     * @details It throws an exception if the dimensions are not supported, i.e. if the matrix is
+     * neither \f$ 1 \times 1 \f$, \f$ 2 \times 2 \f$ or \f$ 3 \times 3 \f$.
+     *
+     * @param mat Matrix with the lattice vectors in its columns.
      */
     static void check_lattice_vector_dims(const matrix_type& mat);
 
     /**
-     * @brief Calculate volume of a given cell.
+     * @brief Calculate the volume of a given cell.
      *
-     * @param mat Matrix with lattice vectors in columns.
-     * @return Volume spanned by lattice vectors.
+     * @param mat Matrix with the lattice vectors in its columns.
+     * @return Volume spanned by the lattice vectors.
      */
     [[nodiscard]] static double calculate_cell_volume(const matrix_type& mat);
 
     /**
-     * @brief Calculate reciprocal lattice vectors w.r.t. to a given lattice.
+     * @brief Calculate the reciprocal lattice vectors w.r.t. to a given lattice.
      *
-     * @param mat Matrix with lattice vectors in columns.
-     * @return Matrix with reciprocal lattice vectors in columns.
+     * @param mat Matrix with the lattice vectors in its columns.
+     * @return Matrix with the corresponding reciprocal lattice vectors in its columns.
      */
     [[nodiscard]] static matrix_type calculate_reciprocal_lattice(const matrix_type& mat);
 
     /**
-     * @brief Calculate vertices of the cell spanned by given lattice vectors.
+     * @brief Calculate the vertices of the cell spanned by given lattice vectors.
      *
-     * @param mat Matrix with lattice vectors in columns.
-     * @return Matrix with vertices in columns.
+     * @details The following matrix sizes are returned:
+     * - 1D: \f$ 1 \times 2 \f$
+     * - 2D: \f$ 2 \times 4 \f$
+     * - 3D: \f$ 3 \times 8 \f$
+     *
+     * @param mat Matrix with the lattice vectors in its columns.
+     * @return Matrix with the vertices in its columns.
      */
     [[nodiscard]] static matrix_type calculate_cell_vertices(const matrix_type& mat);
 
     /**
-     * @brief Calculate the transformation matrix of the linear map which maps the cell spanned
-     * by the given lattice vectors to the unit line/square/cube.
-     *
-     * @param mat Matrix with lattice vectors in columns.
-     * @return Transformation matrix.
-     */
-    [[nodiscard]] static matrix_type calculate_transformation_matrix(const matrix_type& mat);
-
-    /**
-     * @brief Default constructor.
+     * @brief Default constructor leaves the Bravais lattice unspecified.
      */
     bravais_lattice() = default;
 
     /**
      * @brief Construct a Bravais lattice with lattice vectors and parameters.
      *
-     * @param mat Matrix with lattice vectors in columns.
+     * @warning No checks are performed that the lattice vectors and parameters are consistent.
+     *
+     * @param mat Matrix with the lattice vectors in its columns.
      * @param p Bravais lattice parameters.
      */
     bravais_lattice(matrix_type mat, const params& p);
 
     /**
-     * @brief Number of dimensions.
+     * @brief Get the number of dimensions of the Bravais lattice.
      */
     [[nodiscard]] auto dim() const { return real_lat_.rows(); };
 
     /**
-     * @brief Set lattice vectors.
-     *
-     * @param mat Matrix with lattice vectors in columns.
-     */
-    void set_lattice_vectors(matrix_type mat);
-
-    /**
-     * @brief Set lattice parameters.
-     *
-     * @param p Bravais lattice parameters.
-     */
-    void set_lattice_parameters(const params& p);
-
-    /**
-     * @brief Get Bravais lattice parameters.
+     * @brief Get the Bravais lattice parameters.
      *
      * @return Bravais lattice parameters.
      */
     [[nodiscard]] const params& get_lattice_parameters() const { return params_; }
 
     /**
-     * @brief Get real space lattice vectors.
+     * @brief Get the real space lattice vectors.
      *
-     * @return Real space lattice vectors.
+     * @return Matrix with the real space lattice vectors in its columns.
      */
     [[nodiscard]] const matrix_type& real_lattice_vectors() const { return real_lat_; }
 
     /**
-     * @brief Get unit cell volume spanned by real space lattice vectors.
+     * @brief Get the unit cell volume spanned by the real space lattice vectors.
      *
-     * @return Real space unit cell volume.
+     * @return Unit cell volume in real space.
      */
     [[nodiscard]] double real_cell_volume() const { return real_vol_; }
 
     /**
-     * @brief Get reciprocal space lattice vectors.
+     * @brief Get the reciprocal space lattice vectors.
      *
-     * @return Reciprocal space lattice vectors.
+     * @return Matrix with the reciprocal space lattice vectors in its columns.
      */
     [[nodiscard]] const matrix_type& reciprocal_lattice_vectors() const { return rec_lat_; }
 
     /**
-     * @brief Get unit cell volume spanned by reciprocal space lattice vectors.
+     * @brief Get the unit cell volume spanned by the reciprocal space lattice vectors.
      *
-     * @return Reciprocal space unit cell volume.
+     * @return Unit cell volume in reciprocal space.
      */
     [[nodiscard]] double reciprocal_cell_volume() const { return rec_vol_; }
 
@@ -209,18 +196,18 @@ private:
 };
 
 /**
- * @brief Convert lattice tag to string.
+ * @brief Convert a lattice tag to a string.
  *
  * @param tag Lattice tag.
- * @return String corresponding to a certain lattice tag.
+ * @return String corresponding to the given lattice tag.
  */
 [[nodiscard]] std::string lattice_tag_to_string(const bravais_lattice::lattice_tag& tag);
 
 /**
- * @brief Convert string to lattice tag.
+ * @brief Convert a string to a lattice tag.
  *
  * @param str String.
- * @return Lattice tag corresponding to a certain string.
+ * @return Lattice tag corresponding to the given certain string.
  */
 [[nodiscard]] bravais_lattice::lattice_tag string_to_lattice_tag(const std::string& str);
 
