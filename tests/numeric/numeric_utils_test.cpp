@@ -1,0 +1,142 @@
+#include "../test_utils.hpp"
+
+#include <simplemc/numeric/eigen.hpp>
+#include <simplemc/numeric/utils.hpp>
+
+#include <complex>
+#include <numbers>
+
+// Test some utilty functions.
+TEST(SimplemcNumeric, UtilityFunctions) {
+    // abs_diff and rel_diff
+    ASSERT_DOUBLE_EQ(simplemc::abs_diff(1e-5, 1e-5), 0);
+    ASSERT_DOUBLE_EQ(simplemc::rel_diff(1e-5, 1e-5), 0);
+    ASSERT_DOUBLE_EQ(simplemc::abs_diff(1e-5, 2e-5), 1e-5);
+    ASSERT_DOUBLE_EQ(simplemc::rel_diff(1e-5, 2e-5), 1);
+
+    // isfinite
+    ASSERT_TRUE(simplemc::isfinite(1.0 / 1.0));
+    ASSERT_FALSE(simplemc::isfinite(1.0 / 0.0));
+    std::complex<double> c1 { 1.0, std::log(-1) };
+    ASSERT_FALSE(simplemc::isfinite(c1));
+}
+
+// Test map_to_interval and map_to_interval_lb functions.
+TEST(SimplemcNumeric, MapToInterval) {
+    using std::numbers::pi;
+    double tol = 1e-10;
+    double lb = -pi;
+    double ub = pi;
+    ASSERT_NEAR(0.0, simplemc::map_to_interval(0.0, lb, ub), tol);
+    ASSERT_NEAR(ub, simplemc::map_to_interval(ub, lb, ub), tol);
+    ASSERT_NEAR(ub, simplemc::map_to_interval(lb, lb, ub), tol);
+    ASSERT_NEAR(ub, simplemc::map_to_interval(3 * pi, lb, ub), tol);
+    ASSERT_NEAR(ub, simplemc::map_to_interval(-3 * pi, lb, ub), tol);
+    ASSERT_NEAR(-0.7, simplemc::map_to_interval(-0.7 - 4 * pi, lb, ub), tol);
+    ASSERT_NEAR(-0.7 + pi, simplemc::map_to_interval(-0.7 - 3 * pi, lb, ub), tol);
+    ASSERT_NEAR(-0.7, simplemc::map_to_interval(-0.7 + 12 * pi, lb, ub), tol);
+    ASSERT_NEAR(0.0, simplemc::map_to_interval_lb(0.0, lb, ub), tol);
+    ASSERT_NEAR(lb, simplemc::map_to_interval_lb(ub, lb, ub), tol);
+    ASSERT_NEAR(lb, simplemc::map_to_interval_lb(lb, lb, ub), tol);
+    ASSERT_NEAR(lb, simplemc::map_to_interval_lb(3 * pi, lb, ub), tol);
+    ASSERT_NEAR(lb, simplemc::map_to_interval_lb(-3 * pi, lb, ub), tol);
+    ASSERT_NEAR(-0.7, simplemc::map_to_interval_lb(-0.7 - 4 * pi, lb, ub), tol);
+    ASSERT_NEAR(-0.7 + pi, simplemc::map_to_interval_lb(-0.7 - 3 * pi, lb, ub), tol);
+    ASSERT_NEAR(-0.7, simplemc::map_to_interval_lb(-0.7 + 12 * pi, lb, ub), tol);
+    lb = 1.1;
+    ub = 2.3;
+    ASSERT_NEAR(1.7, simplemc::map_to_interval(1.7, lb, ub), tol);
+    ASSERT_NEAR(ub, simplemc::map_to_interval(ub, lb, ub), tol);
+    ASSERT_NEAR(ub, simplemc::map_to_interval(lb, lb, ub), tol);
+    ASSERT_NEAR(1.2, simplemc::map_to_interval(1.2 + 3 * 1.2, lb, ub), tol);
+    ASSERT_NEAR(1.9, simplemc::map_to_interval(1.9 - 3 * 1.2, lb, ub), tol);
+    ASSERT_NEAR(1.7, simplemc::map_to_interval_lb(1.7, lb, ub), tol);
+    ASSERT_NEAR(lb, simplemc::map_to_interval_lb(ub, lb, ub), tol);
+    ASSERT_NEAR(lb, simplemc::map_to_interval_lb(lb, lb, ub), tol);
+    ASSERT_NEAR(1.2, simplemc::map_to_interval_lb(1.2 + 3 * 1.2, lb, ub), tol);
+    ASSERT_NEAR(1.9, simplemc::map_to_interval_lb(1.9 - 3 * 1.2, lb, ub), tol);
+    lb = -2.3;
+    ub = -1.1;
+    ASSERT_NEAR(-1.7, simplemc::map_to_interval(-1.7, lb, ub), tol);
+    ASSERT_NEAR(ub, simplemc::map_to_interval(ub, lb, ub), tol);
+    ASSERT_NEAR(ub, simplemc::map_to_interval(lb, lb, ub), tol);
+    ASSERT_NEAR(-1.2, simplemc::map_to_interval(-1.2 + 3 * 1.2, lb, ub), tol);
+    ASSERT_NEAR(-1.9, simplemc::map_to_interval(-1.9 - 3 * 1.2, lb, ub), tol);
+    ASSERT_NEAR(-1.7, simplemc::map_to_interval_lb(-1.7, lb, ub), tol);
+    ASSERT_NEAR(lb, simplemc::map_to_interval_lb(ub, lb, ub), tol);
+    ASSERT_NEAR(lb, simplemc::map_to_interval_lb(lb, lb, ub), tol);
+    ASSERT_NEAR(-1.2, simplemc::map_to_interval_lb(-1.2 + 3 * 1.2, lb, ub), tol);
+    ASSERT_NEAR(-1.9, simplemc::map_to_interval_lb(-1.9 - 3 * 1.2, lb, ub), tol);
+}
+
+// Test within_bounds function.
+TEST(SimplemcNumeric, WithinBounds) {
+    double min_diff = 1e-3;
+    double low = 4.2;
+    double up = 5.0;
+    double val_in1 = 4.5;
+    double val_in2 = low + 1e-4;
+    double val_in3 = up - 1e-4;
+    ASSERT_TRUE(simplemc::within_bounds(val_in1, low, up, min_diff));
+    ASSERT_FALSE(simplemc::within_bounds(val_in2, low, up, min_diff));
+    ASSERT_FALSE(simplemc::within_bounds(val_in3, low, up, min_diff));
+}
+
+// Test the make_span function for Eigen types.
+TEST(SimplemcNumeric, MakeSpan) {
+    Eigen::Vector3d v3 = Eigen::Vector3d::Random();
+    auto sp_v3 = simplemc::make_span(v3);
+    ASSERT_EQ(sp_v3.size(), v3.size());
+    ASSERT_EQ(sp_v3.data(), &v3(0));
+    Eigen::VectorXd vn = Eigen::VectorXd::Random(10);
+    auto sp_vn = simplemc::make_span(vn);
+    ASSERT_EQ(sp_vn.size(), vn.size());
+    ASSERT_EQ(sp_vn.data(), &vn(0));
+    Eigen::Matrix3cd m3 = Eigen::Matrix3cd::Random();
+    auto sp_m3 = simplemc::make_span(m3);
+    ASSERT_EQ(sp_m3.size(), m3.size());
+    ASSERT_EQ(sp_m3.data(), &m3(0, 0));
+    Eigen::MatrixXi mn = Eigen::MatrixXi::Random(10, 10);
+    auto sp_mn = simplemc::make_span(mn);
+    ASSERT_EQ(sp_mn.size(), mn.size());
+    ASSERT_EQ(sp_mn.data(), &mn(0, 0));
+    Eigen::Array44f a44 = Eigen::Array44f::Random();
+    auto sp_a44 = simplemc::make_span(a44);
+    ASSERT_EQ(sp_a44.size(), a44.size());
+    ASSERT_EQ(sp_a44.data(), &a44(0, 0));
+}
+
+// Test some Eigen specific extensions.
+TEST(SimplemcNumeric, EigenFunctions) {
+    // isfinite
+    constexpr auto inf = std::numeric_limits<double>::infinity();
+    constexpr auto nan = std::numeric_limits<double>::quiet_NaN();
+    Eigen::Vector3d v { 1.0, 2.0, 3.0 };
+    Eigen::Vector3d v_inf { 1.0, 2.0, inf };
+    Eigen::Vector3d v_nan { 1.0, nan, 3.0 };
+    ASSERT_TRUE(simplemc::isfinite(v));
+    ASSERT_FALSE(simplemc::isfinite(v_inf));
+    ASSERT_FALSE(simplemc::isfinite(v_nan));
+    Eigen::MatrixXd mat = Eigen::MatrixXd::Random(10, 15);
+    ASSERT_TRUE(simplemc::isfinite(mat));
+    mat(5, 5) = inf;
+    ASSERT_FALSE(simplemc::isfinite(mat));
+
+    // abs_diff and rel_diff
+    Eigen::Vector3d v1 { 1.0, 2.0, 3.0 };
+    Eigen::Vector3d v2 { 1.0, 2.0, 3.0 + 1e-5 };
+    check_near(simplemc::abs_diff(v1, v2), 1e-5);
+    ASSERT_TRUE(simplemc::rel_diff(v1, v2) < 1e-5);
+}
+
+// Test conversion between cartesian and polar coordinates.
+TEST(SimplemcNumeric, PolarCartesianConversion) {
+    Eigen::Vector3d v3_c { 1.0, 0.0, 0.0 };
+    Eigen::Vector3d v3_p { 1.0, std::numbers::pi / 2, 0.0 };
+    check_range_near(simplemc::cartesian_to_polar(v3_c), v3_p);
+    // check_range_near(polar_to_cartesian(v3_p), v3_c);
+    Eigen::Vector2d v2_p { std::numbers::sqrt2, std::numbers::pi / 4 };
+    Eigen::Vector2d v2_c { 1.0, 1.0 };
+    check_range_near(simplemc::polar_to_cartesian(v2_p), v2_c);
+    check_range_near(simplemc::cartesian_to_polar(v2_c), v2_p);
+}

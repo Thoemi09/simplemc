@@ -7,6 +7,9 @@
 #define SIMPLEMC_NUMERIC_HPP
 
 #include <simplemc/numeric/bravais_lattice.hpp>
+#include <simplemc/numeric/bravais_lattice_1d.hpp>
+#include <simplemc/numeric/bravais_lattice_2d.hpp>
+#include <simplemc/numeric/bravais_lattice_3d.hpp>
 #include <simplemc/numeric/cubic_spline_interpolation.hpp>
 #include <simplemc/numeric/eigen.hpp>
 #include <simplemc/numeric/linear_interpolation.hpp>

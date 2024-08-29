@@ -373,24 +373,69 @@
  * @defgroup simplemc-numeric-lattices Bravais lattices
  * @ingroup simplemc-numeric
  * @brief Bravais lattices in 1D, 2D and 3D.
+ *
+ * @details **simplemc-numeric** defines the simplemc::bravais_class to represent a Bravais lattice
+ * as well as several convenience functions that should make it easier to work with them.
+ *
+ * It is recommended to use one of the provided factory functions when creating a Bravais lattice.
+ * They are defined in @ref simplemc-numeric-lattices-1d, @ref simplemc-numeric-lattices-2d and
+ * @ref simplemc-numeric-lattices-3d.
+ *
+ * @code
+ * #include <fmt/core.h>
+ * #include <simplemc/numeric.hpp>
+ * #include <simplemc/utils.hpp>
+ *
+ * int main() {
+ *     // create an FCC lattice with a lattic constant of 1.5
+ *     auto fcc = simplemc::make_fcc_lattice(1.5);
+ *
+ *     // print the lattice vectors of the primitive cell
+ *     fmt::print("Lattice vectors:\n{}\n", simplemc::to_string(fcc.real_lattice_vectors()));
+ *
+ *     // print the volume of the primitive cell
+ *     fmt::print("Volume: {}\n", fcc.real_cell_volume());
+ *
+ *     // print the reciprocal lattice vectors
+ *     fmt::print("Reciprocal lattice vectors:\n{}\n", simplemc::to_string(fcc.reciprocal_lattice_vectors()));
+ *
+ *     // print the volume of the reciprocal cell
+ *     fmt::print("Reciprocal volume: {}\n", fcc.reciprocal_cell_volume());
+ * }
+ * @endcode
+ *
+ * Output:
+ *
+ * ```
+ * Lattice vectors:
+ *    0 0.75 0.75
+ * 0.75    0 0.75
+ * 0.75 0.75    0
+ * Volume: 0.84375
+ * Reciprocal lattice vectors:
+ * -4.18879  4.18879  4.18879
+ *  4.18879 -4.18879  4.18879
+ *  4.18879  4.18879 -4.18879
+ * Reciprocal volume: 293.98543815395374
+ * ```
  */
 
 /**
  * @defgroup simplemc-numeric-lattices-1d Bravais lattices in 1D
  * @ingroup simplemc-numeric-lattices
- * @brief Bravais lattices in 1D.
+ * @brief Factory functions for Bravais lattices in 1D.
  */
 
 /**
- * @defgroup simplemc-numeric-lattices-1d Bravais lattices in 2D
+ * @defgroup simplemc-numeric-lattices-2d Bravais lattices in 2D
  * @ingroup simplemc-numeric-lattices
- * @brief Bravais lattices in 2D.
+ * @brief Factory functions for Bravais lattices in 2D.
  */
 
 /**
  * @defgroup simplemc-numeric-lattices-3d Bravais lattices in 3D
  * @ingroup simplemc-numeric-lattices
- * @brief Bravais lattices in 3D.
+ * @brief Factory functions for Bravais lattices in 3D.
  */
 
 /**

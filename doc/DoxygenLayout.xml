@@ -131,7 +131,11 @@
       </tab>
       <tab type="usergroup" url="@ref simplemc-numeric" title="simplemc-numeric">
         <tab type="usergroup" url="@ref simplemc-numeric-lattices" title="Bravais lattices">
-          <tab type="user" url="@ref simplemc::bravais_lattice" title="bravais_lattices"/>
+          <tab type="user" url="@ref simplemc::bravais_lattice" title="bravais_lattice"/>
+          <tab type="user" url="@ref simplemc::lattice_parameters" title="lattice_parameters"/>
+          <tab type="user" url="@ref simplemc-numeric-lattices-1d" title="Bravais lattices in 1D"/>
+          <tab type="user" url="@ref simplemc-numeric-lattices-2d" title="Bravais lattices in 2D"/>
+          <tab type="user" url="@ref simplemc-numeric-lattices-3d" title="Bravais lattices in 3D"/>
         </tab>
         <tab type="usergroup" url="@ref simplemc-numeric-interpolation" title="Interpolation tools">
           <tab type="user" url="@ref simplemc::cubic_spline_interpolation" title="cubic_spline_interpolation"/>
