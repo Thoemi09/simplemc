@@ -13,8 +13,8 @@ target_sources(simplemc-numeric
         bravais_lattice_1d.cpp
         bravais_lattice_2d.cpp
         bravais_lattice_3d.cpp
-        linear_map.cpp
-        orthogonal_polynomials.cpp)
+        linear_map.cpp)
+        # orthogonal_polynomials.cpp)
 target_link_libraries(simplemc-numeric
     PUBLIC
         simplemc::simplemc-grids

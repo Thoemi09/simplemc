@@ -1,6 +1,7 @@
 #include "../test_utils.hpp"
 
 #include <simplemc/numeric/eigen.hpp>
+#include <simplemc/numeric/linear_map.hpp>
 #include <simplemc/numeric/utils.hpp>
 
 #include <complex>
@@ -134,9 +135,27 @@ TEST(SimplemcNumeric, PolarCartesianConversion) {
     Eigen::Vector3d v3_c { 1.0, 0.0, 0.0 };
     Eigen::Vector3d v3_p { 1.0, std::numbers::pi / 2, 0.0 };
     check_range_near(simplemc::cartesian_to_polar(v3_c), v3_p);
-    // check_range_near(polar_to_cartesian(v3_p), v3_c);
+    check_range_near(simplemc::polar_to_cartesian(v3_p), v3_c);
     Eigen::Vector2d v2_p { std::numbers::sqrt2, std::numbers::pi / 4 };
     Eigen::Vector2d v2_c { 1.0, 1.0 };
     check_range_near(simplemc::polar_to_cartesian(v2_p), v2_c);
     check_range_near(simplemc::cartesian_to_polar(v2_c), v2_p);
+}
+
+// Test linear maps.
+TEST(SimplemcNumeric, LinearMap) {
+    constexpr auto inf = std::numeric_limits<double>::infinity();
+    constexpr auto minus_inf = -inf;
+    using lm = simplemc::linear_map;
+    auto check_map = [](const lm& map, std::array<double, 2> int1, std::array<double, 2> int2) {
+        ASSERT_EQ(int2[0], map.map(int1[0]));
+        ASSERT_EQ(int2[1], map.map(int1[1]));
+        ASSERT_EQ(int1[0], map.inverse_map(int2[0]));
+        ASSERT_EQ(int1[1], map.inverse_map(int2[1]));
+    };
+    check_map(lm { { -1, 1 }, { 0, 80 } }, { -1, 1 }, { 0, 80 });
+    check_map(lm { { minus_inf, 1 }, { minus_inf, 80 } }, { minus_inf, 1 }, { minus_inf, 80 });
+    check_map(lm { { -1, inf }, { 0, inf } }, { -1, inf }, { 0, inf });
+    check_map(lm { { minus_inf, 1 }, { minus_inf, 80 } }, { minus_inf, 1 }, { minus_inf, 80 });
+    check_map(lm { { minus_inf, inf }, { minus_inf, inf } }, { minus_inf, inf }, { minus_inf, inf });
 }

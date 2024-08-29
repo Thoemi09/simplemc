@@ -1,85 +1,115 @@
 /**
  * @file
- * @brief Linear map from a range [a, b] to another range [c, d] (and vice versa).
+ * @brief Linear map from the domain \f$ [a, b] \f$ to the range \f$ [c, d] \f$ (and vice versa).
  */
 
 #ifndef SIMPLEMC_NUMERIC_LINEAR_MAP_HPP
 #define SIMPLEMC_NUMERIC_LINEAR_MAP_HPP
 
+#include <cassert>
 #include <array>
 #include <utility>
 
 namespace simplemc {
 
 /**
- * @ingroup simplemc-numeric
- * @brief Map a range [a, b] to another range [c, d] (and vice versa) via a linear function.
+ * @ingroup simplemc-numeric-utils
+ * @brief Map a domain \f$ [a, b] \f$ to the range \f$ [c, d] \f$ (and vice versa) via a linear
+ * function.
  *
- * @details The linear function is defined by `y(x) = alpha * x + beta` such that
- * `y(a) = c, y(b) = d, y^-1(c) = a, y^-1(d) = b`. The ranges have to be increasing,
- * i.e. a < b and c < d.
+ * @details The linear function is defined by
+ * \f[
+ *   y(x) = \alpha * x + \beta
+ * \f]
+ * such that \f$ y(a) = c \f$ and \f$ y(b) = d \f$.
+ *
+ * Its inverse is then given by
+ * \f[
+ *   y^{-1}(x) =  \frac{x - \beta}{\alpha}
+ * \f]
+ * such that \f$ y^{-1}(c) = a \f$ and \f$ y^{-1}(d) = b \f$.
+ *
+ * It is assumed that \f$ a < b \f$ and \f$ c < d \f$.
  */
 class linear_map {
 public:
     /**
-     * @brief Range type.
+     * @brief Type specifying an interval.
      */
-    using range_type = std::array<double, 2>;
+    using interval_type = std::array<double, 2>;
 
     /**
-     * @brief Default constructor.
+     * @brief Default constructor leaves the map uninitialized.
      */
     linear_map() = default;
 
     /**
-     * @brief Construct the linear map from [a, b] to [c, d].
+     * @brief Construct a linear map from \f$ [a, b] \f$ to \f$ [c, d] \f$.
      *
-     * @param range1 Range #1 [a, b].
-     * @param range2 Range #2 [c, d].
+     * @param dom `std::array<double, 2>` containing the lower and upper bound of the domain.
+     * @param rg `std::array<double, 2>` containing the lower and upper bound of the range.
      */
-    linear_map(const range_type& range1, const range_type& range2);
+    linear_map(const interval_type& dom, const interval_type& rg) { set(dom, rg); }
 
     /**
-     * @brief Set the range and domain of the linear map.
+     * @brief Set the domain and the range of the linear map.
      *
-     * @param range1 Range #1 [a, b].
-     * @param range2 Range #2 [c, d].
+     * @param dom `std::array<double, 2>` containing the lower and upper bound of the domain.
+     * @param rg `std::array<double, 2>` containing the lower and upper bound of the range.
      */
-    void set(const range_type& range1, const range_type& range2);
+    void set(const interval_type& dom, const interval_type& rg);
 
     /**
-     * @brief Map a value x from [a, b] to [c, d].
+     * @brief Map a value \f$ x \f$ from the domain \f$ [a, b] \f$ to the range \f$ [c, d] \f$.
      *
-     * @param x Input value from [a, b].
-     * @return Mapped value in [c, d].
+     * @details It is assumed that \f$ x \in [a, b] \f$.
+     *
+     * @param x Input value \f$ \in [a, b] \f$.
+     * @return Mapped value \f$ \in [c, d] \f$.
      */
-    [[nodiscard]] double map(double x) const;
+    [[nodiscard]] double map(double x) const {
+        assert(x >= domain_[0] && x <= domain_[1]);
+        return alpha_ * x + beta_;
+    }
 
     /**
-     * @brief Map a value y from [c, d] to [a, b].
+     * @brief Use the inverse function to map a value \f$ y \f$ from the original range \f$ [c, d] \f$
+     * to the original domain \f$ [a, b] \f$.
      *
-     * @param y Input value from [c, d].
-     * @return Mapped value in [a, b].
+     * @details It is assumed that \f$ y \in [c, d] \f$.
+     *
+     * @param y Input value \f$ \in [c, d] \f$.
+     * @return Mapped value \f$ \in [a, b] \f$.
      */
-    [[nodiscard]] double inverse_map(double y) const;
+    [[nodiscard]] double inverse_map(double y) const {
+        assert(y >= range_[0] && y <= range_[1]);
+        return (y - beta_) / alpha_;
+    }
 
     /**
-     * @brief Get the range and domain of the linear map.
+     * @brief Get the domain of the linear map.
      *
-     * @return std::pair containing the ranges.
+     * @return `std::array<double, 2>` containing the lower and upper bound of the domain.
      */
-    [[nodiscard]] auto ranges() const { return std::make_pair(range1_, range2_); }
+    [[nodiscard]] auto domain() const { return domain_; }
+
+    /**
+     * @brief Get the range of the linear map.
+     *
+     * @return `std::array<double, 2>` containing the lower and upper bound of the range.
+     */
+    [[nodiscard]] auto range() const { return range_; }
 
     /**
      * @brief Get the linear function parameters.
      *
-     * @return std::pair containing the alpha and beta parameter
+     * @return `std::pair` containing the parameters \f$ \alpha \f$ and \f$ \beta \f$.
      */
     [[nodiscard]] auto params() const { return std::make_pair(alpha_, beta_); }
 
 private:
-    range_type range1_ { 0.0, 1.0 };
-    range_type range2_ { 0.0, 1.0 };
+    interval_type domain_ { 0.0, 1.0 };
+    interval_type range_ { 0.0, 1.0 };
     double alpha_ { 1.0 };
     double beta_ { 0.0 };
 };

@@ -449,7 +449,7 @@
  * @ingroup simplemc-numeric
  * @brief General utilities for numerical calculations.
  *
- * @details It includes the Eigen library and provides some useful functions like
+ * @details It includes the Eigen library and provides some useful functions and classes like
  *
  * - simplemc::abs_diff: Absolute difference between two (complex) numbers, vectors or matrices.
  * - simplemc::rel_diff: Relative difference between two (complex) numbers, vectors or matrices.

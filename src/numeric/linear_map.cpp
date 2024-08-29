@@ -1,27 +1,22 @@
 /**
  * @file
- * @brief Linear map from a range [a, b] to another range [c, d] (and vice versa).
+ * @brief Implementation details for simplemc/numeric/linear_map.hpp.
  */
 
 #include <simplemc/numeric/linear_map.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
-#include <cassert>
 #include <limits>
 
 namespace simplemc {
 
-linear_map::linear_map(const range_type& range1, const range_type& range2) {
-    set(range1, range2);
-}
-
-void linear_map::set(const range_type& range1, const range_type& range2) {
+void linear_map::set(const interval_type& dom, const interval_type& rg) {
     constexpr auto inf = std::numeric_limits<double>::infinity();
     constexpr auto minus_inf = -inf;
-    double a = range1[0];
-    double b = range1[1];
-    double c = range2[0];
-    double d = range2[1];
+    double a = dom[0];
+    double b = dom[1];
+    double c = rg[0];
+    double d = rg[1];
     if (a >= b || c >= d) {
         throw simplemc_exception("Wrong intervals in linear map", "linear_map::set");
     }
@@ -40,16 +35,8 @@ void linear_map::set(const range_type& range1, const range_type& range2) {
     } else {
         throw simplemc_exception("Wrong intervals in linear map", "linear_map::set");
     }
-}
-
-double linear_map::map(double x) const {
-    assert(x >= range1_[0] && x <= range1_[1]);
-    return alpha_ * x + beta_;
-}
-
-double linear_map::inverse_map(double y) const {
-    assert(y >= range2_[0] && y <= range2_[1]);
-    return (y - beta_) / alpha_;
+    domain_ = dom;
+    range_ = rg;
 }
 
 } // namespace simplemc

@@ -90,7 +90,8 @@ It provides
 - Various @ref simplemc-numeric-lattices in 1D, 2D and 3D.
 - @ref simplemc-numeric-interpolation to perform linear and polynomial interpolation of arbitrary
 order (in N-dimensions) as well as cubic spline interpolation (only in 1D).
-- General @ref simplemc-numeric-utils that include the Eigen library.
+- General @ref simplemc-numeric-utils that include the Eigen library and other useful functionality
+for numerical calculations.
 - @ref simplemc-numeric-quadrature to do basic numerical integration in 1D.
 - Some @ref simplemc-numeric-functions (orthogonal polynomials), like Legendre polynomials or
 Chebyshev polynomials, that are especially useful for general Fourier series.
