@@ -442,6 +442,16 @@
  * @defgroup simplemc-numeric-interpolation Interpolation tools
  * @ingroup simplemc-numeric
  * @brief Basic interpolation strategies in N-dimensions.
+ *
+ * @details For interpolating 1-dimensional functions, **simplemc-numeric** implements the following
+ * strategies:
+ * - simplemc::linear_interpolation,
+ * - simplemc::polynomial_interpolation and
+ * - simplemc::cubic_spline_interpolation.
+ *
+ * For interpolating functions in higher dimensions, one can use
+ * - simplemc::linear_interpolation_nd and
+ * - simplemc::polynomial_interpolation_nd.
  */
 
 /**

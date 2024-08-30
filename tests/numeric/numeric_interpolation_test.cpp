@@ -1,7 +1,9 @@
 #include "../test_utils.hpp"
+#include "./spline.h"
 
 #include <simplemc/grids.hpp>
 #include <simplemc/numeric/eigen.hpp>
+#include <simplemc/numeric/cubic_spline_interpolation.hpp>
 #include <simplemc/numeric/linear_interpolation.hpp>
 #include <simplemc/numeric/polynomial_interpolation.hpp>
 
@@ -215,33 +217,33 @@ TEST(SimplemcNumeric, PolynomialInterpolation3D) {
     }
 }
 
-// // Test cubic spline interpolation in 1D.
-// TEST(SimplemcNumeric, CubicSplineInterpolation) {
-//     double a = 3.123;
-//     double b = -0.8146;
-//     double c = 1.0;
-//     double d = 5.91243;
-//     long nx = 100;
-//     simplemc::power_grid xgrid(-3.0, 1.0, nx, 3.0);
-//     std::vector<double> f(nx);
-//     for (long i = 0; i < nx; ++i) {
-//         f[i] = cubic_poly(xgrid.at(i), a, b, c, d);
-//     }
-//     double yp_0 = 27 * a - 6 * b + c;
-//     double yp_n = 3 * a - 2 * b + c;
-//     simplemc::cubic_spline_interpolation ci(xgrid, f);
-//     simplemc::cubic_spline_interpolation ci_wf(xgrid, f, yp_0, yp_n);
-//     auto xvals = xgrid.view() | ranges::to_vector;
-//     tk::spline tki(xvals, f);
-//     tk::spline tki_wf(
-//         xvals, f, tk::spline::cspline, false, tk::spline::first_deriv, yp_0, tk::spline::first_deriv, yp_n);
-//     long num = 500;
-//     simplemc::linear_grid pts(-3.0, 1.0, num);
-//     for (long i = 0; i < num; ++i) {
-//         double x = pts.at(i);
-//         ASSERT_NEAR(ci(x), cubic_poly(x, a, b, c, d), 1e-1);
-//         ASSERT_NEAR(ci(x), tki(x), 1e-5);
-//         ASSERT_NEAR(ci_wf(x), cubic_poly(x, a, b, c, d), 1e-1);
-//         ASSERT_NEAR(ci_wf(x), tki_wf(x), 1e-5);
-//     }
-// }
+// Test cubic spline interpolation in 1D.
+TEST(SimplemcNumeric, CubicSplineInterpolation) {
+    double a = 3.123;
+    double b = -0.8146;
+    double c = 1.0;
+    double d = 5.91243;
+    long nx = 100;
+    simplemc::power_grid xgrid(-3.0, 1.0, nx, 3.0);
+    std::vector<double> f(nx);
+    for (long i = 0; i < nx; ++i) {
+        f[i] = cubic_poly(xgrid.at(i), a, b, c, d);
+    }
+    double yp_0 = 27 * a - 6 * b + c;
+    double yp_n = 3 * a - 2 * b + c;
+    simplemc::cubic_spline_interpolation ci(xgrid, f);
+    simplemc::cubic_spline_interpolation ci_wf(xgrid, f, yp_0, yp_n);
+    auto xvals = xgrid.view() | ranges::to_vector;
+    tk::spline tki(xvals, f);
+    tk::spline tki_wf(
+        xvals, f, tk::spline::cspline, false, tk::spline::first_deriv, yp_0, tk::spline::first_deriv, yp_n);
+    long num = 500;
+    simplemc::linear_grid pts(-3.0, 1.0, num);
+    for (long i = 0; i < num; ++i) {
+        double x = pts.at(i);
+        ASSERT_NEAR(ci(x), cubic_poly(x, a, b, c, d), 1e-1);
+        ASSERT_NEAR(ci(x), tki(x), 1e-5);
+        ASSERT_NEAR(ci_wf(x), cubic_poly(x, a, b, c, d), 1e-1);
+        ASSERT_NEAR(ci_wf(x), tki_wf(x), 1e-5);
+    }
+}
