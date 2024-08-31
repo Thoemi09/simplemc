@@ -27,3 +27,7 @@ add_test(NAME numeric-3d-lattices-test COMMAND numeric-3d-lattices-test)
 add_executable(numeric-interpolation-test numeric_interpolation_test.cpp)
 target_link_libraries(numeric-interpolation-test PRIVATE simplemc-test simplemc::simplemc-numeric)
 add_test(NAME numeric-interpolation-test COMMAND numeric-interpolation-test)
+
+add_executable(numeric-quadrature-test numeric_quadrature_test.cpp)
+target_link_libraries(numeric-quadrature-test PRIVATE simplemc-test simplemc::simplemc-numeric)
+add_test(NAME numeric-quadrature-test COMMAND numeric-quadrature-test)
