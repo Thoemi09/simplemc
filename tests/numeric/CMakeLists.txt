@@ -31,3 +31,7 @@ add_test(NAME numeric-interpolation-test COMMAND numeric-interpolation-test)
 add_executable(numeric-quadrature-test numeric_quadrature_test.cpp)
 target_link_libraries(numeric-quadrature-test PRIVATE simplemc-test simplemc::simplemc-numeric)
 add_test(NAME numeric-quadrature-test COMMAND numeric-quadrature-test)
+
+add_executable(numeric-special-functions-test numeric_special_functions_test.cpp)
+target_link_libraries(numeric-special-functions-test PRIVATE simplemc-test simplemc::simplemc-numeric)
+add_test(NAME numeric-special-functions-test COMMAND numeric-special-functions-test)

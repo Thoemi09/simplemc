@@ -10,12 +10,17 @@
 #include <simplemc/numeric/bravais_lattice_1d.hpp>
 #include <simplemc/numeric/bravais_lattice_2d.hpp>
 #include <simplemc/numeric/bravais_lattice_3d.hpp>
+#include <simplemc/numeric/chebyshev_polynomial.hpp>
 #include <simplemc/numeric/cubic_spline_interpolation.hpp>
 #include <simplemc/numeric/eigen.hpp>
+#include <simplemc/numeric/hermite_polynomial.hpp>
+#include <simplemc/numeric/laguerre_polynomial.hpp>
+#include <simplemc/numeric/legendre_polynomial.hpp>
 #include <simplemc/numeric/linear_interpolation.hpp>
 #include <simplemc/numeric/linear_map.hpp>
-#include <simplemc/numeric/orthogonal_polynomials.hpp>
+#include <simplemc/numeric/orthogonal_polynomial.hpp>
 #include <simplemc/numeric/polynomial_interpolation.hpp>
+#include <simplemc/numeric/trigonometric_polynomial.hpp>
 #include <simplemc/numeric/quadrature.hpp>
 #include <simplemc/numeric/utils.hpp>
 
