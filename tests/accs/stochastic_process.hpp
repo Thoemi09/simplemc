@@ -1,8 +1,3 @@
-/**
- * @file
- * @brief Implementation of a simple discrete stochastic process for testing the accumulators.
- */
-
 #ifndef SIMPLEMC_TESTS_ACCS_STOCHASTIC_PROCESS_HPP
 #define SIMPLEMC_TESTS_ACCS_STOCHASTIC_PROCESS_HPP
 
@@ -22,6 +17,9 @@
 // Implementation of a simple discrete stochastic process.
 template <simplemc::double_or_complex T, long N>
 struct stochastic_process {
+    // Size of a single state.
+    static constexpr auto state_size = N;
+
     // Value type of the states.
     using value_type = T;
 
@@ -46,20 +44,20 @@ struct stochastic_process {
     // Default constructor.
     stochastic_process() = default;
 
-    // Constructor to set the state space and discrete probability distribution.
+    // Construct a stochastic process with the given state space and target weights/probabilities.
     stochastic_process(std::vector<state_type> s, const std::vector<double>& w) :
         states(std::move(s)),
         counts(states.size(), 0),
         dist(w.begin(), w.end()),
         probs(dist.probabilities()) {}
 
-    // Set weights.
+    // Set the target weights/probabilities.
     void set_weights(const std::vector<double>& w) {
         dist = dist_type(w.begin(), w.end());
         probs = dist.probabilities();
     }
 
-    // Set MCMC proposal probabilities.
+    // Set the MCMC proposal probabilities.
     void set_mcmc_proposal(const Eigen::MatrixXd& p) {
         mcmc_dists.clear();
         for (int i = 0; i < p.cols(); ++i) {
@@ -67,13 +65,13 @@ struct stochastic_process {
         }
     }
 
-    // Set states space.
+    // Set the state space.
     void set_states(std::vector<state_type> s) {
         states = std::move(s);
         counts.assign(states.size(), 0);
     }
 
-    // Run the stochastic process for a given number of steps.
+    // Run the stochastic process for a given number of steps (uses direct sampling).
     void run(int steps) {
         samples.resize(steps);
         for (int i = 0; i < steps; ++i) {
@@ -112,19 +110,19 @@ struct stochastic_process {
         }
     }
 
-    std::vector<state_type> states {};
-    std::vector<std::uint64_t> counts {};
-    std::uint64_t total_count { 0 };
-    std::size_t current { 0 };
-    std::mt19937 eng { 0x8a34e234 };
-    dist_type dist {};
-    std::vector<double> probs {};
-    std::vector<state_type> samples {};
-    std::vector<dist_type> mcmc_dists {};
-    std::uniform_real_distribution<double> uni01 { 0.0, 1.0 };
+    std::vector<state_type> states {}; // State space.
+    std::vector<std::uint64_t> counts {}; // How often did I visit each state?
+    std::uint64_t total_count { 0 }; // Total number of samples.
+    std::size_t current { 0 }; // Current state.
+    std::mt19937 eng { 0x8a34e234 }; // Random number engine.
+    dist_type dist {}; // Target distribution.
+    std::vector<double> probs {}; // Probabilities of the target distribution.
+    std::vector<state_type> samples {}; // Samples.
+    std::vector<dist_type> mcmc_dists {}; // MCMC proposal distributions.
+    std::uniform_real_distribution<double> uni01 { 0.0, 1.0 }; // Uniform distribution.
 };
 
-// Calculate the analytic mean.
+// Calculate the analytic mean of the given stochastic process.
 template <typename S>
 [[nodiscard]] auto analytic_mean(const S& sp) {
     auto mean = S::vec_type::Zero().eval();
@@ -134,7 +132,7 @@ template <typename S>
     return mean;
 }
 
-// Calculate the sample mean.
+// Calculate the sample mean of the given stochastic process.
 template <typename S>
 [[nodiscard]] auto sample_mean(const S& sp) {
     auto sum = S::vec_type::Zero().eval();
@@ -144,7 +142,7 @@ template <typename S>
     return (sum / static_cast<double>(sp.total_count)).eval();
 }
 
-// Calculate the analytic variance.
+// Calculate the analytic variance of the given stochastic process.
 template <typename S>
     requires std::is_same_v<typename S::value_type, double>
 [[nodiscard]] auto analytic_variance(const S& sp) {
@@ -172,7 +170,7 @@ template <typename S>
     return std::make_tuple(re_var, im_var, re_im_cov);
 }
 
-// Calculate the sample variance.
+// Calculate the sample variance of the given stochastic process.
 template <typename S>
     requires std::is_same_v<typename S::value_type, double>
 [[nodiscard]] auto sample_variance(const S& sp) {
@@ -208,7 +206,7 @@ template <typename S>
     return std::make_tuple(re_var, im_var, re_im_cov);
 }
 
-// Calculate the analytic covariance.
+// Calculate the analytic covariance of the given stochastic process.
 template <typename S>
     requires std::is_same_v<typename S::value_type, double>
 [[nodiscard]] auto analytic_covariance(const S& sp) {
@@ -236,7 +234,7 @@ template <typename S>
     return std::make_tuple(re_cov, im_cov, re_im_cov);
 }
 
-// Calculate the sample covariance.
+// Calculate the sample covariance of the given stochastic process.
 template <typename S>
     requires std::is_same_v<typename S::value_type, double>
 [[nodiscard]] auto sample_covariance(const S& sp) {
@@ -311,7 +309,6 @@ template <typename S>
     return std::make_tuple(taus, tau_int);
 }
 
-
 // Estimate autocorrelation using blocking method (only for double).
 template <typename S>
     requires std::is_same_v<typename S::value_type, double>
@@ -331,4 +328,5 @@ template <typename S>
     }
     return std::make_tuple(bsps, taus);
 }
+
 #endif // SIMPLEMC_TESTS_ACCS_STOCHASTIC_PROCESS_HPP

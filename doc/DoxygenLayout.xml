@@ -162,6 +162,7 @@
         </tab>
       </tab>
       <tab type="usergroup" url="@ref simplemc-accs" title="simplemc-accs">
+        <tab type="user" url="@ref simplemc-accs-utils" title="Accumulator utilities"/>
       </tab>
       <tab type="usergroup" url="@ref simplemc-json" title="simplemc-json">
         <tab type="user" url="@ref nlohmann::adl_serializer< std::complex< T > >" title="nlohmann::adl_serializer"/>
