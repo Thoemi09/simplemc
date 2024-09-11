@@ -9,6 +9,8 @@
 #include <simplemc/numeric/eigen.hpp>
 #include <simplemc/utils/concepts.hpp>
 
+#include <Eigen/Dense>
+
 #include <cassert>
 #include <complex>
 #include <cstdint>
@@ -33,37 +35,41 @@ namespace simplemc::accs {
 enum class varalg { standard, welford };
 
 /**
- * @brief Make an `Eigen::VectorX` with NaNs.
+ * @brief Make an `Eigen::Matrix<T, M, 1>` with NaNs.
  *
- * @tparam T Value type (either `double` or `std::complex<double>`).
+ * @note For static sized objects, the `size` parameter is ignored.
+ *
+ * @tparam V simplemc::eigen_vector type.
  * @param size Size of the vector.
- * @return `Eigen::VectorX` with NaNs.
+ * @return `Eigen::Matrix<T, M, 1>` with NaNs.
  */
-template <double_or_complex T>
-Eigen::VectorX<T> make_nans(long size) {
+template <eigen_vector V>
+V nans_vector(long size = 1) {
     constexpr auto nan = std::numeric_limits<double>::quiet_NaN();
-    if constexpr (std::is_same_v<T, double>) {
-        return Eigen::VectorX<T>::Constant(size, nan);
+    if constexpr (std::is_same_v<typename V::value_type, double>) {
+        return V::Constant(size, nan);
     } else {
-        return Eigen::VectorX<T>::Constant(size, std::complex<double> { nan, nan });
+        return V::Constant(size, std::complex<double> { nan, nan });
     }
 }
 
 /**
- * @brief Make an `Eigen::MatrixX` with NaNs.
+ * @brief Make an `Eigen::Matrix<T, M, N>` with NaNs.
  *
- * @tparam T Value type (either `double` or `std::complex<double>`).
+ * @note For static sized objects, the `rows` and `cols` parameters are ignored.
+ *
+ * @tparam M simplemc::eigen_matrix type.
  * @param rows Number of rows.
  * @param cols Number of columns.
- * @return `Eigen::MatrixX` with NaNs.
+ * @return `Eigen::Matrix<T, M, N>` with NaNs.
  */
-template <double_or_complex T>
-Eigen::MatrixX<T> make_nans(long rows, long cols) {
+template <eigen_matrix M>
+M nans_matrix(long rows = 1, long cols = 1) {
     constexpr auto nan = std::numeric_limits<double>::quiet_NaN();
-    if constexpr (std::is_same_v<T, double>) {
-        return Eigen::MatrixX<T>::Constant(rows, cols, nan);
+    if constexpr (std::is_same_v<typename M::value_type, double>) {
+        return M::Constant(rows, cols, nan);
     } else {
-        return Eigen::MatrixX<T>::Constant(rows, cols, std::complex<double> { nan, nan });
+        return M::Constant(rows, cols, std::complex<double> { nan, nan });
     }
 }
 
@@ -94,18 +100,18 @@ Eigen::MatrixX<T> make_nans(long rows, long cols) {
  *     \frac{1}{N} \sum_{j=1}^N \mathbf{z}^{(j)} \; .
  *   \f]
  *
- * @tparam T Type of accumulated values (either `double` or `std::complex<double>`).
+ * @tparam V simplemc::eigen_vector type.
  * @tparam A Algorithm used to accumulate the data.
  * @param mdata Accumulated mean data.
  * @param count Number of accumulated values.
  * @param shift Constant shift vector applied to the accumulated values.
  * @return Sample mean.
  */
-template <double_or_complex T, varalg A = varalg::standard>
-Eigen::VectorX<T> mean(const Eigen::VectorX<T>& mdata, std::uint64_t count, const Eigen::VectorX<T>& shift) {
-    assert(data.size() == shift.size());
+template <varalg A, eigen_vector V>
+V mean(const V& mdata, std::uint64_t count, const V& shift) {
+    assert(mdata.size() == shift.size());
     if (count == 0) {
-        return make_nans<T>(mdata.size());
+        return nans_vector<V>(mdata.size());
     }
     if constexpr (A == varalg::standard) {
         return mdata / static_cast<double>(count) + shift;
@@ -156,19 +162,21 @@ Eigen::VectorX<T> mean(const Eigen::VectorX<T>& mdata, std::uint64_t count, cons
  *   \f]
  *
  * @tparam A Algorithm used to accumulate the data.
+ * @tparam V simplemc::eigen_vector type with double value type.
  * @param mdata1 Accumulated mean data of random vector \f$ \mathbf{X} \f$.
  * @param mdata2 Accumulated mean data of random vector \f$ \mathbf{Y} \f$.
  * @param cdata Accumulated (cross-)covariance data.
  * @param count Number of accumulated values.
  * @return Diagonal of the sample (cross-)covariance matrix.
  */
-template <varalg A = varalg::standard>
-Eigen::VectorX<double> diag_covariance([[maybe_unused]] const Eigen::VectorX<double>& mdata1,
-    [[maybe_unused]] const Eigen::VectorX<double>& mdata2, const Eigen::VectorX<double>& cdata, std::uint64_t count) {
+template <varalg A, eigen_vector V>
+    requires(std::is_same_v<typename V::value_type, double>)
+V diag_covariance(
+    [[maybe_unused]] const V& mdata1, [[maybe_unused]] const V& mdata2, const V& cdata, std::uint64_t count) {
     assert(mdata1.size() == mdata2.size());
     assert(mdata1.size() == cdata.size());
     if (count <= 1) {
-        return make_nans<double>(mdata1.size());
+        return nans_vector<V>(mdata1.size());
     }
     const auto cd = static_cast<double>(count);
     if constexpr (A == varalg::standard) {
@@ -222,20 +230,21 @@ Eigen::VectorX<double> diag_covariance([[maybe_unused]] const Eigen::VectorX<dou
  *   \f]
  *
  * @tparam A Algorithm used to accumulate the data.
+ * @tparam V simplemc::eigen_vector type with double value type.
  * @param mdata1 Accumulated mean data of random vector \f$ \mathbf{X} \f$.
  * @param mdata2 Accumulated mean data of random vector \f$ \mathbf{Y} \f$.
  * @param cdata Accumulated (cross-)covariance data.
  * @param count Number of accumulated values.
  * @return Sample (cross-)covariance matrix.
  */
-template <varalg A = varalg::standard>
-Eigen::MatrixX<double> covariance([[maybe_unused]] const Eigen::VectorX<double>& mdata1,
-    [[maybe_unused]] const Eigen::VectorX<double>& mdata2, const Eigen::MatrixX<double>& cdata, std::uint64_t count) {
+template <varalg A, eigen_vector V, eigen_matrix M>
+    requires(std::is_same_v<typename V::value_type, double> && std::is_same_v<typename M::value_type, double>)
+M covariance([[maybe_unused]] const V& mdata1, [[maybe_unused]] const V& mdata2, const M& cdata, std::uint64_t count) {
     assert(mdata1.size() == mdata2.size());
     assert(mdata1.size() == cdata.rows());
     assert(mdata1.size() == cdata.cols());
     if (count <= 1) {
-        return make_nans<double>(cdata.rows(), cdata.cols());
+        return nans_matrix<M>(cdata.rows(), cdata.cols());
     }
     const auto cd = static_cast<double>(count);
     if constexpr (A == varalg::standard) {

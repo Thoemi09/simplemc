@@ -52,19 +52,27 @@ TEST_F(SimplemcAccs, PrintAnalyticResults) {
 // Test the make_nans functions.
 TEST_F(SimplemcAccs, UtilsMakeNans) {
     using namespace simplemc::accs;
-    auto vec_d = make_nans<double>(10);
-    auto vec_c = make_nans<std::complex<double>>(10);
+    auto vec_d = nans_vector<Eigen::VectorXd>(10);
+    auto vec_sd = nans_vector<Eigen::Vector<double, 10>>();
+    auto vec_c = nans_vector<Eigen::VectorXcd>(10);
+    auto vec_sc = nans_vector<Eigen::Vector<std::complex<double>, 10>>();
     for (int i = 0; i < 10; ++i) {
         check_isnan(vec_d[i]);
+        check_isnan(vec_sd[i]);
         check_isnan(vec_c[i]);
+        check_isnan(vec_sc[i]);
     }
 
-    auto mat_d = make_nans<double>(5, 5);
-    auto mat_c = make_nans<std::complex<double>>(5, 5);
+    auto mat_d = nans_matrix<Eigen::MatrixXd>(5, 5);
+    auto mat_sd = nans_matrix<Eigen::Matrix<double, 5, 5>>();
+    auto mat_c = nans_matrix<Eigen::MatrixXcd>(5, 5);
+    auto mat_sc = nans_matrix<Eigen::Matrix<std::complex<double>, 5, 5>>();
     for (int i = 0; i < 5; ++i) {
         for (int j = 0; j < 5; ++j) {
             check_isnan(mat_d(i, j));
+            check_isnan(mat_sd(i, j));
             check_isnan(mat_c(i, j));
+            check_isnan(mat_sc(i, j));
         }
     }
 }
@@ -84,35 +92,35 @@ TEST_F(SimplemcAccs, UtilsMean) {
 
     // standard, double, zero shift
     auto mdata_d = mean_data<varalg::standard>(sp_d, zero_d);
-    check_range_near(mean(mdata_d, sp_d.total_count, zero_d), sm_d, tol);
+    check_range_near(mean<varalg::standard>(mdata_d, sp_d.total_count, zero_d), sm_d, tol);
 
     // standard, double, finite shift
     mdata_d = mean_data<varalg::standard>(sp_d, am_d);
-    check_range_near(mean(mdata_d, sp_d.total_count, am_d), sm_d, tol);
+    check_range_near(mean<varalg::standard>(mdata_d, sp_d.total_count, am_d), sm_d, tol);
 
     // welford, double, zero shift
     mdata_d = mean_data<varalg::welford>(sp_d, zero_d);
-    check_range_near(mean<double, varalg::welford>(mdata_d, sp_d.total_count, zero_d), sm_d, tol);
+    check_range_near(mean<varalg::welford>(mdata_d, sp_d.total_count, zero_d), sm_d, tol);
 
     // welford, double, finite shift
     mdata_d = mean_data<varalg::welford>(sp_d, am_d);
-    check_range_near(mean<double, varalg::welford>(mdata_d, sp_d.total_count, am_d), sm_d, tol);
+    check_range_near(mean<varalg::welford>(mdata_d, sp_d.total_count, am_d), sm_d, tol);
 
     // standard, complex, zero shift
     auto mdata_c = mean_data<varalg::standard>(sp_c, zero_c);
-    check_range_near(mean(mdata_c, sp_c.total_count, zero_c), sm_c, tol);
+    check_range_near(mean<varalg::standard>(mdata_c, sp_c.total_count, zero_c), sm_c, tol);
 
     // standard, complex, finite shift
     mdata_c = mean_data<varalg::standard>(sp_c, am_c);
-    check_range_near(mean(mdata_c, sp_c.total_count, am_c), sm_c, tol);
+    check_range_near(mean<varalg::standard>(mdata_c, sp_c.total_count, am_c), sm_c, tol);
 
     // welford, complex, zero shift
     mdata_c = mean_data<varalg::welford>(sp_c, zero_c);
-    check_range_near(mean<std::complex<double>, varalg::welford>(mdata_c, sp_c.total_count, zero_c), sm_c, tol);
+    check_range_near(mean<varalg::welford>(mdata_c, sp_c.total_count, zero_c), sm_c, tol);
 
     // welford, complex, finite shift
     mdata_c = mean_data<varalg::welford>(sp_c, am_c);
-    check_range_near(mean<std::complex<double>, varalg::welford>(mdata_c, sp_c.total_count, am_c), sm_c, tol);
+    check_range_near(mean<varalg::welford>(mdata_c, sp_c.total_count, am_c), sm_c, tol);
 }
 
 // Test the diag_covariance function.
@@ -126,21 +134,27 @@ TEST_F(SimplemcAccs, UtilsDiagCovariance) {
 
     // standard, double, zero shift
     auto [mdata_d, cdata_d] = accumulate_data<varalg::standard>(sp_d, zero_d);
-    check_range_near(diag_covariance(mdata_d, mdata_d, cdata_d.diagonal(), sp_d.total_count), sv_d, tol);
+    check_range_near(
+        diag_covariance<varalg::standard>(mdata_d, mdata_d, dbl_vec_type(cdata_d.diagonal()), sp_d.total_count), sv_d,
+        tol);
 
     // standard, double, finite shift
     std::tie(mdata_d, cdata_d) = accumulate_data<varalg::standard>(sp_d, am_d);
-    check_range_near(diag_covariance(mdata_d, mdata_d, cdata_d.diagonal(), sp_d.total_count), sv_d, tol);
+    check_range_near(
+        diag_covariance<varalg::standard>(mdata_d, mdata_d, dbl_vec_type(cdata_d.diagonal()), sp_d.total_count), sv_d,
+        tol);
 
     // welford, double, zero shift
     std::tie(mdata_d, cdata_d) = accumulate_data<varalg::welford>(sp_d, zero_d);
     check_range_near(
-        diag_covariance<varalg::welford>(mdata_d, mdata_d, cdata_d.diagonal(), sp_d.total_count), sv_d, tol);
+        diag_covariance<varalg::welford>(mdata_d, mdata_d, dbl_vec_type(cdata_d.diagonal()), sp_d.total_count), sv_d,
+        tol);
 
     // welford, double, finite shift
     std::tie(mdata_d, cdata_d) = accumulate_data<varalg::welford>(sp_d, am_d);
     check_range_near(
-        diag_covariance<varalg::welford>(mdata_d, mdata_d, cdata_d.diagonal(), sp_d.total_count), sv_d, tol);
+        diag_covariance<varalg::welford>(mdata_d, mdata_d, dbl_vec_type(cdata_d.diagonal()), sp_d.total_count), sv_d,
+        tol);
 }
 
 // Test the covariance function.
@@ -156,11 +170,13 @@ TEST_F(SimplemcAccs, UtilsCovariance) {
     // standard, double, zero shift
     using simplemc::make_span;
     auto [mdata_d, cdata_d] = accumulate_data<varalg::standard>(sp_d, zero_d);
-    check_range_near(make_span(covariance(mdata_d, mdata_d, cdata_d, sp_d.total_count)), make_span(scv_d), tol);
+    check_range_near(
+        make_span(covariance<varalg::standard>(mdata_d, mdata_d, cdata_d, sp_d.total_count)), make_span(scv_d), tol);
 
     // standard, double, finite shift
     std::tie(mdata_d, cdata_d) = accumulate_data<varalg::standard>(sp_d, am_d);
-    check_range_near(make_span(covariance(mdata_d, mdata_d, cdata_d, sp_d.total_count)), make_span(scv_d), tol);
+    check_range_near(
+        make_span(covariance<varalg::standard>(mdata_d, mdata_d, cdata_d, sp_d.total_count)), make_span(scv_d), tol);
 
     // welford, double, zero shift
     std::tie(mdata_d, cdata_d) = accumulate_data<varalg::welford>(sp_d, zero_d);
