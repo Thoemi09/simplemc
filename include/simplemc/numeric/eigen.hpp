@@ -6,6 +6,8 @@
 #ifndef SIMPLEMC_NUMERIC_EIGEN_HPP
 #define SIMPLEMC_NUMERIC_EIGEN_HPP
 
+#include <simplemc/utils/concepts.hpp>
+
 #include <Eigen/Dense>
 
 #include <algorithm>
@@ -22,25 +24,45 @@ namespace simplemc {
  * @{
  */
 
-// /**
-//  * @brief Templated double vector type.
-//  *
-//  * @tparam N Number of dimensions.
-//  */
-// template <std::size_t N>
-// struct vector {
-//     using type = Eigen::Matrix<double, N, 1>;
-// };
+/**
+ * @brief A concept that checks if an integer value can be used as a static extent for Eigen matrices.
+ *
+ * @details The given integer value must be either `Eigen::Dynamic` or a positive integer.
+ *
+ * @tparam M Static extent.
+ */
+template <int M>
+concept static_extent = (M == Eigen::Dynamic || M > 0);
 
-// /**
-//  * @brief Templated double (square) matrix type.
-//  *
-//  * @tparam N Number of dimensions.
-//  */
-// template <std::size_t N>
-// struct matrix {
-//     using type = Eigen::Matrix<double, N, N>;
-// };
+/**
+ * @brief A concept that checks if a type is a `Eigen::Matrix<T, M, N>` type.
+ *
+ * @details `T` has to be either `double` or `std::complex<double>`, and `M` and `N` have to be both a
+ * valid simplemc::static_extent.
+ *
+ * @tparam M Type to check.
+ */
+template <typename M>
+concept eigen_matrix = requires {
+    typename M::Scalar;
+    M::RowsAtCompileTime;
+    M::ColsAtCompileTime;
+    requires std::is_same_v<M, Eigen::Matrix<typename M::Scalar, M::RowsAtCompileTime, M::ColsAtCompileTime>>;
+    requires double_or_complex<typename M::Scalar>;
+    requires static_extent<M::RowsAtCompileTime>;
+    requires static_extent<M::ColsAtCompileTime>;
+};
+
+/**
+ * @brief A concept that checks if a type is a `Eigen::Matrix<T, M, 1>` type.
+ *
+ * @details `T` has to be either `double` or `std::complex<double>`, and `M` has to be a valid
+ * simplemc::static_extent.
+ *
+ * @tparam V Type to check.
+ */
+template <typename V>
+concept eigen_vector = (eigen_matrix<V> && V::ColsAtCompileTime == 1);
 
 /**
  * @brief Create a `std::span` from an `Eigen::PlainObjectBase` object.

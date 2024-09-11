@@ -7,6 +7,23 @@
 #include <complex>
 #include <numbers>
 
+// Test some useful concepts.
+TEST(SimplemcNumeric, UtilityConcepts) {
+    static_assert(simplemc::static_extent<Eigen::Dynamic>);
+    static_assert(simplemc::static_extent<1>);
+    static_assert(simplemc::static_extent<200>);
+    static_assert(!simplemc::static_extent<0>);
+    static_assert(!simplemc::static_extent<-10>);
+
+    static_assert(simplemc::eigen_matrix<Eigen::Matrix<double, 1, 1>>);
+    static_assert(simplemc::eigen_matrix<Eigen::Matrix<std::complex<double>, 1, 1>>);
+    static_assert(simplemc::eigen_vector<Eigen::VectorXd> && simplemc::eigen_matrix<Eigen::VectorXd>);
+    static_assert(simplemc::eigen_matrix<Eigen::VectorXcd> && simplemc::eigen_vector<Eigen::VectorXcd>);
+    static_assert(simplemc::eigen_matrix<Eigen::MatrixXd>);
+    static_assert(!simplemc::eigen_matrix<Eigen::MatrixXi>);
+    static_assert(!simplemc::eigen_vector<Eigen::ArrayXd>);
+}
+
 // Test some utilty functions.
 TEST(SimplemcNumeric, UtilityFunctions) {
     // abs_diff and rel_diff
