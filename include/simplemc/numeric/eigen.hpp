@@ -37,8 +37,8 @@ concept static_extent = (M == Eigen::Dynamic || M > 0);
 /**
  * @brief A concept that checks if a type is a `Eigen::Matrix<T, M, N>` type.
  *
- * @details `T` has to be either `double` or `std::complex<double>`, and `M` and `N` have to be both a
- * valid simplemc::static_extent.
+ * @details `T` has to be either `double` or `std::complex<double>`, and `M` and `N` have to be both
+ * valid simplemc::static_extent integers.
  *
  * @tparam M Type to check.
  */

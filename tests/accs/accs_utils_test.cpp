@@ -12,14 +12,14 @@
 
 // Accumulate mean data.
 template <simplemc::accs::varalg A, typename S>
-[[nodiscard]] auto mean_data(const S& sp, const Eigen::VectorX<typename S::value_type>& shift) {
+[[nodiscard]] auto mean_data(const S& sp) {
     using vec_type = Eigen::VectorX<typename S::value_type>;
     vec_type res = vec_type::Zero(S::state_size);
     for (const auto& [i, s] : ranges::views::enumerate(sp.samples)) {
         if constexpr (A == simplemc::accs::varalg::standard) {
-            res += s.matrix() - shift;
+            res += s.matrix();
         } else {
-            res = res + (s.matrix() - shift - res) / static_cast<double>(i + 1);
+            res = res + (s.matrix() - res) / static_cast<double>(i + 1);
         }
     }
     return res;
@@ -27,18 +27,18 @@ template <simplemc::accs::varalg A, typename S>
 
 // Accumulate mean and covariance double data.
 template <simplemc::accs::varalg A, typename S>
-[[nodiscard]] auto accumulate_data(const S& sp, const Eigen::VectorXd& shift) {
+[[nodiscard]] auto accumulate_data(const S& sp) {
     Eigen::VectorXd mdata = Eigen::VectorXd::Zero(S::state_size);
     Eigen::MatrixXd cdata = Eigen::MatrixXd::Zero(S::state_size, S::state_size);
     for (const auto& [i, s] : ranges::views::enumerate(sp.samples)) {
         if constexpr (A == simplemc::accs::varalg::standard) {
-            const auto tmp = s.matrix() - shift;
+            const auto tmp = s.matrix();
             mdata += tmp;
             cdata += tmp * tmp.transpose();
         } else {
-            const auto tmp = (s.matrix() - shift - mdata).eval();
+            const auto tmp = (s.matrix() - mdata).eval();
             mdata += tmp / static_cast<double>(i + 1);
-            cdata += tmp * (s.matrix() - shift - mdata).transpose();
+            cdata += tmp * (s.matrix() - mdata).transpose();
         }
     }
     return std::make_pair(mdata, cdata);
@@ -84,43 +84,39 @@ TEST_F(SimplemcAccs, UtilsMean) {
     using cplx_vec_type = Eigen::VectorXcd;
     const double tol = 1e-10;
     const dbl_vec_type sm_d = sample_mean(sp_d);
-    const dbl_vec_type am_d = analytic_mean(sp_d).matrix();
-    const dbl_vec_type zero_d = dbl_vec_type::Zero(size);
     const cplx_vec_type sm_c = sample_mean(sp_c);
-    const cplx_vec_type am_c = analytic_mean(sp_c).matrix();
-    const cplx_vec_type zero_c = cplx_vec_type::Zero(size);
 
     // standard, double, zero shift
-    auto mdata_d = mean_data<varalg::standard>(sp_d, zero_d);
-    check_range_near(mean<varalg::standard>(mdata_d, sp_d.total_count, zero_d), sm_d, tol);
+    auto mdata_d = mean_data<varalg::standard>(sp_d);
+    check_range_near(mean<varalg::standard>(mdata_d, sp_d.total_count), sm_d, tol);
 
     // standard, double, finite shift
-    mdata_d = mean_data<varalg::standard>(sp_d, am_d);
-    check_range_near(mean<varalg::standard>(mdata_d, sp_d.total_count, am_d), sm_d, tol);
+    mdata_d = mean_data<varalg::standard>(sp_d);
+    check_range_near(mean<varalg::standard>(mdata_d, sp_d.total_count), sm_d, tol);
 
     // welford, double, zero shift
-    mdata_d = mean_data<varalg::welford>(sp_d, zero_d);
-    check_range_near(mean<varalg::welford>(mdata_d, sp_d.total_count, zero_d), sm_d, tol);
+    mdata_d = mean_data<varalg::welford>(sp_d);
+    check_range_near(mean<varalg::welford>(mdata_d, sp_d.total_count), sm_d, tol);
 
     // welford, double, finite shift
-    mdata_d = mean_data<varalg::welford>(sp_d, am_d);
-    check_range_near(mean<varalg::welford>(mdata_d, sp_d.total_count, am_d), sm_d, tol);
+    mdata_d = mean_data<varalg::welford>(sp_d);
+    check_range_near(mean<varalg::welford>(mdata_d, sp_d.total_count), sm_d, tol);
 
     // standard, complex, zero shift
-    auto mdata_c = mean_data<varalg::standard>(sp_c, zero_c);
-    check_range_near(mean<varalg::standard>(mdata_c, sp_c.total_count, zero_c), sm_c, tol);
+    auto mdata_c = mean_data<varalg::standard>(sp_c);
+    check_range_near(mean<varalg::standard>(mdata_c, sp_c.total_count), sm_c, tol);
 
     // standard, complex, finite shift
-    mdata_c = mean_data<varalg::standard>(sp_c, am_c);
-    check_range_near(mean<varalg::standard>(mdata_c, sp_c.total_count, am_c), sm_c, tol);
+    mdata_c = mean_data<varalg::standard>(sp_c);
+    check_range_near(mean<varalg::standard>(mdata_c, sp_c.total_count), sm_c, tol);
 
     // welford, complex, zero shift
-    mdata_c = mean_data<varalg::welford>(sp_c, zero_c);
-    check_range_near(mean<varalg::welford>(mdata_c, sp_c.total_count, zero_c), sm_c, tol);
+    mdata_c = mean_data<varalg::welford>(sp_c);
+    check_range_near(mean<varalg::welford>(mdata_c, sp_c.total_count), sm_c, tol);
 
     // welford, complex, finite shift
-    mdata_c = mean_data<varalg::welford>(sp_c, am_c);
-    check_range_near(mean<varalg::welford>(mdata_c, sp_c.total_count, am_c), sm_c, tol);
+    mdata_c = mean_data<varalg::welford>(sp_c);
+    check_range_near(mean<varalg::welford>(mdata_c, sp_c.total_count), sm_c, tol);
 }
 
 // Test the diag_covariance function.
@@ -129,29 +125,27 @@ TEST_F(SimplemcAccs, UtilsDiagCovariance) {
     using dbl_vec_type = Eigen::VectorXd;
     const double tol = 1e-10;
     const dbl_vec_type sv_d = sample_variance(sp_d);
-    const dbl_vec_type am_d = analytic_mean(sp_d).matrix();
-    const dbl_vec_type zero_d = dbl_vec_type::Zero(size);
 
     // standard, double, zero shift
-    auto [mdata_d, cdata_d] = accumulate_data<varalg::standard>(sp_d, zero_d);
+    auto [mdata_d, cdata_d] = accumulate_data<varalg::standard>(sp_d);
     check_range_near(
         diag_covariance<varalg::standard>(mdata_d, mdata_d, dbl_vec_type(cdata_d.diagonal()), sp_d.total_count), sv_d,
         tol);
 
     // standard, double, finite shift
-    std::tie(mdata_d, cdata_d) = accumulate_data<varalg::standard>(sp_d, am_d);
+    std::tie(mdata_d, cdata_d) = accumulate_data<varalg::standard>(sp_d);
     check_range_near(
         diag_covariance<varalg::standard>(mdata_d, mdata_d, dbl_vec_type(cdata_d.diagonal()), sp_d.total_count), sv_d,
         tol);
 
     // welford, double, zero shift
-    std::tie(mdata_d, cdata_d) = accumulate_data<varalg::welford>(sp_d, zero_d);
+    std::tie(mdata_d, cdata_d) = accumulate_data<varalg::welford>(sp_d);
     check_range_near(
         diag_covariance<varalg::welford>(mdata_d, mdata_d, dbl_vec_type(cdata_d.diagonal()), sp_d.total_count), sv_d,
         tol);
 
     // welford, double, finite shift
-    std::tie(mdata_d, cdata_d) = accumulate_data<varalg::welford>(sp_d, am_d);
+    std::tie(mdata_d, cdata_d) = accumulate_data<varalg::welford>(sp_d);
     check_range_near(
         diag_covariance<varalg::welford>(mdata_d, mdata_d, dbl_vec_type(cdata_d.diagonal()), sp_d.total_count), sv_d,
         tol);
@@ -160,31 +154,28 @@ TEST_F(SimplemcAccs, UtilsDiagCovariance) {
 // Test the covariance function.
 TEST_F(SimplemcAccs, UtilsCovariance) {
     using namespace simplemc::accs;
-    using dbl_vec_type = Eigen::VectorXd;
     using dbl_mat_type = Eigen::MatrixXd;
     const double tol = 1e-10;
     const dbl_mat_type scv_d = sample_covariance(sp_d);
-    const dbl_vec_type am_d = analytic_mean(sp_d).matrix();
-    const dbl_vec_type zero_d = dbl_vec_type::Zero(size);
 
     // standard, double, zero shift
     using simplemc::make_span;
-    auto [mdata_d, cdata_d] = accumulate_data<varalg::standard>(sp_d, zero_d);
+    auto [mdata_d, cdata_d] = accumulate_data<varalg::standard>(sp_d);
     check_range_near(
         make_span(covariance<varalg::standard>(mdata_d, mdata_d, cdata_d, sp_d.total_count)), make_span(scv_d), tol);
 
     // standard, double, finite shift
-    std::tie(mdata_d, cdata_d) = accumulate_data<varalg::standard>(sp_d, am_d);
+    std::tie(mdata_d, cdata_d) = accumulate_data<varalg::standard>(sp_d);
     check_range_near(
         make_span(covariance<varalg::standard>(mdata_d, mdata_d, cdata_d, sp_d.total_count)), make_span(scv_d), tol);
 
     // welford, double, zero shift
-    std::tie(mdata_d, cdata_d) = accumulate_data<varalg::welford>(sp_d, zero_d);
+    std::tie(mdata_d, cdata_d) = accumulate_data<varalg::welford>(sp_d);
     check_range_near(
         make_span(covariance<varalg::welford>(mdata_d, mdata_d, cdata_d, sp_d.total_count)), make_span(scv_d), tol);
 
     // welford, double, finite shift
-    std::tie(mdata_d, cdata_d) = accumulate_data<varalg::welford>(sp_d, am_d);
+    std::tie(mdata_d, cdata_d) = accumulate_data<varalg::welford>(sp_d);
     check_range_near(
         make_span(covariance<varalg::welford>(mdata_d, mdata_d, cdata_d, sp_d.total_count)), make_span(scv_d), tol);
 }

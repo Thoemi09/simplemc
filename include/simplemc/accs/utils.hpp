@@ -100,23 +100,24 @@ M nans_matrix(long rows = 1, long cols = 1) {
  *     \frac{1}{N} \sum_{j=1}^N \mathbf{z}^{(j)} \; .
  *   \f]
  *
+ * Here, \f$ \mathbf{t} \f$ is a constant vector that can be optionally be applied to the random
+ * samples to increase numerical accuracy.
+ *
+ * @tparam A simplemc::accs::varalg algorithm used to accumulate the data.
  * @tparam V simplemc::eigen_vector type.
- * @tparam A Algorithm used to accumulate the data.
  * @param mdata Accumulated mean data.
  * @param count Number of accumulated values.
- * @param shift Constant shift vector applied to the accumulated values.
  * @return Sample mean.
  */
 template <varalg A, eigen_vector V>
-V mean(const V& mdata, std::uint64_t count, const V& shift) {
-    assert(mdata.size() == shift.size());
+V mean(const V& mdata, std::uint64_t count) {
     if (count == 0) {
         return nans_vector<V>(mdata.size());
     }
     if constexpr (A == varalg::standard) {
-        return mdata / static_cast<double>(count) + shift;
+        return mdata / static_cast<double>(count);
     } else {
-        return mdata + shift;
+        return mdata;
     }
 }
 
@@ -161,7 +162,10 @@ V mean(const V& mdata, std::uint64_t count, const V& shift) {
  *     \sum_{k=1}^N y_i^{(k)}}{N} \right\} \; .
  *   \f]
  *
- * @tparam A Algorithm used to accumulate the data.
+ * Here, \f$ \mathbf{t} \f$ and \f$ \mathbf{s} \f$ are constant vectors that can be optionally be
+ * applied to the random samples to increase numerical accuracy.
+ *
+ * @tparam A simplemc::accs::varalg algorithm used to accumulate the data.
  * @tparam V simplemc::eigen_vector type with double value type.
  * @param mdata1 Accumulated mean data of random vector \f$ \mathbf{X} \f$.
  * @param mdata2 Accumulated mean data of random vector \f$ \mathbf{Y} \f$.
@@ -229,8 +233,12 @@ V diag_covariance(
  *     \right\} \; .
  *   \f]
  *
- * @tparam A Algorithm used to accumulate the data.
+ * Here, \f$ \mathbf{t} \f$ and \f$ \mathbf{s} \f$ are constant vectors that can be optionally be
+ * applied to the random samples to increase numerical accuracy.
+ *
+ * @tparam A simplemc::accs::varalg algorithm used to accumulate the data.
  * @tparam V simplemc::eigen_vector type with double value type.
+ * @tparam V simplemc::eigen_matrix type with double value type.
  * @param mdata1 Accumulated mean data of random vector \f$ \mathbf{X} \f$.
  * @param mdata2 Accumulated mean data of random vector \f$ \mathbf{Y} \f$.
  * @param cdata Accumulated (cross-)covariance data.

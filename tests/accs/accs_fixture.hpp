@@ -94,8 +94,12 @@ template <typename A>
 void check_empty(const A& acc) {
     ASSERT_EQ(acc.count(), 0);
     auto mean = acc.mean();
-    for (int i = 0; i < acc.size(); ++i) {
-        check_isnan(mean[i]);
+    if constexpr (!A::is_dynamic && A::static_size == 1) {
+        check_isnan(mean);
+    } else {
+        for (int i = 0; i < acc.size(); ++i) {
+            check_isnan(mean[i]);
+        }
     }
 }
 

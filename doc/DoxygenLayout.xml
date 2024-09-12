@@ -145,6 +145,9 @@
           <tab type="user" url="@ref simplemc::polynomial_interpolation_nd" title="polynomial_interpolation_nd"/>
         </tab>
         <tab type="usergroup" url="@ref simplemc-numeric-utils" title="Numeric utilities">
+          <tab type="user" url="@ref simplemc::static_extent" title="static_extent"/>
+          <tab type="user" url="@ref simplemc::eigen_matrix" title="eigen_matrix"/>
+          <tab type="user" url="@ref simplemc::eigen_vector" title="eigen_vector"/>
           <tab type="user" url="@ref simplemc::linear_map" title="linear_map"/>
         </tab>
         <tab type="usergroup" url="@ref simplemc-numeric-quadrature" title="Quadrature tools">
