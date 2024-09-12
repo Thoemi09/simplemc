@@ -12,12 +12,32 @@
 namespace simplemc {
 
 /**
- * @ingroup simplemc-accs
+ * @ingroup simplemc-accs-wrappers
  * @brief Multi value accumulator for various accumulators.
  *
- * @details It holds a reference to a accumulator and can be used to add multiple data points
- * to the accumulator without increasing the count automatically. This has to be done manually!
- * The intended use is for simplemc::mean_acc and simplemc::var_acc.
+ * @details It holds a reference to a accumulator and can be used to add multiple data points to the
+ * accumulator without increasing the count automatically. This has to be done manually by the user
+ * by calling the multivalue_acc::increment_count function.
+ *
+ * The intended use is for simplemc::mean_acc and simplemc::var_acc. Both of them provide a factory
+ * function (`make_mva()`) that wraps the current object and returns a multi value accumlator.
+ *
+ * The user should not need to create a multivalue_acc on their own.
+ *
+ * @code{.cpp}
+ * simplemc::mean_acc_dynamic<double> acc(size);
+ * // ...
+ * for (int i = 0; i < num_samples; ++i) {
+ *     // ...
+ *     auto mva = acc.make_mva();
+ *     mva[idx_1] << val_1;
+ *     // ...
+ *     mva[idx_n] << val_n;
+ *     mva.increment_count();
+ *     // ...
+ * }
+ * // ...
+ * @endcode
  *
  * @tparam A Accumulator type.
  */
@@ -45,14 +65,15 @@ public:
     using size_type = typename acc_type::size_type;
 
     /**
-     * @brief Construct a multi value accumulator for a given accumulator and a given index.
+     * @brief Construct a multi value accumulator for a given accumulator.
      *
      * @param acc Accumulator to be wrapped.
      */
     multivalue_acc(acc_type& acc) : acc_(acc) {}
 
     /**
-     * @brief Set index of the wrapped accumulator and return this object.
+     * @brief Subscript operator sets the index of the wrapped accumulator and returns a reference to
+     * this object.
      *
      * @param idx Index.
      * @return Reference to this object.
@@ -63,10 +84,10 @@ public:
     }
 
     /**
-     * @brief Accumulate a single value.
+     * @brief Stream operator for accumulating a single value.
      *
-     * @details It simply calls the `add_value` method of the wrapped accumulator to add a single
-     * value without increasing the count.
+     * @details For accumulators with size > 1, the value is added to the element at the current
+     * index.
      *
      * @param val Value to be accumulated.
      * @return Reference to this object.
@@ -77,10 +98,27 @@ public:
     }
 
     /**
-     * @brief Accumulate a range of values.
+     * @brief Stream operator for accumulating a vector.
      *
-     * @details The size of the range is assumed to be <= size() - idx. It simply calls the `add_value`
-     * method of the wrapped accumulator for every value in the range without increasing the count.
+     * @details It simply calls the corresponding streaming operator of the wrapped accumulator and
+     * then decreases its count by one.
+     *
+     * @tparam V2 Vector-like type that can be added to a simplemc::eigen_vector.
+     * @param vec Vector to be accumulated.
+     * @return Reference to this object.
+     */
+    template <typename V2>
+    multivalue_acc& operator<<(const V2& vec) {
+        acc_ << vec;
+        --acc_.count_;
+        return *this;
+    }
+
+    /**
+     * @brief Accumulate a range of values to consecutive elements in the accumulator.
+     *
+     * @details The values are added to consecutive elements in the accumulator starting with the
+     * element at the given index. The size of the range is assumed to be <= size() - `idx`.
      *
      * @tparam R Input range of values.
      * @param rg Range of values to be accumulated.
@@ -95,11 +133,10 @@ public:
     }
 
     /**
-     * @brief Accumulate a range of values.
+     * @brief Accumulate a range of values to arbitrary elements but with different indices.
      *
-     * @details The size of the range is assumed to be <= size() - idx. It simply calls the `add_value`
-     * method of the wrapped accumulator for every value-index pair in the ranges without increasing the
-     * count.
+     * @details Each value of the given value range is accumulated at the corresponding index of the
+     * given index range. Every index should only appear once.
      *
      * @tparam R1 Input range of values.
      * @tparam R2 Input range of indices.
@@ -114,7 +151,7 @@ public:
     }
 
     /**
-     * @brief Increment the count of the wrapped accumulator.
+     * @brief Increment the count of the wrapped accumulator by a given increment.
      *
      * @param inc Increment.
      */

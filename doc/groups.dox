@@ -771,6 +771,16 @@
  */
 
 /**
+ * @defgroup simplemc-accs-wrappers Accumulator wrappers
+ * @ingroup simplemc-accs
+ * @brief Wrapper classes around @ref simplemc-accs-accs to extend their functionalities.
+ *
+ * @details **simplemc** provides several wrappers to be used with accumulators. Not every wrapper
+ * can be used with every accumulator. Please see the documentation of the individual wrapper classes
+ * for more information.
+ */
+
+/**
  * @defgroup simplemc-json simplemc-json
  * @brief Extensions to the <a href="https://github.com/nlohmann/json">nlohmann_json</a> library.
  *

@@ -173,6 +173,11 @@
           <tab type="user" url="@ref simplemc::var_acc< double, A >" title="var_acc<double, A>"/>
           <tab type="user" url="@ref simplemc::var_acc< std::complex< double >, A >" title="var_acc<std::complex<double>, A>"/>
         </tab>
+        <tab type="usergroup" url="@ref simplemc-accs-wrappers" title="Accumulator wrappers">
+          <tab type="user" url="@ref simplemc::autocorr_acc" title="autocorr_acc"/>
+          <tab type="user" url="@ref simplemc::block_acc" title="block_acc"/>
+          <tab type="user" url="@ref simplemc::multivalue_acc" title="multivalue_acc"/>
+        </tab>
       </tab>
       <tab type="usergroup" url="@ref simplemc-json" title="simplemc-json">
         <tab type="user" url="@ref nlohmann::adl_serializer< std::complex< T > >" title="nlohmann::adl_serializer"/>
