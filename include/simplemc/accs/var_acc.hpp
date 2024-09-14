@@ -1,0 +1,12 @@
+/**
+ * @file
+ * @brief Accumulator for calculating the sample mean and sample variance of a random vector.
+ */
+
+#ifndef SIMPLEMC_ACCS_VAR_ACC_HPP
+#define SIMPLEMC_ACCS_VAR_ACC_HPP
+
+#include <simplemc/accs/var_acc_complex.hpp>
+#include <simplemc/accs/var_acc_double.hpp>
+
+#endif // SIMPLEMC_ACCS_VAR_ACC_HPP

@@ -185,6 +185,8 @@ public:
      * @details For accumulators with size > 1, the value is added to the element at the current
      * index.
      *
+     * See @ref simplemc-accs-accs for a code example.
+     *
      * @param val Value to be accumulated.
      * @return Reference to this object.
      */
@@ -196,6 +198,8 @@ public:
 
     /**
      * @brief Stream operator for accumulating a vector.
+     *
+     * @details See @ref simplemc-accs-accs for a code example.
      *
      * @tparam W Eigen vector/array/expression type.
      * @param vec Vector/Array/Expression to be accumulated.
@@ -248,6 +252,8 @@ public:
      * @details The values are added to consecutive elements in the accumulator starting with the
      * element at the given index. The size of the range is assumed to be <= size() - `idx`.
      *
+     * See @ref simplemc-accs-accs for a code example.
+     *
      * @tparam R Input range of values.
      * @param rg Range of values to be accumulated.
      * @param idx Starting index for the accumulator.
@@ -266,6 +272,8 @@ public:
      *
      * @details Each value of the given value range is accumulated at the corresponding index of the
      * given index range. Every index should only appear once.
+     *
+     * See @ref simplemc-accs-accs for a code example.
      *
      * @tparam R1 Input range of values.
      * @tparam R2 Input range of indices.

@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Variance accumulator for complex values.
+ * @brief Specialization of simplemc::var_acc for complex random vectors.
  */
 
 #ifndef SIMPLEMC_ACCS_VAR_ACC_COMPLEX_HPP
@@ -14,35 +14,45 @@
 #include <simplemc/utils/concepts.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
+#include <Eigen/Dense>
 #include <range/v3/range/concepts.hpp>
 #include <range/v3/view/zip.hpp>
 
 #include <cassert>
 #include <complex>
 #include <cstdint>
-#include <utility>
 
 namespace simplemc {
 
 /**
- * @ingroup simplemc-accs
- * @brief Variance accumulator specialized for accumulating complex values.
+ * @ingroup simplemc-accs-accs
+ * @brief Specialization of simplemc::var_acc for complex random vectors.
  *
- * @details The variance of a complex random variable is determined by the variance of its real and
- * imaginary parts as well as their covariance (see https://en.wikipedia.org/wiki/Complex_random_vector).
- * Note that in the following we only talk about the covariance of the real and imaginary part of a
- * single random complex variable, not the full covariance matrix of a complex random vector. For
- * calulating the full covariance matrix, please use simplemc::covar_acc.
- *
- * @tparam A Algorithm (either standard or welford).
+ * @tparam V simplemc::eigen_vector_cplx type.
+ * @tparam A simplemc::varalg algorithm used to accumulate the data.
  */
-template <accs::varalg A>
-class var_acc<std::complex<double>, A> {
+template <eigen_vector_cplx Z, varalg A>
+class var_acc<Z, A> {
 public:
     /**
      * @brief Type of accumulated value.
      */
     using value_type = std::complex<double>;
+
+    /**
+     * @brief Static size of the accumulator.
+     */
+    static constexpr int static_size = Z::RowsAtCompileTime;
+
+    /**
+     * @brief Is the accumulator dynamically sized?
+     */
+    static constexpr bool is_dynamic = (Z::RowsAtCompileTime == Eigen::Dynamic);
+
+    /**
+     * @brief Does the accumulator return scalars or vectors/matrices?
+     */
+    static constexpr bool returns_scalar = (!is_dynamic && static_size == 1);
 
     /**
      * @brief Type for counting the number of accumulated values.
@@ -57,12 +67,12 @@ public:
     /**
      * @brief Complex vector type.
      */
-    using cplx_vec_type = Eigen::VectorX<value_type>;
+    using cplx_vec_type = Z;
 
     /**
      * @brief Double vector type.
      */
-    using dbl_vec_type = Eigen::VectorX<double>;
+    using dbl_vec_type = Eigen::Matrix<double, static_size, 1>;
 
     /**
      * @brief Multi value accumulator type.
@@ -70,7 +80,9 @@ public:
     using mva_type = multivalue_acc<var_acc>;
 
     /**
-     * @brief Get the algorithm.
+     * @brief Get the algorithm used to accumulate the data.
+     *
+     * @return The simplemc::varalg tag.
      */
     static constexpr auto varalg() { return A; }
 
@@ -78,25 +90,19 @@ public:
     friend class multivalue_acc<var_acc>;
 
 private:
-    /**
-     * @brief Add a single value to the accumulator without increasing the count.
-     *
-     * @param val Value to be added.
-     * @param idx Index.
-     * @param count Already increased count.
-     */
+    // Add a single value to the accumulator without increasing the count (the given count is assumed
+    // to be already increased by one).
     void add_value(value_type val, size_type idx, count_type count) {
         assert(idx >= 0 && idx < size());
-        if constexpr (varalg() == accs::varalg::standard) {
-            const auto tmp = val - shift_(idx);
-            mdata_(idx) += tmp;
-            rdata_(idx) += std::real(tmp) * std::real(tmp);
-            idata_(idx) += std::imag(tmp) * std::imag(tmp);
-            cdata_(idx) += std::real(tmp) * std::imag(tmp);
+        if constexpr (varalg() == varalg::standard) {
+            mdata_(idx) += val;
+            rdata_(idx) += std::real(val) * std::real(val);
+            idata_(idx) += std::imag(val) * std::imag(val);
+            cdata_(idx) += std::real(val) * std::imag(val);
         } else {
-            const auto tmp = val - shift_(idx) - mdata_(idx);
+            const auto tmp = val - mdata_(idx);
             mdata_(idx) += tmp / static_cast<double>(count);
-            const auto tmp2 = val - shift_(idx) - mdata_(idx);
+            const auto tmp2 = val - mdata_(idx);
             rdata_(idx) += std::real(tmp) * std::real(tmp2);
             idata_(idx) += std::imag(tmp) * std::imag(tmp2);
             cdata_(idx) += std::real(tmp) * std::imag(tmp2);
@@ -105,69 +111,56 @@ private:
 
 public:
     /**
-     * @brief Construct a variance accumulator with a given number of elements and a constant shift.
+     * @brief Construct a variance accumulator with a given number of elements.
      *
-     * @param size Number of elements.
-     * @param shift A single constant shift applied to the accumulated values.
+     * @details For dynamically sized accumulators, it throws a simplemc::simplemc_exception if the
+     * given size is <= 0.
+     *
+     * For static sized accumulators, the `num` parameter is ignored.
+     *
+     * @param num Number of elements.
      */
-    explicit var_acc(size_type size = 1, value_type shift = 0.0) :
-        mdata_(cplx_vec_type::Zero(size)),
-        rdata_(dbl_vec_type::Zero(size)),
-        idata_(dbl_vec_type::Zero(size)),
-        cdata_(dbl_vec_type::Zero(size)),
-        shift_(cplx_vec_type::Constant(size, shift)),
+    explicit var_acc(size_type num = 1) :
+        mdata_(cplx_vec_type::Zero(num)),
+        rdata_(dbl_vec_type::Zero(num)),
+        idata_(dbl_vec_type::Zero(num)),
+        cdata_(dbl_vec_type::Zero(num)),
         count_(0),
         idx_(0) {
-        if (size <= 0) {
-            throw simplemc_exception("Size <= 0", "var_acc::var_acc");
+        if constexpr (is_dynamic) {
+            if (num <= 0) {
+                throw simplemc_exception("Dynamic size <= 0", "var_acc::var_acc");
+            }
         }
     }
 
     /**
-     * @brief Construct a variance accumulator with a given constant shift.
+     * @brief Construct a variance accumulator with given data storages and count.
      *
-     * @details The size of the accumulator will be the same as the size of the shift vector.
+     * @details For dynamically sized accumulators, the size of the data storages must match and be
+     * >= 0. Otherwise, it throws a simplemc::simplemc_exception.
      *
-     * @param shift Constant shift applied to the accumulated values.
+     * @param md Accumulated mean data.
+     * @param rd Accumulated variance data of the real part.
+     * @param id Accumulated variance data of the imaginary part.
+     * @param cd Accumulated covariance data between the real and imaginary part.
+     * @param ct Number of accumulated values.
      */
-    explicit var_acc(cplx_vec_type shift) :
-        mdata_(cplx_vec_type::Zero(shift.size())),
-        rdata_(dbl_vec_type::Zero(shift.size())),
-        idata_(dbl_vec_type::Zero(shift.size())),
-        cdata_(dbl_vec_type::Zero(shift.size())),
-        shift_(std::move(shift)),
-        count_(0),
+    var_acc(const cplx_vec_type& md, const dbl_vec_type& rd, const dbl_vec_type& id, const dbl_vec_type& cd,
+        count_type ct) :
+        mdata_(md),
+        rdata_(rd),
+        idata_(id),
+        cdata_(cd),
+        count_(ct),
         idx_(0) {
-        if (mdata_.size() <= 0) {
-            throw simplemc_exception("Size <= 0", "var_acc::var_acc");
-        }
-    }
-
-    /**
-     * @brief Construct a variance accumulator with given data storages, a constant shift and a count.
-     *
-     * @param mdata Accumulated mean data.
-     * @param rdata Accumulated variance data of the real part.
-     * @param idata Accumulated variance data of the imaginary part.
-     * @param cdata Accumulated covariance data between the real and imaginary part.
-     * @param shift Constant shift applied to the accumulated values.
-     * @param count Number of accumulated values.
-     */
-    var_acc(cplx_vec_type mdata, dbl_vec_type rdata, dbl_vec_type idata, dbl_vec_type cdata, cplx_vec_type shift,
-        count_type count) :
-        mdata_(std::move(mdata)),
-        rdata_(std::move(rdata)),
-        idata_(std::move(idata)),
-        cdata_(std::move(cdata)),
-        shift_(std::move(shift)),
-        count_(count),
-        idx_(0) {
-        if (mdata_.size() == 0) {
-            throw simplemc_exception("Size == 0", "var_acc::var_acc");
-        }
-        if (mdata_.size() != rdata_.size() || mdata_.size() != idata_.size() || mdata_.size() != cdata_.size() ||
-            mdata_.size() != shift_.size()) {
-            throw simplemc_exception("Sizes of data storages do not match", "var_acc::var_acc");
+        if constexpr (is_dynamic) {
+            if (mdata_.size() <= 0) {
+                throw simplemc_exception("Dynamic size <= 0", "var_acc::var_acc");
+            }
+            if (mdata_.size() != rdata_.size() || mdata_.size() != idata_.size() || mdata_.size() != cdata_.size()) {
+                throw simplemc_exception("Sizes of data storages do not match", "var_acc::var_acc");
+            }
         }
     }
 
@@ -197,6 +190,11 @@ public:
     /**
      * @brief Stream operator for accumulating a single value.
      *
+     * @details For accumulators with size > 1, the value is added to the element at the current
+     * index.
+     *
+     * See @ref simplemc-accs-accs for a code example.
+     *
      * @param val Value to be accumulated.
      * @return Reference to this object.
      */
@@ -207,35 +205,82 @@ public:
     }
 
     /**
+     * @brief Stream operator for accumulating a vector.
+     *
+     * @details See @ref simplemc-accs-accs for a code example.
+     *
+     * @tparam W Eigen vector/array/expression type.
+     * @param vec Vector/Array/Expression to be accumulated.
+     * @return Reference to this object.
+     */
+    template <typename W>
+    var_acc& operator<<(const W& vec) {
+        assert(vec.size() == size());
+        ++count_;
+        if constexpr (varalg() == varalg::standard) {
+            const auto tmp = vec.matrix();
+            mdata_ += tmp;
+            rdata_ += tmp.real().cwiseProduct(tmp.real());
+            idata_ += tmp.imag().cwiseProduct(tmp.imag());
+            cdata_ += tmp.real().cwiseProduct(tmp.imag());
+        } else {
+            const auto tmp = (vec.matrix() - mdata_).eval();
+            mdata_ += tmp / static_cast<value_type>(count_);
+            const auto tmp2 = vec.matrix() - mdata_;
+            rdata_ += tmp.real().cwiseProduct(tmp2.real());
+            idata_ += tmp.imag().cwiseProduct(tmp2.imag());
+            cdata_ += tmp.real().cwiseProduct(tmp2.imag());
+        }
+        return *this;
+    }
+
+    /**
      * @brief Stream operator for incorporating the data from another variance accumulator.
      *
-     * @details We have to take care of the fact that the shift vectors might be different.
+     * @details Let the subscripts 1 and 2 correspond to the two accumulators we want to combine such
+     * that \f$ N = N_1 + N_2 \f$ is the total number of accumulated values. Then, depending on the
+     * simplemc::varalg, the combined accumulated data can be calculated as follows:
+     * - `standard`:
+     *   - \f$ \mathbf{m}^{(N)} = \mathbf{m}_{1}^{(N_1)} + \mathbf{m}_{2}^{(N_2)} \f$ and
+     *   - \f$ \mathbf{c}^{(N)} = \mathbf{c}_{1}^{(N_1)} + \mathbf{c}_{2}^{(N_2)} \f$ .
      *
-     * @param acc Variance accumulator to be incorporated.
+     *   Here, \f$ \mathbf{c} \f$ stands for any of the accumulated (co)variance data, i.e. the
+     *   variance of the real part, the variance of the imaginary part or the covariance between the
+     *   real and imaginary parts.
+     *
+     * - `welford`: Let \f$ \mathbf{a} \odot \mathbf{b} \f$ denote the element-wise (Hadamard) product
+     *   of two vectors \f$ \mathbf{a} \f$ and \f$ \mathbf{b} \f$. Then,
+     *   - \f$ \mathbf{n}^{(N)} = \frac{N_1}{N} \mathbf{n}_{1}^{(N_1)} +
+     *     \frac{N_2}{N} \mathbf{n}_{2}^{(N_2)} \f$ and
+     *   - \f$ \mathbf{d}^{(N)} = \mathbf{d}_{1}^{(N_1)} + \mathbf{d}_{2}^{(N_2)} + N_1 \Re\left(
+     *     \mathbf{n}_{1}^{(N_1)} - \mathbf{n}^{(N)} \right) \odot \Re\left( \mathbf{n}_{1}^{(N_1)} -
+     *     \mathbf{n}^{(N)} \right) + N_2 \Re\left( \mathbf{n}_{2}^{(N_2)} - \mathbf{n}^{(N)} \right)
+     *     \odot \Re\left( \mathbf{n}_{2}^{(N_2)} - \mathbf{n}^{(N)} \right) \f$ .
+     *
+     *   Here, \f$ \mathbf{d} \f$ stands for the accumulated variance data of the real part. For the
+     *   variance data of the imaginary part and the covariance data between the real and imaginary
+     *   parts, similar expressions hold.
+     *
+     * @param acc simplemc::var_acc to be incorporated.
      * @return Reference to this object.
      */
     var_acc& operator<<(const var_acc& acc) {
         assert(size() == acc.size());
-        if constexpr (varalg() == accs::varalg::standard) {
-            const auto tmp = acc.shift_ - shift_;
-            mdata_ += acc.mdata_ + acc.count_ * tmp;
-            rdata_ += acc.rdata_ + 2.0 * tmp.real().cwiseProduct(acc.mdata_.real()) +
-                acc.count_ * tmp.real().cwiseProduct(tmp.real());
-            idata_ += acc.idata_ + 2.0 * tmp.imag().cwiseProduct(acc.mdata_.imag()) +
-                acc.count_ * tmp.imag().cwiseProduct(tmp.imag());
-            cdata_ += acc.cdata_ + tmp.imag().cwiseProduct(acc.mdata_.real()) +
-                tmp.real().cwiseProduct(acc.mdata_.imag()) + acc.count_ * tmp.real().cwiseProduct(tmp.imag());
+        if constexpr (varalg() == varalg::standard) {
+            mdata_ += acc.mdata_;
+            rdata_ += acc.rdata_;
+            idata_ += acc.idata_;
+            cdata_ += acc.cdata_;
         } else {
             const auto n1 = static_cast<double>(count_);
             const auto n2 = static_cast<double>(acc.count_);
-            const auto tmp = acc.shift_ - shift_ + acc.mdata_;
-            const auto m = mdata_ * n1 / (n1 + n2) + tmp * n2 / (n1 + n2);
+            const auto m = mdata_ * n1 / (n1 + n2) + acc.mdata_ * n2 / (n1 + n2);
             rdata_ += acc.rdata_ + n1 * (mdata_ - m).real().cwiseProduct((mdata_ - m).real()) +
-                n2 * (tmp - m).real().cwiseProduct((tmp - m).real());
+                n2 * (acc.mdata_ - m).real().cwiseProduct((acc.mdata_ - m).real());
             idata_ += acc.idata_ + n1 * (mdata_ - m).imag().cwiseProduct((mdata_ - m).imag()) +
-                n2 * (tmp - m).imag().cwiseProduct((tmp - m).imag());
+                n2 * (acc.mdata_ - m).imag().cwiseProduct((acc.mdata_ - m).imag());
             cdata_ += acc.cdata_ + n1 * (mdata_ - m).real().cwiseProduct((mdata_ - m).imag()) +
-                n2 * (tmp - m).real().cwiseProduct((tmp - m).imag());
+                n2 * (acc.mdata_ - m).real().cwiseProduct((acc.mdata_ - m).imag());
             mdata_ = m;
         }
         count_ += acc.count_;
@@ -243,9 +288,12 @@ public:
     }
 
     /**
-     * @brief Accumulate a range of values.
+     * @brief Accumulate a range of values to consecutive elements in the accumulator.
      *
-     * @details The size of the range is assumed to be <= size() - idx.
+     * @details The values are added to consecutive elements in the accumulator starting with the
+     * element at the given index. The size of the range is assumed to be <= size() - `idx`.
+     *
+     * See @ref simplemc-accs-accs for a code example.
      *
      * @tparam R Input range of values.
      * @param rg Range of values to be accumulated.
@@ -261,10 +309,12 @@ public:
     }
 
     /**
-     * @brief Accumulate a range of values.
+     * @brief Accumulate a range of values to arbitrary elements but with different indices.
      *
-     * @details The size of the range is assumed to be <= size() - idx and every index should
-     * only appear at most once.
+     * @details Each value of the given value range is accumulated at the corresponding index of the
+     * given index range. Every index should only appear once.
+     *
+     * See @ref simplemc-accs-accs for a code example.
      *
      * @tparam R1 Input range of values.
      * @tparam R2 Input range of indices.
@@ -280,9 +330,11 @@ public:
     }
 
     /**
-     * @brief Create a multi value accumulator.
+     * @brief Create a multi-value accumulator.
      *
-     * @return Multi value accumulator.
+     * @details See simplemc::multivalue_acc.
+     *
+     * @return Multi-value accumulator.
      */
     mva_type make_mva() { return mva_type(*this); }
 
@@ -301,91 +353,137 @@ public:
     [[nodiscard]] auto count() const { return count_; }
 
     /**
-     * @brief Get the constant shift.
-     *
-     * @return Constant shift applied to accumulated values.
-     */
-    [[nodiscard]] const cplx_vec_type& shift() const { return shift_; }
-
-    /**
      * @brief Get accumulated data used for estimating the mean.
      *
-     * @return Data storage (content depends on the algorithm).
+     * @return Data storage (content depends on the algorithm, see simplemc::accs::mean).
      */
     [[nodiscard]] const cplx_vec_type& mdata() const { return mdata_; }
 
     /**
      * @brief Get accumulated data used for estimating the variance of the real part.
      *
-     * @return Data storage (content depends on the algorithm).
+     * @return Data storage (content depends on the algorithm, see simplemc::accs::diag_covariance).
      */
     [[nodiscard]] const dbl_vec_type& rdata() const { return rdata_; }
 
     /**
      * @brief Get accumulated data used for estimating the variance of the imaginary part.
      *
-     * @return Data storage (content depends on the algorithm).
+     * @return Data storage (content depends on the algorithm, see simplemc::accs::diag_covariance).
      */
     [[nodiscard]] const dbl_vec_type& idata() const { return idata_; }
 
     /**
-     * @brief Get accumulated data used for estimating the cross-covariance between the real and imaginary parts.
+     * @brief Get accumulated data used for estimating the cross-covariance between the real and
+     * imaginary parts.
      *
-     * @return Data storage (content depends on the algorithm).
+     * @return Data storage (content depends on the algorithm, see simplemc::accs::diag_covariance).
      */
     [[nodiscard]] const dbl_vec_type& cdata() const { return cdata_; }
 
     /**
      * @brief Calculate the sample mean from the accumulated data.
      *
+     * @details Calls simplemc::accs::mean with the accumulated mean data and the count.
+     *
+     * For statically sized accumulators with a size() == 1, it returns a single value. Otherwise, it
+     * returns a vector object.
+     *
      * @return Sample mean.
      */
-    [[nodiscard]] cplx_vec_type mean() const {
-        return simplemc::accs::mean<value_type, varalg()>(mdata_, count_, shift_);
+    [[nodiscard]] auto mean() const {
+        return detail::scalar_or_matrix<returns_scalar>(simplemc::accs::mean<varalg()>(mdata_, count_));
     }
 
     /**
      * @brief Calculate the sample variance of the mean.
      *
+     * @details It adds the variances of the real and imaginary parts and divides the result by the
+     * count.
+     *
+     * For statically sized accumulators with a size() == 1, it returns a single value. Otherwise, it
+     * returns a vector object.
+     *
      * @return Diagonal of the sample covariance matrix of the mean.
      */
-    [[nodiscard]] dbl_vec_type variance() const {
-        return (variance_of_real_data() + variance_of_imag_data()) / static_cast<value_type>(count_);
+    [[nodiscard]] auto variance() const {
+        auto res = (variance_of_real_data() + variance_of_imag_data()) / static_cast<value_type>(count_);
+        if constexpr (returns_scalar) {
+            return res;
+        } else {
+            return res.eval();
+        }
     }
 
     /**
      * @brief Calculate the sample variance of the accumulated data.
      *
+     * @details It adds the variances of the real and imaginary parts.
+     *
+     * For statically sized accumulators with a size() == 1, it returns a single value. Otherwise, it
+     * returns a vector object.
+     *
      * @return Diagonal of the sample covariance matrix of the accumulated data.
      */
-    [[nodiscard]] dbl_vec_type variance_of_data() const { return variance_of_real_data() + variance_of_imag_data(); }
+    [[nodiscard]] auto variance_of_data() const {
+        auto res = variance_of_real_data() + variance_of_imag_data();
+        if constexpr (returns_scalar) {
+            return res;
+        } else {
+            return res.eval();
+        }
+    }
 
     /**
      * @brief Calculate the sample variance of the real part of the accumulated data.
      *
+     * @details Calls simplemc::accs::diag_covariance with the accumulated real data and the count.
+     *
+     * For statically sized accumulators with a size() == 1, it returns a single value. Otherwise, it
+     * returns a vector object.
+     *
      * @return Diagonal of the sample covariance matrix of the real part of the accumulated data.
      */
-    [[nodiscard]] dbl_vec_type variance_of_real_data() const {
-        return simplemc::accs::diag_covariance<varalg()>(mdata_.real(), mdata_.real(), rdata_, count_);
+    [[nodiscard]] auto variance_of_real_data() const {
+        using simplemc::accs::diag_covariance;
+        return detail::scalar_or_matrix<returns_scalar>(
+            diag_covariance<varalg()>(mdata_.real(), mdata_.real(), rdata_, count_));
     }
 
     /**
      * @brief Calculate the sample variance of the imaginary part of the accumulated data.
      *
+     * @details Calls simplemc::accs::diag_covariance with the accumulated imaginary data and the
+     * count.
+     *
+     * For statically sized accumulators with a size() == 1, it returns a single value. Otherwise, it
+     * returns a vector object.
+     *
      * @return Diagonal of the sample covariance matrix of the imaginary part of the accumulated data.
      */
-    [[nodiscard]] dbl_vec_type variance_of_imag_data() const {
-        return simplemc::accs::diag_covariance<varalg()>(mdata_.imag(), mdata_.imag(), idata_, count_);
+    [[nodiscard]] auto variance_of_imag_data() const {
+        using simplemc::accs::diag_covariance;
+        return detail::scalar_or_matrix<returns_scalar>(
+            diag_covariance<varalg()>(mdata_.imag(), mdata_.imag(), idata_, count_));
     }
 
     /**
-     * @brief Calculate the sample cross-covariance between the real and imaginary part of the accumulated data.
-     *
-     * @return Diagonal of the sample cross-covariance matrix between the real and imaginary part of the
+     * @brief Calculate the sample cross-covariance between the real and imaginary part of the
      * accumulated data.
+     *
+     * @details Calls simplemc::accs::diag_covariance with the accumulated real and imaginary data and
+     * the count.
+     *
+     * For statically sized accumulators with a size() == 1, it returns a single value. Otherwise, it
+     * returns a vector object.
+     *
+     * @return Diagonal of the sample cross-covariance matrix between the real and imaginary part of
+     * the accumulated data.
      */
-    [[nodiscard]] dbl_vec_type covariance_of_real_and_imag_data() const {
-        return simplemc::accs::diag_covariance<varalg()>(mdata_.real(), mdata_.imag(), cdata_, count_);
+    [[nodiscard]] auto covariance_of_real_and_imag_data() const {
+        using simplemc::accs::diag_covariance;
+        return detail::scalar_or_matrix<returns_scalar>(
+            diag_covariance<varalg()>(mdata_.real(), mdata_.imag(), cdata_, count_));
     }
 
 private:
@@ -393,7 +491,6 @@ private:
     dbl_vec_type rdata_;
     dbl_vec_type idata_;
     dbl_vec_type cdata_;
-    cplx_vec_type shift_;
     count_type count_;
     size_type idx_;
 };
