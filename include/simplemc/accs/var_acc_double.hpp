@@ -267,7 +267,6 @@ public:
      * @details Each value of the given value range is accumulated at the corresponding index of the
      * given index range. Every index should only appear once.
      *
-     *
      * See @ref simplemc-accs-accs for a code example.
      *
      * @tparam R1 Input range of values.

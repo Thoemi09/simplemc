@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Wrapper for accumulators to add multiple values to them.
+ * @brief Wrapper for simplemc::mean_acc and simplemc::var_acc to add multiple values at once.
  */
 
 #ifndef SIMPLEMC_ACCS_MULTIVALUE_ACC_HPP
@@ -13,7 +13,7 @@ namespace simplemc {
 
 /**
  * @ingroup simplemc-accs-wrappers
- * @brief Multi value accumulator for various accumulators.
+ * @brief Wrapper for simplemc::mean_acc and simplemc::var_acc to add multiple values at once.
  *
  * @details It holds a reference to a accumulator and can be used to add multiple data points to the
  * accumulator without increasing the count automatically. This has to be done manually by the user
@@ -45,7 +45,7 @@ template <typename A>
 class multivalue_acc {
 public:
     /**
-     * @brief Type of the accumulator.
+     * @brief Type of the wrapped accumulator.
      */
     using acc_type = A;
 
@@ -64,6 +64,7 @@ public:
      */
     using size_type = typename acc_type::size_type;
 
+public:
     /**
      * @brief Construct a multi value accumulator for a given accumulator.
      *

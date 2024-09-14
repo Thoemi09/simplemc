@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Wrapper for simplemc::var_acc and simplemc::covar_acc to block data.
+ * @brief Wrapper for simplemc::var_acc and simplemc::covar_acc to block random samples.
  */
 
 #ifndef SIMPLEMC_ACCS_BLOCK_ACC_HPP
@@ -11,25 +11,30 @@
 #include <simplemc/numeric/eigen.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
+#include <range/v3/range/concepts.hpp>
+
 #include <utility>
 
 namespace simplemc {
 
 /**
- * @addtogroup simplemc-accs
+ * @addtogroup simplemc-accs-wrappers
  * @{
  */
 
 /**
- * @brief Wrapper class for the simplemc::var_acc and simplemc::covar_acc accumulators to put data
- * into blocks of a given size to reduce correlations.
+ * @brief Wrapper for simplemc::var_acc and simplemc::covar_acc to block random samples.
  *
- * @details Functionality and usage is similar to the supported wrapped accumulators.
+ * @details It groups the random samples into blocks of a given size before accumulating them into the
+ * wrapped accumulator object. This helps to decorrelate consecutive samples.
  *
- * Multi value accumulation can only be used for wrapped simplemc::var_acc. Remember to manually
- * call the `increment_count` method of the multi value accumulator as well as the `check_and_add_block`
- * method of the block accumulator after using them, otherwise the number of effective samples will not
- * be correct:
+ * A block is simply a simplemc::mean_acc object. When a new random sample is accumlated, it is added
+ * to the mean accumulator. When the number of samples in the block is equal the specified block size,
+ * the mean of the block is accumulated into the wrapped accumulator.
+ *
+ * Functionality and usage is similar to the supported wrapped accumulators.
+ *
+ * Multi value accumulation can only be used with simplemc::var_acc accumulators:
  * @code{.cpp}
  * auto mva = acc.make_mva();
  * mva[idx1] << val1;
@@ -37,6 +42,9 @@ namespace simplemc {
  * mva.increment_count();
  * acc.check_and_add_block();
  * @endcode
+ * @note The user is responsible for calling the simplemc::multivalue_acc::increment_count method as
+ * well as the check_and_add_block() method, otherwise the number of effective samples will not be
+ * correct.
  *
  * Results can be obtained from the wrapped accumulators directly. For example:
  * @code{.cpp}
@@ -50,7 +58,7 @@ template <typename A>
 class block_acc {
 public:
     /**
-     * @brief Accumulator type.
+     * @brief Type of the wrapped accumulator.
      */
     using acc_type = A;
 
@@ -70,7 +78,9 @@ public:
     using size_type = typename acc_type::size_type;
 
     /**
-     * @brief Get the algorithm.
+     * @brief Get the algorithm used to accumulate the data.
+     *
+     * @return The simplemc::varalg tag.
      */
     static constexpr auto varalg() { return A::varalg(); }
 
@@ -81,69 +91,43 @@ public:
 
 public:
     /**
-     * @brief Construct a block accumulator with a given number of elements, a constant shift and a block size.
+     * @brief Construct a block accumulator with a given number of elements and block size.
      *
-     * @param size Number of elements.
-     * @param shift A single constant shift applied to the accumulated values.
+     * @param num Number of elements.
      * @param blsize Block size.
      */
-    explicit block_acc(size_type size = 1, value_type shift = 0.0, count_type blsize = 1) :
-        acc_(size, shift),
-        block_(size, shift),
-        blsize_(blsize) {
+    explicit block_acc(size_type num = 1, count_type blsize = 1) : acc_(num), block_(num), blsize_(blsize) {
         if (blsize_ == 0) {
             throw simplemc_exception("Block size == 0", "block_acc::block_acc");
         }
     }
 
     /**
-     * @brief Construct a block accumulator with a given constant shift and block size.
-     *
-     * @details The size of the accumulator will be the same as the size of the shift vector.
-     *
-     * @param shift Constant shift applied to the accumulated values.
-     * @param blsize Block size.
-     */
-    explicit block_acc(const Eigen::VectorX<value_type>& shift, count_type blsize = 1) :
-        acc_(shift),
-        block_(shift),
-        blsize_(blsize) {
-        if (blsize_ == 0) {
-            throw simplemc_exception("Block size == 0", "block_acc::block_acc");
-        }
-    }
-
-    /**
-     * @brief Construct a block accumulator from a given accumulator and block size.
+     * @brief Construct a block accumulator from a given accumulator and with a given block size.
      *
      * @param acc Accumulator.
      * @param blsize Block size.
      */
-    explicit block_acc(acc_type acc, count_type blsize = 1) :
-        acc_(std::move(acc)),
-        block_(acc_.size(), acc_.shift()),
-        blsize_(blsize) {
+    explicit block_acc(const acc_type& acc, count_type blsize = 1) : acc_(acc), block_(acc_.size()), blsize_(blsize) {
         if (blsize_ == 0) {
             throw simplemc_exception("Block size == 0", "block_acc::block_acc");
         }
     }
 
     /**
-     * @brief Construct a block accumulator from a given accumulator, block data (mean accumulator) and block size.
+     * @brief Construct a block accumulator from a given accumulator, block data (mean accumulator)
+     * and block size.
      *
      * @param acc Accumulator.
      * @param bldata Block data (mean accumulator).
      * @param blsize Block size.
      */
-    explicit block_acc(acc_type acc, mean_acc_type bldata, count_type blsize = 1) :
-        acc_(std::move(acc)),
-        block_(std::move(bldata)),
+    explicit block_acc(const acc_type& acc, const mean_acc_type& bldata, count_type blsize = 1) :
+        acc_(acc),
+        block_(bldata),
         blsize_(blsize) {
         if (acc_.size() != block_.size()) {
             throw simplemc_exception("Size mismatch between accumulator and block data", "block_acc::block_acc");
-        }
-        if (acc_.shift() != block_.shift()) {
-            throw simplemc_exception("Shift mismatch between accumulator and block data", "block_acc::block_acc");
         }
         if (blsize_ == 0) {
             throw simplemc_exception("Block size == 0", "block_acc::block_acc");
@@ -172,11 +156,33 @@ public:
     /**
      * @brief Stream operator for accumulating a single value.
      *
+     * @details For accumulators with size > 1, the value is added to the element at the current
+     * index.
+     *
+     * See @ref simplemc-accs-accs for a code example.
+     *
      * @param val Value to be accumulated.
      * @return Reference to this object.
      */
     block_acc& operator<<(value_type val) {
         block_ << val;
+        check_and_add_block();
+        return *this;
+    }
+
+    /**
+     * @brief Stream operator for accumulating a vector.
+     *
+     * @details See @ref simplemc-accs-accs for a code example.
+     *
+     * @tparam W Eigen vector/array/expression type.
+     * @param vec Vector/Array/Expression to be accumulated.
+     * @return Reference to this object.
+     */
+    template <typename W>
+    block_acc& operator<<(const W& vec) {
+        assert(vec.size() == size());
+        block_ << vec;
         check_and_add_block();
         return *this;
     }
@@ -196,9 +202,12 @@ public:
     }
 
     /**
-     * @brief Accumulate a range of values.
+     * @brief Accumulate a range of values to consecutive elements in the accumulator.
      *
-     * @details The size of the range is assumed to be <= size() - idx.
+     * @details The values are added to consecutive elements in the accumulator starting with the
+     * element at the given index. The size of the range is assumed to be <= size() - `idx`.
+     *
+     * See @ref simplemc-accs-accs for a code example.
      *
      * @tparam R Input range of values.
      * @param rg Range of values to be accumulated.
@@ -211,10 +220,12 @@ public:
     }
 
     /**
-     * @brief Accumulate a range of values.
+     * @brief Accumulate a range of values to arbitrary elements but with different indices.
      *
-     * @details The size of the range is assumed to be <= size() - idx and every index should
-     * only appear at most once.
+     * @details Each value of the given value range is accumulated at the corresponding index of the
+     * given index range. Every index should only appear once.
+     *
+     * See @ref simplemc-accs-accs for a code example.
      *
      * @tparam R1 Input range of values.
      * @tparam R2 Input range of indices.
@@ -228,9 +239,11 @@ public:
     }
 
     /**
-     * @brief Create a multi value accumulator.
+     * @brief Create a multi-value accumulator.
      *
-     * @return Multi value accumulator.
+     * @details See simplemc::multivalue_acc.
+     *
+     * @return Multi-value accumulator.
      */
     [[nodiscard]] auto make_mva() { return block_.make_mva(); }
 
@@ -256,11 +269,12 @@ public:
     [[nodiscard]] auto count() const { return acc_.count(); }
 
     /**
-     * @brief Get the constant shift.
+     * @brief Get the total number of accumulated values.
      *
-     * @return Constant shift vector applied to the accumulated values.
+     * @return Number of accumulated blocks times the block size plus what is left in the current
+     * block.
      */
-    [[nodiscard]] const auto& shift() const { return acc_.shift(); }
+    [[nodiscard]] auto total_count() const { return count() * blsize_ + block_.count(); }
 
     /**
      * @brief Get the wrapped accumulator.
@@ -272,12 +286,12 @@ public:
     /**
      * @brief Get the mean accumulator used to accumulate block data.
      *
-     * @return Mean accumulator.
+     * @return simplemc::mean_acc object.
      */
     [[nodiscard]] const auto& block() const { return block_; }
 
     /**
-     * @brief Check if the current block is full?
+     * @brief Check if the current block is full.
      *
      * @return True if the current block is full, false otherwise.
      */
