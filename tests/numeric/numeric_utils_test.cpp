@@ -22,6 +22,43 @@ TEST(SimplemcNumeric, UtilityConcepts) {
     static_assert(simplemc::eigen_matrix<Eigen::MatrixXd>);
     static_assert(!simplemc::eigen_matrix<Eigen::MatrixXi>);
     static_assert(!simplemc::eigen_vector<Eigen::ArrayXd>);
+
+    static_assert(simplemc::eigen_matrix_dbl<Eigen::MatrixXd>);
+    static_assert(simplemc::eigen_matrix_cplx<Eigen::MatrixXcd>);
+    static_assert(!simplemc::eigen_matrix_dbl<Eigen::MatrixXcd>);
+    static_assert(!simplemc::eigen_matrix_cplx<Eigen::MatrixXd>);
+    static_assert(simplemc::eigen_vector_dbl<Eigen::VectorXd>);
+    static_assert(simplemc::eigen_vector_cplx<Eigen::VectorXcd>);
+    static_assert(!simplemc::eigen_vector_dbl<Eigen::VectorXcd>);
+    static_assert(!simplemc::eigen_vector_cplx<Eigen::VectorXd>);
+}
+
+// Test the make_nans functions.
+TEST(SimplemcNumeric, MakeNans) {
+    using namespace simplemc;
+    auto vec_d = nans_vector<Eigen::VectorXd>(10);
+    auto vec_sd = nans_vector<Eigen::Vector<double, 10>>();
+    auto vec_c = nans_vector<Eigen::VectorXcd>(10);
+    auto vec_sc = nans_vector<Eigen::Vector<std::complex<double>, 10>>();
+    for (int i = 0; i < 10; ++i) {
+        check_isnan(vec_d[i]);
+        check_isnan(vec_sd[i]);
+        check_isnan(vec_c[i]);
+        check_isnan(vec_sc[i]);
+    }
+
+    auto mat_d = nans_matrix<Eigen::MatrixXd>(5, 5);
+    auto mat_sd = nans_matrix<Eigen::Matrix<double, 5, 5>>();
+    auto mat_c = nans_matrix<Eigen::MatrixXcd>(5, 5);
+    auto mat_sc = nans_matrix<Eigen::Matrix<std::complex<double>, 5, 5>>();
+    for (int i = 0; i < 5; ++i) {
+        for (int j = 0; j < 5; ++j) {
+            check_isnan(mat_d(i, j));
+            check_isnan(mat_sd(i, j));
+            check_isnan(mat_c(i, j));
+            check_isnan(mat_sc(i, j));
+        }
+    }
 }
 
 // Test some utilty functions.

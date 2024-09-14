@@ -54,6 +54,26 @@ concept eigen_matrix = requires {
 };
 
 /**
+ * @brief A concept that checks if a type is a `Eigen::Matrix<double, M, N>` type.
+ *
+ * @details M` and `N` have to be both valid simplemc::static_extent integers.
+ *
+ * @tparam M Type to check.
+ */
+template <typename M>
+concept eigen_matrix_dbl = (eigen_matrix<M> && std::is_same_v<typename M::Scalar, double>);
+
+/**
+ * @brief A concept that checks if a type is a `Eigen::Matrix<std::complex<double>, M, N>` type.
+ *
+ * @details M` and `N` have to be both valid simplemc::static_extent integers.
+ *
+ * @tparam M Type to check.
+ */
+template <typename M>
+concept eigen_matrix_cplx = (eigen_matrix<M> && std::is_same_v<typename M::Scalar, std::complex<double>>);
+
+/**
  * @brief A concept that checks if a type is a `Eigen::Matrix<T, M, 1>` type.
  *
  * @details `T` has to be either `double` or `std::complex<double>`, and `M` has to be a valid
@@ -63,6 +83,65 @@ concept eigen_matrix = requires {
  */
 template <typename V>
 concept eigen_vector = (eigen_matrix<V> && V::ColsAtCompileTime == 1);
+
+/**
+ * @brief A concept that checks if a type is a `Eigen::Matrix<double, M, 1>` type.
+ *
+ * @details `M` has to be a valid simplemc::static_extent.
+ *
+ * @tparam V Type to check.
+ */
+template <typename V>
+concept eigen_vector_dbl = (eigen_vector<V> && std::is_same_v<typename V::Scalar, double>);
+
+/**
+ * @brief A concept that checks if a type is a `Eigen::Matrix<std::complex<double>, M, 1>` type.
+ *
+ * @details `M` has to be a valid simplemc::static_extent.
+ *
+ * @tparam V Type to check.
+ */
+template <typename V>
+concept eigen_vector_cplx = (eigen_vector<V> && std::is_same_v<typename V::Scalar, std::complex<double>>);
+
+/**
+ * @brief Make an `Eigen::Matrix<T, M, 1>` with NaNs.
+ *
+ * @note For static sized objects, the `size` parameter is ignored.
+ *
+ * @tparam V simplemc::eigen_vector type.
+ * @param size Size of the vector.
+ * @return `Eigen::Matrix<T, M, 1>` with NaNs.
+ */
+template <eigen_vector V>
+V nans_vector(long size = 1) {
+    constexpr auto nan = std::numeric_limits<double>::quiet_NaN();
+    if constexpr (std::is_same_v<typename V::value_type, double>) {
+        return V::Constant(size, nan);
+    } else {
+        return V::Constant(size, std::complex<double> { nan, nan });
+    }
+}
+
+/**
+ * @brief Make an `Eigen::Matrix<T, M, N>` with NaNs.
+ *
+ * @note For static sized objects, the `rows` and `cols` parameters are ignored.
+ *
+ * @tparam M simplemc::eigen_matrix type.
+ * @param rows Number of rows.
+ * @param cols Number of columns.
+ * @return `Eigen::Matrix<T, M, N>` with NaNs.
+ */
+template <eigen_matrix M>
+M nans_matrix(long rows = 1, long cols = 1) {
+    constexpr auto nan = std::numeric_limits<double>::quiet_NaN();
+    if constexpr (std::is_same_v<typename M::value_type, double>) {
+        return M::Constant(rows, cols, nan);
+    } else {
+        return M::Constant(rows, cols, std::complex<double> { nan, nan });
+    }
+}
 
 /**
  * @brief Create a `std::span` from an `Eigen::PlainObjectBase` object.

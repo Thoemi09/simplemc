@@ -10,8 +10,8 @@
 namespace {
 
 using namespace simplemc;
-constexpr auto standard = accs::varalg::standard;
-constexpr auto welford = accs::varalg::welford;
+constexpr auto standard = varalg::standard;
+constexpr auto welford = varalg::welford;
 constexpr double tol = 1e-10;
 
 } // namespace

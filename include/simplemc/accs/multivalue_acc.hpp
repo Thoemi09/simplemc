@@ -20,7 +20,7 @@ namespace simplemc {
  * by calling the multivalue_acc::increment_count function.
  *
  * The intended use is for simplemc::mean_acc and simplemc::var_acc. Both of them provide a factory
- * function (`make_mva()`) that wraps the current object and returns a multi value accumlator.
+ * function, `make_mva()`, that wraps the current object and returns a multi value accumlator.
  *
  * The user should not need to create a multivalue_acc on their own.
  *
@@ -103,12 +103,12 @@ public:
      * @details It simply calls the corresponding streaming operator of the wrapped accumulator and
      * then decreases its count by one.
      *
-     * @tparam V2 Vector-like type that can be added to a simplemc::eigen_vector.
-     * @param vec Vector to be accumulated.
+     * @tparam W Eigen vector/array/expression type/.
+     * @param vec Vector/Array/Expression to be accumulated.
      * @return Reference to this object.
      */
-    template <typename V2>
-    multivalue_acc& operator<<(const V2& vec) {
+    template <typename W>
+    multivalue_acc& operator<<(const W& vec) {
         acc_ << vec;
         --acc_.count_;
         return *this;

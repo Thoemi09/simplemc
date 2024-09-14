@@ -565,17 +565,17 @@
  * @details **simplemc-accs** provides different accumulators and strategies to estimate the mean,
  * variance, covariance and autocorrelation time of some data.
  *
- * The different strategies are the `standard` and `welford` algorithm (see simplemc::accs::varalg).
+ * The different strategies are the `standard` and `welford` algorithm (see simplemc::varalg).
  *
  * In the following, we establish the notation that we use throughout this documentation and define
  * the quantities that we are interested in.
  *
  * \f$ \mathrm{E}[\mathbf{Z}] = \mathrm{E}[\mathbf{X}] + i \mathrm{E}[\mathbf{Y}] \f$ denotes the
- * expectation of the complex random vector \f$ \mathbf{Z} = \mathbf{X} + i \mathbf{Y} \f$, where \f$
- * \mathbf{X} \f$ and \f$ \mathbf{Y} \f$ are real random vectors. A random vector \f$ \mathbf{Z} =
- * (Z_1, \dots, Z_M) \f$ consists of individual random variables \f$ Z_i \f$.
+ * **expectation value** of the complex random vector \f$ \mathbf{Z} = \mathbf{X} + i \mathbf{Y} \f$,
+ * where \f$ \mathbf{X} \f$ and \f$ \mathbf{Y} \f$ are real random vectors. A random vector
+ * \f$ \mathbf{Z} = (Z_1, \dots, Z_M) \f$ consists of individual random variables \f$ Z_i \f$.
  *
- * The covariance matrix of a real random vector is defined as
+ * The **covariance matrix** of a real random vector is defined as
  * \f[
  *   \mathrm{Cov}[\mathbf{X}, \mathbf{X}] =
  *   \mathrm{E}\left[\left( \mathbf{X} - \mathrm{E}[\mathbf{X}] \right)
@@ -583,8 +583,8 @@
  *   \mathrm{E}\left[ \mathbf{X} \mathbf{X}^T \right] - \mathrm{E}\left[ \mathbf{X} \right]
  *   \mathrm{E}\left[ \mathbf{X} \right]^T \; .
  * \f]
- * The diagonal elements of the covariance matrix correspond to the variance of the individual real
- * random variables \f$ X_i \f$:
+ * The diagonal elements of the covariance matrix correspond to the **variance** of the individual
+ * real random variables \f$ X_i \f$:
  * \f[
  *   \mathrm{Var}[X_i] = \mathrm{Cov}[\mathbf{X}, \mathbf{X}]_{ii} = \mathrm{E}\left[ \left( X_i -
  *   \mathrm{E}\left[ X_i \right] \right)^2 \right] = \mathrm{E}\left[ X_i^2 \right] - E\left[ X_i
@@ -618,7 +618,7 @@
  *   \mathrm{E}\left[ |Z_i|^2 \right] - \left| E\left[ Z_i \right] \right|^2 \; .
  * \f]
  *
- * To write down estimators for the above mentioned qunatities, let \f$ S = \left\{ \mathbf{z}^{(j)} =
+ * To write down estimators for the above mentioned quantities, let \f$ S = \left\{ \mathbf{z}^{(j)} =
  * \mathbf{x}^{(j)} + i \mathbf{y}^{(j)} \in \mathbb{C}^M : j = 1, \dots, N \right\} \f$ be the set of
  * random samples that we have collected and want to analyze.
  *
@@ -691,7 +691,7 @@
  * @ingroup simplemc-accs
  * @brief General utilities for accumulating and analyzing data.
  *
- * @details In the following we use the notation from @ref simplemc-accs.
+ * @details In the following, we use the notation from @ref simplemc-accs.
  */
 
 /**
@@ -704,19 +704,18 @@
  * the fly. The following accumulators are available:
  * - simplemc::mean_acc: Simplest and fastest accumulator for calculating only the sample mean of a
  * random vector.
- * - @ref "simplemc::var_acc< double, A >" and @ref "simplemc::var_acc< std::complex<double>, A >":
- * In addition to the sample mean, it provides a naive (non-blocking) estimate of the variance of a
- * random vector, i.e. the diagonal of its covariance matrix.
- * - @ref "simplemc::covar_acc< double, A >" and @ref "simplemc::covar_acc< std::complex<double>, A >":
- * In addition to the sample mean, it provides a naive (non-blocking) estimate of the full covariance
- * matrix of a random vector.
+ * - simplemc::var_acc: In addition to the sample mean, it provides a naive (non-blocking) estimate of
+ * the variance of a random vector, i.e. the diagonal of its covariance matrix.
+ * - simplemc::covar_acc: In addition to the sample mean, it provides a naive (non-blocking) estimate
+ * of the full covariance matrix of a random vector.
  *
  * The variance and covariance accumulators can be further wrapped with
- * - simplemc::block_acc to improve the error estimation by using blocking or
+ * - simplemc::block_acc to improve the error estimation by grouping individual samples into blocks to
+ * decorrelate them or
  * - simplemc::autocorr_acc to get an estimate for the autocorrelation time.
  *
- * All accumulators support the standard and the more stable Welford algorithm when accumulating data
- * (see simplemc::accs::varalg).
+ * All accumulators support the `standard` and the more stable `welford` algorithm when accumulating
+ * data (see simplemc::varalg).
  *
  * To accumulate data, one can use different methods (please look at the documentation of a specific
  * accumulator to see which methods are supported):

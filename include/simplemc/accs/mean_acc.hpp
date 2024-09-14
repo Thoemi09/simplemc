@@ -23,15 +23,19 @@
 namespace simplemc {
 
 /**
- * @ingroup simplemc-accs-accs
+ * @addtogroup simplemc-accs-accs
+ * @{
+ */
+
+/**
  * @brief Accumulator for calculating the sample mean of a random vector.
  *
- * @details The sample mean is used as an approximation to to the exact expectation value. See
+ * @details The sample mean is used as an approximation to the exact expectation value. See
  * @ref simplemc-accs for a definition of the sample mean and expectation value.
  *
  * The accumulator takes two template parameters:
  * - the type of the random samples (a simplemc::eigen_vector type) and
- * - the algorithm (simplemc::accs::varalg) that should be used to accumulate the data.
+ * - the algorithm (simplemc::varalg) that should be used to accumulate the data.
  *
  * Both of them determine how the accumulation is actually done and what is stored in the accumulator.
  * Please see simplemc::accs::mean for more details.
@@ -52,9 +56,9 @@ namespace simplemc {
  * ```
  *
  * @tparam V simplemc::eigen_vector type.
- * @tparam A simplemc::accs::varalg algorithm used to accumulate the data.
+ * @tparam A simplemc::varalg algorithm used to accumulate the data.
  */
-template <eigen_vector V, accs::varalg A = accs::varalg::welford>
+template <eigen_vector V, varalg A = varalg::welford>
 class mean_acc {
 public:
     /**
@@ -71,6 +75,11 @@ public:
      * @brief Is the accumulator dynamically sized?
      */
     static constexpr bool is_dynamic = (V::RowsAtCompileTime == Eigen::Dynamic);
+
+    /**
+     * @brief Does the accumulator return scalars or vectors/matrices?
+     */
+    static constexpr bool returns_scalar = (!is_dynamic && static_size == 1);
 
     /**
      * @brief Type for counting the number of accumulated values.
@@ -95,7 +104,7 @@ public:
     /**
      * @brief Get the algorithm used to accumulate the data.
      *
-     * @return The simplemc::accs::varalg tag.
+     * @return The simplemc::varalg tag.
      */
     static constexpr auto varalg() { return A; }
 
@@ -107,7 +116,7 @@ private:
     // to be already increased by one).
     void add_value(value_type val, size_type idx, count_type count) {
         assert(idx >= 0 && idx < size());
-        if constexpr (varalg() == accs::varalg::standard) {
+        if constexpr (varalg() == varalg::standard) {
             mdata_(idx) += val;
         } else {
             mdata_(idx) += (val - mdata_(idx)) / static_cast<value_type>(count);
@@ -121,13 +130,13 @@ public:
      * @details For dynamically sized accumulators, it throws a simplemc::simplemc_exception if the
      * given size is <= 0.
      *
-     * For static sized accumulators, the `size` parameter is ignored.
+     * For static sized accumulators, the `num` parameter is ignored.
      *
-     * @param size Number of elements.
+     * @param num Number of elements.
      */
-    explicit mean_acc(size_type size = 1) : mdata_(vec_type::Zero(size)), count_(0), idx_(0) {
-        if constexpr (static_size == Eigen::Dynamic) {
-            if (size <= 0) {
+    explicit mean_acc(size_type num = 1) : mdata_(vec_type::Zero(num)), count_(0), idx_(0) {
+        if constexpr (is_dynamic) {
+            if (num <= 0) {
                 throw simplemc_exception("Dynamic size <= 0", "mean_acc::mean_acc");
             }
         }
@@ -136,14 +145,14 @@ public:
     /**
      * @brief Construct a mean accumulator with a given data storage and count.
      *
-     * @details For dynamically sized accumulators, i.e. `static_size == Eigen::Dynamic`, the size of
-     * the data storage must be >= 0. Otherwise, it throws a simplemc::simplemc_exception.
+     * @details For dynamically sized accumulators, the size of the data storage must be >= 0.
+     * Otherwise, it throws a simplemc::simplemc_exception.
      *
-     * @param mdata Accumulated mean data.
-     * @param count Number of accumulated values.
+     * @param md Accumulated mean data.
+     * @param ct Number of accumulated values.
      */
-    mean_acc(const vec_type& mdata, count_type count) : mdata_(mdata), count_(count), idx_(0) {
-        if constexpr (static_size == Eigen::Dynamic) {
+    mean_acc(const vec_type& md, count_type ct) : mdata_(md), count_(ct), idx_(0) {
+        if constexpr (is_dynamic) {
             if (mdata_.size() <= 0) {
                 throw simplemc_exception("Dynamic size <= 0", "mean_acc::mean_acc");
             }
@@ -188,18 +197,18 @@ public:
     /**
      * @brief Stream operator for accumulating a vector.
      *
-     * @tparam V2 Vector-like type that can be added to a simplemc::eigen_vector.
-     * @param vec Vector to be accumulated.
+     * @tparam W Eigen vector/array/expression type.
+     * @param vec Vector/Array/Expression to be accumulated.
      * @return Reference to this object.
      */
-    template <typename V2>
-    mean_acc& operator<<(const V2& vec) {
+    template <typename W>
+    mean_acc& operator<<(const W& vec) {
         assert(vec.size() == size());
         ++count_;
-        if constexpr (varalg() == accs::varalg::standard) {
-            mdata_ += vec;
+        if constexpr (varalg() == varalg::standard) {
+            mdata_ += vec.matrix();
         } else {
-            mdata_ += (vec - mdata_) / static_cast<value_type>(count_);
+            mdata_ += (vec.matrix() - mdata_) / static_cast<value_type>(count_);
         }
         return *this;
     }
@@ -207,25 +216,22 @@ public:
     /**
      * @brief Stream operator for incorporating the data from another mean accumulator.
      *
-     * @details Let \f$ \mathbf{m}_{1}^{(N_1)} \f$ and \f$ \mathbf{m}_{2}^{(N_2)} \f$ be the
-     * accumulated mean data of the first and second accumulator, respectively. Then, depending on the
-     * simplemc::accs::varalg, the combined accumulated data \f$ \mathbf{m}^{(N)} \f$ is
+     * @details Let the subscripts 1 and 2 correspond to the two accumulators we want to combine such
+     * that \f$ N = N_1 + N_2 \f$ is the total number of accumulated values. Then, depending on the
+     * simplemc::varalg, the combined accumulated data can be calculated as follows:
      * - `standard`:
-     *   \f[
-     *     \mathbf{m}^{(N)} = \mathbf{m}_{1}^{(N_1)} + \mathbf{m}_{2}^{(N_2)} \; .
-     *   \f]
-     * - `welford`:
-     *   \f[
-     *     \mathbf{m}^{(N)} = \frac{N_1}{N}\mathbf{m}_{1}^{(N_1)} +
-     *     \frac{N_2}{N} \mathbf{m}_{2}^{(N_2)} \; .
-     *   \f]
+     *   - \f$ \mathbf{m}^{(N)} = \mathbf{m}_{1}^{(N_1)} + \mathbf{m}_{2}^{(N_2)} \f$ .
      *
-     * @param acc Mean accumulator to be incorporated.
+     * - `welford`:
+     *   - \f$ \mathbf{n}^{(N)} = \frac{N_1}{N}\mathbf{n}_{1}^{(N_1)} + \frac{N_2}{N}
+     *     \mathbf{n}_{2}^{(N_2)} \f$ .
+     *
+     * @param acc simplemc::mean_acc to be incorporated.
      * @return Reference to this object.
      */
     mean_acc& operator<<(const mean_acc& acc) {
         assert(size() == acc.size());
-        if constexpr (varalg() == accs::varalg::standard) {
+        if constexpr (varalg() == varalg::standard) {
             mdata_ += acc.mdata_;
         } else {
             const auto n1 = static_cast<value_type>(count_);
@@ -241,13 +247,6 @@ public:
      *
      * @details The values are added to consecutive elements in the accumulator starting with the
      * element at the given index. The size of the range is assumed to be <= size() - `idx`.
-     *
-     * For example,
-     * @code{.cpp}
-     * mean_acc<double> acc(3);
-     * acc.accumlate(std::array<double, 2>{1.0, 2.0}, 1);
-     * @endcode
-     * will accumulate the values 1.0 and 2.0 to the indices 1 and 2, respectively.
      *
      * @tparam R Input range of values.
      * @param rg Range of values to be accumulated.
@@ -267,13 +266,6 @@ public:
      *
      * @details Each value of the given value range is accumulated at the corresponding index of the
      * given index range. Every index should only appear once.
-     *
-     * For example,
-     * @code{.cpp}
-     * mean_acc<double> acc(3);
-     * acc.accumlate(std::array<double, 2>{1.0, 2.0}, std::array<long, 2>{0, 2});
-     * @endcode
-     * will accumulate the values 1.0 and 2.0 at indices 0 and 2, respectively.
      *
      * @tparam R1 Input range of values.
      * @tparam R2 Input range of indices.
@@ -329,11 +321,8 @@ public:
      * @return Sample mean.
      */
     [[nodiscard]] auto mean() const {
-        if constexpr (!is_dynamic && static_size == 1) {
-            return simplemc::accs::mean<varalg()>(mdata_, count_)(0);
-        } else {
-            return simplemc::accs::mean<varalg()>(mdata_, count_);
-        }
+        using simplemc::accs::mean;
+        return detail::scalar_or_matrix<returns_scalar>(mean<varalg()>(mdata_, count_));
     }
 
 private:
@@ -346,9 +335,9 @@ private:
  * @brief Alias for a statically sized mean accumulator of size 1.
  *
  * @tparam T Type of accumulated data.
- * @tparam A simplemc::accs::varalg algorithm used to accumulate the data.
+ * @tparam A simplemc::varalg algorithm used to accumulate the data.
  */
-template <double_or_complex T, accs::varalg A = accs::varalg::welford>
+template <double_or_complex T, varalg A = varalg::welford>
 using mean_acc_single = mean_acc<Eigen::Matrix<T, 1, 1>, A>;
 
 /**
@@ -356,9 +345,9 @@ using mean_acc_single = mean_acc<Eigen::Matrix<T, 1, 1>, A>;
  *
  * @tparam T Type of accumulated data.
  * @tparam M Size of the accumulator.
- * @tparam A simplemc::accs::varalg algorithm used to accumulate the data.
+ * @tparam A simplemc::varalg algorithm used to accumulate the data.
  */
-template <double_or_complex T, int M, accs::varalg A = accs::varalg::welford>
+template <double_or_complex T, int M, varalg A = varalg::welford>
     requires(M >= 1)
 using mean_acc_static = mean_acc<Eigen::Matrix<T, M, 1>, A>;
 
@@ -366,10 +355,12 @@ using mean_acc_static = mean_acc<Eigen::Matrix<T, M, 1>, A>;
  * @brief Alias for a dynamically sized mean accumulator.
  *
  * @tparam T Type of accumulated data.
- * @tparam A simplemc::accs::varalg algorithm used to accumulate the data.
+ * @tparam A simplemc::varalg algorithm used to accumulate the data.
  */
-template <double_or_complex T, accs::varalg A = accs::varalg::welford>
+template <double_or_complex T, varalg A = varalg::welford>
 using mean_acc_dynamic = mean_acc<Eigen::Matrix<T, Eigen::Dynamic, 1>, A>;
+
+/** @} */
 
 } // namespace simplemc
 

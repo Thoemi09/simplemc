@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Utilities functions for simplemc-accs.
+ * @brief Utilities for simplemc-accs.
  */
 
 #ifndef SIMPLEMC_ACCS_UTILS_HPP
@@ -12,19 +12,13 @@
 #include <Eigen/Dense>
 
 #include <cassert>
-#include <complex>
 #include <cstdint>
-#include <limits>
-#include <type_traits>
+#include <utility>
 
-namespace simplemc::accs {
-
-/**
- * @addtogroup simplemc-accs-utils
- * @{
- */
+namespace simplemc {
 
 /**
+ * @ingroup simplemc-accs-utils
  * @brief Enumerate the different strategies how to accumulate data.
  *
  * @details The following two strategies are available:
@@ -34,44 +28,14 @@ namespace simplemc::accs {
  */
 enum class varalg { standard, welford };
 
-/**
- * @brief Make an `Eigen::Matrix<T, M, 1>` with NaNs.
- *
- * @note For static sized objects, the `size` parameter is ignored.
- *
- * @tparam V simplemc::eigen_vector type.
- * @param size Size of the vector.
- * @return `Eigen::Matrix<T, M, 1>` with NaNs.
- */
-template <eigen_vector V>
-V nans_vector(long size = 1) {
-    constexpr auto nan = std::numeric_limits<double>::quiet_NaN();
-    if constexpr (std::is_same_v<typename V::value_type, double>) {
-        return V::Constant(size, nan);
-    } else {
-        return V::Constant(size, std::complex<double> { nan, nan });
-    }
-}
+} // namespace simplemc
+
+namespace simplemc::accs {
 
 /**
- * @brief Make an `Eigen::Matrix<T, M, N>` with NaNs.
- *
- * @note For static sized objects, the `rows` and `cols` parameters are ignored.
- *
- * @tparam M simplemc::eigen_matrix type.
- * @param rows Number of rows.
- * @param cols Number of columns.
- * @return `Eigen::Matrix<T, M, N>` with NaNs.
+ * @addtogroup simplemc-accs-utils
+ * @{
  */
-template <eigen_matrix M>
-M nans_matrix(long rows = 1, long cols = 1) {
-    constexpr auto nan = std::numeric_limits<double>::quiet_NaN();
-    if constexpr (std::is_same_v<typename M::value_type, double>) {
-        return M::Constant(rows, cols, nan);
-    } else {
-        return M::Constant(rows, cols, std::complex<double> { nan, nan });
-    }
-}
 
 /**
  * @brief Calculate the sample mean of a (complex) random vector.
@@ -100,10 +64,10 @@ M nans_matrix(long rows = 1, long cols = 1) {
  *     \frac{1}{N} \sum_{j=1}^N \mathbf{z}^{(j)} \; .
  *   \f]
  *
- * Here, \f$ \mathbf{t} \f$ is a constant vector that can be optionally be applied to the random
+ * Here, \f$ \mathbf{t} \f$ is a constant vector that can optionally be applied to the random
  * samples to increase numerical accuracy.
  *
- * @tparam A simplemc::accs::varalg algorithm used to accumulate the data.
+ * @tparam A simplemc::varalg algorithm used to accumulate the data.
  * @tparam V simplemc::eigen_vector type.
  * @param mdata Accumulated mean data.
  * @param count Number of accumulated values.
@@ -162,19 +126,18 @@ V mean(const V& mdata, std::uint64_t count) {
  *     \sum_{k=1}^N y_i^{(k)}}{N} \right\} \; .
  *   \f]
  *
- * Here, \f$ \mathbf{t} \f$ and \f$ \mathbf{s} \f$ are constant vectors that can be optionally be
- * applied to the random samples to increase numerical accuracy.
+ * Here, \f$ \mathbf{t} \f$ and \f$ \mathbf{s} \f$ are constant vectors that can optionally be applied
+ * to the random samples to increase numerical accuracy.
  *
- * @tparam A simplemc::accs::varalg algorithm used to accumulate the data.
- * @tparam V simplemc::eigen_vector type with double value type.
+ * @tparam A simplemc::varalg algorithm used to accumulate the data.
+ * @tparam V simplemc::eigen_vector_dbl type.
  * @param mdata1 Accumulated mean data of random vector \f$ \mathbf{X} \f$.
  * @param mdata2 Accumulated mean data of random vector \f$ \mathbf{Y} \f$.
  * @param cdata Accumulated (cross-)covariance data.
  * @param count Number of accumulated values.
  * @return Diagonal of the sample (cross-)covariance matrix.
  */
-template <varalg A, eigen_vector V>
-    requires(std::is_same_v<typename V::value_type, double>)
+template <varalg A, eigen_vector_dbl V>
 V diag_covariance(
     [[maybe_unused]] const V& mdata1, [[maybe_unused]] const V& mdata2, const V& cdata, std::uint64_t count) {
     assert(mdata1.size() == mdata2.size());
@@ -233,20 +196,19 @@ V diag_covariance(
  *     \right\} \; .
  *   \f]
  *
- * Here, \f$ \mathbf{t} \f$ and \f$ \mathbf{s} \f$ are constant vectors that can be optionally be
- * applied to the random samples to increase numerical accuracy.
+ * Here, \f$ \mathbf{t} \f$ and \f$ \mathbf{s} \f$ are constant vectors that can optionally be applied
+ * to the random samples to increase numerical accuracy.
  *
- * @tparam A simplemc::accs::varalg algorithm used to accumulate the data.
- * @tparam V simplemc::eigen_vector type with double value type.
- * @tparam V simplemc::eigen_matrix type with double value type.
+ * @tparam A simplemc::varalg algorithm used to accumulate the data.
+ * @tparam V simplemc::eigen_vector_dbl type.
+ * @tparam M simplemc::eigen_matrix_dbl type.
  * @param mdata1 Accumulated mean data of random vector \f$ \mathbf{X} \f$.
  * @param mdata2 Accumulated mean data of random vector \f$ \mathbf{Y} \f$.
  * @param cdata Accumulated (cross-)covariance data.
  * @param count Number of accumulated values.
  * @return Sample (cross-)covariance matrix.
  */
-template <varalg A, eigen_vector V, eigen_matrix M>
-    requires(std::is_same_v<typename V::value_type, double> && std::is_same_v<typename M::value_type, double>)
+template <varalg A, eigen_vector_dbl V, eigen_matrix_dbl M>
 M covariance([[maybe_unused]] const V& mdata1, [[maybe_unused]] const V& mdata2, const M& cdata, std::uint64_t count) {
     assert(mdata1.size() == mdata2.size());
     assert(mdata1.size() == cdata.rows());
@@ -265,5 +227,20 @@ M covariance([[maybe_unused]] const V& mdata1, [[maybe_unused]] const V& mdata2,
 /** @} */
 
 } // namespace simplemc::accs
+
+namespace simplemc::detail {
+
+// Depending on the size and the memory location of an Eigen object, either a vector/matrix or a
+// scalar is returned.
+template <bool return_scalar, typename T>
+auto scalar_or_matrix(T&& obj) {
+    if constexpr (return_scalar) {
+        return std::forward<T>(obj)(0, 0);
+    } else {
+        return std::forward<T>(obj);
+    }
+}
+
+} // namespace simplemc::detail
 
 #endif // SIMPLEMC_ACCS_UTILS_HPP

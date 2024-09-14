@@ -9,9 +9,7 @@
 #include <Eigen/Dense>
 #include <fmt/ranges.h>
 
-#include <cmath>
 #include <complex>
-#include <type_traits>
 
 // Test fixture for the accumulators.
 class SimplemcAccs : public ::testing::Test {
@@ -78,16 +76,6 @@ protected:
     proc_c sp_c;
     int steps { 100000 };
 };
-
-// Check if a value is NaN.
-void check_isnan(auto val) {
-    if constexpr (std::is_same_v<std::remove_reference_t<decltype(val)>, double>) {
-        ASSERT_TRUE(std::isnan(val));
-    } else {
-        ASSERT_TRUE(std::isnan(val.real()));
-        ASSERT_TRUE(std::isnan(val.imag()));
-    }
-}
 
 // Check an empty accumulator.
 template <typename A>

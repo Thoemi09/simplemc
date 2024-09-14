@@ -147,7 +147,11 @@
         <tab type="usergroup" url="@ref simplemc-numeric-utils" title="Numeric utilities">
           <tab type="user" url="@ref simplemc::static_extent" title="static_extent"/>
           <tab type="user" url="@ref simplemc::eigen_matrix" title="eigen_matrix"/>
+          <tab type="user" url="@ref simplemc::eigen_matrix_cplx" title="eigen_matrix_cplx"/>
+          <tab type="user" url="@ref simplemc::eigen_matrix_dbl" title="eigen_matrix_dbl"/>
           <tab type="user" url="@ref simplemc::eigen_vector" title="eigen_vector"/>
+          <tab type="user" url="@ref simplemc::eigen_vector_cplx" title="eigen_vector_cplx"/>
+          <tab type="user" url="@ref simplemc::eigen_vector_dbl" title="eigen_vector_dbl"/>
           <tab type="user" url="@ref simplemc::linear_map" title="linear_map"/>
         </tab>
         <tab type="usergroup" url="@ref simplemc-numeric-quadrature" title="Quadrature tools">
@@ -167,11 +171,13 @@
       <tab type="usergroup" url="@ref simplemc-accs" title="simplemc-accs">
         <tab type="user" url="@ref simplemc-accs-utils" title="Accumulator utilities"/>
         <tab type="usergroup" url="@ref simplemc-accs-accs" title="Accumulators">
-          <tab type="user" url="@ref simplemc::covar_acc< double, A >" title="covar_acc<double, A>"/>
-          <tab type="user" url="@ref simplemc::covar_acc< std::complex< double >, A >" title="covar_acc<std::complex<double>, A>"/>
-          <tab type="user" url="@ref simplemc::mean_acc" title="mean_acc<T, A>"/>
-          <tab type="user" url="@ref simplemc::var_acc< double, A >" title="var_acc<double, A>"/>
-          <tab type="user" url="@ref simplemc::var_acc< std::complex< double >, A >" title="var_acc<std::complex<double>, A>"/>
+          <tab type="user" url="@ref simplemc::covar_acc" title="covar_acc"/>
+          <tab type="user" url="@ref simplemc::covar_acc< X, A >" title="covar_acc for dbl"/>
+          <tab type="user" url="@ref simplemc::covar_acc< Z, A >" title="covar_acc for cplx"/>
+          <tab type="user" url="@ref simplemc::mean_acc" title="mean_acc"/>
+          <tab type="user" url="@ref simplemc::var_acc" title="var_acc"/>
+          <tab type="user" url="@ref simplemc::var_acc< X, A >" title="var_acc for dbl"/>
+          <tab type="user" url="@ref simplemc::var_acc< Z, A >" title="var_acc for clpx"/>
         </tab>
         <tab type="usergroup" url="@ref simplemc-accs-wrappers" title="Accumulator wrappers">
           <tab type="user" url="@ref simplemc::autocorr_acc" title="autocorr_acc"/>

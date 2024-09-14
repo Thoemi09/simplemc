@@ -60,6 +60,16 @@ void check_range_equal(ranges::input_range auto&& rg, ranges::input_range auto&&
     }
 }
 
+// Check if a value is NaN.
+void check_isnan(auto val) {
+    if constexpr (std::is_same_v<std::remove_reference_t<decltype(val)>, double>) {
+        ASSERT_TRUE(std::isnan(val));
+    } else {
+        ASSERT_TRUE(std::isnan(val.real()));
+        ASSERT_TRUE(std::isnan(val.imag()));
+    }
+}
+
 // Simple histogram class for testing.
 class histogram01 {
 public:

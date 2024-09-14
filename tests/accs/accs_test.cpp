@@ -126,7 +126,7 @@ TEST_F(SimplemcAccs, PrintAnalyticResults) {
 TEST_F(SimplemcAccs, MeanAccumulator) {
     // general set up
     using acc_d = simplemc::mean_acc<double>;
-    using acc_c = simplemc::mean_acc<std::complex<double>, simplemc::accs::varalg::welford>;
+    using acc_c = simplemc::mean_acc<std::complex<double>, simplemc::varalg::welford>;
     using storage_d = typename acc_d::vec_type;
     using storage_c = typename acc_c::vec_type;
     double tol = 1e-10;
@@ -206,8 +206,8 @@ TEST_F(SimplemcAccs, MeanAccumulator) {
 // Test variance accumulator for double values.
 TEST_F(SimplemcAccs, DoubleVarianceAccumulator) {
     // general set up
-    using acc_std = simplemc::var_acc<double, simplemc::accs::varalg::standard>;
-    using acc_wel = simplemc::var_acc<double, simplemc::accs::varalg::welford>;
+    using acc_std = simplemc::var_acc<double, simplemc::varalg::standard>;
+    using acc_wel = simplemc::var_acc<double, simplemc::varalg::welford>;
     using storage_d = typename acc_std::vec_type;
     double tol = 1e-10;
     double tol_m = 1e-10;
@@ -294,8 +294,8 @@ TEST_F(SimplemcAccs, DoubleVarianceAccumulator) {
 // Test variance accumulator for complex values.
 TEST_F(SimplemcAccs, ComplexVarianceAccumulator) {
     // general set up
-    using acc_std = simplemc::var_acc<std::complex<double>, simplemc::accs::varalg::standard>;
-    using acc_wel = simplemc::var_acc<std::complex<double>, simplemc::accs::varalg::welford>;
+    using acc_std = simplemc::var_acc<std::complex<double>, simplemc::varalg::standard>;
+    using acc_wel = simplemc::var_acc<std::complex<double>, simplemc::varalg::welford>;
     using storage_c = typename acc_std::cplx_vec_type;
     double tol = 1e-10;
     double tol_m = 1e-10;
@@ -401,8 +401,8 @@ TEST_F(SimplemcAccs, ComplexVarianceAccumulator) {
 // Test covariance accumulator for double values.
 TEST_F(SimplemcAccs, DoubleCovarianceAccumulator) {
     // general set up
-    using acc_std = simplemc::covar_acc<double, simplemc::accs::varalg::standard>;
-    using acc_wel = simplemc::covar_acc<double, simplemc::accs::varalg::welford>;
+    using acc_std = simplemc::covar_acc<double, simplemc::varalg::standard>;
+    using acc_wel = simplemc::covar_acc<double, simplemc::varalg::welford>;
     using storage_d = typename acc_std::vec_type;
     double tol = 1e-10;
     double tol_m = 1e-10;
@@ -484,8 +484,8 @@ TEST_F(SimplemcAccs, DoubleCovarianceAccumulator) {
 // Test covariance accumulator for complex values.
 TEST_F(SimplemcAccs, ComplexCovarianceAccumulator) {
     // general set up
-    using acc_std = simplemc::covar_acc<std::complex<double>, simplemc::accs::varalg::standard>;
-    using acc_wel = simplemc::covar_acc<std::complex<double>, simplemc::accs::varalg::welford>;
+    using acc_std = simplemc::covar_acc<std::complex<double>, simplemc::varalg::standard>;
+    using acc_wel = simplemc::covar_acc<std::complex<double>, simplemc::varalg::welford>;
     using storage_c = typename acc_std::cplx_vec_type;
     double tol = 1e-10;
     double tol_m = 1e-10;
@@ -616,8 +616,8 @@ TEST_F(SimplemcAccs, BlockAccumulator) {
 // Test autocorrelation accumulator.
 TEST_F(SimplemcAccs, AutocorrelationAccumulator) {
     // general set up
-    using acc_std = simplemc::autocorr_acc<simplemc::var_acc<double, simplemc::accs::varalg::standard>>;
-    using acc_wel = simplemc::autocorr_acc<simplemc::var_acc<double, simplemc::accs::varalg::welford>>;
+    using acc_std = simplemc::autocorr_acc<simplemc::var_acc<double, simplemc::varalg::standard>>;
+    using acc_wel = simplemc::autocorr_acc<simplemc::var_acc<double, simplemc::varalg::welford>>;
     double tol = 1e-10;
     acc_std acc_sv_std(1, 5.0), acc_rg_std(size, 1.0);
     acc_wel acc_sv_wel(1, 5.0), acc_rg_wel(size, 1.0);
