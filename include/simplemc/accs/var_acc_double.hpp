@@ -190,9 +190,8 @@ public:
         assert(vec.size() == size());
         ++count_;
         if constexpr (varalg() == varalg::standard) {
-            const auto tmp = vec.matrix();
-            mdata_ += tmp;
-            vdata_ += tmp.cwiseProduct(tmp);
+            mdata_ += vec.matrix();
+            vdata_ += vec.matrix().cwiseProduct(vec.matrix());
         } else {
             const auto tmp = (vec.matrix() - mdata_).eval();
             mdata_ += tmp / static_cast<value_type>(count_);
@@ -345,9 +344,12 @@ public:
      * @return Diagonal of the sample covariance matrix of the mean.
      */
     [[nodiscard]] auto variance() const {
-        using simplemc::accs::diag_covariance;
-        return detail::scalar_or_matrix<returns_scalar>(
-            diag_covariance<varalg()>(mdata_, mdata_, vdata_, count_) / static_cast<value_type>(count_));
+        auto res = variance_of_data() / static_cast<value_type>(count_);
+        if constexpr (returns_scalar) {
+            return res;
+        } else {
+            return res.eval();
+        }
     }
 
     /**

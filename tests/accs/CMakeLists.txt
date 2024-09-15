@@ -13,6 +13,10 @@ add_executable(accs-mean-acc-test accs_mean_acc_test.cpp)
 target_link_libraries(accs-mean-acc-test PRIVATE simplemc-test simplemc::simplemc-accs)
 add_test(NAME accs-mean-acc-test COMMAND accs-mean-acc-test)
 
+add_executable(accs-var-acc-test accs_var_acc_test.cpp)
+target_link_libraries(accs-var-acc-test PRIVATE simplemc-test simplemc::simplemc-accs)
+add_test(NAME accs-var-acc-test COMMAND accs-var-acc-test)
+
 # add_executable(accs-test accs_test.cpp)
 # target_link_libraries(accs-test PRIVATE simplemc-test simplemc::simplemc-accs)
 # add_test(NAME accs-test COMMAND accs-test)

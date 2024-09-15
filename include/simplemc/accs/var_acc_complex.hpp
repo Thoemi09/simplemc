@@ -218,11 +218,10 @@ public:
         assert(vec.size() == size());
         ++count_;
         if constexpr (varalg() == varalg::standard) {
-            const auto tmp = vec.matrix();
-            mdata_ += tmp;
-            rdata_ += tmp.real().cwiseProduct(tmp.real());
-            idata_ += tmp.imag().cwiseProduct(tmp.imag());
-            cdata_ += tmp.real().cwiseProduct(tmp.imag());
+            mdata_ += vec.matrix();
+            rdata_ += vec.matrix().real().cwiseProduct(vec.matrix().real());
+            idata_ += vec.matrix().imag().cwiseProduct(vec.matrix().imag());
+            cdata_ += vec.matrix().real().cwiseProduct(vec.matrix().imag());
         } else {
             const auto tmp = (vec.matrix() - mdata_).eval();
             mdata_ += tmp / static_cast<value_type>(count_);
@@ -446,8 +445,8 @@ public:
      */
     [[nodiscard]] auto variance_of_real_data() const {
         using simplemc::accs::diag_covariance;
-        return detail::scalar_or_matrix<returns_scalar>(
-            diag_covariance<varalg()>(mdata_.real(), mdata_.real(), rdata_, count_));
+        dbl_vec_type mdata_r = mdata_.real();
+        return detail::scalar_or_matrix<returns_scalar>(diag_covariance<varalg()>(mdata_r, mdata_r, rdata_, count_));
     }
 
     /**
@@ -463,8 +462,8 @@ public:
      */
     [[nodiscard]] auto variance_of_imag_data() const {
         using simplemc::accs::diag_covariance;
-        return detail::scalar_or_matrix<returns_scalar>(
-            diag_covariance<varalg()>(mdata_.imag(), mdata_.imag(), idata_, count_));
+        dbl_vec_type mdata_i = mdata_.imag();
+        return detail::scalar_or_matrix<returns_scalar>(diag_covariance<varalg()>(mdata_i, mdata_i, idata_, count_));
     }
 
     /**
@@ -482,8 +481,9 @@ public:
      */
     [[nodiscard]] auto covariance_of_real_and_imag_data() const {
         using simplemc::accs::diag_covariance;
-        return detail::scalar_or_matrix<returns_scalar>(
-            diag_covariance<varalg()>(mdata_.real(), mdata_.imag(), cdata_, count_));
+        dbl_vec_type mdata_r = mdata_.real();
+        dbl_vec_type mdata_i = mdata_.imag();
+        return detail::scalar_or_matrix<returns_scalar>(diag_covariance<varalg()>(mdata_r, mdata_i, cdata_, count_));
     }
 
 private:

@@ -1,9 +1,10 @@
 #include "./accs_fixture.hpp"
 
-#include <simplemc/accs/mean_acc.hpp>
+#include <simplemc/accs/var_acc.hpp>
 
 #include <complex>
 #include <numeric>
+#include <tuple>
 #include <vector>
 
 // anonymous namespace with parameters
@@ -17,54 +18,54 @@ constexpr double tol = 1e-10;
 } // namespace
 
 // Check empty accumulators.
-TEST_F(SimplemcAccs, MeanAccEmpty) {
+TEST_F(SimplemcAccs, VarAccEmpty) {
     using namespace simplemc;
 
-    mean_acc_single<double> acc_sd;
+    var_acc_single<double> acc_sd;
     ASSERT_EQ(acc_sd.size(), 1);
     check_empty(acc_sd);
     static_assert(!acc_sd.is_dynamic);
     static_assert(acc_sd.static_size == 1);
 
-    mean_acc_single<std::complex<double>, standard> acc_sc;
+    var_acc_single<std::complex<double>, standard> acc_sc;
     ASSERT_EQ(acc_sc.size(), 1);
     check_empty(acc_sc);
     static_assert(!acc_sc.is_dynamic);
     static_assert(acc_sc.static_size == 1);
 
-    mean_acc_static<double, 5> acc_st_d;
+    var_acc_static<double, 5> acc_st_d;
     ASSERT_EQ(acc_st_d.size(), 5);
     check_empty(acc_st_d);
     static_assert(!acc_st_d.is_dynamic);
     static_assert(acc_st_d.static_size == 5);
 
-    mean_acc_static<std::complex<double>, 5, standard> acc_st_c;
+    var_acc_static<std::complex<double>, 5, standard> acc_st_c;
     ASSERT_EQ(acc_st_c.size(), 5);
     check_empty(acc_st_c);
     static_assert(!acc_st_c.is_dynamic);
     static_assert(acc_st_c.static_size == 5);
 
-    mean_acc_dynamic<double> acc_dyn_d(5);
+    var_acc_dynamic<double> acc_dyn_d(5);
     ASSERT_EQ(acc_dyn_d.size(), 5);
     check_empty(acc_dyn_d);
     static_assert(acc_dyn_d.is_dynamic);
     static_assert(acc_dyn_d.static_size == Eigen::Dynamic);
 
-    mean_acc_dynamic<std::complex<double>, standard> acc_dyn_c(5);
+    var_acc_dynamic<std::complex<double>, standard> acc_dyn_c(5);
     ASSERT_EQ(acc_dyn_c.size(), 5);
     check_empty(acc_dyn_c);
     static_assert(acc_dyn_c.is_dynamic);
     static_assert(acc_dyn_c.static_size == Eigen::Dynamic);
 }
 
-// Check mean accumulator of size 1.
-TEST_F(SimplemcAccs, MeanAccSingle) {
+// Check variance accumulator of size 1.
+TEST_F(SimplemcAccs, VarAccSingle) {
     // general set up
     using namespace simplemc;
-    simplemc::mean_acc_single<double, standard> acc_std_d1, acc_std_d2;
-    simplemc::mean_acc_single<double, welford> acc_wel_d1, acc_wel_d2;
-    simplemc::mean_acc_single<std::complex<double>, standard> acc_std_c1, acc_std_c2;
-    simplemc::mean_acc_single<std::complex<double>, welford> acc_wel_c1, acc_wel_c2;
+    simplemc::var_acc_single<double, standard> acc_std_d1, acc_std_d2;
+    simplemc::var_acc_single<double, welford> acc_wel_d1, acc_wel_d2;
+    simplemc::var_acc_single<std::complex<double>, standard> acc_std_c1, acc_std_c2;
+    simplemc::var_acc_single<std::complex<double>, welford> acc_wel_c1, acc_wel_c2;
 
     // fill accumulators
     const auto merge_size = steps / 2;
@@ -97,23 +98,33 @@ TEST_F(SimplemcAccs, MeanAccSingle) {
     acc_std_c1 << acc_std_c2;
     acc_wel_c1 << acc_wel_c2;
 
-    // check mean
+    // check mean and variance
     const auto m_d = sample_mean(sp_d);
+    const auto v_d = sample_variance(sp_d);
     const auto m_c = sample_mean(sp_c);
+    const auto [r_c, i_c, ri_c] = sample_variance(sp_c);
     check_near(acc_std_d1.mean(), m_d[0], tol);
+    check_near(acc_std_d1.variance_of_data(), v_d[0], tol);
     check_near(acc_wel_d1.mean(), m_d[0], tol);
+    check_near(acc_wel_d1.variance_of_data(), v_d[0], tol);
     check_near(acc_std_c1.mean(), m_c[0], tol);
+    check_near(acc_std_c1.variance_of_real_data(), r_c[0], tol);
+    check_near(acc_std_c1.variance_of_imag_data(), i_c[0], tol);
+    check_near(acc_std_c1.covariance_of_real_and_imag_data(), ri_c[0], tol);
     check_near(acc_wel_c1.mean(), m_c[0], tol);
+    check_near(acc_wel_c1.variance_of_real_data(), r_c[0], tol);
+    check_near(acc_wel_c1.variance_of_imag_data(), i_c[0], tol);
+    check_near(acc_wel_c1.covariance_of_real_and_imag_data(), ri_c[0], tol);
 }
 
-// Check mean accumulator using the full random vectors.
-TEST_F(SimplemcAccs, MeanAccVector) {
+// Check variance accumulator using the full random vectors.
+TEST_F(SimplemcAccs, VarAccVector) {
     // general set up
     using namespace simplemc;
-    simplemc::mean_acc_static<double, size, standard> acc_std_d1, acc_std_d2;
-    simplemc::mean_acc_dynamic<double, welford> acc_wel_d1(size), acc_wel_d2(size);
-    simplemc::mean_acc_static<std::complex<double>, size, standard> acc_std_c1, acc_std_c2;
-    simplemc::mean_acc_dynamic<std::complex<double>, welford> acc_wel_c1(size), acc_wel_c2(size);
+    simplemc::var_acc_static<double, size, standard> acc_std_d1, acc_std_d2;
+    simplemc::var_acc_dynamic<double, welford> acc_wel_d1(size), acc_wel_d2(size);
+    simplemc::var_acc_static<std::complex<double>, size, standard> acc_std_c1, acc_std_c2;
+    simplemc::var_acc_dynamic<std::complex<double>, welford> acc_wel_c1(size), acc_wel_c2(size);
 
     // fill accumulators
     const auto merge_size = steps / 2;
@@ -148,23 +159,33 @@ TEST_F(SimplemcAccs, MeanAccVector) {
     acc_std_c1 << acc_std_c2;
     acc_wel_c1 << acc_wel_c2;
 
-    // check mean
+    // check mean and variance
     const auto m_d = sample_mean(sp_d);
+    const auto v_d = sample_variance(sp_d);
     const auto m_c = sample_mean(sp_c);
+    const auto [r_c, i_c, ri_c] = sample_variance(sp_c);
     check_range_near(acc_std_d1.mean(), m_d, tol);
+    check_range_near(acc_std_d1.variance_of_data(), v_d, tol);
     check_range_near(acc_wel_d1.mean(), m_d, tol);
+    check_range_near(acc_wel_d1.variance_of_data(), v_d, tol);
     check_range_near(acc_std_c1.mean(), m_c, tol);
+    check_range_near(acc_std_c1.variance_of_real_data(), r_c, tol);
+    check_range_near(acc_std_c1.variance_of_imag_data(), i_c, tol);
+    check_range_near(acc_std_c1.covariance_of_real_and_imag_data(), ri_c, tol);
     check_range_near(acc_wel_c1.mean(), m_c, tol);
+    check_range_near(acc_wel_c1.variance_of_real_data(), r_c, tol);
+    check_range_near(acc_wel_c1.variance_of_imag_data(), i_c, tol);
+    check_range_near(acc_wel_c1.covariance_of_real_and_imag_data(), ri_c, tol);
 }
 
-// Check mean accumulator using only part of random vectors.
-TEST_F(SimplemcAccs, MeanAccIndividualIndices) {
+// Check variance accumulator using only part of random vectors.
+TEST_F(SimplemcAccs, VarAccIndividualIndices) {
     // general set up
     using namespace simplemc;
-    simplemc::mean_acc_static<double, size, standard> acc_std_d1, acc_std_d2;
-    simplemc::mean_acc_dynamic<double, welford> acc_wel_d1(size), acc_wel_d2(size);
-    simplemc::mean_acc_static<std::complex<double>, size, standard> acc_std_c1, acc_std_c2;
-    simplemc::mean_acc_dynamic<std::complex<double>, welford> acc_wel_c1(size), acc_wel_c2(size);
+    simplemc::var_acc_static<double, size, standard> acc_std_d1, acc_std_d2;
+    simplemc::var_acc_dynamic<double, welford> acc_wel_d1(size), acc_wel_d2(size);
+    simplemc::var_acc_static<std::complex<double>, size, standard> acc_std_c1, acc_std_c2;
+    simplemc::var_acc_dynamic<std::complex<double>, welford> acc_wel_c1(size), acc_wel_c2(size);
 
     // fill accumulators
     const auto merge_size = steps / 2;
@@ -181,9 +202,9 @@ TEST_F(SimplemcAccs, MeanAccIndividualIndices) {
         acc_std_c2[idx] << sp_c.samples[i](idx);
         auto mva_d = acc_wel_d2.make_mva();
         auto mva_c = acc_wel_c2.make_mva();
-        for (auto idx : idxs) {
-            mva_d[idx] << sp_d.samples[i](idx);
-            mva_c[idx] << sp_c.samples[i](idx);
+        for (auto j : idxs) {
+            mva_d[j] << sp_d.samples[i](j);
+            mva_c[j] << sp_c.samples[i](j);
         }
         mva_d.increment_count();
         mva_c.increment_count();
@@ -205,17 +226,41 @@ TEST_F(SimplemcAccs, MeanAccIndividualIndices) {
     acc_std_c1 << acc_std_c2;
     acc_wel_c1 << acc_wel_c2;
 
-    // check mean
-    const auto m_d = sample_mean(sp_d);
-    const auto m_c = sample_mean(sp_c);
-    auto m_wel_d = m_d;
-    auto m_wel_c = m_c;
+    // check mean and variance
+    auto m_std_d = sample_mean(sp_d);
+    auto v_std_d = sample_variance(sp_d);
+    auto m_std_c = sample_mean(sp_c);
+    auto [r_std_c, i_std_c, ri_std_c] = sample_variance(sp_c);
+    auto [m_wel_d, v_wel_d] = std::tuple(m_std_d, v_std_d);
+    auto [m_wel_c, r_wel_c, i_wel_c, ri_wel_c] = std::tuple(m_std_c, r_std_c, i_std_c, ri_std_c);
+    for (int i = 0; i < size; ++i) {
+        if (i != idx) {
+            m_std_d(i) = 0.0;
+            v_std_d(i) = 0.0;
+            m_std_c(i) = { 0.0, 0.0 };
+            r_std_c(i) = 0.0;
+            i_std_c(i) = 0.0;
+            ri_std_c(i) = 0.0;
+        }
+    }
+    check_range_near(acc_std_d1.mean(), m_std_d, tol);
+    check_range_near(acc_std_d1.variance_of_data(), v_std_d, tol);
+    check_range_near(acc_std_c1.mean(), m_std_c, tol);
+    check_range_near(acc_std_c1.variance_of_real_data(), r_std_c, tol);
+    check_range_near(acc_std_c1.variance_of_imag_data(), i_std_c, tol);
+    check_range_near(acc_std_c1.covariance_of_real_and_imag_data(), ri_std_c, tol);
     for (int i = 1; i < size - 1; ++i) {
         m_wel_d(i) = 0.0;
+        v_wel_d(i) = 0.0;
         m_wel_c(i) = { 0.0, 0.0 };
+        r_wel_c(i) = 0.0;
+        i_wel_c(i) = 0.0;
+        ri_wel_c(i) = 0.0;
     }
-    check_near(acc_std_d1.mean()(idx), m_d(idx), tol);
     check_range_near(acc_wel_d1.mean(), m_wel_d, tol);
-    check_near(acc_std_c1.mean()(idx), m_c(idx), tol);
+    check_range_near(acc_wel_d1.variance_of_data(), v_wel_d, tol);
     check_range_near(acc_wel_c1.mean(), m_wel_c, tol);
+    check_range_near(acc_wel_c1.variance_of_real_data(), r_wel_c, tol);
+    check_range_near(acc_wel_c1.variance_of_imag_data(), i_wel_c, tol);
+    check_range_near(acc_wel_c1.covariance_of_real_and_imag_data(), ri_wel_c, tol);
 }
