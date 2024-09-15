@@ -29,10 +29,10 @@ namespace simplemc {
  * @brief Specialization of simplemc::var_acc for complex random vectors.
  *
  * @details The accumulated data is stored in four vectors:
- * - a complex vector for the mean
- * - a real vector for the variance of the real part of the random vector,
- * - a real vector for the variance of the imaginary part of the random vector and
- * - a real vector for the covariance between the real and imaginary parts of the random vector.
+ * - a complex vector for the mean data,
+ * - a real vector for the variance data of the real part of the random vector,
+ * - a real vector for the variance data of the imaginary part of the random vector and
+ * - a real vector for the covariance data between the real and imaginary parts of the random vector.
  *
  * See simplemc::accs::mean and simplemc::accs::diag_covariance.
  *
@@ -57,7 +57,7 @@ namespace simplemc {
  * Variance of imag part: 0.25073
  * ```
  *
- * @tparam V simplemc::eigen_vector_cplx type.
+ * @tparam Z simplemc::eigen_vector_cplx type.
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  */
 template <eigen_vector_cplx Z, varalg A>

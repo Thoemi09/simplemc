@@ -27,8 +27,11 @@ namespace simplemc {
  * @ingroup simplemc-accs-accs
  * @brief Specialization of simplemc::var_acc for real random vectors.
  *
- * @details The accumulated data is stored in two vectors: (i) one for the mean and (ii) one for the
- * variance (see simplemc::accs::mean and simplemc::accs::diag_covariance).
+ * @details The accumulated data is stored in two vectors:
+ * - a real vector for the mean data and
+ * - a real vector for the variance data.
+ *
+ * See simplemc::accs::mean and simplemc::accs::diag_covariance.
  *
  * @code{.cpp}
  * std::mt19937_64 rng;
@@ -356,8 +359,8 @@ public:
     /**
      * @brief Calculate the sample variance of the mean.
      *
-     * @details Calls simplemc::accs::diag_covariance with the accumulated data and the count and
-     * divides the result by the count.
+     * @details Calls variance_of_data() with the accumulated data and the count and divides the
+     * result by the count.
      *
      * For statically sized accumulators with a size() == 1, it returns a single value. Otherwise, it
      * returns a vector.

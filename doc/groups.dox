@@ -766,7 +766,7 @@
  * acc.accumulate(rg, idxs);
  * @endcode
  * This is equivalent to adding the full vector `(0,...,0,rg[i],...,0,...,rg[j],0,...,0)` to the
- * samples, where only the components with indices `idx[0]`, `idx[1]`, `idx[2]`, etc. are non-zero.
+ * samples, where only the components with indices `idxs[0]`, `idxs[1]`, `idxs[2]`, etc. are non-zero.
  */
 
 /**

@@ -38,7 +38,8 @@ namespace simplemc {
  * - the algorithm (simplemc::varalg) that should be used to accumulate the data.
  *
  * Both of them determine how the accumulation is actually done and what is stored in the accumulator.
- * Please see simplemc::accs::mean for more details.
+ * The accumulated data is stored in a single vector. Please see simplemc::accs::mean for more
+ * details.
  *
  * @code{.cpp}
  * std::vector<double> data = {1.0, 2.0, 3.0, 4.0, 5.0};

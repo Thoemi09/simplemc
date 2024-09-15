@@ -8,5 +8,6 @@
 
 #include <simplemc/accs/var_acc_complex.hpp>
 #include <simplemc/accs/var_acc_double.hpp>
+#include <simplemc/accs/var_acc_fwd.hpp>
 
 #endif // SIMPLEMC_ACCS_VAR_ACC_HPP
