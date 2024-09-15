@@ -27,6 +27,27 @@ namespace simplemc {
  * @ingroup simplemc-accs-accs
  * @brief Specialization of simplemc::var_acc for real random vectors.
  *
+ * @details The accumulated data is stored in two vectors: (i) one for the mean and (ii) one for the
+ * variance (see simplemc::accs::mean and simplemc::accs::diag_covariance).
+ *
+ * @code{.cpp}
+ * std::mt19937_64 rng;
+ * std::normal_distribution<double> normal_dist(5.0, 1.0);
+ * simplemc::var_acc<Eigen::Vector<double, 1>> acc;
+ * for (int i = 0; i < 100000; ++i) {
+ *     acc << normal_dist(rng);
+ * }
+ * fmt::print("Mean: {}\n", acc.mean());
+ * fmt::print("Variance: {}\n", acc.variance_of_data());
+ * @endcode
+ *
+ * Output:
+ *
+ * ```
+ * Mean: 5.002072302074473
+ * Variance: 1.0037814573268022
+ * ```
+ *
  * @tparam X simplemc::eigen_vector_dbl type.
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  */

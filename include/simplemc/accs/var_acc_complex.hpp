@@ -28,6 +28,35 @@ namespace simplemc {
  * @ingroup simplemc-accs-accs
  * @brief Specialization of simplemc::var_acc for complex random vectors.
  *
+ * @details The accumulated data is stored in four vectors:
+ * - a complex vector for the mean
+ * - a real vector for the variance of the real part of the random vector,
+ * - a real vector for the variance of the imaginary part of the random vector and
+ * - a real vector for the covariance between the real and imaginary parts of the random vector.
+ *
+ * See simplemc::accs::mean and simplemc::accs::diag_covariance.
+ *
+ * @code{.cpp}
+ * std::mt19937_64 rng;
+ * std::normal_distribution<double> normal_dist_r(5.0, 1.0);
+ * std::normal_distribution<double> normal_dist_i(-3.0, 0.5);
+ * simplemc::var_acc<Eigen::Vector<std::complex<double>, 1>> acc;
+ * for (int i = 0; i < 100000; ++i) {
+ *     acc << std::complex<double>{ normal_dist_r(rng), normal_dist_i(rng) };
+ * }
+ * fmt::print("Mean: ({:.5f}, {:.5f})\n", acc.mean().real(), acc.mean().imag());
+ * fmt::print("Variance of real part: {:.5f}\n", acc.variance_of_real_data());
+ * fmt::print("Variance of imag part: {:.5f}\n", acc.variance_of_imag_data());
+ * @endcode
+ *
+ * Output:
+ *
+ * ```
+ * Mean: (5.00441, -2.99916)
+ * Variance of real part: 1.00475
+ * Variance of imag part: 0.25073
+ * ```
+ *
  * @tparam V simplemc::eigen_vector_cplx type.
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  */
