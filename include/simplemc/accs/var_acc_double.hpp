@@ -117,7 +117,7 @@ private:
             vdata_(idx) += val * val;
         } else {
             const auto tmp = val - mdata_(idx);
-            mdata_(idx) += tmp / static_cast<value_type>(count);
+            mdata_(idx) += tmp / static_cast<double>(count);
             vdata_(idx) += tmp * (val - mdata_(idx));
         }
     }
@@ -218,7 +218,7 @@ public:
             vdata_ += vec.matrix().cwiseProduct(vec.matrix());
         } else {
             const auto tmp = (vec.matrix() - mdata_).eval();
-            mdata_ += tmp / static_cast<value_type>(count_);
+            mdata_ += tmp / static_cast<double>(count_);
             vdata_ += tmp.cwiseProduct(vec.matrix() - mdata_);
         }
         return *this;
@@ -252,8 +252,8 @@ public:
             mdata_ += acc.mdata_;
             vdata_ += acc.vdata_;
         } else {
-            const auto n1 = static_cast<value_type>(count_);
-            const auto n2 = static_cast<value_type>(acc.count_);
+            const auto n1 = static_cast<double>(count_);
+            const auto n2 = static_cast<double>(acc.count_);
             const auto m = mdata_ * n1 / (n1 + n2) + acc.mdata_ * n2 / (n1 + n2);
             vdata_ += acc.vdata_ + n1 * (mdata_ - m).cwiseProduct(mdata_ - m) +
                 n2 * (acc.mdata_ - m).cwiseProduct(acc.mdata_ - m);
@@ -368,7 +368,7 @@ public:
      * @return Diagonal of the sample covariance matrix of the mean.
      */
     [[nodiscard]] auto variance() const {
-        auto res = variance_of_data() / static_cast<value_type>(count_);
+        auto res = variance_of_data() / static_cast<double>(count_);
         if constexpr (returns_scalar) {
             return res;
         } else {

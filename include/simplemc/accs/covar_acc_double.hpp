@@ -134,7 +134,7 @@ private:
                 assert(idx1 >= 0 && idx1 < size());
                 // mean data and diagonal elements of covariance matrix
                 const auto tmp_old = val1 - mdata_(idx1);
-                mdata_(idx1) += tmp_old / static_cast<value_type>(count);
+                mdata_(idx1) += tmp_old / static_cast<double>(count);
                 const auto tmp = val1 - mdata_(idx1);
                 cdata_(idx1, idx1) += tmp_old * tmp;
                 // off-diagonal elements of covariance matrix
@@ -249,7 +249,7 @@ public:
             cdata_ += (vec.matrix() * vec.matrix().transpose()).template triangularView<Eigen::Lower>();
         } else {
             const auto tmp = (vec.matrix() - mdata_).eval();
-            mdata_ += tmp / static_cast<value_type>(count_);
+            mdata_ += tmp / static_cast<double>(count_);
             cdata_ += (tmp * (vec.matrix() - mdata_).transpose()).template triangularView<Eigen::Lower>();
         }
         return *this;
@@ -279,12 +279,12 @@ public:
     covar_acc& operator<<(const covar_acc& acc) {
         assert(size() == acc.size());
         if constexpr (varalg() == varalg::standard) {
-            mdata_ += acc.mdata_ + acc.count_;
+            mdata_ += acc.mdata_;
             cdata_ += acc.cdata_.template triangularView<Eigen::Lower>();
         } else {
-            const auto n1 = static_cast<value_type>(count_);
-            const auto n2 = static_cast<value_type>(acc.count_);
-            const auto m = mdata_ = mdata_ * n1 / (n1 + n2) + acc.mdata_ * n2 / (n1 + n2);
+            const auto n1 = static_cast<double>(count_);
+            const auto n2 = static_cast<double>(acc.count_);
+            const auto m  = mdata_ * n1 / (n1 + n2) + acc.mdata_ * n2 / (n1 + n2);
             cdata_ += (acc.cdata_ + n1 * (mdata_ - m) * (mdata_ - m).transpose() +
                 n2 * (acc.mdata_ - m) * (acc.mdata_ - m).transpose())
                           .template triangularView<Eigen::Lower>();
@@ -355,9 +355,12 @@ public:
     /**
      * @brief Get accumulated data used for estimating the covariance.
      *
+     * @warning Only the lower triangular part of the covariance matrix is valid. Use
+     * `selfadjointView<Eigen::Lower>()` to get the full covariance matrix.
+     *
      * @return Data storage (content depends on the algorithm, see simplemc::accs::covariance).
      */
-    [[nodiscard]] const mat_type& cdata() const { return cdata_.template selfadjointView<Eigen::Lower>(); }
+    [[nodiscard]] const mat_type& cdata() const { return cdata_; }
 
     /**
      * @brief Calculate the sample mean from the accumulated data.
@@ -385,7 +388,7 @@ public:
      * @return Sample covariance matrix of the mean.
      */
     [[nodiscard]] auto covariance() const {
-        auto res = covariance_of_data() / static_cast<value_type>(count_);
+        auto res = covariance_of_data() / static_cast<double>(count_);
         if constexpr (returns_scalar) {
             return res;
         } else {
@@ -405,7 +408,7 @@ public:
      */
     [[nodiscard]] auto covariance_of_data() const {
         using simplemc::accs::covariance;
-        auto cdata_full = cdata_.template selfadjointView<Eigen::Lower>();
+        mat_type cdata_full = cdata_.template selfadjointView<Eigen::Lower>();
         return detail::scalar_or_matrix<returns_scalar>(covariance<varalg()>(mdata_, mdata_, cdata_full, count_));
     }
 

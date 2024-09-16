@@ -5,6 +5,7 @@
 #include "../test_utils.hpp"
 
 #include <simplemc/utils/fmt_complex.hpp>
+#include <simplemc/utils/to_string.hpp>
 
 #include <Eigen/Dense>
 #include <fmt/ranges.h>
@@ -56,9 +57,13 @@ protected:
         fmt::print("Sample mean: {}\n", sample_mean(sp_d));
         fmt::print("Analytic variance: {}\n", analytic_variance(sp_d));
         fmt::print("Sample variance: {}\n", sample_variance(sp_d));
+        fmt::print("Analytic covariance:\n{}\n", simplemc::to_string(analytic_covariance(sp_d)));
+        fmt::print("Sample covariance:\n{}\n", simplemc::to_string(sample_covariance(sp_d)));
 
-        const auto [a_re_var, a_im_var, a_re_im_cov] = analytic_variance(sp_c);
-        const auto [s_re_var, s_im_var, s_re_im_cov] = sample_variance(sp_c);
+        const auto [a_re_var, a_im_var, a_re_im_var] = analytic_variance(sp_c);
+        const auto [s_re_var, s_im_var, s_re_im_var] = sample_variance(sp_c);
+        const auto [a_re_cov, a_im_cov, a_re_im_cov] = analytic_covariance(sp_c);
+        const auto [s_re_cov, s_im_cov, s_re_im_cov] = sample_covariance(sp_c);
         fmt::print("\nExpected results for stochastic process with complex states:\n");
         fmt::print("State space: \n", sp_c.states);
         fmt::print("Stationary distribution: {}\n", sp_c.probs);
@@ -68,8 +73,14 @@ protected:
         fmt::print("Real sample variance: {}\n", s_re_var);
         fmt::print("Imaginary analytic variance: {}\n", a_im_var);
         fmt::print("Imaginary sample variance: {}\n", s_im_var);
-        fmt::print("Real-imaginary analytic covariance (diagonal): {}\n", a_re_im_cov);
-        fmt::print("Real-imaginary sample covariance (diagonal): {}\n", s_re_im_cov);
+        fmt::print("Real-imaginary analytic covariance (diagonal): {}\n", a_re_im_var);
+        fmt::print("Real-imaginary sample covariance (diagonal): {}\n", s_re_im_var);
+        fmt::print("Real analytic covariance:\n{}\n", simplemc::to_string(a_re_cov));
+        fmt::print("Real sample covariance:\n{}\n", simplemc::to_string(s_re_cov));
+        fmt::print("Imaginary analytic covariance:\n{}\n", simplemc::to_string(a_im_cov));
+        fmt::print("Imaginary sample covariance:\n{}\n", simplemc::to_string(s_im_cov));
+        fmt::print("Real-imaginary analytic covariance:\n{}\n", simplemc::to_string(a_re_im_cov));
+        fmt::print("Real-imaginary sample covariance:\n{}\n", simplemc::to_string(s_re_im_cov));
     }
 
     proc_d sp_d;

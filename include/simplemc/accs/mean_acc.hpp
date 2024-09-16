@@ -120,7 +120,7 @@ private:
         if constexpr (varalg() == varalg::standard) {
             mdata_(idx) += val;
         } else {
-            mdata_(idx) += (val - mdata_(idx)) / static_cast<value_type>(count);
+            mdata_(idx) += (val - mdata_(idx)) / static_cast<double>(count);
         }
     }
 
@@ -213,7 +213,7 @@ public:
         if constexpr (varalg() == varalg::standard) {
             mdata_ += vec.matrix();
         } else {
-            mdata_ += (vec.matrix() - mdata_) / static_cast<value_type>(count_);
+            mdata_ += (vec.matrix() - mdata_) / static_cast<double>(count_);
         }
         return *this;
     }
@@ -239,8 +239,8 @@ public:
         if constexpr (varalg() == varalg::standard) {
             mdata_ += acc.mdata_;
         } else {
-            const auto n1 = static_cast<value_type>(count_);
-            const auto n2 = static_cast<value_type>(acc.count_);
+            const auto n1 = static_cast<double>(count_);
+            const auto n2 = static_cast<double>(acc.count_);
             mdata_ = mdata_ * n1 / (n1 + n2) + acc.mdata_ * n2 / (n1 + n2);
         }
         count_ += acc.count_;

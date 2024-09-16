@@ -286,14 +286,14 @@ public:
             mdata_ += vec.matrix();
             rdata_ += (vec.matrix().real() * vec.matrix().real().transpose()).template triangularView<Eigen::Lower>();
             idata_ += (vec.matrix().imag() * vec.matrix().imag().transpose()).template triangularView<Eigen::Lower>();
-            cdata_ += (vec.matrix().real() * vec.matrix().imag().transpose()).template triangularView<Eigen::Lower>();
+            cdata_ += (vec.matrix().real() * vec.matrix().imag().transpose());
         } else {
             const auto tmp = (vec.matrix() - mdata_).eval();
-            mdata_ += tmp / static_cast<value_type>(count_);
+            mdata_ += tmp / static_cast<double>(count_);
             const auto tmp2 = vec.matrix() - mdata_;
             rdata_ += (tmp.real() * tmp2.real().transpose()).template triangularView<Eigen::Lower>();
             idata_ += (tmp.imag() * tmp2.imag().transpose()).template triangularView<Eigen::Lower>();
-            cdata_ += (tmp.real() * tmp2.imag().transpose()).template triangularView<Eigen::Lower>();
+            cdata_ += (tmp.real() * tmp2.imag().transpose());
         }
         return *this;
     }
@@ -335,8 +335,8 @@ public:
             idata_ += acc.idata_.template triangularView<Eigen::Lower>();
             cdata_ += acc.cdata_;
         } else {
-            const auto n1 = static_cast<value_type>(count_);
-            const auto n2 = static_cast<value_type>(acc.count_);
+            const auto n1 = static_cast<double>(count_);
+            const auto n2 = static_cast<double>(acc.count_);
             const auto m = mdata_ * n1 / (n1 + n2) + acc.mdata_ * n2 / (n1 + n2);
             rdata_ += (acc.rdata_ + n1 * (mdata_ - m).real() * (mdata_ - m).real().transpose() +
                 n2 * (acc.mdata_ - m).real() * (acc.mdata_ - m).real().transpose())
@@ -413,16 +413,22 @@ public:
     /**
      * @brief Get accumulated data used for estimating the covariance matrix of the real part.
      *
+     * @warning Only the lower triangular part of the covariance matrix is valid. Use
+     * `selfadjointView<Eigen::Lower>()` to get the full covariance matrix.
+     *
      * @return Data storage (content depends on the algorithm, see simplemc::accs::covariance).
      */
-    [[nodiscard]] const dbl_mat_type& rdata() const { return rdata_.template selfadjointView<Eigen::Lower>(); }
+    [[nodiscard]] const dbl_mat_type& rdata() const { return rdata_; }
 
     /**
      * @brief Get accumulated data used for estimating the covariance matrix of the imaginary part.
      *
+     * @warning Only the lower triangular part of the covariance matrix is valid. Use
+     * `selfadjointView<Eigen::Lower>()` to get the full covariance matrix.
+     *
      * @return Data storage (content depends on the algorithm, see simplemc::accs::covariance).
      */
-    [[nodiscard]] const dbl_mat_type& idata() const { return idata_.template selfadjointView<Eigen::Lower>(); }
+    [[nodiscard]] const dbl_mat_type& idata() const { return idata_; }
 
     /**
      * @brief Get accumulated data used for estimating the cross-covariance matrix of the real and
@@ -457,8 +463,8 @@ public:
      *
      * @return Sample covariance matrix of the mean.
      */
-    [[nodiscard]] cplx_mat_type covariance() const {
-        auto res = covariance_of_data() / static_cast<value_type>(count_);
+    [[nodiscard]] auto covariance() const {
+        auto res = covariance_of_data() / static_cast<double>(count_);
         if constexpr (returns_scalar) {
             return res;
         } else {
@@ -477,7 +483,7 @@ public:
      *
      * @return Sample covariance matrix of the data.
      */
-    [[nodiscard]] cplx_mat_type covariance_of_data() const {
+    [[nodiscard]] auto covariance_of_data() const {
         using namespace std::complex_literals;
         auto res = covariance_of_real_data() + covariance_of_imag_data() +
             (0.0 + 1.0i) * (covariance_of_real_and_imag_data().transpose() - covariance_of_real_and_imag_data());
@@ -498,9 +504,10 @@ public:
      *
      * @return Sample covariance matrix of the real part of the accumulated data.
      */
-    [[nodiscard]] dbl_mat_type covariance_of_real_data() const {
-        auto rdata_full = rdata_.template selfadjointView<Eigen::Lower>();
-        auto mdata_r = mdata_.real();
+    [[nodiscard]] auto covariance_of_real_data() const {
+        using simplemc::accs::covariance;
+        dbl_mat_type rdata_full = rdata_.template selfadjointView<Eigen::Lower>();
+        dbl_vec_type mdata_r = mdata_.real();
         return detail::scalar_or_matrix<returns_scalar>(covariance<varalg()>(mdata_r, mdata_r, rdata_full, count_));
     }
 
@@ -514,9 +521,10 @@ public:
      *
      * @return Sample covariance matrix of the imaginary part of the accumulated data.
      */
-    [[nodiscard]] dbl_mat_type covariance_of_imag_data() const {
-        auto idata_full = idata_.template selfadjointView<Eigen::Lower>();
-        auto mdata_i = mdata_.imag();
+    [[nodiscard]] auto covariance_of_imag_data() const {
+        using simplemc::accs::covariance;
+        dbl_mat_type idata_full = idata_.template selfadjointView<Eigen::Lower>();
+        dbl_vec_type mdata_i = mdata_.imag();
         return detail::scalar_or_matrix<returns_scalar>(covariance<varalg()>(mdata_i, mdata_i, idata_full, count_));
     }
 
@@ -531,10 +539,10 @@ public:
      *
      * @return Sample cross-covariance matrix between the real and imaginary part of the accumulated data.
      */
-    [[nodiscard]] dbl_mat_type covariance_of_real_and_imag_data() const {
+    [[nodiscard]] auto covariance_of_real_and_imag_data() const {
         using simplemc::accs::covariance;
-        auto mdata_r = mdata_.real();
-        auto mdata_i = mdata_.imag();
+        dbl_vec_type mdata_r = mdata_.real();
+        dbl_vec_type mdata_i = mdata_.imag();
         return detail::scalar_or_matrix<returns_scalar>(covariance<varalg()>(mdata_r, mdata_i, cdata_, count_));
     }
 

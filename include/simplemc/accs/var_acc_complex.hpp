@@ -253,7 +253,7 @@ public:
             cdata_ += vec.matrix().real().cwiseProduct(vec.matrix().imag());
         } else {
             const auto tmp = (vec.matrix() - mdata_).eval();
-            mdata_ += tmp / static_cast<value_type>(count_);
+            mdata_ += tmp / static_cast<double>(count_);
             const auto tmp2 = vec.matrix() - mdata_;
             rdata_ += tmp.real().cwiseProduct(tmp2.real());
             idata_ += tmp.imag().cwiseProduct(tmp2.imag());
@@ -435,7 +435,7 @@ public:
      * @return Diagonal of the sample covariance matrix of the mean.
      */
     [[nodiscard]] auto variance() const {
-        auto res = (variance_of_real_data() + variance_of_imag_data()) / static_cast<value_type>(count_);
+        auto res = (variance_of_real_data() + variance_of_imag_data()) / static_cast<double>(count_);
         if constexpr (returns_scalar) {
             return res;
         } else {
