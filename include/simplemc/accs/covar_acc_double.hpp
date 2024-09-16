@@ -28,30 +28,34 @@ namespace simplemc {
 
 /**
  * @ingroup simplemc-accs-accs
- * @brief Specialization of simplemc::var_acc for real random vectors.
+ * @brief Specialization of simplemc::covar_acc for real random vectors.
  *
  * @details The accumulated data is stored in two objects:
  * - a real vector for the mean data and
  * - a real matrix for the covariance data.
  *
- * See simplemc::accs::mean and simplemc::accs::covariance).
+ * See simplemc::accs::mean and simplemc::accs::covariance.
  *
  * @code{.cpp}
+ * using vec_type = Eigen::Vector<double, 2>;
  * std::mt19937_64 rng;
- * std::normal_distribution<double> normal_dist(5.0, 1.0);
- * simplemc::var_acc<Eigen::Vector<double, 1>> acc;
+ * std::uniform_real_distribution<double> uni_dist(-1.0, 1.0);
+ * std::normal_distribution<double> normal_dist(-3.0, 0.5);
+ * simplemc::covar_acc<vec_type> acc;
  * for (int i = 0; i < 100000; ++i) {
- *     acc << normal_dist(rng);
+ *     acc << vec_type{ uni_dist(rng), normal_dist(rng) };
  * }
- * fmt::print("Mean: {}\n", acc.mean());
- * fmt::print("Variance: {}\n", acc.variance_of_data());
+ * fmt::print("Mean: [{:.5f}, {:.5f}]\n", acc.mean()(0), acc.mean()(1));
+ * fmt::print("Covariance:\n{}\n", simplemc::to_string(acc.covariance_of_data()));
  * @endcode
  *
  * Output:
  *
  * ```
- * Mean: 5.002072302074473
- * Variance: 1.0037814573268022
+ * Mean: [0.00041, -3.00108]
+ * Covariance:
+ *    0.332466 0.000303671
+ * 0.000303671    0.249371
  * ```
  *
  * @tparam X simplemc::eigen_vector_dbl type.
@@ -176,7 +180,7 @@ public:
      * @brief Construct a covariance accumulator with given data storages and count.
      *
      * @details For dynamically sized accumulators, the size of the data storages must match and be
-     * >= 0. Otherwise, it throws a simplemc::simplemc_exception.
+     * >= 1. Otherwise, it throws a simplemc::simplemc_exception.
      *
      * @param md Accumulated mean data.
      * @param cd Accumulated covariance data.
@@ -379,8 +383,7 @@ public:
     /**
      * @brief Calculate the sample covariance matrix of the mean.
      *
-     * @details Calls covariance_of_data() with the accumulated data and the count and divides the
-     * result by the count.
+     * @details Calls covariance_of_data() and divides the result by the count.
      *
      * For statically sized accumulators with a size() == 1, it returns a single value. Otherwise, it
      * returns a vector.

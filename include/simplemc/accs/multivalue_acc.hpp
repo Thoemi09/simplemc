@@ -15,7 +15,7 @@ namespace simplemc {
  * @ingroup simplemc-accs-wrappers
  * @brief Wrapper for simplemc::mean_acc and simplemc::var_acc to add multiple values at once.
  *
- * @details It holds a reference to a accumulator and can be used to add multiple data points to the
+ * @details It holds a reference to an accumulator and can be used to add multiple data points to the
  * accumulator without increasing the count automatically. This has to be done manually by the user
  * by calling the multivalue_acc::increment_count function.
  *
@@ -119,7 +119,7 @@ public:
      * @brief Accumulate a range of values to consecutive elements in the accumulator.
      *
      * @details The values are added to consecutive elements in the accumulator starting with the
-     * element at the given index. The size of the range is assumed to be <= size() - `idx`.
+     * element at the given index. The size of the range is assumed to be <= `acc.size() - idx`.
      *
      * @tparam R Input range of values.
      * @param rg Range of values to be accumulated.

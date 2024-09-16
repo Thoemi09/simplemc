@@ -167,7 +167,7 @@ public:
      * @brief Construct a variance accumulator with given data storages and count.
      *
      * @details For dynamically sized accumulators, the size of the data storages must match and be
-     * >= 0. Otherwise, it throws a simplemc::simplemc_exception.
+     * >= 1. Otherwise, it throws a simplemc::simplemc_exception.
      *
      * @param md Accumulated mean data.
      * @param rd Accumulated variance data of the real part.
@@ -426,8 +426,8 @@ public:
     /**
      * @brief Calculate the sample variance of the mean.
      *
-     * @details It adds the variances of the real and imaginary parts and divides the result by the
-     * count.
+     * @details It adds the results variance_of_real_data() and variance_of_imag_data() and divides
+     * by the count.
      *
      * For statically sized accumulators with a size() == 1, it returns a single value. Otherwise, it
      * returns a vector object.
@@ -446,7 +446,7 @@ public:
     /**
      * @brief Calculate the sample variance of the accumulated data.
      *
-     * @details It adds the variances of the real and imaginary parts.
+     * @details It adds the results from variance_of_real_data() and variance_of_imag_data().
      *
      * For statically sized accumulators with a size() == 1, it returns a single value. Otherwise, it
      * returns a vector object.

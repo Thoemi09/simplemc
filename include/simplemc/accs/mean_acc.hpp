@@ -146,7 +146,7 @@ public:
     /**
      * @brief Construct a mean accumulator with a given data storage and count.
      *
-     * @details For dynamically sized accumulators, the size of the data storage must be >= 0.
+     * @details For dynamically sized accumulators, the size of the data storage must be >= 1.
      * Otherwise, it throws a simplemc::simplemc_exception.
      *
      * @param md Accumulated mean data.

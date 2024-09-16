@@ -28,7 +28,7 @@ namespace simplemc {
 
 /**
  * @ingroup simplemc-accs-accs
- * @brief Specialization of simplemc::var_acc for complex random vectors.
+ * @brief Specialization of simplemc::covar_acc for complex random vectors.
  *
  * @details The accumulated data is stored in four objects:
  * - a complex vector for the mean data,
@@ -39,21 +39,27 @@ namespace simplemc {
  * See simplemc::accs::mean and simplemc::accs::covariance.
  *
  * @code{.cpp}
+ * using vec_type = Eigen::Vector<std::complex<double>, 2>;
  * std::mt19937_64 rng;
- * std::normal_distribution<double> normal_dist(5.0, 1.0);
- * simplemc::var_acc<Eigen::Vector<double, 1>> acc;
+ * std::uniform_real_distribution<double> uni_dist_r(-1.0, 1.0);
+ * std::normal_distribution<double> normal_dist_i(-3.0, 0.5);
+ * simplemc::covar_acc<vec_type> acc;
  * for (int i = 0; i < 100000; ++i) {
- *     acc << normal_dist(rng);
+ *     auto z1 = std::complex<double>{ uni_dist_r(rng), normal_dist_i(rng) };
+ *     auto z2 = std::complex<double>{ uni_dist_r(rng), normal_dist_i(rng) };
+ *     acc << vec_type{ z1, z2 };
  * }
- * fmt::print("Mean: {}\n", acc.mean());
- * fmt::print("Variance: {}\n", acc.variance_of_data());
+ * fmt::print("Mean: [{:.5f}, {:.5f}]\n", acc.mean()(0), acc.mean()(1));
+ * fmt::print("Covariance of real part:\n{}\n", simplemc::to_string(acc.covariance_of_real_data()));
  * @endcode
  *
  * Output:
  *
  * ```
- * Mean: 5.002072302074473
- * Variance: 1.0037814573268022
+ * Mean: [(0.00170,-3.00357), (-0.00070,-2.99948)]
+ * Covariance of real part:
+ *     0.332981 -0.000434833
+ * -0.000434833     0.332989
  * ```
  *
  * @tparam Z simplemc::eigen_vector_cplx type.
@@ -202,7 +208,7 @@ public:
      * @brief Construct a covariance accumulator with given data storages and count.
      *
      * @details For dynamically sized accumulators, the size of the data storages must match and be
-     * >= 0. Otherwise, it throws a simplemc::simplemc_exception.
+     * >= 1. Otherwise, it throws a simplemc::simplemc_exception.
      *
      * @param md Accumulated mean data.
      * @param rd Accumulated covariance data of the real part.

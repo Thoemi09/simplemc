@@ -652,7 +652,7 @@
  *
  * With the sample covariance matrices \f$ s_{\mathbf{X}\mathbf{X}}^2 \f$,
  * \f$ s_{\mathbf{Y}\mathbf{Y}}^2 \f$ and \f$ s_{\mathbf{X}\mathbf{Y}}^2 \f$ of the real and imaginary
- * part of a complex random vector \f$ \mathbf{Z} \f$, we can approximate its the covariance matrix
+ * parts of a complex random vector \f$ \mathbf{Z} \f$, we can approximate its the covariance matrix
  * with
  * \f[
  *   \mathrm{Cov}[\mathbf{Z}, \mathbf{Z}] \approx s_{\mathbf{Z}\mathbf{Z}}^2 =
@@ -681,9 +681,9 @@
  *   \mathrm{Var}[\overline{x_i}^{(N)}] = \frac{\mathrm{Var}[X_i]}{N} \left( 1 + 2 \tau_{X_i} \right)
  *   \; .
  * \f]
- * Here, \f$ \tau_{X_i} \f$ is the autocorrelation time of the i<sup>th</sup> component of the real
- * random vector \f$ \mathbf{X} \f$ and \f$ \tau_{\mathbf{X} \mathbf{Y}} \f$ is a matrix containing
- * the autocorrelation times \f$ \tau_{X_i Y_j} \f$.
+ * Here, \f$ \tau_{X_i} \f$ is the integrated autocorrelation time of the i<sup>th</sup> component
+ * of the real random vector \f$ \mathbf{X} \f$ and \f$ \tau_{\mathbf{X} \mathbf{Y}} \f$ is a matrix
+ * containing the integrated autocorrelation times between components \f$ X_i \f$ and \f$ Y_j \f$.
  */
 
 /**
@@ -748,9 +748,9 @@
  * @endcode
  * This is equivalent to adding the full vector `(0,...,0,val1,0,...,0,val2,0,...,0)` to the samples,
  * where only the components with indices `idx1`, `idx2`, etc. are non-zero.
- * @note It is the user's responsibility to call the `increment_count()` method of the multi-value
- * accumulator once after all values have been added. Otherwise, the result will most likely be
- * incorrect.
+ * @note It is the user's responsibility to call the simplemc::multivalue_acc::increment_count method
+ * of the multi-value accumulator once after all values have been added. Otherwise, the result will
+ * most likely be incorrect.
  *
  * - If a range of values should be added to consecutive elements in the accumulator starting from
  * index `idx`, one can use the accumulate function:
