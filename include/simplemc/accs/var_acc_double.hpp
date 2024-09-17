@@ -93,7 +93,7 @@ public:
     using vec_type = X;
 
     /**
-     * @brief Multi value accumulator type.
+     * @brief Multi-value accumulator type.
      */
     using mva_type = multivalue_acc<var_acc>;
 

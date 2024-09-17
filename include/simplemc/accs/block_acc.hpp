@@ -34,7 +34,7 @@ namespace simplemc {
  *
  * Functionality and usage is similar to the supported wrapped accumulators.
  *
- * Multi value accumulation can only be used with simplemc::var_acc accumulators:
+ * Multi-value accumulation can only be used with simplemc::var_acc accumulators:
  * @code{.cpp}
  * auto mva = blacc.make_mva();
  * mva[idx1] << val1;

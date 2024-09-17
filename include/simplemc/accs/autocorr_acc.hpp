@@ -1,6 +1,7 @@
 /**
  * @file
- * @brief Wrapper for simplemc::var_acc and simplemc::covar_acc to estimate the autocorrelation time.
+ * @brief Wrapper for simplemc::var_acc and simplemc::covar_acc to estimate the integrated
+ * autocorrelation time.
  */
 
 #ifndef SIMPLEMC_ACCS_AUTOCORR_ACC_HPP
@@ -21,23 +22,16 @@
 namespace simplemc {
 
 /**
- * @addtogroup simplemc-accs
- * @{
- */
-
-/**
- * @brief Wrapper class for the simplemc::var_acc and simplemc::covar_acc accumulators to estimate
- * the autocorrelation time using the blocking method.
+ * @ingroup simplemc-accs-wrappers
+ * @brief Wrapper for simplemc::var_acc and simplemc::covar_acc to estimate the integrated
+ * autocorrelation time.
  *
  * @details It uses blocks of increasing size to decorrelate the individual samples. The (co)variance
- * and the integrated autocorrelation time will increase with the block size until it reaches a plateau.
- * The value at the plateau should give you a good estimate of both quantities.
+ * and the integrated autocorrelation time will increase with the block size until it reaches a
+ * plateau. The value at the plateau should give you a good estimate of both quantities.
  *
- * Functionality and usage is similar to the supported wrapped accumulators. The autocorrelation time
- * is calculated for each element of the wrapped accumulator, e.g. if you wrap a simplemc::covar_acc,
- * you will get back a matrix.
- *
- * Multi value accumulation is not supported right now (please use the accumulate(..) function instead).
+ * Functionality and usage is similar to the supported wrapped accumulators. Multi-value accumulation
+ * is not supported right now (please use the `accumulate()` instead).
  *
  * @tparam A Accumulator type.
  */
@@ -48,6 +42,11 @@ public:
      * @brief Accumulator type.
      */
     using acc_type = A;
+
+    /**
+     * @brief Static size of the accumulator.
+     */
+    static constexpr int static_size = acc_type::static_size;
 
     /**
      * @brief Type of accumulated values.
@@ -65,101 +64,51 @@ public:
     using size_type = typename acc_type::size_type;
 
     /**
-     * @brief Get the algorithm.
+     * @brief Get the algorithm used to accumulate the data.
+     *
+     * @return The simplemc::varalg tag.
      */
     static constexpr auto varalg() { return A::varalg(); }
 
     /**
      * @brief Mean accumulator type for accumulating block data.
      */
-    using mean_acc_type = mean_acc<value_type, varalg()>;
-
-    /**
-     * @brief Calculate the integrated autocorrelation time for the diagonal elements of a
-     * (cross)-covariance matrix.
-     *
-     * @param c0 Naive (unblocked) estimate of the diagonal of the (cross)-covariance matrix.
-     * @param cb Blocked estimate of the diagonal of the (cross)-covariance matrix.
-     * @param blsize Block size of cb w.r.t. c0.
-     * @return Vector of integrated autocorrelation times.
-     */
-    [[nodiscard]] static Eigen::VectorXd tau(const Eigen::VectorXd& c0, const Eigen::VectorXd& cb, count_type blsize) {
-        assert(c0.size() == cb.size());
-        return ((cb.array() * blsize / c0.array() - 1.0) * 0.5).matrix();
-    }
-
-    /**
-     * @brief Calculate the integrated autocorrelation time for the elements of a (cross)-covariance
-     * matrix.
-     *
-     * @param c0 Naive (unblocked) estimate of the (cross)-covariance matrix.
-     * @param cb Blocked estimate of the (cross)-covariance matrix.
-     * @param blsize Block size of cb w.r.t. c0.
-     * @return Matrix of integrated autocorrelation times.
-     */
-    template <typename T>
-    [[nodiscard]] static Eigen::MatrixXd tau(const Eigen::MatrixXd& c0, const Eigen::MatrixXd& cb, count_type blsize) {
-        assert(c0.rows() == cb.rows());
-        assert(c0.cols() == cb.cols());
-        return ((cb.array() * blsize / c0.array() - 1.0) * 0.5).matrix();
-    }
+    using mean_acc_type = mean_acc<Eigen::Matrix<value_type, static_size, 1>, varalg()>;
 
 private:
-    /**
-     * @brief Check if level i is full?
-     *
-     * @param i Level index.
-     * @return True if the block in level i is full, false otherwise.
-     */
-    [[nodiscard]] auto is_full(std::size_t i) const {
-        assert(i < accs_.size());
-        return blocks_[i].count() >= blsizes_[i];
+    // Check if the given level is full?
+    [[nodiscard]] auto is_full(std::size_t lvl) const {
+        assert(lvl < accs_.size());
+        return blocks_[lvl].count() >= blsizes_[lvl];
     }
 
-    /**
-     * @brief Add the block in level i to its effective samples and reset its block data.
-     *
-     * @param i Level index.
-     */
-    void add_block(std::size_t i) {
-        assert(i < accs_.size());
-        accs_[i].accumulate(blocks_[i].mean());
-        blocks_[i].reset();
+    // Add the block in the given level to its effective samples and reset its block data.
+    void add_block(std::size_t lvl) {
+        assert(lvl < accs_.size());
+        accs_[lvl].accumulate(blocks_[lvl].mean());
+        blocks_[lvl].reset();
     }
 
-    /**
-     * @brief Propagate the given level to the next higher level recursively.
-     *
-     * @param i Level index.
-     */
-    void propagate(std::size_t i) {
-        assert(i < accs_.size());
-        if (is_full(i)) {
-            if (i == accs_.size() - 1) {
+    // Propagate the given level to the next higher level recursively.
+    void propagate(std::size_t lvl) {
+        if (is_full(lvl)) {
+            if (lvl == accs_.size() - 1) {
                 add_level();
             }
-            blocks_[i + 1] << blocks_[i];
-            add_block(i);
-            propagate(i + 1);
+            blocks_[lvl + 1] << blocks_[lvl];
+            add_block(lvl);
+            propagate(lvl + 1);
         }
     }
 
-    /**
-     * @brief Add a new level to the accumulator.
-     */
+    // Add a new level to the accumulator.
     void add_level() {
-        accs_.emplace_back(shift());
-        blocks_.emplace_back(shift());
+        accs_.emplace_back(size());
+        blocks_.emplace_back(size());
         blsizes_.emplace_back(blsizes_.back() * fac_);
     }
 
-    /**
-     * @brief Create the vector of increasing block sizes.
-     *
-     * @param nl Number of levels.
-     * @param fac Multiplication factor.
-     * @return Vector of increasing block sizes.
-     */
+    // Create a vector of increasing block sizes for the number of given levels.
     [[nodiscard]] auto make_blsizes(std::size_t nl, count_type fac) const {
         std::vector<count_type> res(nl, 1);
         for (std::size_t i = 1; i < nl; ++i) {
@@ -168,19 +117,39 @@ private:
         return res;
     }
 
+    // Add values to the accumulator using a callable object.
+    template <typename F, typename... Args>
+    void add_values(F&& f, Args&&... args) {
+        // always accumulate directly in the (co)variance accumulator of level 0
+        std::forward<F>(f)(accs_[0], std::forward<Args>(args)...);
+
+        // accumulate in all levels < min_levels_ - 1
+        for (std::size_t i = 1; i < min_levels_ - 1; ++i) {
+            std::forward<F>(f)(blocks_[i], std::forward<Args>(args)...);
+            if (is_full(i)) {
+                add_block(i);
+            }
+        }
+
+        // accumulate in the last min. level and propagate
+        std::forward<F>(f)(blocks_[min_levels_ - 1], std::forward<Args>(args)...);
+        propagate(min_levels_ - 1);
+    }
+
 public:
     /**
-     * @brief Construct an autocorrelation accumulator with a given number of elements, a constant shift, a
-     * multiplication factor for increasing block sizes and a minimum number of levels.
+     * @brief Construct an autocorrelation accumulator with a given number of elements.
      *
-     * @param size Number of elements.
-     * @param shift A single constant shift applied to the accumulated values.
+     * @details It further sets the multiplication factor for increasing block sizes and the minimum
+     * number of levels to which new samples are always added directly without propagation.
+     *
+     * @param num Number of elements.
      * @param fac Multiplication factor.
      * @param min_levels Minimum number of levels.
      */
-    explicit autocorr_acc(size_type size = 1, value_type shift = 0.0, count_type fac = 2, std::size_t min_levels = 2) :
-        accs_(min_levels, acc_type(size, shift)),
-        blocks_(min_levels, mean_acc_type(size, shift)),
+    explicit autocorr_acc(size_type num = 1, count_type fac = 2, std::size_t min_levels = 2) :
+        accs_(min_levels, acc_type(num)),
+        blocks_(min_levels, mean_acc_type(num)),
         blsizes_(make_blsizes(min_levels, fac)),
         idx_(0),
         fac_(fac),
@@ -189,32 +158,13 @@ public:
     }
 
     /**
-     * @brief Construct an autocorrelation accumulator with a given constant shift, multiplication factor for
-     * increasing block sizes and a minimum number of levels.
+     * @brief Construct an autocorrelation accumulator from given vectors of accumulators.
      *
-     * @details The size of the accumulator will be the same as the size of the shift vector.
-     *
-     * @param shift Constant shift applied to the accumulated values.
-     * @param fac Multiplication factor.
-     * @param min_levels Minimum number of levels.
-     */
-    explicit autocorr_acc(const Eigen::VectorX<value_type>& shift, count_type fac = 2, std::size_t min_levels = 2) :
-        accs_(min_levels, acc_type(shift)),
-        blocks_(min_levels, mean_acc_type(shift)),
-        blsizes_(make_blsizes(min_levels, fac)),
-        idx_(0),
-        fac_(fac),
-        min_levels_(min_levels) {
-        check_levels();
-    }
-
-    /**
-     * @brief Construct an autocorrelation accumulator from a given vector of (co)variance accumulators, a vector of
-     * mean accumulators for blocking, a multiplication factor for increasing block sizes and a minimum number of
-     * levels.
+     * @details It further sets the multiplication factor for increasing block sizes and the minimum
+     * number of levels to which new samples are always added directly without propagation.
      *
      * @param accs Vector of (co)variance accumulators.
-     * @param blocks Vector of mean accumulators.
+     * @param blocks Vector of mean accumulators (for blocking).
      * @param fac Multiplication factor.
      * @param min_levels Minimum number of levels.
      */
@@ -233,8 +183,8 @@ public:
      * @brief Reset the accumulator to its initial state, i.e. with no accumulated values.
      */
     void reset() {
-        accs_ = std::vector<acc_type>(min_levels_, acc_type(shift()));
-        blocks_ = std::vector<mean_acc_type>(min_levels_, mean_acc_type(shift()));
+        accs_ = std::vector<acc_type>(min_levels_, acc_type { size() });
+        blocks_ = std::vector<mean_acc_type>(min_levels_, mean_acc_type { size() });
         blsizes_ = make_blsizes(min_levels_, fac_);
     }
 
@@ -252,18 +202,37 @@ public:
     /**
      * @brief Stream operator for accumulating a single value.
      *
+     * @details See the corresponding method of the wrapped accumulator for more details.
+     *
      * @param val Value to be accumulated.
      * @return Reference to this object.
      */
     autocorr_acc& operator<<(value_type val) {
-        accumulate(std::array<value_type, 1> { val }, std::array<size_type, 1> { idx_ });
+        auto f = [](auto& acc, auto idx_, auto val) { acc[idx_] << val; };
+        add_values(f, idx_, val);
         return *this;
     }
 
     /**
-     * @brief Accumulate a range of values.
+     * @brief Stream operator for accumulating a vector.
      *
-     * @details The size of the range is assumed to be <= size() - idx.
+     * @details See the corresponding method of the wrapped accumulator for more details.
+     *
+     * @tparam W Eigen vector/array/expression type.
+     * @param vec Vector/Array/Expression to be accumulated.
+     * @return Reference to this object.
+     */
+    template <typename W>
+    autocorr_acc& operator<<(const W& vec) {
+        auto f = [](auto& acc, const auto& vec) { acc << vec; };
+        add_values(f, vec);
+        return *this;
+    }
+
+    /**
+     * @brief Accumulate a range of values to consecutive elements in the accumulator.
+     *
+     * @details See the corresponding method of the wrapped accumulator for more details.
      *
      * @tparam R Input range of values.
      * @param rg Range of values to be accumulated.
@@ -271,13 +240,16 @@ public:
      */
     template <ranges::input_range R>
     void accumulate(R&& rg, size_type idx = 0) {
-        accumulate(std::forward<R>(rg), ranges::views::iota(idx));
+        auto f = [](auto& acc, auto&& rg, size_type idx) { acc.accumulate(std::forward<R>(rg), idx); };
+        add_values(f, std::forward<R>(rg), idx);
     }
 
     /**
-     * @brief Accumulate a range of values.
+     * @brief Accumulate a range of values to arbitrary elements but with different indices.
      *
-     * @details The size of the range is assumed to be <= size() - idx. In case that the wrapped accumulator is
+     * @details For wrapped covariance accumulators, the indices should be sorted in ascending order.
+     *
+     * See the corresponding method of the wrapped accumulator for more details.
      *
      * @tparam R1 Input range of values.
      * @tparam R2 Input range of indices.
@@ -286,20 +258,10 @@ public:
      */
     template <ranges::input_range R1, ranges::input_range R2>
     void accumulate(R1&& rg, R2&& idxs) {
-        // always accumulate directly in the (co)variance accumulator of level 0
-        accs_[0].accumulate(std::forward<R1>(rg), std::forward<R2>(idxs));
-
-        // accumulate in all levels < min_levels_ - 1
-        for (std::size_t i = 1; i < min_levels_ - 1; ++i) {
-            blocks_[i].accumulate(std::forward<R1>(rg), std::forward<R2>(idxs));
-            if (is_full(i)) {
-                add_block(i);
-            }
-        }
-
-        // accumulate in the last min. level and propagate
-        blocks_[min_levels_ - 1].accumulate(std::forward<R1>(rg), std::forward<R2>(idxs));
-        propagate(min_levels_ - 1);
+        auto f = [](auto& acc, auto&& rg, auto&& idxs) {
+            acc.accumulate(std::forward<R1>(rg), std::forward<R2>(idxs));
+        };
+        add_values(f, std::forward<R1>(rg), std::forward<R2>(idxs));
     }
 
     /**
@@ -324,10 +286,10 @@ public:
     [[nodiscard]] auto num_levels() const { return accs_.size(); }
 
     /**
-     * @brief Get effective number of samples taken in level i.
+     * @brief Get effective number of samples in level \f$ i \f$.
      *
      * @param i Level index.
-     * @return Number of accumulated samples in level i.
+     * @return Number of accumulated samples in level \f$ i \f$.
      */
     [[nodiscard]] auto count(std::size_t i = 0) const {
         assert(i < accs_.size());
@@ -335,22 +297,15 @@ public:
     }
 
     /**
-     * @brief Get the block size of level i.
+     * @brief Get the block size of level \f$ i \f$.
      *
      * @param i Level index.
-     * @return Block size of level i.
+     * @return Block size of level \f$ i \f$.
      */
     [[nodiscard]] auto block_size(std::size_t i = 0) const {
         assert(i < accs_.size());
         return blsizes_[i];
     }
-
-    /**
-     * @brief Get the constant shift.
-     *
-     * @return Constant shift vector applied to the accumulated values.
-     */
-    [[nodiscard]] const auto& shift() const { return accs_[0].shift(); }
 
     /**
      * @brief Get the vector of (co)variance accumulators.
@@ -362,7 +317,7 @@ public:
     /**
      * @brief Get the vector of block data.
      *
-     * @return Vector of block data.
+     * @return Vector of mean accumulators used for blocking.
      */
     [[nodiscard]] const auto& blocks() const { return accs_; }
 
@@ -376,12 +331,12 @@ public:
     /**
      * @brief Find the highest level with at least a given number of effective samples.
      *
-     * @param min Minimum number of effective samples.
+     * @param min_samples Minimum number of effective samples.
      * @return Level index.
      */
-    [[nodiscard]] std::size_t find_level(count_type min) const {
+    [[nodiscard]] std::size_t find_level(count_type min_samples) const {
         for (auto i = accs_.size(); i > 1; --i) {
-            if (accs_[i - 1].count() >= min) {
+            if (accs_[i - 1].count() >= min_samples) {
                 return i - 1;
             }
         }
@@ -391,12 +346,19 @@ public:
     /**
      * @brief Calculate the sample mean from the accumulated data in level 0.
      *
+     * @details Calls the `mean()` method of the wrapped accumulator in level 0.
+     *
+     * For statically sized accumulators with a size() == 1, it returns a single value. Otherwise, it
+     * returns a vector.
+     *
      * @return Sample mean.
      */
     [[nodiscard]] auto mean() const { return accs_[0].mean(); }
 
     /**
-     * @brief Check accumulators and parameters for consistency, otherwise throw an exception.
+     * @brief Check accumulators and parameters for consistency.
+     *
+     * @details It throws a simplemc::simplemc_exception in case of inconsistencies.
      */
     void check_levels() const {
         if (fac_ <= 1) {
@@ -440,8 +402,6 @@ private:
     count_type fac_ { 2 };
     std::size_t min_levels_ { 2 };
 };
-
-/** @} */
 
 } // namespace simplemc
 

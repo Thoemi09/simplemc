@@ -104,7 +104,7 @@ public:
     using dbl_vec_type = Eigen::Matrix<double, static_size, 1>;
 
     /**
-     * @brief Multi value accumulator type.
+     * @brief Multi-value accumulator type.
      */
     using mva_type = multivalue_acc<var_acc>;
 

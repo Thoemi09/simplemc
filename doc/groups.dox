@@ -667,18 +667,18 @@
  *
  * Usually, we are interested in the (co)variance of the sample mean of random vectors, i.e.
  * \f[
- *   \mathrm{Cov}[\overline{\mathbf{x}}^{(N)}, \overline{\mathbf{y}}^{(N)}] =
+ *   \mathrm{Cov}[\overline{\mathbf{X}}^{(N)}, \overline{\mathbf{Y}}^{(N)}] =
  *   \frac{\mathrm{Cov}[\mathbf{X}, \mathbf{Y}]}{N} \quad \text{and} \quad
- *   \mathrm{Var}[\overline{x_i}^{(N)}] = \frac{\mathrm{Var}[X_i]}{N} \; .
+ *   \mathrm{Var}[\overline{X_i}^{(N)}] = \frac{\mathrm{Var}[X_i]}{N} \; .
  * \f]
  * Those equations are only true if the random samples are statistically independent. If they are not,
  * one has to take the **autocorrelation time** into account, which lowers the effective number of
  * independent samples:
  * \f[
- *   \mathrm{Cov}[\overline{\mathbf{x}}^{(N)}, \overline{\mathbf{y}}^{(N)}] =
+ *   \mathrm{Cov}[\overline{\mathbf{X}}^{(N)}, \overline{\mathbf{Y}}^{(N)}] =
  *   \frac{\mathrm{Cov}[\mathbf{X}, \mathbf{Y}]}{N} \left( 1 + 2 \tau_{\mathbf{X} \mathbf{Y}} \right)
  *   \quad \text{and} \quad
- *   \mathrm{Var}[\overline{x_i}^{(N)}] = \frac{\mathrm{Var}[X_i]}{N} \left( 1 + 2 \tau_{X_i} \right)
+ *   \mathrm{Var}[\overline{X_i}^{(N)}] = \frac{\mathrm{Var}[X_i]}{N} \left( 1 + 2 \tau_{X_i} \right)
  *   \; .
  * \f]
  * Here, \f$ \tau_{X_i} \f$ is the integrated autocorrelation time of the i<sup>th</sup> component

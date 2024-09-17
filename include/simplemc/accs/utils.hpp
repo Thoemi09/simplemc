@@ -74,7 +74,7 @@ namespace simplemc::accs {
  * @return Sample mean.
  */
 template <varalg A, eigen_vector V>
-V mean(const V& mdata, std::uint64_t count) {
+[[nodiscard]] V mean(const V& mdata, std::uint64_t count) {
     if (count == 0) {
         return nans_vector<V>(mdata.size());
     }
@@ -138,7 +138,7 @@ V mean(const V& mdata, std::uint64_t count) {
  * @return Diagonal of the sample (cross-)covariance matrix.
  */
 template <varalg A, eigen_vector_dbl V>
-V diag_covariance(
+[[nodiscard]] V diag_covariance(
     [[maybe_unused]] const V& mdata1, [[maybe_unused]] const V& mdata2, const V& cdata, std::uint64_t count) {
     assert(mdata1.size() == mdata2.size());
     assert(mdata1.size() == cdata.size());
@@ -209,7 +209,8 @@ V diag_covariance(
  * @return Sample (cross-)covariance matrix.
  */
 template <varalg A, eigen_vector_dbl V, eigen_matrix_dbl M>
-M covariance([[maybe_unused]] const V& mdata1, [[maybe_unused]] const V& mdata2, const M& cdata, std::uint64_t count) {
+[[nodiscard]] M covariance(
+    [[maybe_unused]] const V& mdata1, [[maybe_unused]] const V& mdata2, const M& cdata, std::uint64_t count) {
     assert(mdata1.size() == mdata2.size());
     assert(mdata1.size() == cdata.rows());
     assert(mdata1.size() == cdata.cols());
@@ -222,6 +223,41 @@ M covariance([[maybe_unused]] const V& mdata1, [[maybe_unused]] const V& mdata2,
     } else {
         return cdata / (cd - 1);
     }
+}
+
+/**
+ * @brief Calculate the integrated autocorrelation time for the elements of a (cross)-covariance
+ * matrix.
+ *
+ * @details Inverting the last equation in @ref simplemc-accs, we can write the integrated
+ * autocorrelation time as
+ * \f[
+ *   \tau_{\mathbf{X}\mathbf{Y}} = \frac{1}{2} \left( \frac{\mathrm{Cov}[\overline{\mathbf{X}}^{(N)},
+ *   \overline{\mathbf{Y}}^{(N)}]}{\mathrm{Cov}[\mathbf{X}, \mathbf{Y}]} N - 1 \right) \; .
+ * \f]
+ * If we use a blocking method to determine the block size \f$ B \f$ at which the block averages,
+ * \f$ \overline{\mathbf{X}}^{(B)} \f$ and \f$ \overline{\mathbf{Y}}^{(B)} \f$, become uncorrelated,
+ * then this equation can be approximated with
+ * \f[
+ *   \tau_{\mathbf{X}\mathbf{Y}} \approx \frac{1}{2} \left( \frac{s_{\overline{\mathbf{X}}^{(B)}
+ *   \overline{\mathbf{Y}}^{(B)}}^2}{s_{\mathbf{X}\mathbf{Y}}^2} B - 1 \right) \; .
+ * \f]
+ * where \f$ s_{\mathbf{X}\mathbf{Y}}^2 \f$ is the naive (unblocked) sample (cross)-covariance matrix
+ * and \f$ s_{\overline{\mathbf{X}}^{(B)}\overline{\mathbf{Y}}^{(B)}}^2 \f$ is the sample
+ * (cross)-covariance matrix of the blocked samples with block size \f$ B \f$.
+ *
+ * A similar equation in terms of variances holds for \f$ \tau_{X_i} \f$.
+ *
+ * @param c_naive Naive (unblocked) estimate of the sample (cross)-covariance matrix.
+ * @param c_blocked Blocked estimate of the sample (cross)-covariance matrix.
+ * @param blsize Block size used in the blocked estimate (w.r.t. the naive estimate).
+ * @return Matrix of integrated autocorrelation times.
+ */
+template <eigen_matrix M>
+[[nodiscard]] M tau(const M& c_naive, const M& c_blocked, std::uint64_t blsize) {
+    assert(c_naive.rows() == c_blocked.rows());
+    assert(c_naive.cols() == c_blocked.cols());
+    return ((c_blocked.array() * blsize / c_naive.array() - 1.0) * 0.5).matrix();
 }
 
 /** @} */

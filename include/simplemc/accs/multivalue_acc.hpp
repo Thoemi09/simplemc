@@ -20,7 +20,7 @@ namespace simplemc {
  * by calling the multivalue_acc::increment_count function.
  *
  * The intended use is for simplemc::mean_acc and simplemc::var_acc. Both of them provide a factory
- * function, `make_mva()`, that wraps the current object and returns a multi value accumlator.
+ * function, `make_mva()`, that wraps the current object and returns a multi-value accumlator.
  *
  * The user should not need to create a multivalue_acc on their own.
  *
@@ -66,7 +66,7 @@ public:
 
 public:
     /**
-     * @brief Construct a multi value accumulator for a given accumulator.
+     * @brief Construct a multi-value accumulator for a given accumulator.
      *
      * @param acc Accumulator to be wrapped.
      */
