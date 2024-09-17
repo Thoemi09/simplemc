@@ -1,5 +1,6 @@
 #include "./accs_fixture.hpp"
 
+#include <simplemc/accs/block_acc.hpp>
 #include <simplemc/accs/var_acc.hpp>
 
 #include <complex>
@@ -263,4 +264,41 @@ TEST_F(SimplemcAccs, VarAccIndividualIndices) {
     check_range_near(acc_wel_c1.variance_of_real_data(), r_wel_c, tol);
     check_range_near(acc_wel_c1.variance_of_imag_data(), i_wel_c, tol);
     check_range_near(acc_wel_c1.covariance_of_real_and_imag_data(), ri_wel_c, tol);
+}
+
+// Check blocked variance accumulator.
+TEST_F(SimplemcAccs, VarAccBlocked) {
+    // general set up
+    using namespace simplemc;
+    using block_acc_type = block_acc<var_acc_static<double, size, welford>>;
+    const auto eff_steps = 1000;
+    const auto block_size = steps / eff_steps;
+    block_acc_type acc_wel_d1(block_size), acc_wel_d2(block_size);
+
+    // fill accumulators
+    const auto merge_size = steps / 2;
+    std::vector<long> idxs(3);
+    std::iota(idxs.begin(), idxs.end(), 0l);
+    for (int i = 0; i < merge_size; ++i) {
+        acc_wel_d1 << sp_d.samples[i].matrix();
+    }
+    for (int i = merge_size; i < steps; ++i) {
+        acc_wel_d2.accumulate(sp_d.samples[i], idxs);
+    }
+
+    // check count
+    ASSERT_EQ(acc_wel_d1.count(), eff_steps / 2);
+    ASSERT_EQ(acc_wel_d2.count(), eff_steps / 2);
+    ASSERT_EQ(acc_wel_d1.total_count(), merge_size);
+    ASSERT_EQ(acc_wel_d2.total_count(), steps - merge_size);
+
+    // merge accumulators
+    acc_wel_d1 << acc_wel_d2;
+
+    // check mean and variance
+    auto bsp_d = block_samples(sp_d, block_size);
+    const auto m_d = sample_mean(bsp_d);
+    const auto v_d = sample_variance(bsp_d);
+    check_range_near(acc_wel_d1.accumulator().mean(), m_d, tol);
+    check_range_near(acc_wel_d1.accumulator().variance_of_data(), v_d, tol);
 }

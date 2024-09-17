@@ -36,20 +36,21 @@ namespace simplemc {
  *
  * Multi value accumulation can only be used with simplemc::var_acc accumulators:
  * @code{.cpp}
- * auto mva = acc.make_mva();
+ * auto mva = blacc.make_mva();
  * mva[idx1] << val1;
  * mva[idx2] << val2;
  * mva.increment_count();
- * acc.check_and_add_block();
+ * blacc.check_and_add_block();
  * @endcode
  * @note The user is responsible for calling the simplemc::multivalue_acc::increment_count method as
  * well as the check_and_add_block() method, otherwise the number of effective samples will not be
  * correct.
  *
- * Results can be obtained from the wrapped accumulators directly. For example:
+ * Results can be obtained from the wrapped accumulators directly by calling accumulator(). For
+ * example:
  * @code{.cpp}
- * auto mean = acc.accumulator().mean();
- * auto covar = acc.accumulator().covariance();
+ * auto mean = blacc.accumulator().mean();
+ * auto covar = blacc.accumulator().covariance();
  * @endcode
  *
  * @tparam A Accumulator type.
@@ -61,6 +62,11 @@ public:
      * @brief Type of the wrapped accumulator.
      */
     using acc_type = A;
+
+    /**
+     * @brief Static size of the accumulator.
+     */
+    static constexpr int static_size = acc_type::static_size;
 
     /**
      * @brief Type of accumulated values.
@@ -87,16 +93,18 @@ public:
     /**
      * @brief Mean accumulator type for accumulating block data.
      */
-    using mean_acc_type = mean_acc<value_type, varalg()>;
+    using mean_acc_type = mean_acc<Eigen::Matrix<value_type, static_size, 1>, varalg()>;
 
 public:
     /**
      * @brief Construct a block accumulator with a given number of elements and block size.
      *
-     * @param num Number of elements.
+     * @details It throws a simplemc::simplemc_exception if the block size is zero.
+     *
      * @param blsize Block size.
+     * @param num Number of elements.
      */
-    explicit block_acc(size_type num = 1, count_type blsize = 1) : acc_(num), block_(num), blsize_(blsize) {
+    explicit block_acc(count_type blsize, size_type num = 1) : acc_(num), block_(num), blsize_(blsize) {
         if (blsize_ == 0) {
             throw simplemc_exception("Block size == 0", "block_acc::block_acc");
         }
@@ -105,10 +113,12 @@ public:
     /**
      * @brief Construct a block accumulator from a given accumulator and with a given block size.
      *
-     * @param acc Accumulator.
+     * @details It throws a simplemc::simplemc_exception if the block size is zero.
+     *
      * @param blsize Block size.
+     * @param acc Accumulator.
      */
-    explicit block_acc(const acc_type& acc, count_type blsize = 1) : acc_(acc), block_(acc_.size()), blsize_(blsize) {
+    explicit block_acc(const acc_type& acc, count_type blsize) : acc_(acc), block_(acc_.size()), blsize_(blsize) {
         if (blsize_ == 0) {
             throw simplemc_exception("Block size == 0", "block_acc::block_acc");
         }
@@ -118,11 +128,14 @@ public:
      * @brief Construct a block accumulator from a given accumulator, block data (mean accumulator)
      * and block size.
      *
+     * @details The size of the accumulator and block data should be the same and the blocks size
+     * should be > 0. Otherwise, it throws a simplemc::simplemc_exception.
+     *
      * @param acc Accumulator.
      * @param bldata Block data (mean accumulator).
      * @param blsize Block size.
      */
-    explicit block_acc(const acc_type& acc, const mean_acc_type& bldata, count_type blsize = 1) :
+    explicit block_acc(const acc_type& acc, const mean_acc_type& bldata, count_type blsize) :
         acc_(acc),
         block_(bldata),
         blsize_(blsize) {
@@ -156,10 +169,7 @@ public:
     /**
      * @brief Stream operator for accumulating a single value.
      *
-     * @details For accumulators with size > 1, the value is added to the element at the current
-     * index.
-     *
-     * See @ref simplemc-accs-accs for a code example.
+     * @details See the corresponding method of the wrapped accumulator for more details.
      *
      * @param val Value to be accumulated.
      * @return Reference to this object.
@@ -173,7 +183,7 @@ public:
     /**
      * @brief Stream operator for accumulating a vector.
      *
-     * @details See @ref simplemc-accs-accs for a code example.
+     * @details See the corresponding method of the wrapped accumulator for more details.
      *
      * @tparam W Eigen vector/array/expression type.
      * @param vec Vector/Array/Expression to be accumulated.
@@ -192,6 +202,8 @@ public:
      *
      * @details Ignores the data in the current blocks.
      *
+     * See the corresponding method of the wrapped accumulator for more details.
+     *
      * @param acc Block accumulator to be incorporated.
      * @return Reference to this object.
      */
@@ -204,10 +216,7 @@ public:
     /**
      * @brief Accumulate a range of values to consecutive elements in the accumulator.
      *
-     * @details The values are added to consecutive elements in the accumulator starting with the
-     * element at the given index. The size of the range is assumed to be <= size() - `idx`.
-     *
-     * See @ref simplemc-accs-accs for a code example.
+     * @details See the corresponding method of the wrapped accumulator for more details.
      *
      * @tparam R Input range of values.
      * @param rg Range of values to be accumulated.
@@ -222,10 +231,9 @@ public:
     /**
      * @brief Accumulate a range of values to arbitrary elements but with different indices.
      *
-     * @details Each value of the given value range is accumulated at the corresponding index of the
-     * given index range. Every index should only appear once.
+     * @details For wrapped covariance accumulators, the indices should be sorted in ascending order.
      *
-     * See @ref simplemc-accs-accs for a code example.
+     * See the corresponding method of the wrapped accumulator for more details.
      *
      * @tparam R1 Input range of values.
      * @tparam R2 Input range of indices.
