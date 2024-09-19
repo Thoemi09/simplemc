@@ -248,12 +248,13 @@ template <varalg A, eigen_vector_dbl V, eigen_matrix_dbl M>
  *
  * A similar equation in terms of variances holds for \f$ \tau_{X_i} \f$.
  *
+ * @tparam M simplemc::eigen_matrix_dbl type.
  * @param c_naive Naive (unblocked) estimate of the sample (cross)-covariance matrix.
  * @param c_blocked Blocked estimate of the sample (cross)-covariance matrix.
  * @param blsize Block size used in the blocked estimate (w.r.t. the naive estimate).
  * @return Matrix of integrated autocorrelation times.
  */
-template <eigen_matrix M>
+template <eigen_matrix_dbl M>
 [[nodiscard]] M tau(const M& c_naive, const M& c_blocked, std::uint64_t blsize) {
     assert(c_naive.rows() == c_blocked.rows());
     assert(c_naive.cols() == c_blocked.cols());

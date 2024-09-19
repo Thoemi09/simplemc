@@ -314,19 +314,24 @@ template <typename S>
     requires std::is_same_v<typename S::value_type, double>
 [[nodiscard]] auto blocking_autocorr(const S& sp, std::uint64_t fac = 2) {
     std::vector<S> bsps;
-    std::vector<decltype(sample_variance(sp))> taus;
+    std::vector<decltype(sample_variance(sp))> taus_v;
+    std::vector<decltype(sample_covariance(sp))> taus_c;
     bsps.emplace_back(sp);
     const auto v0 = sample_variance(bsps[0]);
-    taus.emplace_back(0.0);
+    taus_v.emplace_back(0.0);
+    const auto c0 = sample_covariance(bsps[0]);
+    taus_c.emplace_back(0.0);
     auto size = fac;
     while (size < sp.total_count) {
         auto bsp = block_samples(sp, size);
         bsps.emplace_back(block_samples(sp, size));
         auto vi = sample_variance(bsps.back());
-        taus.emplace_back(0.5 * ((vi * size) / v0 - 1));
+        taus_v.emplace_back(0.5 * ((vi * size) / v0 - 1));
+        auto ci = sample_covariance(bsps.back());
+        taus_c.emplace_back(0.5 * ((ci * size) / c0 - 1));
         size *= fac;
     }
-    return std::make_tuple(bsps, taus);
+    return std::make_tuple(bsps, taus_v, taus_c);
 }
 
 #endif // SIMPLEMC_TESTS_ACCS_STOCHASTIC_PROCESS_HPP

@@ -9,6 +9,7 @@
 
 #include <simplemc/accs/mean_acc.hpp>
 #include <simplemc/accs/utils.hpp>
+#include <simplemc/numeric/eigen.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
 #include <range/v3/range/concepts.hpp>
@@ -75,6 +76,41 @@ public:
      */
     using mean_acc_type = mean_acc<Eigen::Matrix<value_type, static_size, 1>, varalg()>;
 
+    /**
+     * @brief Calculate the integrated autocorrelation time.
+     *
+     * @details Calls simplemc::accs::tau with the accumulated data and the block size used.
+     *
+     * For statically sized accumulators with a size() == 1, it returns a single value. Otherwise, it
+     * returns a vector.
+     *
+     * @tparam M simplemc::eigen_matrix_dbl type.
+     * @param c_naive Naive (unblocked) estimate of the sample (cross)-covariance matrix.
+     * @param c_blocked Blocked estimate of the sample (cross)-covariance matrix.
+     * @param blsize Block size used in the blocked estimate (w.r.t. the naive estimate).
+     * @return Integrated autocorrelation time.
+     */
+    template <eigen_matrix_dbl M>
+    [[nodiscard]] static auto tau(const M& c_naive, const M& c_blocked, count_type blsize) {
+        using namespace simplemc::accs;
+        constexpr bool returns_scalar = (M::RowsAtCompileTime == 1 && M::ColsAtCompileTime == 1);
+        return detail::scalar_or_matrix<returns_scalar>(accs::tau(c_naive, c_blocked, blsize));
+    }
+
+    /**
+     * @brief Calculate the integrated autocorrelation time for a single real random variable.
+     *
+     * @details See simplemc::accs::tau for details.
+     *
+     * @param c_naive Naive (unblocked) estimate of the sample variance.
+     * @param c_blocked Blocked estimate of the sample variance.
+     * @param blsize Block size used in the blocked estimate (w.r.t. the naive estimate).
+     * @return Integrated autocorrelation time.
+     */
+    [[nodiscard]] static auto tau(double c_naive, double c_blocked, count_type blsize) {
+        return (c_blocked * blsize / c_naive - 1.0) * 0.5;
+    }
+
 private:
     // Check if the given level is full?
     [[nodiscard]] auto is_full(std::size_t lvl) const {
@@ -85,7 +121,7 @@ private:
     // Add the block in the given level to its effective samples and reset its block data.
     void add_block(std::size_t lvl) {
         assert(lvl < accs_.size());
-        accs_[lvl].accumulate(blocks_[lvl].mean());
+        accs_[lvl] << blocks_[lvl].mean();
         blocks_[lvl].reset();
     }
 

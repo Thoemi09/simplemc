@@ -1,11 +1,13 @@
 #include "./accs_fixture.hpp"
 
+#include <simplemc/accs/autocorr_acc.hpp>
 #include <simplemc/accs/block_acc.hpp>
 #include <simplemc/accs/covar_acc.hpp>
 
 #include <complex>
 #include <numeric>
 #include <tuple>
+#include <type_traits>
 #include <vector>
 
 // anonymous namespace with parameters
@@ -306,4 +308,46 @@ TEST_F(SimplemcAccs, CovarAccBlocked) {
     const auto c_d = sample_covariance(bsp_d);
     check_range_near(acc_wel_d1.accumulator().mean(), m_d, tol);
     check_range_near(make_span(acc_wel_d1.accumulator().covariance_of_data()), make_span(c_d), tol);
+}
+
+// Check autocorrelation wrapper of covariance accumulator.
+TEST_F(SimplemcAccs, CovarAccAutocorrelation) {
+    // general set up
+    using namespace simplemc;
+    autocorr_acc<covar_acc_static<double, size, welford>> acc_vec, acc_acc1, acc_acc2;
+    autocorr_acc<covar_acc_single<double, welford>> acc_single(1, 2, 5);
+
+    // fill accumulators
+    std::vector<long> idxs(3);
+    std::iota(idxs.begin(), idxs.end(), 0l);
+    for (int i = 0; i < steps; ++i) {
+        acc_vec << sp_d.samples[i];
+        acc_acc1.accumulate(sp_d.samples[i], idxs);
+        acc_acc2.accumulate(sp_d.samples[i], 0);
+        acc_single << sp_d.samples[i](0);
+    }
+
+    // check block variance accumulators with increasing block sizes and autocorrelation times
+    using simplemc::make_span;
+    auto [bsp_d, btau_v, btau_c] = blocking_autocorr(sp_d);
+    const auto max_level = acc_vec.find_level(2);
+    auto check_level = [&bsp_d, &btau_c](const auto& acc, auto i) {
+        const auto c_d = sample_covariance(bsp_d[i]);
+        const auto ac0_d = acc.accumulators()[0].covariance_of_data();
+        const auto ac_d = acc.accumulators()[i].covariance_of_data();
+        const auto blsize = acc.block_sizes()[i];
+        if constexpr (std::decay_t<decltype(acc)>::static_size == 1) {
+            check_near(acc.accumulators()[i].covariance_of_data(), c_d(0, 0), tol);
+            check_near(acc.tau(ac0_d, ac_d, blsize), btau_c[i](0, 0), tol);
+        } else {
+            check_range_near(make_span(acc.accumulators()[i].covariance_of_data()), make_span(c_d), tol);
+            check_range_near(make_span(acc.tau(ac0_d, ac_d, blsize)), make_span(btau_c[i]), tol);
+        }
+    };
+    for (std::size_t i = 0; i < max_level; ++i) {
+        check_level(acc_single, i);
+        check_level(acc_vec, i);
+        check_level(acc_acc1, i);
+        check_level(acc_acc2, i);
+    }
 }

@@ -27,9 +27,9 @@ protected:
         auto s1_d = state_d { 1.0, 0.0, 0.0 };
         auto s2_d = state_d { 0.0, 1.0, 0.0 };
         auto s3_d = state_d { 0.0, 0.0, 1.0 };
-        auto probs_d = std::vector<double> { 1.0, 1.0, 1.0 };
+        auto probs_d = std::vector<double> { 2.5, 0.3, 1.5 };
         Eigen::MatrixXd mcmc_props_d(3, 3);
-        mcmc_props_d << 2, 3, 6, 1, 7, 4, 9, 9, 10;
+        mcmc_props_d << 10, 1, 3, 2, 8, 1, 4, 1, 10;
         sp_d.set_states(std::vector<state_d> { s1_d, s2_d, s3_d });
         sp_d.set_weights(probs_d);
         sp_d.set_mcmc_proposal(mcmc_props_d);
@@ -59,6 +59,7 @@ protected:
         fmt::print("Sample variance: {}\n", sample_variance(sp_d));
         fmt::print("Analytic covariance:\n{}\n", simplemc::to_string(analytic_covariance(sp_d)));
         fmt::print("Sample covariance:\n{}\n", simplemc::to_string(sample_covariance(sp_d)));
+        fmt::print("Integrated tau: {}\n", std::get<1>(sample_autocorr(sp_d, 100)));
 
         const auto [a_re_var, a_im_var, a_re_im_var] = analytic_variance(sp_c);
         const auto [s_re_var, s_im_var, s_re_im_var] = sample_variance(sp_c);

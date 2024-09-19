@@ -1,11 +1,13 @@
 #include "./accs_fixture.hpp"
 
+#include <simplemc/accs/autocorr_acc.hpp>
 #include <simplemc/accs/block_acc.hpp>
 #include <simplemc/accs/var_acc.hpp>
 
 #include <complex>
 #include <numeric>
 #include <tuple>
+#include <type_traits>
 #include <vector>
 
 // anonymous namespace with parameters
@@ -301,4 +303,45 @@ TEST_F(SimplemcAccs, VarAccBlocked) {
     const auto v_d = sample_variance(bsp_d);
     check_range_near(acc_wel_d1.accumulator().mean(), m_d, tol);
     check_range_near(acc_wel_d1.accumulator().variance_of_data(), v_d, tol);
+}
+
+// Check autocorrelation wrapper of variance accumulator.
+TEST_F(SimplemcAccs, VarAccAutocorrelation) {
+    // general set up
+    using namespace simplemc;
+    autocorr_acc<var_acc_static<double, size, welford>> acc_vec, acc_acc1, acc_acc2;
+    autocorr_acc<var_acc_single<double, welford>> acc_single(1, 2, 5);
+
+    // fill accumulators
+    std::vector<long> idxs(3);
+    std::iota(idxs.begin(), idxs.end(), 0l);
+    for (int i = 0; i < steps; ++i) {
+        acc_vec << sp_d.samples[i];
+        acc_acc1.accumulate(sp_d.samples[i], idxs);
+        acc_acc2.accumulate(sp_d.samples[i], 0);
+        acc_single << sp_d.samples[i](0);
+    }
+
+    // check block variance accumulators with increasing block sizes and autocorrelation times
+    auto [bsp_d, btau_v, btau_c] = blocking_autocorr(sp_d);
+    const auto max_level = acc_vec.find_level(2);
+    auto check_level = [&bsp_d, &btau_v](const auto& acc, auto i) {
+        const auto v_d = sample_variance(bsp_d[i]);
+        const auto av0_d = acc.accumulators()[0].variance_of_data();
+        const auto av_d = acc.accumulators()[i].variance_of_data();
+        const auto blsize = acc.block_sizes()[i];
+        if constexpr (std::decay_t<decltype(acc)>::static_size == 1) {
+            check_near(acc.accumulators()[i].variance_of_data(), v_d(0), tol);
+            check_near(acc.tau(av0_d, av_d, blsize), btau_v[i](0), tol);
+        } else {
+            check_range_near(acc.accumulators()[i].variance_of_data(), v_d, tol);
+            check_range_near(acc.tau(av0_d, av_d, blsize), btau_v[i], tol);
+        }
+    };
+    for (std::size_t i = 0; i < max_level; ++i) {
+        check_level(acc_single, i);
+        check_level(acc_vec, i);
+        check_level(acc_acc1, i);
+        check_level(acc_acc2, i);
+    }
 }
