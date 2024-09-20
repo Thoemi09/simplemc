@@ -29,10 +29,47 @@ namespace simplemc {
  *
  * @details It uses blocks of increasing size to decorrelate the individual samples. The (co)variance
  * and the integrated autocorrelation time will increase with the block size until it reaches a
- * plateau. The value at the plateau should give you a good estimate of both quantities.
+ * plateau. The value at the plateau should give you a good estimate of both quantities. See
+ * @ref simplemc-accs for how the (co)variance relates to the integrated autocorrelation time.
  *
  * Functionality and usage is similar to the supported wrapped accumulators. Multi-value accumulation
- * is not supported right now (please use the `accumulate()` instead).
+ * is not supported right now (please use accumulate(R1&&, R2&&) instead).
+ *
+ * Note that the accumulator only groups the data into levels with increasing block sizes. It does not
+ * give a final estimate of the integrated autocorrelation time. It is the users responsibility to
+ * inspect the blocked data and decide what to do with it. Here is a usual workflow:
+ * @code{.cpp}
+ * // construct the autocorrelation accumulator
+ * using wrapped_type = simplemc::var_acc_single<double>;
+ * simplemc::autocorr_acc<wrapped_type> acc;
+ *
+ * // accumulate the data
+ * for (int i = 0; i < nsamples; ++i) {
+ *     // ...
+ * }
+ *
+ * // get the blocked variance accumulators and block sizes
+ * const auto& var_accs = acc.accumulators();
+ * const auto& block_sizes = acc.block_sizes();
+ *
+ * // inspect how the variance increases with increasing block sizes
+ * fmt::print("{:<10}{:<10}{:<15}\n", "Count", "Block size", "Variance");
+ * for (const auto& [va, bl] : ranges::views::zip(var_accs, block_sizes)) {
+ *     fmt::print("{:<10}{:<10}{:<15.5f}\n", va.count(), bl, va.variance());
+ * }
+ * @endcode
+ *
+ * The last few blocks will have a small amount of effective samples and it might be a good idea to
+ * discard them. You can use find_level() to find the highest level, i.e. the largest block size, with
+ * at least the given number of effective samples.
+ *
+ * For example, to use the level with at least 64 effective samples as an estimate for the variance
+ * of the sample mean, one could do
+ * @code{.cpp}
+ * const auto lvl = acc.find_level(64);
+ * const auto& va = acc.accumulators()[lvl];
+ * fmt::print("Estimated variance: {}\n", va.variance());
+ * @endcode
  *
  * @tparam A Accumulator type.
  */
@@ -79,14 +116,15 @@ public:
     /**
      * @brief Calculate the integrated autocorrelation time.
      *
-     * @details Calls simplemc::accs::tau with the accumulated data and the block size used.
+     * @details Calls simplemc::accs::tau with the given (co)variance estimates and the block size
+     * used.
      *
      * For statically sized accumulators with a size() == 1, it returns a single value. Otherwise, it
      * returns a vector.
      *
      * @tparam M simplemc::eigen_matrix_dbl type.
-     * @param c_naive Naive (unblocked) estimate of the sample (cross)-covariance matrix.
-     * @param c_blocked Blocked estimate of the sample (cross)-covariance matrix.
+     * @param c_naive Naive (unblocked) estimate of the sample (cross)-(co)variance matrix/vector.
+     * @param c_blocked Blocked estimate of the sample (cross)-(co)variance matrix/vector.
      * @param blsize Block size used in the blocked estimate (w.r.t. the naive estimate).
      * @return Integrated autocorrelation time.
      */
@@ -315,14 +353,14 @@ public:
     [[nodiscard]] auto factor() const { return fac_; }
 
     /**
-     * @brief Get number of current levels.
+     * @brief Get the number of current levels.
      *
      * @return Number of levels.
      */
     [[nodiscard]] auto num_levels() const { return accs_.size(); }
 
     /**
-     * @brief Get effective number of samples in level \f$ i \f$.
+     * @brief Get the effective number of samples in level \f$ i \f$.
      *
      * @param i Level index.
      * @return Number of accumulated samples in level \f$ i \f$.
