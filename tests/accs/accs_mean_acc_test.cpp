@@ -61,10 +61,10 @@ TEST_F(SimplemcAccs, MeanAccEmpty) {
 TEST_F(SimplemcAccs, MeanAccSingle) {
     // general set up
     using namespace simplemc;
-    simplemc::mean_acc_single<double, standard> acc_std_d1, acc_std_d2;
-    simplemc::mean_acc_single<double, welford> acc_wel_d1, acc_wel_d2;
-    simplemc::mean_acc_single<std::complex<double>, standard> acc_std_c1, acc_std_c2;
-    simplemc::mean_acc_single<std::complex<double>, welford> acc_wel_c1, acc_wel_c2;
+    mean_acc_single<double, standard> acc_std_d1, acc_std_d2;
+    mean_acc_single<double, welford> acc_wel_d1, acc_wel_d2;
+    mean_acc_single<std::complex<double>, standard> acc_std_c1, acc_std_c2;
+    mean_acc_single<std::complex<double>, welford> acc_wel_c1, acc_wel_c2;
 
     // fill accumulators
     const auto merge_size = steps / 2;
@@ -110,10 +110,10 @@ TEST_F(SimplemcAccs, MeanAccSingle) {
 TEST_F(SimplemcAccs, MeanAccVector) {
     // general set up
     using namespace simplemc;
-    simplemc::mean_acc_static<double, size, standard> acc_std_d1, acc_std_d2;
-    simplemc::mean_acc_dynamic<double, welford> acc_wel_d1(size), acc_wel_d2(size);
-    simplemc::mean_acc_static<std::complex<double>, size, standard> acc_std_c1, acc_std_c2;
-    simplemc::mean_acc_dynamic<std::complex<double>, welford> acc_wel_c1(size), acc_wel_c2(size);
+    mean_acc_static<double, size, standard> acc_std_d1, acc_std_d2;
+    mean_acc_dynamic<double, welford> acc_wel_d1(size), acc_wel_d2(size);
+    mean_acc_static<std::complex<double>, size, standard> acc_std_c1, acc_std_c2;
+    mean_acc_dynamic<std::complex<double>, welford> acc_wel_c1(size), acc_wel_c2(size);
 
     // fill accumulators
     const auto merge_size = steps / 2;
@@ -161,10 +161,10 @@ TEST_F(SimplemcAccs, MeanAccVector) {
 TEST_F(SimplemcAccs, MeanAccIndividualIndices) {
     // general set up
     using namespace simplemc;
-    simplemc::mean_acc_static<double, size, standard> acc_std_d1, acc_std_d2;
-    simplemc::mean_acc_dynamic<double, welford> acc_wel_d1(size), acc_wel_d2(size);
-    simplemc::mean_acc_static<std::complex<double>, size, standard> acc_std_c1, acc_std_c2;
-    simplemc::mean_acc_dynamic<std::complex<double>, welford> acc_wel_c1(size), acc_wel_c2(size);
+    mean_acc_static<double, size, standard> acc_std_d1, acc_std_d2;
+    mean_acc_dynamic<double, welford> acc_wel_d1(size), acc_wel_d2(size);
+    mean_acc_static<std::complex<double>, size, standard> acc_std_c1, acc_std_c2;
+    mean_acc_dynamic<std::complex<double>, welford> acc_wel_c1(size), acc_wel_c2(size);
 
     // fill accumulators
     const auto merge_size = steps / 2;

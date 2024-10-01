@@ -65,10 +65,10 @@ TEST_F(SimplemcAccs, VarAccEmpty) {
 TEST_F(SimplemcAccs, VarAccSingle) {
     // general set up
     using namespace simplemc;
-    simplemc::var_acc_single<double, standard> acc_std_d1, acc_std_d2;
-    simplemc::var_acc_single<double, welford> acc_wel_d1, acc_wel_d2;
-    simplemc::var_acc_single<std::complex<double>, standard> acc_std_c1, acc_std_c2;
-    simplemc::var_acc_single<std::complex<double>, welford> acc_wel_c1, acc_wel_c2;
+    var_acc_single<double, standard> acc_std_d1, acc_std_d2;
+    var_acc_single<double, welford> acc_wel_d1, acc_wel_d2;
+    var_acc_single<std::complex<double>, standard> acc_std_c1, acc_std_c2;
+    var_acc_single<std::complex<double>, welford> acc_wel_c1, acc_wel_c2;
 
     // fill accumulators
     const auto merge_size = steps / 2;
@@ -124,10 +124,10 @@ TEST_F(SimplemcAccs, VarAccSingle) {
 TEST_F(SimplemcAccs, VarAccVector) {
     // general set up
     using namespace simplemc;
-    simplemc::var_acc_static<double, size, standard> acc_std_d1, acc_std_d2;
-    simplemc::var_acc_dynamic<double, welford> acc_wel_d1(size), acc_wel_d2(size);
-    simplemc::var_acc_static<std::complex<double>, size, standard> acc_std_c1, acc_std_c2;
-    simplemc::var_acc_dynamic<std::complex<double>, welford> acc_wel_c1(size), acc_wel_c2(size);
+    var_acc_static<double, size, standard> acc_std_d1, acc_std_d2;
+    var_acc_dynamic<double, welford> acc_wel_d1(size), acc_wel_d2(size);
+    var_acc_static<std::complex<double>, size, standard> acc_std_c1, acc_std_c2;
+    var_acc_dynamic<std::complex<double>, welford> acc_wel_c1(size), acc_wel_c2(size);
 
     // fill accumulators
     const auto merge_size = steps / 2;
@@ -185,10 +185,10 @@ TEST_F(SimplemcAccs, VarAccVector) {
 TEST_F(SimplemcAccs, VarAccIndividualIndices) {
     // general set up
     using namespace simplemc;
-    simplemc::var_acc_static<double, size, standard> acc_std_d1, acc_std_d2;
-    simplemc::var_acc_dynamic<double, welford> acc_wel_d1(size), acc_wel_d2(size);
-    simplemc::var_acc_static<std::complex<double>, size, standard> acc_std_c1, acc_std_c2;
-    simplemc::var_acc_dynamic<std::complex<double>, welford> acc_wel_c1(size), acc_wel_c2(size);
+    var_acc_static<double, size, standard> acc_std_d1, acc_std_d2;
+    var_acc_dynamic<double, welford> acc_wel_d1(size), acc_wel_d2(size);
+    var_acc_static<std::complex<double>, size, standard> acc_std_c1, acc_std_c2;
+    var_acc_dynamic<std::complex<double>, welford> acc_wel_c1(size), acc_wel_c2(size);
 
     // fill accumulators
     const auto merge_size = steps / 2;

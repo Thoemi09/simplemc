@@ -714,6 +714,11 @@
  * decorrelate them or
  * - simplemc::autocorr_acc to get an estimate for the autocorrelation time.
  *
+ * Another accumulator is the simplemc::batch_acc. It is similar to the simplemc::block_acc and the
+ * simplemc::autocorr_acc in that it groups individual samples into a fixed number of batches. The
+ * main advantage of the batch accumulator is that one has access to the individual batches, which
+ * means that they can be used for further analysis, e.g. jackknife resampling.
+ *
  * All accumulators support the `standard` and the more stable `welford` algorithm when accumulating
  * data (see simplemc::varalg).
  *

@@ -21,6 +21,10 @@ add_executable(accs-covar-acc-test accs_covar_acc_test.cpp)
 target_link_libraries(accs-covar-acc-test PRIVATE simplemc-test simplemc::simplemc-accs)
 add_test(NAME accs-covar-acc-test COMMAND accs-covar-acc-test)
 
+add_executable(accs-batch-acc-test accs_batch_acc_test.cpp)
+target_link_libraries(accs-batch-acc-test PRIVATE simplemc-test simplemc::simplemc-accs)
+add_test(NAME accs-batch-acc-test COMMAND accs-batch-acc-test)
+
 # add_executable(accs-test accs_test.cpp)
 # target_link_libraries(accs-test PRIVATE simplemc-test simplemc::simplemc-accs)
 # add_test(NAME accs-test COMMAND accs-test)

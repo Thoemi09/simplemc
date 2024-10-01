@@ -65,10 +65,10 @@ TEST_F(SimplemcAccs, CovarAccEmpty) {
 TEST_F(SimplemcAccs, CovarAccSingle) {
     // general set up
     using namespace simplemc;
-    simplemc::covar_acc_single<double, standard> acc_std_d1, acc_std_d2;
-    simplemc::covar_acc_single<double, welford> acc_wel_d1, acc_wel_d2;
-    simplemc::covar_acc_single<std::complex<double>, standard> acc_std_c1, acc_std_c2;
-    simplemc::covar_acc_single<std::complex<double>, welford> acc_wel_c1, acc_wel_c2;
+    covar_acc_single<double, standard> acc_std_d1, acc_std_d2;
+    covar_acc_single<double, welford> acc_wel_d1, acc_wel_d2;
+    covar_acc_single<std::complex<double>, standard> acc_std_c1, acc_std_c2;
+    covar_acc_single<std::complex<double>, welford> acc_wel_c1, acc_wel_c2;
 
     // fill accumulators
     const auto merge_size = steps / 2;
@@ -124,10 +124,10 @@ TEST_F(SimplemcAccs, CovarAccSingle) {
 TEST_F(SimplemcAccs, CovarAccVector) {
     // general set up
     using namespace simplemc;
-    simplemc::covar_acc_static<double, size, standard> acc_std_d1, acc_std_d2;
-    simplemc::covar_acc_dynamic<double, welford> acc_wel_d1(size), acc_wel_d2(size);
-    simplemc::covar_acc_static<std::complex<double>, size, standard> acc_std_c1, acc_std_c2;
-    simplemc::covar_acc_dynamic<std::complex<double>, welford> acc_wel_c1(size), acc_wel_c2(size);
+    covar_acc_static<double, size, standard> acc_std_d1, acc_std_d2;
+    covar_acc_dynamic<double, welford> acc_wel_d1(size), acc_wel_d2(size);
+    covar_acc_static<std::complex<double>, size, standard> acc_std_c1, acc_std_c2;
+    covar_acc_dynamic<std::complex<double>, welford> acc_wel_c1(size), acc_wel_c2(size);
 
     // fill accumulators
     const auto merge_size = steps / 2;
@@ -186,10 +186,10 @@ TEST_F(SimplemcAccs, CovarAccVector) {
 TEST_F(SimplemcAccs, CovarAccIndividualIndices) {
     // general set up
     using namespace simplemc;
-    simplemc::covar_acc_static<double, size, standard> acc_std_d1, acc_std_d2;
-    simplemc::covar_acc_dynamic<double, welford> acc_wel_d1(size), acc_wel_d2(size);
-    simplemc::covar_acc_static<std::complex<double>, size, standard> acc_std_c1, acc_std_c2;
-    simplemc::covar_acc_dynamic<std::complex<double>, welford> acc_wel_c1(size), acc_wel_c2(size);
+    covar_acc_static<double, size, standard> acc_std_d1, acc_std_d2;
+    covar_acc_dynamic<double, welford> acc_wel_d1(size), acc_wel_d2(size);
+    covar_acc_static<std::complex<double>, size, standard> acc_std_c1, acc_std_c2;
+    covar_acc_dynamic<std::complex<double>, welford> acc_wel_c1(size), acc_wel_c2(size);
 
     // fill accumulators
     const auto merge_size = steps / 2;
