@@ -315,6 +315,26 @@ public:
         }
     }
 
+    /**
+     * @brief Collect block accumulators from different MPI processes.
+     *
+     * @details It simply calls `mpi_collect` for the wrapped accumulator.
+     *
+     * It throws an exception, if the block size is not equal on all processes.
+     *
+     * @param comm simplemc::mpi::communicator object.
+     * @param acc Block accumulator.
+     * @return Block accumulator with the reduced data from all processes.
+     */
+    friend block_acc mpi_collect(const mpi::communicator& comm, const block_acc& acc) {
+        if (!all_equal(comm, acc.size())) {
+            throw simplemc_exception("Block size is not equal on all processes", "mpi_collect");
+        }
+        block_acc res(acc.blsize_, acc.size());
+        res.acc_ = mpi_collect(comm, acc.acc_);
+        return res;
+    }
+
 private:
     acc_type acc_;
     mean_acc_type block_;

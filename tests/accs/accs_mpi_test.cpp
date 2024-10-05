@@ -36,6 +36,9 @@ protected:
             exp_cacc_wel_d << sp_d.samples[i];
             exp_cacc_std_c << sp_c.samples[i];
             exp_cacc_wel_c << sp_c.samples[i];
+
+            exp_blacc_wel_d << sp_d.samples[i];
+
             if (i >= nsamples * rank && i < nsamples * (rank + 1)) {
                 macc_std_d << sp_d.samples[i];
                 macc_wel_d << sp_d.samples[i];
@@ -51,6 +54,8 @@ protected:
                 cacc_wel_d << sp_d.samples[i];
                 cacc_std_c << sp_c.samples[i];
                 cacc_wel_c << sp_c.samples[i];
+
+                blacc_wel_d << sp_d.samples[i];
             }
         }
     }
@@ -75,6 +80,9 @@ protected:
     simplemc::covar_acc_static<double, size, welford> cacc_wel_d, exp_cacc_wel_d;
     simplemc::covar_acc_static<std::complex<double>, size, standard> cacc_std_c, exp_cacc_std_c;
     simplemc::covar_acc_static<std::complex<double>, size, welford> cacc_wel_c, exp_cacc_wel_c;
+
+    // block accumulator
+    simplemc::block_acc<simplemc::var_acc_static<double, size, welford>> blacc_wel_d { 5 }, exp_blacc_wel_d { 5 };
 };
 
 // Test MPI routines for mean_acc.
@@ -188,6 +196,18 @@ TEST_F(SimplemcAccsMPI, CovarianceAccumulator) {
     check_range_near(make_span(res_cacc_wel_c.rdata()), make_span(exp_cacc_wel_c.rdata()), tol);
     check_range_near(make_span(res_cacc_wel_c.idata()), make_span(exp_cacc_wel_c.idata()), tol);
     check_range_near(make_span(res_cacc_wel_c.cdata()), make_span(exp_cacc_wel_c.cdata()), tol);
+}
+
+// Test MPI routines for block_acc.
+TEST_F(SimplemcAccsMPI, BlockAccumulator) {
+    EXPECT_EQ(blacc_wel_d.total_count(), nsamples);
+    EXPECT_EQ(exp_blacc_wel_d.total_count(), steps);
+
+    // double welford
+    auto res_blacc_wel_d = mpi_collect(comm, blacc_wel_d);
+    EXPECT_EQ(res_blacc_wel_d.total_count(), steps);
+    check_range_near(res_blacc_wel_d.accumulator().mdata(), exp_blacc_wel_d.accumulator().mdata(), tol);
+    check_range_near(res_blacc_wel_d.accumulator().vdata(), exp_blacc_wel_d.accumulator().vdata(), tol);
 }
 
 // Custom main function for MPI.
