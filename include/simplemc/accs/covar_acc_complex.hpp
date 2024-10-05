@@ -8,6 +8,7 @@
 
 #include <simplemc/accs/covar_acc_fwd.hpp>
 #include <simplemc/accs/utils.hpp>
+#include <simplemc/mpi.hpp>
 #include <simplemc/numeric/eigen.hpp>
 #include <simplemc/numeric/utils.hpp>
 #include <simplemc/utils/concepts.hpp>
@@ -550,6 +551,48 @@ public:
         dbl_vec_type mdata_r = mdata_.real();
         dbl_vec_type mdata_i = mdata_.imag();
         return detail::scalar_or_matrix<returns_scalar>(covariance<varalg()>(mdata_r, mdata_i, cdata_, count_));
+    }
+
+    /**
+     * @brief Collect covariance accumulators from different MPI processes.
+     *
+     * @details It constructs a new covariance accumulator with the reduced accumulated mean data,
+     * covariance data and counts from all MPI processes.
+     *
+     * The reduction operation depends on the simplemc::varalg algorithm used to accumulate the data.
+     * See operator<<(const covar_acc&) for how it is done in the case of 2 accumulators.
+     *
+     * @param comm simplemc::mpi::communicator object.
+     * @param acc Covariance accumulator.
+     * @return Covariance accumulator with the reduced data from all processes.
+     */
+    friend covar_acc mpi_collect(const mpi::communicator& comm, const covar_acc& acc) {
+        covar_acc res(acc.size());
+        mpi::all_reduce(comm, acc.count_, res.count_, MPI_SUM);
+        if constexpr (covar_acc::varalg() == varalg::standard) {
+            mpi::all_reduce(comm, make_span(acc.mdata_), make_span(res.mdata_), MPI_SUM);
+            mpi::all_reduce(comm, make_span(acc.rdata_), make_span(res.rdata_), MPI_SUM);
+            mpi::all_reduce(comm, make_span(acc.idata_), make_span(res.idata_), MPI_SUM);
+            mpi::all_reduce(comm, make_span(acc.cdata_), make_span(res.cdata_), MPI_SUM);
+        } else {
+            const auto n1 = static_cast<double>(acc.count_);
+            const auto n = static_cast<double>(res.count_);
+            const cplx_vec_type tmp_mdata = acc.mdata_ * n1 / n;
+            mpi::all_reduce(comm, make_span(tmp_mdata), make_span(res.mdata_), MPI_SUM);
+            const dbl_mat_type tmp_cdata =
+                acc.cdata_ + n1 * (acc.mdata_ - res.mdata_).real() * (acc.mdata_ - res.mdata_).imag().transpose();
+            mpi::all_reduce(comm, make_span(tmp_cdata), make_span(res.cdata_), MPI_SUM);
+            // we cannot add the triangular view to the full matrix (only when we assign)
+            dbl_mat_type tmp_rdata = acc.rdata_;
+            tmp_rdata += (n1 * (acc.mdata_ - res.mdata_).real() * (acc.mdata_ - res.mdata_).real().transpose())
+                             .template triangularView<Eigen::Lower>();
+            mpi::all_reduce(comm, make_span(tmp_rdata), make_span(res.rdata_), MPI_SUM);
+            dbl_mat_type tmp_idata = acc.idata_;
+            tmp_idata += (n1 * (acc.mdata_ - res.mdata_).imag() * (acc.mdata_ - res.mdata_).imag().transpose())
+                             .template triangularView<Eigen::Lower>();
+            mpi::all_reduce(comm, make_span(tmp_idata), make_span(res.idata_), MPI_SUM);
+        }
+        return res;
     }
 
 private:

@@ -31,6 +31,11 @@ protected:
             exp_vacc_wel_d << sp_d.samples[i];
             exp_vacc_std_c << sp_c.samples[i];
             exp_vacc_wel_c << sp_c.samples[i];
+
+            exp_cacc_std_d << sp_d.samples[i];
+            exp_cacc_wel_d << sp_d.samples[i];
+            exp_cacc_std_c << sp_c.samples[i];
+            exp_cacc_wel_c << sp_c.samples[i];
             if (i >= nsamples * rank && i < nsamples * (rank + 1)) {
                 macc_std_d << sp_d.samples[i];
                 macc_wel_d << sp_d.samples[i];
@@ -41,6 +46,11 @@ protected:
                 vacc_wel_d << sp_d.samples[i];
                 vacc_std_c << sp_c.samples[i];
                 vacc_wel_c << sp_c.samples[i];
+
+                cacc_std_d << sp_d.samples[i];
+                cacc_wel_d << sp_d.samples[i];
+                cacc_std_c << sp_c.samples[i];
+                cacc_wel_c << sp_c.samples[i];
             }
         }
     }
@@ -59,6 +69,12 @@ protected:
     simplemc::var_acc_static<double, size, welford> vacc_wel_d, exp_vacc_wel_d;
     simplemc::var_acc_static<std::complex<double>, size, standard> vacc_std_c, exp_vacc_std_c;
     simplemc::var_acc_static<std::complex<double>, size, welford> vacc_wel_c, exp_vacc_wel_c;
+
+    // covariance accumulators
+    simplemc::covar_acc_static<double, size, standard> cacc_std_d, exp_cacc_std_d;
+    simplemc::covar_acc_static<double, size, welford> cacc_wel_d, exp_cacc_wel_d;
+    simplemc::covar_acc_static<std::complex<double>, size, standard> cacc_std_c, exp_cacc_std_c;
+    simplemc::covar_acc_static<std::complex<double>, size, welford> cacc_wel_c, exp_cacc_wel_c;
 };
 
 // Test MPI routines for mean_acc.
@@ -131,6 +147,47 @@ TEST_F(SimplemcAccsMPI, VarianceAccumulator) {
     check_range_near(res_vacc_wel_c.rdata(), exp_vacc_wel_c.rdata(), tol);
     check_range_near(res_vacc_wel_c.idata(), exp_vacc_wel_c.idata(), tol);
     check_range_near(res_vacc_wel_c.cdata(), exp_vacc_wel_c.cdata(), tol);
+}
+
+// Test MPI routines for covar_acc.
+TEST_F(SimplemcAccsMPI, CovarianceAccumulator) {
+    using namespace simplemc;
+    EXPECT_EQ(cacc_std_d.count(), nsamples);
+    EXPECT_EQ(cacc_wel_d.count(), nsamples);
+    EXPECT_EQ(cacc_std_c.count(), nsamples);
+    EXPECT_EQ(cacc_wel_c.count(), nsamples);
+    EXPECT_EQ(exp_cacc_std_d.count(), steps);
+    EXPECT_EQ(exp_cacc_wel_d.count(), steps);
+    EXPECT_EQ(exp_cacc_std_c.count(), steps);
+    EXPECT_EQ(exp_cacc_wel_c.count(), steps);
+
+    // double standard
+    auto res_cacc_std_d = mpi_collect(comm, cacc_std_d);
+    EXPECT_EQ(res_cacc_std_d.count(), steps);
+    check_range_near(res_cacc_std_d.mdata(), exp_cacc_std_d.mdata(), tol);
+    check_range_near(make_span(res_cacc_std_d.cdata()), make_span(exp_cacc_std_d.cdata()), tol);
+
+    // double welford
+    auto res_cacc_wel_d = mpi_collect(comm, cacc_wel_d);
+    EXPECT_EQ(res_cacc_wel_d.count(), steps);
+    check_range_near(res_cacc_wel_d.mdata(), exp_cacc_wel_d.mdata(), tol);
+    check_range_near(make_span(res_cacc_wel_d.cdata()), make_span(exp_cacc_wel_d.cdata()), tol);
+
+    // complex standard
+    auto res_cacc_std_c = mpi_collect(comm, cacc_std_c);
+    EXPECT_EQ(res_cacc_std_c.count(), steps);
+    check_range_near(res_cacc_std_c.mdata(), exp_cacc_std_c.mdata(), tol);
+    check_range_near(make_span(res_cacc_std_c.rdata()), make_span(exp_cacc_std_c.rdata()), tol);
+    check_range_near(make_span(res_cacc_std_c.idata()), make_span(exp_cacc_std_c.idata()), tol);
+    check_range_near(make_span(res_cacc_std_c.cdata()), make_span(exp_cacc_std_c.cdata()), tol);
+
+    // complex welford
+    auto res_cacc_wel_c = mpi_collect(comm, cacc_wel_c);
+    EXPECT_EQ(res_cacc_wel_c.count(), steps);
+    check_range_near(res_cacc_wel_c.mdata(), exp_cacc_wel_c.mdata(), tol);
+    check_range_near(make_span(res_cacc_wel_c.rdata()), make_span(exp_cacc_wel_c.rdata()), tol);
+    check_range_near(make_span(res_cacc_wel_c.idata()), make_span(exp_cacc_wel_c.idata()), tol);
+    check_range_near(make_span(res_cacc_wel_c.cdata()), make_span(exp_cacc_wel_c.cdata()), tol);
 }
 
 // Custom main function for MPI.
