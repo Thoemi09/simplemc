@@ -354,9 +354,10 @@ public:
         if constexpr (mean_acc::varalg() == varalg::standard) {
             mpi::all_reduce(comm, make_span(acc.mdata_), make_span(res.mdata_), MPI_SUM);
         } else {
-            const auto ratio = static_cast<double>(acc.count_) / static_cast<double>(res.count_);
-            const vec_type tmp_data = acc.mdata_ * ratio;
-            mpi::all_reduce(comm, make_span(tmp_data), make_span(res.mdata_), MPI_SUM);
+            const auto n1 = static_cast<double>(acc.count_);
+            const auto n = static_cast<double>(res.count_);
+            const vec_type tmp_mdata = acc.mdata_ * n1 / n;
+            mpi::all_reduce(comm, make_span(tmp_mdata), make_span(res.mdata_), MPI_SUM);
         }
         return res;
     }

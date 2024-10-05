@@ -22,33 +22,115 @@ protected:
         const auto rank = comm.rank();
         nsamples = steps / comm.size();
         for (int i = 0; i < steps; ++i) {
-            exp_macc_d << sp_d.samples[i];
-            exp_macc_c << sp_c.samples[i];
+            exp_macc_std_d << sp_d.samples[i];
+            exp_macc_wel_d << sp_d.samples[i];
+            exp_macc_std_c << sp_c.samples[i];
+            exp_macc_wel_c << sp_c.samples[i];
+
+            exp_vacc_std_d << sp_d.samples[i];
+            exp_vacc_wel_d << sp_d.samples[i];
+            exp_vacc_std_c << sp_c.samples[i];
+            exp_vacc_wel_c << sp_c.samples[i];
             if (i >= nsamples * rank && i < nsamples * (rank + 1)) {
-                macc_d << sp_d.samples[i];
-                macc_c << sp_c.samples[i];
+                macc_std_d << sp_d.samples[i];
+                macc_wel_d << sp_d.samples[i];
+                macc_std_c << sp_c.samples[i];
+                macc_wel_c << sp_c.samples[i];
+
+                vacc_std_d << sp_d.samples[i];
+                vacc_wel_d << sp_d.samples[i];
+                vacc_std_c << sp_c.samples[i];
+                vacc_wel_c << sp_c.samples[i];
             }
         }
     }
+
     int nsamples { 0 };
-    simplemc::mean_acc_static<double, size, standard> macc_d;
-    simplemc::mean_acc_static<double, size, standard> exp_macc_d;
-    simplemc::mean_acc_static<std::complex<double>, size, welford> macc_c;
-    simplemc::mean_acc_static<std::complex<double>, size, welford> exp_macc_c;
     simplemc::mpi::communicator comm;
+
+    // mean accumulators
+    simplemc::mean_acc_static<double, size, standard> macc_std_d, exp_macc_std_d;
+    simplemc::mean_acc_static<double, size, welford> macc_wel_d, exp_macc_wel_d;
+    simplemc::mean_acc_static<std::complex<double>, size, standard> macc_std_c, exp_macc_std_c;
+    simplemc::mean_acc_static<std::complex<double>, size, welford> macc_wel_c, exp_macc_wel_c;
+
+    // variance accumulators
+    simplemc::var_acc_static<double, size, standard> vacc_std_d, exp_vacc_std_d;
+    simplemc::var_acc_static<double, size, welford> vacc_wel_d, exp_vacc_wel_d;
+    simplemc::var_acc_static<std::complex<double>, size, standard> vacc_std_c, exp_vacc_std_c;
+    simplemc::var_acc_static<std::complex<double>, size, welford> vacc_wel_c, exp_vacc_wel_c;
 };
 
+// Test MPI routines for mean_acc.
 TEST_F(SimplemcAccsMPI, MeanAccumulator) {
-    EXPECT_EQ(macc_d.count(), nsamples);
-    EXPECT_EQ(macc_c.count(), nsamples);
-    EXPECT_EQ(exp_macc_d.count(), steps);
-    EXPECT_EQ(exp_macc_c.count(), steps);
-    auto res_macc_d = mpi_collect(comm, macc_d);
-    EXPECT_EQ(res_macc_d.count(), steps);
-    check_range_near(res_macc_d.mdata(), exp_macc_d.mdata(), tol);
-    auto res_macc_c = mpi_collect(comm, macc_c);
-    EXPECT_EQ(res_macc_c.count(), steps);
-    check_range_near(res_macc_c.mdata(), exp_macc_c.mdata(), tol);
+    EXPECT_EQ(macc_std_d.count(), nsamples);
+    EXPECT_EQ(macc_wel_d.count(), nsamples);
+    EXPECT_EQ(macc_std_c.count(), nsamples);
+    EXPECT_EQ(macc_wel_c.count(), nsamples);
+    EXPECT_EQ(exp_macc_std_d.count(), steps);
+    EXPECT_EQ(exp_macc_wel_d.count(), steps);
+    EXPECT_EQ(exp_macc_std_c.count(), steps);
+    EXPECT_EQ(exp_macc_wel_c.count(), steps);
+
+    // double standard
+    auto res_macc_std_d = mpi_collect(comm, macc_std_d);
+    EXPECT_EQ(res_macc_std_d.count(), steps);
+    check_range_near(res_macc_std_d.mdata(), exp_macc_std_d.mdata(), tol);
+
+    // double welford
+    auto res_macc_wel_d = mpi_collect(comm, macc_wel_d);
+    EXPECT_EQ(res_macc_wel_d.count(), steps);
+    check_range_near(res_macc_wel_d.mdata(), exp_macc_wel_d.mdata(), tol);
+
+    // complex standard
+    auto res_macc_std_c = mpi_collect(comm, macc_std_c);
+    EXPECT_EQ(res_macc_std_c.count(), steps);
+    check_range_near(res_macc_std_c.mdata(), exp_macc_std_c.mdata(), tol);
+
+    // complex welford
+    auto res_macc_wel_c = mpi_collect(comm, macc_wel_c);
+    EXPECT_EQ(res_macc_wel_c.count(), steps);
+    check_range_near(res_macc_wel_c.mdata(), exp_macc_wel_c.mdata(), tol);
+}
+
+// Test MPI routines for var_acc.
+TEST_F(SimplemcAccsMPI, VarianceAccumulator) {
+    EXPECT_EQ(vacc_std_d.count(), nsamples);
+    EXPECT_EQ(vacc_wel_d.count(), nsamples);
+    EXPECT_EQ(vacc_std_c.count(), nsamples);
+    EXPECT_EQ(vacc_wel_c.count(), nsamples);
+    EXPECT_EQ(exp_vacc_std_d.count(), steps);
+    EXPECT_EQ(exp_vacc_wel_d.count(), steps);
+    EXPECT_EQ(exp_vacc_std_c.count(), steps);
+    EXPECT_EQ(exp_vacc_wel_c.count(), steps);
+
+    // double standard
+    auto res_vacc_std_d = mpi_collect(comm, vacc_std_d);
+    EXPECT_EQ(res_vacc_std_d.count(), steps);
+    check_range_near(res_vacc_std_d.mdata(), exp_vacc_std_d.mdata(), tol);
+    check_range_near(res_vacc_std_d.vdata(), exp_vacc_std_d.vdata(), tol);
+
+    // double welford
+    auto res_vacc_wel_d = mpi_collect(comm, vacc_wel_d);
+    EXPECT_EQ(res_vacc_wel_d.count(), steps);
+    check_range_near(res_vacc_wel_d.mdata(), exp_vacc_wel_d.mdata(), tol);
+    check_range_near(res_vacc_wel_d.vdata(), exp_vacc_wel_d.vdata(), tol);
+
+    // complex standard
+    auto res_vacc_std_c = mpi_collect(comm, vacc_std_c);
+    EXPECT_EQ(res_vacc_std_c.count(), steps);
+    check_range_near(res_vacc_std_c.mdata(), exp_vacc_std_c.mdata(), tol);
+    check_range_near(res_vacc_std_c.rdata(), exp_vacc_std_c.rdata(), tol);
+    check_range_near(res_vacc_std_c.idata(), exp_vacc_std_c.idata(), tol);
+    check_range_near(res_vacc_std_c.cdata(), exp_vacc_std_c.cdata(), tol);
+
+    // complex welford
+    auto res_vacc_wel_c = mpi_collect(comm, vacc_wel_c);
+    EXPECT_EQ(res_vacc_wel_c.count(), steps);
+    check_range_near(res_vacc_wel_c.mdata(), exp_vacc_wel_c.mdata(), tol);
+    check_range_near(res_vacc_wel_c.rdata(), exp_vacc_wel_c.rdata(), tol);
+    check_range_near(res_vacc_wel_c.idata(), exp_vacc_wel_c.idata(), tol);
+    check_range_near(res_vacc_wel_c.cdata(), exp_vacc_wel_c.cdata(), tol);
 }
 
 // Custom main function for MPI.

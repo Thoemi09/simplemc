@@ -9,6 +9,7 @@
 #include <simplemc/accs/multivalue_acc.hpp>
 #include <simplemc/accs/utils.hpp>
 #include <simplemc/accs/var_acc_fwd.hpp>
+#include <simplemc/mpi.hpp>
 #include <simplemc/numeric/eigen.hpp>
 #include <simplemc/numeric/utils.hpp>
 #include <simplemc/utils/concepts.hpp>
@@ -513,6 +514,45 @@ public:
         dbl_vec_type mdata_r = mdata_.real();
         dbl_vec_type mdata_i = mdata_.imag();
         return detail::scalar_or_matrix<returns_scalar>(diag_covariance<varalg()>(mdata_r, mdata_i, cdata_, count_));
+    }
+
+    /**
+     * @brief Collect variance accumulators from different MPI processes.
+     *
+     * @details It constructs a new variance accumulator with the reduced accumulated mean data,
+     * variance data and counts from all MPI processes.
+     *
+     * The reduction operation depends on the simplemc::varalg algorithm used to accumulate the data.
+     * See operator<<(const var_acc&) for how it is done in the case of 2 accumulators.
+     *
+     * @param comm simplemc::mpi::communicator object.
+     * @param acc Variance accumulator.
+     * @return Variance accumulator with the reduced data from all processes.
+     */
+    friend var_acc mpi_collect(const mpi::communicator& comm, const var_acc& acc) {
+        var_acc res(acc.size());
+        mpi::all_reduce(comm, acc.count_, res.count_, MPI_SUM);
+        if constexpr (var_acc::varalg() == varalg::standard) {
+            mpi::all_reduce(comm, make_span(acc.mdata_), make_span(res.mdata_), MPI_SUM);
+            mpi::all_reduce(comm, make_span(acc.rdata_), make_span(res.rdata_), MPI_SUM);
+            mpi::all_reduce(comm, make_span(acc.idata_), make_span(res.idata_), MPI_SUM);
+            mpi::all_reduce(comm, make_span(acc.cdata_), make_span(res.cdata_), MPI_SUM);
+        } else {
+            const auto n1 = static_cast<double>(acc.count_);
+            const auto n = static_cast<double>(res.count_);
+            const cplx_vec_type tmp_mdata = acc.mdata_ * n1 / n;
+            mpi::all_reduce(comm, make_span(tmp_mdata), make_span(res.mdata_), MPI_SUM);
+            const dbl_vec_type tmp_rdata =
+                acc.rdata_ + n1 * (acc.mdata_ - res.mdata_).real().cwiseProduct((acc.mdata_ - res.mdata_).real());
+            mpi::all_reduce(comm, make_span(tmp_rdata), make_span(res.rdata_), MPI_SUM);
+            const dbl_vec_type tmp_idata =
+                acc.idata_ + n1 * (acc.mdata_ - res.mdata_).imag().cwiseProduct((acc.mdata_ - res.mdata_).imag());
+            mpi::all_reduce(comm, make_span(tmp_idata), make_span(res.idata_), MPI_SUM);
+            const dbl_vec_type tmp_cdata =
+                acc.cdata_ + n1 * (acc.mdata_ - res.mdata_).real().cwiseProduct((acc.mdata_ - res.mdata_).imag());
+            mpi::all_reduce(comm, make_span(tmp_cdata), make_span(res.cdata_), MPI_SUM);
+        }
+        return res;
     }
 
 private:
