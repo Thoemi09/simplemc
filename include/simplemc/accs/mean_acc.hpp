@@ -8,6 +8,7 @@
 
 #include <simplemc/accs/multivalue_acc.hpp>
 #include <simplemc/accs/utils.hpp>
+#include <simplemc/mpi.hpp>
 #include <simplemc/numeric/eigen.hpp>
 #include <simplemc/numeric/utils.hpp>
 #include <simplemc/utils/concepts.hpp>
@@ -332,6 +333,32 @@ public:
     [[nodiscard]] auto mean() const {
         using simplemc::accs::mean;
         return detail::scalar_or_matrix<returns_scalar>(mean<varalg()>(mdata_, count_));
+    }
+
+    /**
+     * @brief Collect mean accumulators from different MPI processes.
+     *
+     * @details It constructs a new mean accumulator with the reduced accumulated mean data and counts
+     * from all MPI processes.
+     *
+     * The reduction operation depends on the simplemc::varalg algorithm used to accumulate the data.
+     * See operator<<(const mean_acc&) for how it is done in the case of 2 accumulators.
+     *
+     * @param comm simplemc::mpi::communicator object.
+     * @param acc Mean accumulator.
+     * @return Mean accumulator with the reduced data from all processes.
+     */
+    friend mean_acc mpi_collect(const mpi::communicator& comm, const mean_acc& acc) {
+        mean_acc res(acc.size());
+        mpi::all_reduce(comm, acc.count_, res.count_, MPI_SUM);
+        if constexpr (mean_acc::varalg() == varalg::standard) {
+            mpi::all_reduce(comm, make_span(acc.mdata_), make_span(res.mdata_), MPI_SUM);
+        } else {
+            const auto ratio = static_cast<double>(acc.count_) / static_cast<double>(res.count_);
+            const vec_type tmp_data = acc.mdata_ * ratio;
+            mpi::all_reduce(comm, make_span(tmp_data), make_span(res.mdata_), MPI_SUM);
+        }
+        return res;
     }
 
 private:
