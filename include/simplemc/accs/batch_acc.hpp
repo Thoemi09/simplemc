@@ -40,29 +40,29 @@ namespace simplemc {
  *
  * It is assumed, that the batches all have the same size.
  *
- * @param num Number of batches to merge together.
+ * @param nb Number of batches to merge together.
  * @param batches `std::vector` containing the batches before the merge.
  * @return `std::vector` containing the merge batches.
  */
 template <eigen_vector V, varalg A>
-[[nodiscard]] auto merge_batches(std::size_t num, const std::vector<mean_acc<V, A>>& batches) {
+[[nodiscard]] auto merge_batches(std::size_t nb, const std::vector<mean_acc<V, A>>& batches) {
     // return the full vector if the number of batches to combine is < 2
-    if (num < 2) {
+    if (nb < 2) {
         return batches;
     }
 
     // return an emtpy vector if we don't have enough batches
-    if (num > batches.size()) {
+    if (nb > batches.size()) {
         return std::vector<mean_acc<V, A>> {};
     }
 
     // combine the batches
     auto res = batches;
-    const auto sz = res.size() / num;
+    const auto sz = res.size() / nb;
     for (std::size_t i = 0; i < sz; ++i) {
-        res[i] = res[i * num];
-        for (std::size_t j = 1; j < num; ++j) {
-            res[i] << batches[i * num + j];
+        res[i] = res[i * nb];
+        for (std::size_t j = 1; j < nb; ++j) {
+            res[i] << batches[i * nb + j];
         }
     }
     res.resize(sz);
@@ -225,11 +225,11 @@ public:
      * For static sized accumulators, the `num` parameter is ignored.
      *
      * @param num Number of elements.
-     * @param num_batches Number of batches.
+     * @param nb Number of batches.
      */
-    explicit batch_acc(size_type num = 1, std::size_t num_batches = 64) :
-        full_batches_(num_batches, mean_acc_type { num }),
-        acc_batches_(num_batches, mean_acc_type { num }) {
+    explicit batch_acc(size_type num = 1, std::size_t nb = 64) :
+        full_batches_(nb, mean_acc_type { num }),
+        acc_batches_(nb, mean_acc_type { num }) {
         check_batches();
     }
 
@@ -386,12 +386,12 @@ public:
      *
      * It returns an empty vector if no merge has been performed so far.
      *
-     * @param num Number of batches to merge together.
+     * @param nb Number of batches to merge together.
      * @return `std::vector` containing the full (and merged) batches.
      */
-    [[nodiscard]] auto batches(std::size_t num = 1) const {
+    [[nodiscard]] auto batches(std::size_t nb = 1) const {
         // return an empty vector if we don't have enough full batches
-        if (is_first_merge() || num > full_batches_.size() + bidx_) {
+        if (is_first_merge() || nb > full_batches_.size() + bidx_) {
             return std::vector<mean_acc_type> {};
         }
 
@@ -400,7 +400,7 @@ public:
         const auto it = std::next(acc_batches_.begin(), bidx_);
         std::transform(acc_batches_.begin(), it, std::back_inserter(res), [](const auto& acc) { return acc; });
 
-        return merge_batches(num, res);
+        return merge_batches(nb, res);
     }
 
     /**
@@ -436,18 +436,18 @@ public:
     /**
      * @brief Get a variance accumulator with full batches as effective samples.
      *
-     * @details Full batches can optionally (`num > 2`) be merged together before being used as
+     * @details Full batches can optionally (`nb > 2`) be merged together before being used as
      * effective samples.
      *
      * The resulting variance accumulator is identical to a simplemc::block_acc with a block size of
-     * `batch_count() * num`.
+     * `batch_count() * nb`.
      *
-     * @param num Number of batches to be combined into an effective sample.
+     * @param nb Number of batches to be combined into an effective sample.
      * @return simplemc::var_acc object.
      */
-    [[nodiscard]] auto var_accumulator(std::size_t num = 1) const {
+    [[nodiscard]] auto var_accumulator(std::size_t nb = 1) const {
         simplemc::var_acc<vec_type, varalg()> res { size() };
-        for (const auto& acc : batches(num)) {
+        for (const auto& acc : batches(nb)) {
             res << acc.mean();
         }
         return res;
@@ -456,18 +456,18 @@ public:
     /**
      * @brief Get a covariance accumulator with full batches as effective samples.
      *
-     * @details Full batches can optionally (`num > 2`) be merged together before being used as
+     * @details Full batches can optionally (`nb > 2`) be merged together before being used as
      * effective samples.
      *
      * The resulting variance accumulator is identical to a simplemc::block_acc with a block size of
-     * `batch_count() * num`.
+     * `batch_count() * nb`.
      *
-     * @param num Number of batches to be combined into an effective sample.
+     * @param nb Number of batches to be combined into an effective sample.
      * @return simplemc::covar_acc object.
      */
-    [[nodiscard]] auto covar_accumulator(std::size_t num = 1) const {
+    [[nodiscard]] auto covar_accumulator(std::size_t nb = 1) const {
         simplemc::covar_acc<vec_type, varalg()> res { size() };
-        for (const auto& acc : batches(num)) {
+        for (const auto& acc : batches(nb)) {
             res << acc.mean();
         }
         return res;

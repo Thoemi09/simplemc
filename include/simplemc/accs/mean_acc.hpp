@@ -344,11 +344,16 @@ public:
      * The reduction operation depends on the simplemc::varalg algorithm used to accumulate the data.
      * See operator<<(const mean_acc&) for how it is done in the case of 2 accumulators.
      *
+     * It throws an exception, if the size of the accumulator is not equal on all processes.
+     *
      * @param comm simplemc::mpi::communicator object.
      * @param acc Mean accumulator.
      * @return Mean accumulator with the reduced data from all processes.
      */
     friend mean_acc mpi_collect(const mpi::communicator& comm, const mean_acc& acc) {
+        if (!all_equal(comm, acc.size())) {
+            throw simplemc_exception("mean_acc size is not equal on all processes", "mpi_collect");
+        }
         mean_acc res(acc.size());
         mpi::all_reduce(comm, acc.count_, res.count_, MPI_SUM);
         if constexpr (mean_acc::varalg() == varalg::standard) {
