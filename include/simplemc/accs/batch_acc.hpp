@@ -26,6 +26,50 @@
 namespace simplemc {
 
 /**
+ * @ingroup simplemc-accs-utils
+ * @brief Merge batches together.
+ *
+ * @details It takes a vector of \f$ N \f$ batches (simplemc::mean_acc) and combines them into \f$ N`
+ * = \lfloor N / c \rfloor \f$ new batches, where \f$ c \f$ is the given number of batches that should
+ * be merged together. If \f$ c \f$ is not a divisor of \f$ N \f$, the left over batches are simply
+ * discarded.
+ *
+ * If \f$ c \f$ is
+ * - 0 or 1, the full vector without any merges done is returned,
+ * - is greater than \f$ N \f$, an empty vector is returned.
+ *
+ * It is assumed, that the batches all have the same size.
+ *
+ * @param num Number of batches to merge together.
+ * @param batches `std::vector` containing the batches before the merge.
+ * @return `std::vector` containing the merge batches.
+ */
+template <eigen_vector V, varalg A>
+[[nodiscard]] auto merge_batches(std::size_t num, const std::vector<mean_acc<V, A>>& batches) {
+    // return the full vector if the number of batches to combine is < 2
+    if (num < 2) {
+        return batches;
+    }
+
+    // return an emtpy vector if we don't have enough batches
+    if (num > batches.size()) {
+        return std::vector<mean_acc<V, A>> {};
+    }
+
+    // combine the batches
+    auto res = batches;
+    const auto sz = res.size() / num;
+    for (std::size_t i = 0; i < sz; ++i) {
+        res[i] = res[i * num];
+        for (std::size_t j = 1; j < num; ++j) {
+            res[i] << batches[i * num + j];
+        }
+    }
+    res.resize(sz);
+    return res;
+}
+
+/**
  * @addtogroup simplemc-accs-accs
  * @{
  */
@@ -140,7 +184,7 @@ private:
     [[nodiscard]] auto is_batch_full() const { return acc_batches_[bidx_].count() >= bcount_; }
 
     // Merge all the batches together while preserving the order of the samples.
-    void merge_batches() {
+    void combine_batches() {
         // the first merge is special
         if (is_first_merge()) {
             for (std::size_t i = 0; i < full_batches_.size(); ++i) {
@@ -335,41 +379,28 @@ public:
     [[nodiscard]] auto batch_count() const { return full_batches_[0].count(); }
 
     /**
-     * @brief Get all full batches after combining a given number of them.
+     * @brief Get all full batches after merging a given number of them together.
      *
-     * @details It takes all the batches which are currently considered to be full and combines a
-     * given number of batches. The resulting batches are then returned.
+     * @details It takes all the batches which are currently considered to be full and uses
+     * simplemc::merge_batches to merge a given number of them together.
      *
-     * It returns an empty vector if no merge has been performed so far or if the number of batches
-     * to combine is zero or greater than the number of full batches.
+     * It returns an empty vector if no merge has been performed so far.
      *
-     * @param num Number of batches to combine.
-     * @return `std::vector` of batch_acc::mean_acc_type objects.
+     * @param num Number of batches to merge together.
+     * @return `std::vector` containing the full (and merged) batches.
      */
     [[nodiscard]] auto batches(std::size_t num = 1) const {
-        if (is_first_merge() || num == 0 || num > full_batches_.size() + bidx_) {
+        // return an empty vector if we don't have enough full batches
+        if (is_first_merge() || num > full_batches_.size() + bidx_) {
             return std::vector<mean_acc_type> {};
         }
+
         // get all full batches
         std::vector<mean_acc_type> res = full_batches_;
         const auto it = std::next(acc_batches_.begin(), bidx_);
         std::transform(acc_batches_.begin(), it, std::back_inserter(res), [](const auto& acc) { return acc; });
 
-        // return early if no merging is needed
-        if (num == 1) {
-            return res;
-        }
-
-        // combine the batches
-        const auto sz = res.size() / num;
-        for (std::size_t i = 0; i < sz; ++i) {
-            res[i] = res[i * num];
-            for (std::size_t j = 1; j < num; ++j) {
-                res[i] << full_batches_[i * num + j];
-            }
-        }
-        res.resize(sz);
-        return res;
+        return merge_batches(num, res);
     }
 
     /**
@@ -405,8 +436,8 @@ public:
     /**
      * @brief Get a variance accumulator with full batches as effective samples.
      *
-     * @details Full batches can optionally (`num > 1`) be combined before being used as effective
-     * samples.
+     * @details Full batches can optionally (`num > 2`) be merged together before being used as
+     * effective samples.
      *
      * The resulting variance accumulator is identical to a simplemc::block_acc with a block size of
      * `batch_count() * num`.
@@ -425,8 +456,8 @@ public:
     /**
      * @brief Get a covariance accumulator with full batches as effective samples.
      *
-     * @details Full batches can optionally (`num > 1`) be combined before being used as effective
-     * samples.
+     * @details Full batches can optionally (`num > 2`) be merged together before being used as
+     * effective samples.
      *
      * The resulting variance accumulator is identical to a simplemc::block_acc with a block size of
      * `batch_count() * num`.
@@ -448,7 +479,7 @@ public:
     void check_and_advance() {
         if (is_batch_full()) {
             if (bidx_ == acc_batches_.size() - 1) {
-                merge_batches();
+                combine_batches();
             } else {
                 ++bidx_;
             }
