@@ -210,6 +210,52 @@ TEST_F(SimplemcAccsMPI, BlockAccumulator) {
     check_range_near(res_blacc_wel_d.accumulator().vdata(), exp_blacc_wel_d.accumulator().vdata(), tol);
 }
 
+// Test MPI routines for batch_acc.
+TEST_F(SimplemcAccsMPI, BatchAccumulator) {
+    const auto rank = comm.rank();
+    const auto size = comm.size();
+    const auto nbatches = 4;
+
+    // 4 batches, each with 2^{rank + 1} samples
+    simplemc::batch_acc_single<double> bacc { 1, nbatches };
+    auto nsamples = std::vector<int>(size);
+    for (int i = 0; i < size; ++i) {
+        nsamples[i] = (1 << i) * nbatches * 2;
+    }
+    const auto max_count = (1 << (size - 1)) * 2;
+    for (int i = 0; i < nsamples[rank]; ++i) {
+        bacc << rank;
+    }
+
+    // gather all batches regardless of their count
+    auto coll_diff_size = mpi_collect(comm, bacc, false);
+    EXPECT_EQ(coll_diff_size.size(), size * nbatches);
+    for (int i = 0; i < size; ++i) {
+        for (int j = 0; j < nbatches; ++j) {
+            const auto idx = i * nbatches + j;
+            EXPECT_DOUBLE_EQ(coll_diff_size[idx].mdata()[0], i);
+            EXPECT_EQ(coll_diff_size[idx].count(), (1 << (i + 1)));
+        }
+    }
+
+    // gather only batches with the same count
+    auto coll_same_size = mpi_collect(comm, bacc, true);
+    auto gathered_batches = 0;
+    for (const auto& x : nsamples) {
+        gathered_batches += x / max_count;
+    }
+    EXPECT_EQ(coll_same_size.size(), gathered_batches);
+    int idx = 0;
+    for (int i = 0; i < comm.size(); ++i) {
+        const auto contributed = nsamples[i] / max_count;
+        for (int j = 0; j < contributed; ++j) {
+            EXPECT_DOUBLE_EQ(coll_same_size[idx].mdata()[0], i);
+            EXPECT_EQ(coll_same_size[idx].count(), max_count);
+            ++idx;
+        }
+    }
+}
+
 // Custom main function for MPI.
 int main(int argc, char** argv) {
     // filter out Google Test arguments

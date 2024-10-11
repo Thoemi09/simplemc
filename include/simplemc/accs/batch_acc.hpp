@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <iterator>
 #include <numeric>
+#include <ranges>
 #include <vector>
 
 namespace simplemc {
@@ -34,9 +35,7 @@ namespace simplemc {
  * be merged together. If \f$ c \f$ is not a divisor of \f$ N \f$, the left over batches are simply
  * discarded.
  *
- * If \f$ c \f$ is
- * - 0 or 1, the full vector without any merges done is returned,
- * - is greater than \f$ N \f$, an empty vector is returned.
+ * If \f$ c < 2 \f$ or \f$ c > N \f$, no merges are performed and batches are left unchanged.
  *
  * It is assumed, that the batches all have the same size.
  *
@@ -45,28 +44,21 @@ namespace simplemc {
  * @return `std::vector` containing the merge batches.
  */
 template <eigen_vector V, varalg A>
-[[nodiscard]] auto merge_batches(std::size_t nb, const std::vector<mean_acc<V, A>>& batches) {
-    // return the full vector if the number of batches to combine is < 2
-    if (nb < 2) {
-        return batches;
-    }
-
-    // return an emtpy vector if we don't have enough batches
-    if (nb > batches.size()) {
-        return std::vector<mean_acc<V, A>> {};
+void merge_batches(std::size_t nb, std::vector<mean_acc<V, A>>& batches) {
+    // do if the number of batches to combine is < 2 or > N
+    if (nb < 2 || nb > batches.size()) {
+        return;
     }
 
     // combine the batches
-    auto res = batches;
-    const auto sz = res.size() / nb;
+    const auto sz = batches.size() / nb;
     for (std::size_t i = 0; i < sz; ++i) {
-        res[i] = res[i * nb];
+        batches[i] = batches[i * nb];
         for (std::size_t j = 1; j < nb; ++j) {
-            res[i] << batches[i * nb + j];
+            batches[i] << batches[i * nb + j];
         }
     }
-    res.resize(sz);
-    return res;
+    batches.resize(sz);
 }
 
 /**
@@ -284,10 +276,13 @@ public:
      * @details It simply calls simplemc::mean_acc::operator<<(value_type) of the mean accumulator of
      * the current accumulating batch.
      *
+     * @tparam T Type of the value to be accumulated.
      * @param val Value to be accumulated.
      * @return Reference to this object.
      */
-    batch_acc& operator<<(value_type val) {
+    template <typename T>
+        requires std::convertible_to<T, value_type>
+    batch_acc& operator<<(const T& val) {
         acc_batches_[bidx_] << val;
         check_and_advance();
         return *this;
@@ -379,6 +374,15 @@ public:
     [[nodiscard]] auto batch_count() const { return full_batches_[0].count(); }
 
     /**
+     * @brief Get the number of full batches.
+     *
+     * @details This is equal to calling `batches().size()`.
+     *
+     * @return Number of currently full batches.
+     */
+    [[nodiscard]] auto num_full_batches() const { return is_first_merge() ? 0 : full_batches_.size() + bidx_; }
+
+    /**
      * @brief Get all full batches after merging a given number of them together.
      *
      * @details It takes all the batches which are currently considered to be full and uses
@@ -400,7 +404,9 @@ public:
         const auto it = std::next(acc_batches_.begin(), bidx_);
         std::transform(acc_batches_.begin(), it, std::back_inserter(res), [](const auto& acc) { return acc; });
 
-        return merge_batches(nb, res);
+        // merge the batches
+        merge_batches(nb, res);
+        return res;
     }
 
     /**
@@ -549,6 +555,64 @@ public:
             check_size(acc_batches_[i]);
             check_empty_batch_count(acc_batches_[i]);
         }
+    }
+
+    /**
+     * @brief Collect batch accumulators from different MPI processes.
+     *
+     * @details Batches from different processes are not merged together. Instead, they are simply
+     * gathered into a vector.
+     *
+     * It throws an exception, if the size of the accumulator is not equal on all processes.
+     *
+     * @param comm simplemc::mpi::communicator object.
+     * @param acc Batch accumulator.
+     * @param same_count Should we perform merges to enforce the same count on each process?
+     * @return `std::vector` containing the batches gatherered from all processes.
+     */
+    friend std::vector<mean_acc_type> mpi_collect(
+        const mpi::communicator& comm, const batch_acc& acc, bool same_count) {
+        if (!all_equal(comm, acc.size())) {
+            throw simplemc_exception("Accumulator size is not equal on all processes", "mpi_collect");
+        }
+
+        // get full batches
+        auto bs = acc.batches();
+
+        // should we enforce the same count on each process?
+        if (same_count) {
+            // perform merges if necessary
+            auto max_count = acc.batch_count();
+            mpi::all_reduce(comm, acc.batch_count(), max_count, MPI_MAX);
+            merge_batches(max_count / acc.batch_count(), bs);
+
+            // if a process does not have enough samples, discard its batches
+            if (!bs.empty() && bs[0].count() != max_count) {
+                bs.clear();
+            }
+        }
+
+        // number of batches on each process
+        std::vector<std::size_t> vec_sz(comm.size());
+        mpi::all_gather(comm, bs.size(), vec_sz);
+
+        // gather the batches
+        const auto sz = std::accumulate(vec_sz.begin(), vec_sz.end(), static_cast<std::size_t>(0));
+        std::vector<mean_acc_type> res(sz, mean_acc_type { acc.size() });
+
+        // each process broadcasts its batches to all other processes
+        std::size_t prev_idx = 0;
+        for (int i = 0; i < comm.size(); ++i) {
+            auto view = std::views::drop(res, prev_idx) | std::views::take(vec_sz[i]);
+            if (comm.rank() == i) {
+                std::ranges::copy(bs, std::ranges::begin(view));
+            }
+            for (auto& macc : view) {
+                macc.broadcast(comm, i);
+            }
+            prev_idx += vec_sz[i];
+        }
+        return res;
     }
 
 private:

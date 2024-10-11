@@ -171,10 +171,13 @@ public:
      *
      * @details See the corresponding method of the wrapped accumulator for more details.
      *
+     * @tparam T Type of the value to be accumulated.
      * @param val Value to be accumulated.
      * @return Reference to this object.
      */
-    block_acc& operator<<(value_type val) {
+    template <typename T>
+        requires std::convertible_to<T, value_type>
+    block_acc& operator<<(const T& val) {
         block_ << val;
         check_and_add_block();
         return *this;

@@ -227,10 +227,13 @@ public:
      *
      * See @ref simplemc-accs-accs for a code example.
      *
+     * @tparam T Type of the value to be accumulated.
      * @param val Value to be accumulated.
      * @return Reference to this object.
      */
-    covar_acc& operator<<(value_type val) {
+    template <typename T>
+        requires std::convertible_to<T, value_type>
+    covar_acc& operator<<(const T& val) {
         ++count_;
         add_values(std::array<value_type, 1> { val }, std::array<size_type, 1> { idx_ }, count_);
         return *this;

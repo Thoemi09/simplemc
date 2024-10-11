@@ -28,6 +28,10 @@ namespace simplemc {
  * @{
  */
 
+/* Forward declarations. */
+template <eigen_vector V, varalg A>
+class batch_acc;
+
 /**
  * @brief Accumulator for calculating the sample mean of a random vector.
  *
@@ -112,6 +116,7 @@ public:
 
     /* Friend declarations. */
     friend class multivalue_acc<mean_acc>;
+    friend std::vector<mean_acc> mpi_collect(const mpi::communicator&, const batch_acc<V, varalg()>&, bool);
 
 private:
     // Add a single value to the accumulator without increasing the count (the given count is assumed
@@ -123,6 +128,12 @@ private:
         } else {
             mdata_(idx) += (val - mdata_(idx)) / static_cast<double>(count);
         }
+    }
+
+    // Broadcast into/from the current mean accumulator. Only used in mpi_collect with batch_acc.
+    void broadcast(const mpi::communicator& comm, int root) {
+        mpi::broadcast(comm, make_span(mdata_), root);
+        mpi::broadcast(comm, count_, root);
     }
 
 public:
@@ -189,10 +200,13 @@ public:
      *
      * See @ref simplemc-accs-accs for a code example.
      *
+     * @tparam T Type of the value to be accumulated.
      * @param val Value to be accumulated.
      * @return Reference to this object.
      */
-    mean_acc& operator<<(value_type val) {
+    template <typename T>
+        requires std::convertible_to<T, value_type>
+    mean_acc& operator<<(const T& val) {
         ++count_;
         add_value(val, idx_, count_);
         return *this;

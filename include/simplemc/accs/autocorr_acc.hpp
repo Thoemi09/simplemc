@@ -278,10 +278,13 @@ public:
      *
      * @details See the corresponding method of the wrapped accumulator for more details.
      *
+     * @tparam T Type of the value to be accumulated.
      * @param val Value to be accumulated.
      * @return Reference to this object.
      */
-    autocorr_acc& operator<<(value_type val) {
+    template <typename T>
+        requires std::convertible_to<T, value_type>
+    autocorr_acc& operator<<(const T& val) {
         auto f = [](auto& acc, auto idx_, auto val) { acc[idx_] << val; };
         add_values(f, idx_, val);
         return *this;
