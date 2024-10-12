@@ -44,6 +44,7 @@ option(SIMPLEMC_ENABLE_INSTALL "Enable install target" ${SIMPLEMC_MASTER_PROJECT
 option(SIMPLEMC_BUILD_TESTS "Build unit tests with googletest" ${SIMPLEMC_MASTER_PROJECT})
 option(SIMPLEMC_BUILD_EXAMPLES "Build examples" ${SIMPLEMC_MASTER_PROJECT})
 option(SIMPLEMC_BUILD_DOC "Build documentation with Doxygen" OFF)
+option(SIMPLEMC_USE_DOXYGEN_AWESOME "Use doxygen-awesome-css when building the documentation" OFF)
 option(SIMPLEMC_WITH_HIGHFIVE "Use HighFive for HDF5 support" ON)
 option(SIMPLEMC_FETCH_FMT "Fetch fmt from github" ON)
 option(SIMPLEMC_FETCH_RANGEV3 "Fetch range-v3 from github" ON)

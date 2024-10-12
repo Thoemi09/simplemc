@@ -5,7 +5,7 @@
 **simplemc** supports the usual installation procedure using CMake.
 
 If you want to skip the installation step, you can go directly to @ref integration to see how you can integrate
-**simplemc** into your own C++ project by using CMake's @ref fetch_content.
+**simplemc** into your own C++ project by using CMake's @ref fetch.
 
 > **Note:** To guarantee reproducibility in scientific calculations, we strongly recommend the use of a stable
 > [release version](https://github.com/Thoemi09/simplemc/releases).

@@ -41,7 +41,6 @@ namespace simplemc {
  *
  * @param nb Number of batches to merge together.
  * @param batches `std::vector` containing the batches before the merge.
- * @return `std::vector` containing the merge batches.
  */
 template <eigen_vector V, varalg A>
 void merge_batches(std::size_t nb, std::vector<mean_acc<V, A>>& batches) {
