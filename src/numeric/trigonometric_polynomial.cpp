@@ -6,6 +6,8 @@
 #include <simplemc/numeric/trigonometric_polynomial.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
+#include <cmath>
+
 namespace simplemc {
 
 cosine::cosine(double x) :

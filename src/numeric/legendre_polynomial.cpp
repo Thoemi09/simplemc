@@ -6,6 +6,8 @@
 #include <simplemc/numeric/legendre_polynomial.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
+#include <cmath>
+
 namespace simplemc {
 
 legendre_polynomial::legendre_polynomial(double x) : orthogonal_polynomial { x, 1.0, x, 0.0, 1.0 }, ylm2_ { 0.0 } {
