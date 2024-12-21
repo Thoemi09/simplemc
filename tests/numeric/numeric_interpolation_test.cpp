@@ -47,7 +47,7 @@ TEST(SimplemcNumeric, LinearInterpolation) {
         f[i] = line(xgrid.at(i), a, k);
     }
     simplemc::linear_interpolation li(xgrid, simplemc::make_span(f));
-    simplemc::linear_interpolation_nd nli(simplemc::nd_grid(xgrid), simplemc::make_span(f));
+    simplemc::linear_interpolation_nd nli(simplemc::nd_grid{xgrid}, simplemc::make_span(f));
     long num = 1233;
     simplemc::linear_grid pts(-5.0, 5.0, num);
     for (long i = 0; i < num; ++i) {
@@ -140,7 +140,7 @@ TEST(SimplemcNumeric, PolynomialInterpolation1D) {
     simplemc::polynomial_interpolation lpi(xgrid, fq, 1);
     simplemc::polynomial_interpolation qi(xgrid, fq, 2);
     simplemc::polynomial_interpolation ci(xgrid, fc, 3);
-    simplemc::polynomial_interpolation_nd nqi(simplemc::nd_grid(xgrid), fq, 2);
+    simplemc::polynomial_interpolation_nd nqi(simplemc::nd_grid{xgrid}, fq, 2);
     long num = 500;
     simplemc::linear_grid pts(-3.0, 1.0, num);
     for (long i = 0; i < num; ++i) {

@@ -22,7 +22,7 @@ protected:
     [[nodiscard]] unsigned long ulong_val() const { return 123456789012; }
     [[nodiscard]] long long llong_val() const { return -123456789012; }
     [[nodiscard]] unsigned long long ullong_val() const { return 123456789012; }
-    [[nodiscard]] float float_val() const { return 12.3456789; }
+    [[nodiscard]] float float_val() const { return static_cast<float>(12.3456789); }
     [[nodiscard]] double double_val() const { return 12.3456789012; }
     [[nodiscard]] bool bool_val() const { return true; }
     [[nodiscard]] std::complex<double> cdouble_val() const { return { 1.2345, 6.7890 }; }
