@@ -17,7 +17,12 @@ if(NOT SIMPLEMC_DISABLE_WARNINGS)
             -Wall
             -Wextra
             -Wfloat-conversion
-            -Wpedantic)
+            -Wpedantic
+            -Wno-psabi)
+else()
+    target_compile_options(simplemc-basic
+        INTERFACE
+            -Wno-psabi)
 endif()
 target_include_directories(simplemc-basic
     INTERFACE
