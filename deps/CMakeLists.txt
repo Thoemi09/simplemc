@@ -3,11 +3,11 @@
 # The following dependencies are required:
 # ---------------------------------
 # fmt: Formatting library since std::format is not yet fully supported.
-# range-v3: Range library since std::ranges is not yet fully supported (it is only used in the tests
-# if SIMPLEMC_USE_STD_RANGES is ON).
+# range-v3: Range library since std::ranges is not yet fully supported (if SIMPLEMC_USE_STD_RANGES is
+# ON it is only used for testing).
 # mpi: MPI for parallelization.
 # Eigen3: Linear algebra library.
-# nlohmann_json: JSON parser for serialization and configuration.
+# nlohmann_json: JSON parser for serialization and parsing configuration files.
 #
 # The following dependencies are optional:
 # ---------------------------------

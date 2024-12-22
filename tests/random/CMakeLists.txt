@@ -8,16 +8,16 @@
 # random-speed-test: Executable to compare speeds of different discrete distributions.
 
 add_executable(random-rngs-test random_rngs_test.cpp)
-target_link_libraries(random-rngs-test PRIVATE simplemc-test simplemc::simplemc-random)
+target_link_libraries(random-rngs-test PRIVATE simplemc-test)
 add_test(NAME random-rngs-test COMMAND random-rngs-test)
 
 add_executable(random-distributions-test random_distributions_test.cpp)
-target_link_libraries(random-distributions-test PRIVATE simplemc-test simplemc::simplemc-random)
+target_link_libraries(random-distributions-test PRIVATE simplemc-test)
 add_test(NAME random-distributions-test COMMAND random-distributions-test)
 
 add_executable(random-samples-test random_samples_test.cpp)
-target_link_libraries(random-samples-test PRIVATE simplemc-test simplemc::simplemc-random)
+target_link_libraries(random-samples-test PRIVATE simplemc-test)
 add_test(NAME random-samples-test COMMAND random-samples-test)
 
 add_executable(random-speed-test random_speed_test.cpp)
-target_link_libraries(random-speed-test PRIVATE simplemc::simplemc-random)
+target_link_libraries(random-speed-test PRIVATE simplemc::simplemc)

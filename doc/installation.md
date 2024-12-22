@@ -4,44 +4,50 @@
 
 **simplemc** supports the usual installation procedure using CMake.
 
-If you want to skip the installation step, you can go directly to @ref integration to see how you can integrate
-**simplemc** into your own C++ project by using CMake's @ref fetch.
+If you want to skip the installation step, you can go directly to @ref integration to see how you can
+integrate **simplemc** into your own C++ project by using CMake's @ref fetch.
 
-> **Note:** To guarantee reproducibility in scientific calculations, we strongly recommend the use of a stable
-> [release version](https://github.com/Thoemi09/simplemc/releases).
+> **Note:** To guarantee reproducibility in scientific calculations, we strongly recommend the use of
+> a stable [release version](https://github.com/Thoemi09/simplemc/releases).
 
 @section dependencies Dependencies
 
 The minimum dependencies of **simplemc** are as follows:
 
-* gcc version 12 or later OR clang version 17 or later
-* CMake version 3.24 or later (for installation or integration into an existing project via CMake)
-* a working MPI implementation (openmpi is tested)
+* a recent g++ OR clang++ compiler (tested with gcc v14.2.0 and clang v19.1.2)
+* a recent CMake version (tested with v3.30.5)
+* a working MPI implementation (tested with openmpi v5.0.1)
 
-Furthermore, the following dependencies can either be fetched directly by **simplemc** or are options:
+Furthermore, **simplemc** depends on some external libraries. They can either be fetched directly by
+**simplemc** or provided by the user:
+
 * [googletest](https://github.com/google/googletest): Unit testing.
-* [fmt](https://github.com/fmtlib/fmt): Formatting library (as of now `std::format` is not fully supported by most compilers).
-* [range-v3](https://github.com/ericniebler/range-v3): Range library (as of now `std::ranges` is not fully supported by most compilers).
+* [fmt](https://github.com/fmtlib/fmt): Formatting library (as of now `std::format` and `std::print`
+are not fully supported by most compilers).
+* [range-v3](https://github.com/ericniebler/range-v3): Range library (as of now the ranges library is
+not complete in the standard library).
 * [Eigen3](https://gitlab.com/libeigen/eigen): Linear algebra libray.
-* [nlohmann_json](https://github.com/nlohmann/json): JSON library for serialization and configuration.
-* [HighFive](https://github.com/BlueBrain/HighFive): C++ HDF5 library for serialization (requires HDF5 to be installed).
+* [nlohmann_json](https://github.com/nlohmann/json): JSON library for serialization and parsing
+user input and configuration files.
+* [HighFive](https://github.com/BlueBrain/HighFive): C++ HDF5 library for serialization (requires HDF5
+to be installed).
 
 @section install_steps Installation steps
 
-1. Download the source code of the latest stable version by cloning the [simplemc](https://github.com/Thoemi09/simplemc)
-repository from GitHub:
+1. Download the source code of the latest stable version by cloning the
+[simplemc](https://github.com/Thoemi09/simplemc) repository from GitHub:
 
     ```console
     $ git clone https://github.com/Thoemi09/simplemc simplemc.src
     ```
 
-2. Create and move to a new directory where you will compile the code:
+2. Create and change to a build directory:
 
     ```console
     $ mkdir simplemc.build && cd simplemc.build
     ```
 
-3. In the build directory call cmake, including any additional custom CMake options (see below):
+3. In the build directory call CMake (including any additional @ref cmake_options):
 
     ```console
     $ cmake ../simplemc.src
@@ -71,11 +77,11 @@ Checkout the version of the code that you want, for example:
 $ git checkout 0.1.0
 ```
 
-and follow steps 2 to 4 above to compile the code.
+and follow @ref install_steps 2 to 4 above to compile the code.
 
 @section cmake_options Custom CMake options
 
-The compilation of **simplemc** can be configured using CMake options
+The compilation of **simplemc** can be configured using various CMake options:
 
 ```console
 $ cmake ../simplemc.src -DOPTION1=value1 -DOPTION2=value2 ...
@@ -89,6 +95,7 @@ $ cmake ../simplemc.src -DOPTION1=value1 -DOPTION2=value2 ...
 | Build tests                             | ``-DSIMPLEMC_BUILD_TESTS=ON``                     |
 | Build examples                          | ``-DSIMPLEMC_BUILD_EXAMPLES=ON``                  |
 | Build documentation with Doxygen        | ``-DSIMPLEMC_BUILD_DOC=ON``                       |
+| Use ranges from standard library        | ``-DSIMPLEMC_USE_STD_RANGES=ON``                  |
 | Use nlohmann_json for JSON support      | ``-DSIMPLEMC_WITH_NLOHMANN_JSON=ON``              |
 | Use HighFive for HDF5 support           | ``-DSIMPLEMC_WITH_HIGHFIVE=ON``                   |
 | Fetch fmt from github                   | ``-DSIMPLEMC_FETCH_FMT=ON``                       |
@@ -97,3 +104,6 @@ $ cmake ../simplemc.src -DOPTION1=value1 -DOPTION2=value2 ...
 | Fetch nlohmann_json library from github | ``-DSIMPLEMC_FETCH_NLOHMANN_JSON=ON``             |
 | Fetch HighFive library from github      | ``-DSIMPLEMC_FETCH_HIGHFIVE=ON``                  |
 | Disable stricter compilation warnings   | ``-DSIMPLEMC_DISABLE_WARNINGS=ON``                |
+
+Please check out the toplevel [`CMakeLists.txt`](https://github.com/Thoemi09/simplemc/blob/main/CMakeLists.txt)
+to see what the default options are.

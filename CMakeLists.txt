@@ -4,6 +4,8 @@
 # SIMPLEMC_BUILD_TESTS: Build unit tests with googletest.
 # SIMPLEMC_BUILD_EXAMPLES: Build examples.
 # SIMPLEMC_BUILD_DOC: Build documentation with Doxygen.
+# SIMPLEMC_USE_DOXYGEN_AWESOME: Use doxygen-awesome-css when building the documentation.
+# SIMPLEMC_USE_STD_RANGES: Use ranges from the standard library.
 # SIMPLEMC_WITH_HIGHFIVE: Use HighFive for HDF5 support.
 # SIMPLEMC_FETCH_FMT: Fetch fmt from github.
 # SIMPLEMC_FETCH_RANGEV3: Fetch range-v3 from github.
@@ -67,6 +69,7 @@ message(STATUS "Enable install: ${SIMPLEMC_ENABLE_INSTALL}")
 message(STATUS "Build unit tests: ${SIMPLEMC_BUILD_TESTS}")
 message(STATUS "Build examples: ${SIMPLEMC_BUILD_EXAMPLES}")
 message(STATUS "Build documentation: ${SIMPLEMC_BUILD_DOC}")
+message(STATUS "Use doxygen-awesome-css: ${SIMPLEMC_USE_DOXYGEN_AWESOME}")
 message(STATUS "Use std ranges: ${SIMPLEMC_USE_STD_RANGES}")
 message(STATUS "HDF5 support: ${SIMPLEMC_WITH_HIGHFIVE}")
 message(STATUS "Fetch fmt: ${SIMPLEMC_FETCH_FMT}")

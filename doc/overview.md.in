@@ -2,9 +2,6 @@
 
 [TOC]
 
-[![build](https://github.com/TRIQS/mpi/workflows/build/badge.svg?branch=unstable)]
-(https://github.com/TRIQS/mpi/actions?query=workflow%3Abuild)
-
 > This is the homepage of **@PROJECT_NAME@ v@PROJECT_VERSION@**. The source code can be found on
 > [GitHub](https://github.com/Thoemi09/simplemc).
 
@@ -27,15 +24,14 @@ Monte Carlo (MC) simulations with special focus on applications in computational
 Its functionality is similar to other already established codes like [ALPSCore](https://alpscore.org/)
 or the MC part of [TRIQS](https://triqs.github.io/triqs/latest/).
 
-The main purpose of this library is to help the user with common tasks that are encountered in all but
-the most trivial MC implementations. Some examples include:
-* Accumulation of data
-* Statistical analysis of results and error propagation
-* Parallelization using MPI
-* Saving and loading the simulation state in order to resume a simulation (serialization)
-* Parsing user input and configuration files
-* Numerical procedures like interpolation, quadrature, etc.
-* and more...
+The main purpose of this library is to help the user with common tasks that are encountered in nearly
+all MC implementations. These tasks include, but are not limited to:
+* accumulation of data,
+* statistical analysis of results and error propagation,
+* parallelization using MPI,
+* saving and loading the simulation state in order to resume a simulation (serialization),
+* parsing user input and configuration files,
+* and more.
 
 These tasks can take a considerable amount of effort and time to be implemented correctly and
 efficiently.
