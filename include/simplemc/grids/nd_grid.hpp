@@ -7,9 +7,7 @@
 #define SIMPLEMC_GRIDS_ND_GRID_HPP
 
 #include <simplemc/grids/grid_base.hpp>
-
-#include <range/v3/view/cartesian_product.hpp>
-#include <range/v3/view/transform.hpp>
+#include <simplemc/utils/ranges.hpp>
 
 #include <array>
 #include <tuple>
@@ -268,7 +266,7 @@ public:
      * @details The grid is traversed in row-major (C) order, i.e. the last dimension is the fastest
      * varying one and the first dimension is the slowest varying one.
      *
-     * @return 'ranges::view' on the N-dimensional grid points.
+     * @return View on the N-dimensional grid points.
      */
     [[nodiscard]] auto view() const {
         return std::apply(
@@ -286,7 +284,7 @@ public:
      * @details The grid is traversed in row-major (C) order, i.e. the last dimension is the fastest
      * varying one and the first dimension is the slowest varying one.
      *
-     * @return 'ranges::view' on the N-dimensional bin centers.
+     * @return View on the N-dimensional bin centers.
      */
     [[nodiscard]] auto view_center() const {
         return std::apply(
@@ -305,7 +303,7 @@ public:
      * @details The grid is traversed in row-major (C) order, i.e. the last dimension is the fastest
      * varying one and the first dimension is the slowest varying one.
      *
-     * @return 'ranges::view' on the N-dimensional bin volumes.
+     * @return View on the N-dimensional bin volumes.
      */
     [[nodiscard]] auto view_bin_volumes() const {
         return std::apply(

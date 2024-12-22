@@ -12,13 +12,10 @@
 #include <simplemc/numeric/eigen.hpp>
 #include <simplemc/numeric/utils.hpp>
 #include <simplemc/utils/concepts.hpp>
+#include <simplemc/utils/ranges.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
 #include <Eigen/Dense>
-#include <range/v3/range/concepts.hpp>
-#include <range/v3/view/drop.hpp>
-#include <range/v3/view/iota.hpp>
-#include <range/v3/view/zip.hpp>
 
 #include <array>
 #include <cassert>

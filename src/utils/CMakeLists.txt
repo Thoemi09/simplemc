@@ -14,4 +14,4 @@ target_link_libraries(simplemc-utils
     PUBLIC
         simplemc::simplemc-basic
         fmt::fmt
-        range-v3::range-v3)
+        $<$<NOT:$<BOOL:${SIMPLEMC_USE_STD_RANGES}>>:range-v3::range-v3>)

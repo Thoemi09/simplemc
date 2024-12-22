@@ -9,11 +9,10 @@
 #include <simplemc/mpi/communicator.hpp>
 #include <simplemc/mpi/datatypes.hpp>
 #include <simplemc/mpi/utils.hpp>
+#include <simplemc/utils/ranges.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
 #include <mpi.h>
-#include <range/v3/range/concepts.hpp>
-#include <range/v3/range/primitives.hpp>
 
 namespace simplemc::mpi {
 

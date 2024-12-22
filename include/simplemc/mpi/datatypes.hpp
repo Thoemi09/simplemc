@@ -6,8 +6,9 @@
 #ifndef SIMPLEMC_MPI_DATATYPES_HPP
 #define SIMPLEMC_MPI_DATATYPES_HPP
 
+#include <simplemc/utils/ranges.hpp>
+
 #include <mpi.h>
-#include <range/v3/range/concepts.hpp>
 
 #include <complex>
 #include <cstddef>

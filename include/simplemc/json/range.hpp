@@ -7,9 +7,8 @@
 #define SIMPLEMC_JSON_RANGE_HPP
 
 #include <simplemc/json/json.hpp>
+#include <simplemc/utils/ranges.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
-
-#include <range/v3/range/concepts.hpp>
 
 namespace simplemc {
 

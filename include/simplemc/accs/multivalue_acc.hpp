@@ -6,8 +6,7 @@
 #ifndef SIMPLEMC_ACCS_MULTIVALUE_ACC_HPP
 #define SIMPLEMC_ACCS_MULTIVALUE_ACC_HPP
 
-#include <range/v3/range/concepts.hpp>
-#include <range/v3/view/zip.hpp>
+#include <simplemc/utils/ranges.hpp>
 
 namespace simplemc {
 

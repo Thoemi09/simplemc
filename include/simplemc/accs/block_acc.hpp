@@ -9,9 +9,8 @@
 #include <simplemc/accs/mean_acc.hpp>
 #include <simplemc/accs/utils.hpp>
 #include <simplemc/numeric/eigen.hpp>
+#include <simplemc/utils/ranges.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
-
-#include <range/v3/range/concepts.hpp>
 
 #include <utility>
 

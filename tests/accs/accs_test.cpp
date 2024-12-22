@@ -1,8 +1,3 @@
-/**
- * @file
- * @brief Unit tests for simplemc-accs.
- */
-
 #include "./stochastic_process.hpp"
 #include "../test_utils.hpp"
 

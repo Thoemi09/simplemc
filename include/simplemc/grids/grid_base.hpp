@@ -7,10 +7,8 @@
 #define SIMPLEMC_GRIDS_GRID_BASE_HPP
 
 #include <simplemc/utils/indexing.hpp>
+#include <simplemc/utils/ranges.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
-
-#include <range/v3/view/iota.hpp>
-#include <range/v3/view/transform.hpp>
 
 #include <cassert>
 #include <cstddef>
@@ -172,7 +170,7 @@ public:
     /**
      * @brief Get a lazy view on the grid.
      *
-     * @return `ranges::view` on the grid points.
+     * @return View on the grid points.
      */
     [[nodiscard]] auto view() const {
         return ranges::iota_view<size_type, size_type>(0, size_) |
@@ -182,7 +180,7 @@ public:
     /**
      * @brief Get a lazy view on the bin centers.
      *
-     * @return `ranges::view` on the bin centers.
+     * @return View on the bin centers.
      */
     [[nodiscard]] auto view_center() const {
         return ranges::iota_view<size_type, size_type>(0, size_ - 1) |
@@ -192,7 +190,7 @@ public:
     /**
      * @brief Get a lazy view on the bin volumes.
      *
-     * @return `ranges::view` on the bin volumes.
+     * @return View on the bin volumes.
      */
     [[nodiscard]] auto view_bin_volumes() const {
         return ranges::iota_view<size_type, size_type>(0, size_ - 1) |
