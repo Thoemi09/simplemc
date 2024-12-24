@@ -24,7 +24,7 @@ include(FetchContent)
 if(SIMPLEMC_FETCH_FMT)
     FetchContent_Declare(fmt
         GIT_REPOSITORY https://github.com/fmtlib/fmt
-        GIT_TAG origin/master) # 130cf54
+        GIT_TAG origin/master) # d8a79eaf
     set(FMT_INSTALL OFF CACHE BOOL "")
     message(STATUS "-----------------------------------------------")
     message(STATUS "Fetching fmt ...")
@@ -45,7 +45,7 @@ endif()
 if(SIMPLEMC_FETCH_RANGEV3)
     FetchContent_Declare(rangev3
         GIT_REPOSITORY https://github.com/ericniebler/range-v3.git
-        GIT_TAG origin/master) # 9aa41d6
+        GIT_TAG origin/master) # 7e6f34b1e
     set(RANGES_BUILD_CALENDAR_EXAMPLE OFF CACHE BOOL "")
     message(STATUS "-----------------------------------------------")
     message(STATUS "Fetching range-v3 ...")
@@ -74,7 +74,7 @@ message(STATUS "-----------------------------------------------")
 if(SIMPLEMC_FETCH_EIGEN3)
     FetchContent_Declare(eigen3
         GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
-        GIT_TAG master) # aa6964b
+        GIT_TAG master) # 24e0c2a12
     set(EIGEN_BUILD_TESTING OFF CACHE BOOL "")
     message(STATUS "-----------------------------------------------")
     message(STATUS "Fetching Eigen3 ...")
@@ -95,7 +95,7 @@ endif()
 if(SIMPLEMC_FETCH_NLOHMANN_JSON)
     FetchContent_Declare(nlohmann_json
         GIT_REPOSITORY https://github.com/nlohmann/json.git
-        GIT_TAG origin/develop) # edffad0
+        GIT_TAG origin/develop) # 663058e7
     message(STATUS "-----------------------------------------------")
     message(STATUS "Fetching nlohmann_json ...")
     FetchContent_MakeAvailable(nlohmann_json)
@@ -119,7 +119,7 @@ endif()
 if(SIMPLEMC_BUILD_TESTS)
     FetchContent_Declare(googletest
         GIT_REPOSITORY https://github.com/google/googletest
-        GIT_TAG main) # 2dd1c13
+        GIT_TAG main) # f3c355f9
     set(INSTALL_GTEST OFF CACHE BOOL "")
     set(BUILD_GMOCK OFF CACHE BOOL "")
     message(STATUS "-----------------------------------------------")
@@ -134,7 +134,7 @@ if(SIMPLEMC_WITH_HIGHFIVE)
     if(SIMPLEMC_FETCH_HIGHFIVE)
         FetchContent_Declare(highfive
             GIT_REPOSITORY https://github.com/BlueBrain/HighFive.git
-            GIT_TAG origin/master)
+            GIT_TAG origin/master) # ddcf632
         message(STATUS "-----------------------------------------------")
         message(STATUS "Fetching highfive ...")
         FetchContent_MakeAvailable(HighFive)
