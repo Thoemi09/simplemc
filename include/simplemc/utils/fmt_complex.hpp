@@ -35,6 +35,9 @@ namespace fmt {
  *
  * See <a href="https://fmt.dev/latest/index.html">fmt documentation</a> for more information.
  *
+ * @warning fmtlib has recently added their own formatter for `std::complex` in the `fmt/std.h` header
+ * file. Including the current header together with `fmt/std.h` will result in a compilation error.
+ *
  * @tparam T Value type of `std::complex`.
  * @tparam Char Character type.
  */

@@ -2,6 +2,7 @@
 
 #include <simplemc/config.hpp>
 #include <simplemc/utils.hpp>
+#include <simplemc/utils/fmt_complex.hpp>
 
 #include <fmt/core.h>
 
