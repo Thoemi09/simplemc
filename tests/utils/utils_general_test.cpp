@@ -8,12 +8,17 @@
 
 // Test if the config header is generated correctly.
 TEST(SimplemcUtils, ConfigHeader) {
-    fmt::print("VERSION: {}\n", SIMPLEMC_VERSION);
+    fmt::println("VERSION: {}", SIMPLEMC_VERSION);
 #ifdef SIMPLEMC_WITH_HIGHFIVE
-    fmt::print("SIMPLEMC_WITH_HIGHFIVE: True\n");
+    fmt::println("SIMPLEMC_WITH_HIGHFIVE: True");
 #else
-    fmt::print("SIMPLEMC_WITH_HIGHFIVE: False\n");
+    fmt::println("SIMPLEMC_WITH_HIGHFIVE: False");
 #endif // SIMPLEMC_WITH_HIGHFIVE
+#ifdef SIMPLEMC_USE_STD_RANGES
+    fmt::println("SIMPLEMC_USE_STD_RANGES: True");
+#else
+    fmt::println("SIMPLEMC_USE_STD_RANGES: False");
+#endif // SIMPLEMC_USE_STD_RANGES
 }
 
 // Test concepts.

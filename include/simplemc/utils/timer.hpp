@@ -48,11 +48,10 @@ struct duration {
  * auto measured_time = time_passed(tp1, tp2, duration::millisec{});
  * @endcode
  *
- * Here, tp1 and tp2 are two `std::chrono::time_point` instances.
+ * Here, `tp1` and `tp2` are two `std::chrono::time_point` instances.
  *
- * Note that this implementation is different from `std::chrono::duration_cast`, where the resulting
- * duration type has to be given explictly as a template parameter. This enables us to use a default
- * duration (simplemc::duration::sec).
+ * @note This implementation is different from `std::chrono::duration_cast`, where the resulting
+ * duration type has to be given explictly as a template parameter.
  *
  * @tparam C Clock type.
  * @tparam D1 Duration type of first point in time.

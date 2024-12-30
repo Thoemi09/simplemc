@@ -139,7 +139,7 @@ template <std::integral T, std::size_t N>
  * @note Empty shapes are not supported.
  *
  * @tparam T Integer type.
- * @tparam Order Storage order of the multi-dimensional array.
+ * @tparam Order simplemc::nd_order tag.
  * @param flat_idx Flat index.
  * @param shape Shape of the underlying multi-dimensional array.
  * @param order Storage order of the multi-dimensional array (used only for type deduction).
@@ -178,7 +178,7 @@ template <std::integral T, nd_order Order = column_major>
  *
  * @tparam T Integer type.
  * @tparam N Number of dimensions.
- * @tparam Order Storage order of the multi-dimensional array.
+ * @tparam Order simplemc::nd_order tag.
  * @param flat_idx Flat index.
  * @param shape Shape of the underlying multi-dimensional array.
  * @param order Storage order of the multi-dimensional array (used only for type deduction).
@@ -217,7 +217,7 @@ template <std::integral T, std::size_t N, nd_order Order = column_major>
  *
  * @tparam T1 Integer type.
  * @tparam T2 Integer type.
- * @tparam Order Storage order of the multi-dimensional array.
+ * @tparam Order simplemc::nd_order tag.
  * @param idxs Multi-dimensional index.
  * @param shape Shape of the underlying multi-dimensional array.
  * @param order Storage order of the multi-dimensional array (used only for type deduction).
@@ -254,7 +254,7 @@ template <std::integral T1, std::integral T2, nd_order Order = column_major>
  * @tparam T1 Integer type.
  * @tparam T2 Integer type.
  * @tparam N Number of dimensions.
- * @tparam Order Storage order of the multi-dimensional array.
+ * @tparam Order simplemc::nd_order tag.
  * @param idxs Multi-dimensional index.
  * @param shape Shape of the underlying multi-dimensional array.
  * @param order Storage order of the multi-dimensional array (used only for type deduction).
