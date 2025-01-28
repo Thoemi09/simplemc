@@ -29,8 +29,8 @@ not complete in the standard library).
 * [Eigen3](https://gitlab.com/libeigen/eigen): Linear algebra libray.
 * [nlohmann_json](https://github.com/nlohmann/json): JSON library for serialization and parsing
 user input and configuration files.
-* [HighFive](https://github.com/BlueBrain/HighFive): C++ HDF5 library for serialization (requires HDF5
-to be installed).
+* [h5](https://github.com/TRIQS/h5): C++ HDF5 library for serialization (requires HDF5 to be
+installed).
 
 @section install_steps Installation steps
 
@@ -97,12 +97,11 @@ $ cmake ../simplemc.src -DOPTION1=value1 -DOPTION2=value2 ...
 | Build documentation with Doxygen        | ``-DSIMPLEMC_BUILD_DOC=ON``                       |
 | Use ranges from standard library        | ``-DSIMPLEMC_USE_STD_RANGES=ON``                  |
 | Use nlohmann_json for JSON support      | ``-DSIMPLEMC_WITH_NLOHMANN_JSON=ON``              |
-| Use HighFive for HDF5 support           | ``-DSIMPLEMC_WITH_HIGHFIVE=ON``                   |
+| Use h5 for HDF5 support                 | ``-DSIMPLEMC_WITH_H5=ON``                         |
 | Fetch fmt from github                   | ``-DSIMPLEMC_FETCH_FMT=ON``                       |
 | Fetch range-v3 from github              | ``-DSIMPLEMC_FETCH_RANGEV3=ON``                   |
 | Fetch Eigen3 from gitlab                | ``-DSIMPLEMC_FETCH_EIGEN3=ON``                    |
 | Fetch nlohmann_json library from github | ``-DSIMPLEMC_FETCH_NLOHMANN_JSON=ON``             |
-| Fetch HighFive library from github      | ``-DSIMPLEMC_FETCH_HIGHFIVE=ON``                  |
 | Disable stricter compilation warnings   | ``-DSIMPLEMC_DISABLE_WARNINGS=ON``                |
 
 Please check out the toplevel [`CMakeLists.txt`](https://github.com/Thoemi09/simplemc/blob/main/CMakeLists.txt)

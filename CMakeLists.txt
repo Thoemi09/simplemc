@@ -6,12 +6,11 @@
 # SIMPLEMC_BUILD_DOC: Build documentation with Doxygen.
 # SIMPLEMC_USE_DOXYGEN_AWESOME: Use doxygen-awesome-css when building the documentation.
 # SIMPLEMC_USE_STD_RANGES: Use ranges from the standard library.
-# SIMPLEMC_WITH_HIGHFIVE: Use HighFive for HDF5 support.
+# SIMPLEMC_WITH_H5: Use h5 for HDF5 support.
 # SIMPLEMC_FETCH_FMT: Fetch fmt from github.
 # SIMPLEMC_FETCH_RANGEV3: Fetch range-v3 from github.
 # SIMPLEMC_FETCH_EIGEN3: Fetch Eigen3 from gitlab.
 # SIMPLEMC_FETCH_NLOHMANN_JSON: Fetch nlohmann_json from github.
-# SIMPLEMC_FETCH_HIGHFIVE: Fetch HighFive from github.
 # SIMPLEMC_DISABLE_WARNINGS: Disable stricter compilation warnings.
 
 cmake_minimum_required(VERSION 3.24)
@@ -48,12 +47,11 @@ option(SIMPLEMC_BUILD_EXAMPLES "Build examples" ${SIMPLEMC_MASTER_PROJECT})
 option(SIMPLEMC_BUILD_DOC "Build documentation with Doxygen" OFF)
 option(SIMPLEMC_USE_DOXYGEN_AWESOME "Use doxygen-awesome-css when building the documentation" OFF)
 option(SIMPLEMC_USE_STD_RANGES "Use ranges from the standard library" OFF)
-option(SIMPLEMC_WITH_HIGHFIVE "Use HighFive for HDF5 support" ON)
+option(SIMPLEMC_WITH_H5 "Use h5 for HDF5 support" ON)
 option(SIMPLEMC_FETCH_FMT "Fetch fmt from github" ON)
 option(SIMPLEMC_FETCH_RANGEV3 "Fetch range-v3 from github" ON)
 option(SIMPLEMC_FETCH_EIGEN3 "Fetch Eigen3 from gitlab" ON)
 option(SIMPLEMC_FETCH_NLOHMANN_JSON "Fetch nlohmann_json from github" ON)
-option(SIMPLEMC_FETCH_HIGHFIVE "Fetch HighFive from github" ON)
 option(SIMPLEMC_DISABLE_WARNINGS "Disable stricter compilation warnings" ON)
 
 # output user options
@@ -71,12 +69,11 @@ message(STATUS "Build examples: ${SIMPLEMC_BUILD_EXAMPLES}")
 message(STATUS "Build documentation: ${SIMPLEMC_BUILD_DOC}")
 message(STATUS "Use doxygen-awesome-css: ${SIMPLEMC_USE_DOXYGEN_AWESOME}")
 message(STATUS "Use std ranges: ${SIMPLEMC_USE_STD_RANGES}")
-message(STATUS "HDF5 support: ${SIMPLEMC_WITH_HIGHFIVE}")
+message(STATUS "HDF5 support: ${SIMPLEMC_WITH_H5}")
 message(STATUS "Fetch fmt: ${SIMPLEMC_FETCH_FMT}")
 message(STATUS "Fetch range-v3: ${SIMPLEMC_FETCH_RANGEV3}")
 message(STATUS "Fetch Eigen3: ${SIMPLEMC_FETCH_EIGEN3}")
 message(STATUS "Fetch nlohmann_json: ${SIMPLEMC_FETCH_NLOHMANN_JSON}")
-message(STATUS "Fetch HighFive: ${SIMPLEMC_FETCH_HIGHFIVE}")
 message(STATUS "Disable stricter compiler warnings: ${SIMPLEMC_DISABLE_WARNINGS}")
 message(STATUS "===============================================")
 

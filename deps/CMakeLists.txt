@@ -12,7 +12,7 @@
 # The following dependencies are optional:
 # ---------------------------------
 # googletest: For testing. Only used if SIMPLEMC_BUILD_TESTS is ON.
-# HighFive: HDF5 wrapper for serialization. Only used if SIMPLEMC_WITH_HIGHFIVE is ON.
+# h5: HDF5 wrapper for serialization. Only used if SIMPLEMC_WITH_H5 is ON.
 
 include(FetchContent)
 
@@ -129,24 +129,13 @@ if(SIMPLEMC_BUILD_TESTS)
     message(STATUS "-----------------------------------------------")
 endif()
 
-# HighFive
-if(SIMPLEMC_WITH_HIGHFIVE)
-    if(SIMPLEMC_FETCH_HIGHFIVE)
-        FetchContent_Declare(highfive
-            GIT_REPOSITORY https://github.com/BlueBrain/HighFive.git
-            GIT_TAG origin/master) # ddcf632
-        message(STATUS "-----------------------------------------------")
-        message(STATUS "Fetching highfive ...")
-        FetchContent_MakeAvailable(HighFive)
-        message(STATUS "highfive_SOURCE_DIR: ${highfive_SOURCE_DIR}")
-        message(STATUS "-----------------------------------------------")
-    else()
-        message(STATUS "-----------------------------------------------")
-        message(STATUS "Finding HighFive: HighFive_DIR = ${HighFive_DIR}")
-        find_package(HighFive REQUIRED)
-        set_target_properties(HighFive::HighFive PROPERTIES IMPORTED_GLOBAL TRUE)
-        get_target_property(HIGHFIVE_TMP HighFive::Include INTERFACE_INCLUDE_DIRECTORIES)
-        message(STATUS "HighFive found: Include directories = ${HIGHFIVE_TMP}")
-        message(STATUS "-----------------------------------------------")
-    endif()
+# h5
+if(SIMPLEMC_WITH_H5)
+    message(STATUS "-----------------------------------------------")
+    message(STATUS "Finding h5: h5_DIR = ${h5_DIR}")
+    find_package(h5 REQUIRED)
+    set_target_properties(h5::h5_c PROPERTIES IMPORTED_GLOBAL TRUE)
+    get_target_property(H5_TMP h5::h5_c INTERFACE_INCLUDE_DIRECTORIES)
+    message(STATUS "h5 found: Include directories = ${H5_TMP}")
+    message(STATUS "-----------------------------------------------")
 endif()

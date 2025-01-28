@@ -13,7 +13,7 @@
 #define SIMPLEMC_VERSION "@PROJECT_VERSION@"
 
 // build options
-#cmakedefine SIMPLEMC_WITH_HIGHFIVE
+#cmakedefine SIMPLEMC_WITH_H5
 #cmakedefine SIMPLEMC_USE_STD_RANGES
 
 #endif // SIMPLEMC_CONFIG_HPP
