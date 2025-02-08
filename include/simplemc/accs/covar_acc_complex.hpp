@@ -188,10 +188,10 @@ public:
      * @param num Number of elements.
      */
     explicit covar_acc(size_type num = 1) :
-        mdata_(cplx_vec_type::Zero(num)),
-        rdata_(dbl_mat_type::Zero(num, num)),
-        idata_(dbl_mat_type::Zero(num, num)),
-        cdata_(dbl_mat_type::Zero(num, num)),
+        mdata_(cplx_vec_type::Zero(is_dynamic ? num : static_size)),
+        rdata_(dbl_mat_type::Zero(is_dynamic ? num : static_size, is_dynamic ? num : static_size)),
+        idata_(dbl_mat_type::Zero(is_dynamic ? num : static_size, is_dynamic ? num : static_size)),
+        cdata_(dbl_mat_type::Zero(is_dynamic ? num : static_size, is_dynamic ? num : static_size)),
         count_(0),
         idx_(0) {
         if constexpr (is_dynamic) {

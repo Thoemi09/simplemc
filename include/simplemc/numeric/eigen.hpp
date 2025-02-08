@@ -113,10 +113,12 @@ concept eigen_vector_cplx = (eigen_vector<V> && std::is_same_v<typename V::Scala
  * @param size Size of the vector.
  * @return `Eigen::Matrix<T, M, 1>` with NaNs.
  */
-template <eigen_vector V>
+template <typename V>
+    requires(eigen_vector_dbl<V> || eigen_vector_cplx<V>)
 V nans_vector(long size = 1) {
+    size = (V::RowsAtCompileTime == Eigen::Dynamic ? size : V::RowsAtCompileTime);
     constexpr auto nan = std::numeric_limits<double>::quiet_NaN();
-    if constexpr (std::is_same_v<typename V::value_type, double>) {
+    if constexpr (std::is_same_v<typename V::Scalar, double>) {
         return V::Constant(size, nan);
     } else {
         return V::Constant(size, std::complex<double> { nan, nan });
@@ -135,6 +137,8 @@ V nans_vector(long size = 1) {
  */
 template <eigen_matrix M>
 M nans_matrix(long rows = 1, long cols = 1) {
+    rows = (M::RowsAtCompileTime == Eigen::Dynamic ? rows : M::RowsAtCompileTime);
+    cols = (M::ColsAtCompileTime == Eigen::Dynamic ? cols : M::ColsAtCompileTime);
     constexpr auto nan = std::numeric_limits<double>::quiet_NaN();
     if constexpr (std::is_same_v<typename M::value_type, double>) {
         return M::Constant(rows, cols, nan);

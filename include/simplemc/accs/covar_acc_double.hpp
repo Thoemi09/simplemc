@@ -163,8 +163,8 @@ public:
      * @param num Number of elements.
      */
     explicit covar_acc(size_type num = 1) :
-        mdata_(vec_type::Zero(num)),
-        cdata_(mat_type::Zero(num, num)),
+        mdata_(vec_type::Zero(is_dynamic ? num : static_size)),
+        cdata_(mat_type::Zero(is_dynamic ? num : static_size, is_dynamic ? num : static_size)),
         count_(0),
         idx_(0) {
         if constexpr (is_dynamic) {

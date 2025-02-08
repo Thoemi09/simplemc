@@ -133,7 +133,11 @@ public:
      *
      * @param num Number of elements.
      */
-    explicit var_acc(size_type num = 1) : mdata_(vec_type::Zero(num)), vdata_(vec_type::Zero(num)), count_(0), idx_(0) {
+    explicit var_acc(size_type num = 1) :
+        mdata_(vec_type::Zero(is_dynamic ? num : static_size)),
+        vdata_(vec_type::Zero(is_dynamic ? num : static_size)),
+        count_(0),
+        idx_(0) {
         if constexpr (is_dynamic) {
             if (num <= 0) {
                 throw simplemc_exception("Dynamic size <= 0", "var_acc::var_acc");

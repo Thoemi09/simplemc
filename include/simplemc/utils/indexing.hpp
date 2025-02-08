@@ -226,7 +226,7 @@ template <std::integral T, std::size_t N, nd_order Order = column_major>
 template <std::integral T1, std::integral T2, nd_order Order = column_major>
 [[nodiscard]] constexpr auto flat_index(
     const std::vector<T1>& idxs, const std::vector<T2>& shape, [[maybe_unused]] Order order = Order {}) {
-    assert(!shape.empty() && !idx.empty());
+    assert(!shape.empty() && !idxs.empty());
     assert(idxs.size() == shape.size());
     const auto size = shape.size();
     if constexpr (std::same_as<Order, column_major>) {
