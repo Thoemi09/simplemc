@@ -7,9 +7,10 @@
 # tmp-mpi-test: Executable for testing temporary MPI code.
 
 # create interface library for testing
-add_library(simplemc-test INTERFACE)
-target_include_directories(simplemc-test INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(simplemc-test INTERFACE
+add_library(simplemc-test)
+target_sources(simplemc-test PRIVATE test_utils.cpp)
+target_include_directories(simplemc-test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(simplemc-test PUBLIC
     GTest::gtest_main
     simplemc::simplemc
     $<$<BOOL:${SIMPLEMC_USE_STD_RANGES}>:range-v3::range-v3>)

@@ -126,8 +126,8 @@ template <std::integral T>
  * @return Number of elements in the array.
  */
 template <std::integral T, std::size_t N>
+    requires(N != 0)
 [[nodiscard]] constexpr auto size_from_shape(const std::array<T, N>& shape) {
-    static_assert(N != 0, "Empty shapes are not supported");
     return std::accumulate(shape.begin(), shape.end(), T { 1 }, std::multiplies<T> {});
 }
 
@@ -185,9 +185,9 @@ template <std::integral T, nd_order Order = column_major>
  * @return Multi-dimensional index as a `std::array`.
  */
 template <std::integral T, std::size_t N, nd_order Order = column_major>
+    requires(N != 0)
 [[nodiscard]] constexpr auto multi_index(
     std::integral auto flat_idx, const std::array<T, N>& shape, [[maybe_unused]] Order order = Order {}) {
-    static_assert(N != 0, "Empty shapes are not supported");
     assert(flat_idx >= 0 && flat_idx < size_from_shape(shape));
     auto idxs = std::array<T, N> {};
     auto fac = size_from_shape(shape);
@@ -261,9 +261,9 @@ template <std::integral T1, std::integral T2, nd_order Order = column_major>
  * @return Flat index.
  */
 template <std::integral T1, std::integral T2, std::size_t N, nd_order Order = column_major>
+    requires(N != 0)
 [[nodiscard]] constexpr auto flat_index(
     const std::array<T1, N>& idxs, const std::array<T2, N>& shape, [[maybe_unused]] Order order = Order {}) {
-    static_assert(N != 0, "Empty shapes or empty multi-dimensional indices are not supported.");
     if constexpr (std::same_as<Order, column_major>) {
         auto flat_idx = idxs.back();
         for (std::size_t i = 2; i <= N; ++i) {

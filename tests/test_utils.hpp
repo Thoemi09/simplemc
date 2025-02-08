@@ -1,17 +1,14 @@
-/**
- * @file
- * @brief Some helper utilities for testing.
- */
-
 #ifndef SIMPLEMC_TESTS_TEST_UTILS_HPP
 #define SIMPLEMC_TESTS_TEST_UTILS_HPP
 
 #include <gtest/gtest.h>
-#include <simplemc/utils/concepts.hpp>
 
-#include <fmt/ranges.h>
 #include <range/v3/all.hpp>
 
+#include <cmath>
+#include <complex>
+#include <concepts>
+#include <type_traits>
 #include <vector>
 
 // Check for nearness.
@@ -70,37 +67,20 @@ void check_isnan(auto val) {
     }
 }
 
-// Simple histogram class for testing.
+// Simple histogram class on the interval [0, 1] for testing.
 class histogram01 {
 public:
     // Constructor.
     explicit histogram01(int nbins) : nbins_(nbins), step_(1.0 / nbins), hist_(nbins, 0.0) {}
 
     // Add a value to the histogram.
-    void add(double value) {
-        int idx = static_cast<int>(value / step_);
-        hist_[idx] += 1.0;
-        nsamples_ += 1;
-    }
+    void add(double value);
 
     // Print the histogram.
-    void print() const { fmt::print("Histogram:\n{}\n", hist_); }
+    void print() const;
 
     // Check that the histogram is uniform within some tolerance.
-    [[nodiscard]] bool check_uniform(double tol) const {
-        double exact = static_cast<double>(nsamples_) / nbins_;
-        double err = tol * exact;
-        double lower = exact - err;
-        double upper = exact + err;
-        bool res = true;
-        for (int i = 0; i < nbins_; i++) {
-            if (hist_[i] < lower || hist_[i] > upper) {
-                res = false;
-                break;
-            }
-        }
-        return res;
-    }
+    [[nodiscard]] bool check_uniform(double tol) const;
 
 private:
     long nsamples_ { 0 };

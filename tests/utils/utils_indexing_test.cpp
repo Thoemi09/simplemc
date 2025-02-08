@@ -8,11 +8,17 @@
 // Test calculating the size from a shape.
 TEST(SimplemcUtils, SizeFromShape) {
     using namespace simplemc;
+
+    // vector
     auto shape = std::vector<int> { 2, 3, 4 };
     ASSERT_EQ(size_from_shape(shape), 24);
+
+    // constexpr array
     constexpr std::array<int, 2> shape_arr_cepr { 2, 3 };
     constexpr auto size_cepr = size_from_shape(shape_arr_cepr);
     ASSERT_EQ(size_cepr, 6);
+
+    // array
     std::array<long, 2> shape_arr { 2, 3 };
     auto size = size_from_shape(shape_arr);
     ASSERT_EQ(size, 6);
@@ -24,6 +30,8 @@ TEST(SimplemcUtils, ConstexprIndexing) {
     constexpr std::array<int, 3> shape { 2, 3, 4 };
     constexpr auto size = size_from_shape(shape);
     ASSERT_EQ(size, 24);
+
+    // flat index = 0, multidimensional index = (0, 0, 0) - first element
     constexpr std::array<int, 3> exp_idxs1 { 0, 0, 0 };
     constexpr int exp_fidx1 = 0;
     constexpr auto cfidx1 = flat_index(exp_idxs1, shape);
@@ -34,6 +42,8 @@ TEST(SimplemcUtils, ConstexprIndexing) {
     ASSERT_EQ(cidxs1, exp_idxs1);
     ASSERT_EQ(rfidx1, exp_fidx1);
     ASSERT_EQ(ridxs1, exp_idxs1);
+
+    // flat index = 23, multidimensional index = (1, 2, 3) - last element
     constexpr std::array<int, 3> exp_idxs2 { 1, 2, 3 };
     constexpr int exp_fidx2 = 23;
     constexpr auto cfidx2 = flat_index(exp_idxs2, shape);
@@ -44,6 +54,8 @@ TEST(SimplemcUtils, ConstexprIndexing) {
     ASSERT_EQ(cidxs2, exp_idxs2);
     ASSERT_EQ(rfidx2, exp_fidx2);
     ASSERT_EQ(ridxs2, exp_idxs2);
+
+    // row- vs column-major
     constexpr std::array<int, 3> exp_idxs3 { 1, 1, 1 };
     constexpr int exp_cfidx3 = 9;
     constexpr int exp_rfidx3 = 17;
@@ -63,18 +75,24 @@ TEST(SimplemcUtils, Indexing) {
     std::vector<long> shape { 2, 3, 4 };
     auto size = size_from_shape(shape);
     ASSERT_EQ(size, 24);
+
+    // flat index = 0, multidimensional index = (0, 0, 0) - first element
     std::vector<long> exp_idxs { 0, 0, 0 };
     int exp_fidx = 0;
     ASSERT_EQ(flat_index(exp_idxs, shape), exp_fidx);
     ASSERT_EQ(multi_index(exp_fidx, shape), exp_idxs);
     ASSERT_EQ(flat_index(exp_idxs, shape, row_major {}), exp_fidx);
     ASSERT_EQ(multi_index(exp_fidx, shape, row_major {}), exp_idxs);
+
+    // flat index = 23, multidimensional index = (1, 2, 3) - last element
     exp_idxs = { 1, 2, 3 };
     exp_fidx = 23;
     ASSERT_EQ(flat_index(exp_idxs, shape), exp_fidx);
     ASSERT_EQ(multi_index(exp_fidx, shape), exp_idxs);
     ASSERT_EQ(flat_index(exp_idxs, shape, row_major {}), exp_fidx);
     ASSERT_EQ(multi_index(exp_fidx, shape, row_major {}), exp_idxs);
+
+    // row- vs column-major
     exp_idxs = { 1, 1, 1 };
     exp_fidx = 9;
     ASSERT_EQ(flat_index(exp_idxs, shape), exp_fidx);
