@@ -23,8 +23,8 @@ It provides
 also be used in user code.
 - @ref simplemc-utils-general including some general concepts, formatted output for complex numbers
 and other convenient tools.
-- @ref simplemc-utils-indexing to map multi-dimensional indices to a flat index and vice versa.
-- @ref simplemc-utils-timer for easy performance and runtime measurments.
+- @ref simplemc-utils-indexing to map multi-dimensional indices to flat indices and vice versa.
+- A @ref simplemc-utils-timer for easy performance and runtime measurments.
 
 ## MPI library
 

@@ -5,10 +5,14 @@
 In this tutorial, we show how to measure the runtime of a program using the simplemc::timer class from
 the @ref simplemc-utils library.
 
+@section tut_utils_1_details Tutorial
+
 The following code snippets are all part of the same `main` function:
 
 ```cpp
+#include <fmt/base.h>
 #include <simplemc/utils.hpp>
+
 #include <thread>
 
 int main() {
@@ -41,12 +45,13 @@ amount with our timer object.
 First let's sleep for 100 milliseconds:
 
 ```cpp
-// sleep for 100 millisecond and print the time passed in milliseconds
-fmt::print("Sleeping for 100 milliseconds...\n");
+// sleep for 100 milliseconds and print the time passed in seconds
+fmt::println("Sleeping for 100 milliseconds...");
 timer.start();
-std::this_thread::sleep_for(millisec(100));
+std::this_thread::sleep_for(millisec { 100 });
 timer.stop();
-fmt::print("Time passed: {} sec\n\n", simplemc::time_passed(timer.start_time(), timer.stop_time(), sec {}));
+fmt::println("Time passed: {} sec", simplemc::time_passed(timer.start_time(), timer.stop_time(), sec {}));
+fmt::println("");
 ```
 
 Output:
@@ -56,21 +61,21 @@ Sleeping for 100 milliseconds...
 Time passed: 0.105088917 sec
 ```
 
-Here, we use the `start()` and `stop()` methods of the timer object to record the time points before
-we go to sleep and after we wake up, respectively.
+Here, we use the simplemc::timer::start and simplemc::timer::stop methods to record the time points
+before we go to sleep and after we wake up, respectively.
 
 The recorded time points are then forwarded to simplemc::time_passed to get the time difference.
-Note that the use of `millisec(100)` in the sleep-function and `sec {}` when printing the output.
+Note how we use `millisec { 100 }` in the sleep-function and `sec {}` when printing the output.
 
 Let's try this again with sleeping for 1 second and output the time in minutes:
 
 ```cpp
 // sleep for 1 second and print the time passed in minutes
-fmt::print("Sleeping for 1 second...\n");
+fmt::println("Sleeping for 1 second...");
 timer.start();
-std::this_thread::sleep_for(sec(1));
+std::this_thread::sleep_for(sec { 1 });
 timer.stop();
-fmt::print("Time passed: {} min\n", simplemc::time_passed(timer.start_time(), timer.stop_time(), min {}));
+fmt::println("Time passed: {} min", simplemc::time_passed(timer.start_time(), timer.stop_time(), min {}));
 ```
 
 Output:
@@ -78,4 +83,38 @@ Output:
 ```
 Sleeping for 1 second...
 Time passed: 0.01667623125 min
+```
+
+@section tut_utils_1_code Full code
+
+```cpp
+#include <fmt/base.h>
+#include <simplemc/utils.hpp>
+
+#include <thread>
+
+int main() {
+    // some convenient typedefs
+    using millisec = simplemc::duration::millisec;
+    using sec = simplemc::duration::sec;
+    using min = simplemc::duration::min;
+
+    // create a timer
+    simplemc::timer timer;
+
+    // sleep for 100 milliseconds and print the time passed in seconds
+    fmt::println("Sleeping for 100 milliseconds...");
+    timer.start();
+    std::this_thread::sleep_for(millisec { 100 });
+    timer.stop();
+    fmt::println("Time passed: {} sec", simplemc::time_passed(timer.start_time(), timer.stop_time(), sec {}));
+    fmt::println("");
+
+    // sleep for 1 second and print the time passed in minutes
+    fmt::println("Sleeping for 1 second...");
+    timer.start();
+    std::this_thread::sleep_for(sec { 1 });
+    timer.stop();
+    fmt::println("Time passed: {} min", simplemc::time_passed(timer.start_time(), timer.stop_time(), min {}));
+}
 ```

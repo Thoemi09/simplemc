@@ -8,12 +8,13 @@ simplemc::flat_index function from the @ref simplemc-utils library.
 We further make use of the simplemc::row_major and simplemc::column_major tags to apply a certain
 memory layout.
 
+@section tut_utils_2_details Tutorial
+
 The following code snippets are all part of the same `main` function:
 
 ```cpp
-#include <simplemc/utils.hpp>
-
 #include <fmt/ranges.h>
+#include <simplemc/utils.hpp>
 
 #include <array>
 #include <numeric>
@@ -42,7 +43,7 @@ With **fmt** it is easy to print the vector to stdout:
 
 ```cpp
 // print the vector to stdout
-fmt::print("{}\n", data);
+fmt::println("{}", data);
 ```
 
 Output:
@@ -64,9 +65,9 @@ auto print_matrix = [](const auto& data, const auto& shape, auto mem_layout) {
             std::array<int, 2> idxs = { i, j };
             fmt::print("{:3} ", data[simplemc::flat_index(idxs, shape, mem_layout)]);
         }
-        fmt::print("\n");
+        fmt::println("");
     }
-    fmt::print("\n");
+    fmt::println("");
 };
 ```
 
@@ -101,11 +102,11 @@ The meaning of row-major and column-major should become clear, when we actually 
 
 ```cpp
 // print the data as a 5x3 matrix in row-major order
-fmt::print("5x3 row-major order:\n");
+fmt::println("5x3 row-major order:");
 print_matrix(data, shape1, simplemc::row_major {});
 
 // print the data as a 5x3 matrix in column-major order
-fmt::print("5x3 column-major order:\n");
+fmt::println("5x3 column-major order:");
 print_matrix(data, shape1, simplemc::column_major {});
 ```
 
@@ -134,27 +135,81 @@ We could have also interpreted the same memory as a \f$ 3 \times 5 \f$ matrix:
 
 ```cpp
 // shape of the 3x5 matrix
-std::array<int, 2> shape2 {3, 5};
+std::array<int, 2> shape2 { 3, 5 };
 
 // print the data as a 3x5 matrix in row-major order
-fmt::print("5x3 row-major order:\n");
+fmt::println("3x5 row-major order:");
 print_matrix(data, shape2, simplemc::row_major {});
 
 // print the data as a 3x5 matrix in column-major order
-fmt::print("5x3 column-major order:\n");
+fmt::println("3x5 column-major order:");
 print_matrix(data, shape2, simplemc::column_major {});
 ```
 
 Output:
 
 ```
-5x3 row-major order:
+3x5 row-major order:
   1   2   3   4   5
   6   7   8   9  10
  11  12  13  14  15
 
-5x3 column-major order:
+3x5 column-major order:
   1   4   7  10  13
   2   5   8  11  14
   3   6   9  12  15
+```
+
+@section tut_utils_2_code Full code
+
+```cpp
+#include <fmt/ranges.h>
+#include <simplemc/utils.hpp>
+
+#include <array>
+#include <numeric>
+#include <vector>
+
+int main() {
+    // create an integer vector and fill it with 1, ..., 15
+    std::vector<int> data(15);
+    std::iota(data.begin(), data.end(), 1);
+
+    // print the vector to stdout
+    fmt::println("{}", data);
+
+    // generic lambda to print a matrix with a given shape and memory layout
+    auto print_matrix = [](const auto& data, const auto& shape, auto mem_layout) {
+        for (int i = 0; i < shape[0]; ++i) {
+            for (int j = 0; j < shape[1]; ++j) {
+                std::array<int, 2> idxs = { i, j };
+                fmt::print("{:3} ", data[simplemc::flat_index(idxs, shape, mem_layout)]);
+            }
+            fmt::println("");
+        }
+        fmt::println("");
+    };
+
+    // shape of the 5x3 matrix
+    std::array<int, 2> shape1 { 5, 3 };
+
+    // print the data as a 5x3 matrix in row-major order
+    fmt::println("5x3 row-major order:");
+    print_matrix(data, shape1, simplemc::row_major {});
+
+    // print the data as a 5x3 matrix in column-major order
+    fmt::println("5x3 column-major order:");
+    print_matrix(data, shape1, simplemc::column_major {});
+
+    // shape of the 3x5 matrix
+    std::array<int, 2> shape2 { 3, 5 };
+
+    // print the data as a 3x5 matrix in row-major order
+    fmt::println("3x5 row-major order:");
+    print_matrix(data, shape2, simplemc::row_major {});
+
+    // print the data as a 3x5 matrix in column-major order
+    fmt::println("3x5 column-major order:");
+    print_matrix(data, shape2, simplemc::column_major {});
+}
 ```

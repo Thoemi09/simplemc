@@ -33,7 +33,8 @@ namespace fmt {
  * z = (            1.0003            ,        2.00041291823         )
  * ```
  *
- * See <a href="https://fmt.dev/latest/index.html">fmt documentation</a> for more information.
+ * See @ref tut_utils_3 and <a href="https://fmt.dev/latest/index.html">fmt documentation</a> for more
+ * information.
  *
  * @warning fmtlib has recently added their own formatter for `std::complex` in the `fmt/std.h` header
  * file. Including the current header together with `fmt/std.h` will result in a compilation error.

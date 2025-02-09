@@ -2,22 +2,16 @@
 
 [TOC]
 
-@section tut_utils simplemc-utils
-
-- @ref tut_utils_1
-- @ref tut_utils_2
-- @ref tut_utils_3
-
-@section tut_mpi simplemc-mpi
-
-- @ref tut_mpi_1
-- @ref tut_mpi_2
-- @ref tut_mpi_3
+| Tutorial | Description |
+|---------|-------------|
+| @ref tut_utils_1 | Measure the runtime of your program using simplemc::timer |
+| @ref tut_utils_2 | Convert multi-dimensional to flat indices using simplemc::flat_index |
+| @ref tut_utils_3 | Formatted output with **fmt** |
 
 @section tut_compilation Compiling the tutorials
 
-All tutorials have been compiled on a MacBook Pro with an Apple M2 Max chip and clang++ v19.1.2
-together with cmake v3.30.5.
+All tutorials have been compiled on a MacBook Pro with an Apple M2 Max chip and clang++ v19.1.6
+together with cmake v3.31.3.
 
 Furhtermore, the following dependencies have been used:
 - [open-mpi](https://www.open-mpi.org/) 5.0.1 (installed with brew)

@@ -21,6 +21,18 @@ namespace simplemc {
  *
  * @details Throws a simplemc::simplemc_exception if it fails.
  *
+ * @code
+ * auto fp = simplemc::open_file("test_file.txt", "w");
+ * fmt::print(fp, "This is the test file #{}\n", 1);
+ * simplemc::close_file(fp);
+ * @endcode
+ *
+ * This writes a file named `test_file.txt` with the content
+ *
+ * ```
+ * This is the test file #1
+ * ```
+ *
  * @param name File name.
  * @param mode File mode (see <a href="https://en.cppreference.com/w/cpp/io/c/fopen">std::fopen</a>).
  * @return File pointer.
@@ -33,6 +45,8 @@ namespace simplemc {
  * @details Does nothing if the file pointer is equal to `nullptr`, `stdout`, `stdin` or `stderr`.
  *
  * Throws a simplemc::simplemc_exception if it fails.
+ *
+ * See simplemc::open_file for an example.
  *
  * @param fp File pointer.
  */
