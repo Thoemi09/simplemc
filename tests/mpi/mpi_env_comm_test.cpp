@@ -1,9 +1,8 @@
+#include <fmt/base.h>
 #include <gtest/gtest.h>
-
+#include <mpi.h>
 #include <simplemc/mpi.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
-
-#include <fmt/core.h>
 
 #include <exception>
 
@@ -24,6 +23,18 @@ TEST(SimplemcMPI, ThrowException) {
     } catch (const std::exception& e) {
         fmt::print("{}\n", e.what());
     }
+}
+
+// Test duplicating a communicator.
+TEST(SimplemcMPI, DuplicateCommunicator) {
+    simplemc::mpi::communicator comm;
+    simplemc::mpi::communicator dup_comm = comm.duplicate();
+    fmt::print("Original communicator: {} of {}\n", comm.rank(), comm.size());
+    fmt::print("Duplicated communicator: {} of {}\n", dup_comm.rank(), dup_comm.size());
+    int cmp_res{};
+    MPI_Comm_compare(comm, dup_comm, &cmp_res);
+    ASSERT_NE(MPI_IDENT, cmp_res);
+    dup_comm.free();
 }
 
 // Custom main function for MPI.

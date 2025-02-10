@@ -1,5 +1,4 @@
 #include <gtest/gtest.h>
-
 #include <simplemc/utils/indexing.hpp>
 
 #include <array>

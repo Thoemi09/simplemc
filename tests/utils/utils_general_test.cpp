@@ -1,10 +1,8 @@
+#include <fmt/base.h>
 #include <gtest/gtest.h>
-
 #include <simplemc/config.hpp>
 #include <simplemc/utils.hpp>
 #include <simplemc/utils/fmt_complex.hpp>
-
-#include <fmt/core.h>
 
 // Test if the config header is generated correctly.
 TEST(SimplemcUtils, ConfigHeader) {

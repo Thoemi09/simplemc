@@ -1,9 +1,7 @@
+#include <fmt/format.h>
 #include <gtest/gtest.h>
-
 #include <simplemc/utils/generic_error.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
-
-#include <fmt/core.h>
 
 // Test generic_error exception.
 TEST(SimplemcUtils, GenericError) {

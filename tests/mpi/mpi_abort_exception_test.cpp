@@ -1,6 +1,5 @@
-#include <simplemc/mpi.hpp>
-
 #include <fmt/ostream.h>
+#include <simplemc/mpi.hpp>
 
 #include <chrono>
 #include <iostream>

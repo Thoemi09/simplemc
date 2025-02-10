@@ -1,8 +1,6 @@
+#include <fmt/base.h>
 #include <gtest/gtest.h>
-
 #include <simplemc/utils/timer.hpp>
-
-#include <fmt/core.h>
 
 #include <thread>
 

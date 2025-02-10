@@ -2,7 +2,6 @@
 #define SIMPLEMC_TESTS_TEST_UTILS_HPP
 
 #include <gtest/gtest.h>
-
 #include <range/v3/all.hpp>
 
 #include <cmath>

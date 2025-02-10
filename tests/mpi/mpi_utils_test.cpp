@@ -1,9 +1,7 @@
 #include <gtest/gtest.h>
-
+#include <mpi.h>
 #include <simplemc/utils/simplemc_exception.hpp>
 #include <simplemc/mpi/utils.hpp>
-
-#include <mpi.h>
 
 // Test simplemc::mpi::check_mpi_call with MPI_SUCCESS.
 TEST(SimplemcMPI, CheckMPICallSuccess) {
