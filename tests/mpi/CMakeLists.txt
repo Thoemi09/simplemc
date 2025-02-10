@@ -9,13 +9,12 @@
 # mpi-datatypes-test: Executable to test the mapping of MPI datatypes to C++ types.
 # mpi-collectives-test: Executable to test the supported MPI collective communication operations.
 
+# create executables
 add_executable(mpi-utils-test mpi_utils_test.cpp)
 target_link_libraries(mpi-utils-test PRIVATE simplemc-test)
-add_test(NAME mpi-utils-test COMMAND ./mpi-utils-test)
 
 add_executable(mpi-env-comm-test mpi_env_comm_test.cpp)
 target_link_libraries(mpi-env-comm-test PRIVATE simplemc-test)
-add_test(NAME mpi-env-comm-test COMMAND mpirun -n 4 ./mpi-env-comm-test)
 
 add_executable(mpi-abort-exception-test mpi_abort_exception_test.cpp)
 target_link_libraries(mpi-abort-exception-test PRIVATE simplemc-test)
@@ -25,8 +24,12 @@ target_link_libraries(mpi-no-abort-exception-test PRIVATE simplemc-test)
 
 add_executable(mpi-datatypes-test mpi_datatypes_test.cpp)
 target_link_libraries(mpi-datatypes-test PRIVATE simplemc-test)
-add_test(NAME mpi-datatypes-test COMMAND ./mpi-datatypes-test)
 
 add_executable(mpi-collectives-test mpi_collectives_test.cpp)
 target_link_libraries(mpi-collectives-test PRIVATE simplemc-test)
+
+# add tests
+add_test(NAME mpi-utils-test COMMAND ./mpi-utils-test)
+add_test(NAME mpi-env-comm-test COMMAND mpirun -n 4 ./mpi-env-comm-test)
+add_test(NAME mpi-datatypes-test COMMAND ./mpi-datatypes-test)
 add_test(NAME mpi-collectives-test COMMAND mpirun -n 4 ./mpi-collectives-test)

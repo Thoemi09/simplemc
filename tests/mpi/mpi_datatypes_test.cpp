@@ -1,4 +1,4 @@
-#include "./simplemcmpi_fixture.hpp"
+#include <gtest/gtest.h>
 
 #include <simplemc/mpi.hpp>
 
@@ -13,7 +13,7 @@ struct foo {
 };
 
 // Test concepts and traits involving MPI datatypes.
-TEST_F(SimplemcMPI, ConceptsAndTraits) {
+TEST(SimplemcMPI, ConceptsAndTraits) {
     static_assert(simplemc::mpi::mpi_compatible<char>);
     static_assert(simplemc::mpi::mpi_compatible<signed char>);
     static_assert(simplemc::mpi::mpi_compatible<unsigned char>);
