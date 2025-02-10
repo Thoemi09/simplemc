@@ -5,7 +5,7 @@
 In this tutorial, we show how to measure the runtime of a program using the simplemc::timer class from
 the @ref simplemc-utils library.
 
-@section tut_utils_1_details Tutorial
+@section tut_utils_1_details Step-by-step guide
 
 The following code snippets are all part of the same `main` function:
 

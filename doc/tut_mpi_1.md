@@ -5,6 +5,8 @@
 In this tutorial, we show how to implement the standard `Hello world` program using the
 **simplemc-mpi** library.
 
+@section tut_mpi_1_details Step-by-step guide
+
 The following code snippets are all part of the same `main` function:
 
 ```cpp
@@ -39,7 +41,7 @@ Now, let us check with how many process we started the program:
 ```cpp
 // print the number of processes on process 0
 if (comm.rank() == 0) {
-    fmt::print("Number of processes: {}\n", comm.size());
+    fmt::println("Number of processes: {}", comm.size());
 }
 ```
 
@@ -56,7 +58,7 @@ Finally, we want to output the usual `Hello world`:
 
 ```cpp
 // print message on each process
-fmt::print("Hello world, from process {} out of {} processes.\n", comm.rank(), comm.size());
+fmt::println("Hello world, from process {} out of {} processes.", comm.rank(), comm.size());
 ```
 
 Output:
@@ -70,3 +72,24 @@ Hello world, from process 2 out of 4 processes.
 
 Since we are running on process, we get 4 messages.
 Note that the output is arbitrary and changes from run to run.
+
+@section tut_mpi_1_code Full code
+
+```cpp
+#include <fmt/base.h>
+#include <simplemc/mpi.hpp>
+
+int main(int argc, char** argv) {
+    // initialize the MPI environment and the communicator
+    simplemc::mpi::environment env(argc, argv);
+    simplemc::mpi::communicator comm;
+
+    // print the number of processes on process 0
+    if (comm.rank() == 0) {
+        fmt::println("Number of processes: {}", comm.size());
+    }
+
+    // print message on each process
+    fmt::println("Hello world, from process {} out of {} processes.", comm.rank(), comm.size());
+}
+```

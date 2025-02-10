@@ -28,4 +28,12 @@ void communicator::barrier() const {
     check_mpi_call(MPI_Barrier(comm_), "MPI_Barrier");
 }
 
+communicator communicator::duplicate() const {
+    communicator c;
+    check_mpi_call(MPI_Comm_dup(comm_, &c.comm_), "MPI_Comm_dup");
+    return c;
+}
+
+void communicator::free() { check_mpi_call(MPI_Comm_free(&comm_), "MPI_Comm_free"); }
+
 } // namespace simplemc::mpi

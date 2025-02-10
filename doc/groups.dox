@@ -100,8 +100,8 @@
  * A small motivating example:
  *
  * @code{.cpp}
+ * #include <fmt/base.h>
  * #include <simplemc/mpi.hpp>
- * #include <fmt/core.h>
  *
  * int main(int argc, char** argv) {
  *   // initialize MPI environment and communicator
@@ -109,7 +109,7 @@
  *   simplemc::mpi::communicator comm;
  *
  *   // print message on each process
- *   fmt::print("Hello world, from {} of {} processes.\n", comm.rank(), comm.size());
+ *   fmt::println("Hello world, from {} of {} processes.", comm.rank(), comm.size());
  * }
  * @endcode
  *
@@ -135,8 +135,9 @@
  * functions will make multiple MPI calls to check that sizes of buffers are consistent.
  *
  * @code{.cpp}
- * #include <simplemc/mpi.hpp>
  * #include <fmt/ranges.h>
+ * #include <simplemc/mpi.hpp>
+ *
  * #include <vector>
  *
  * int main(int argc, char** argv) {
@@ -148,14 +149,14 @@
  *     // create a vector and initialize it on root
  *     std::vector<int> data(5);
  *     if (comm.rank() == root) {
- *         data = {1, 2, 3, 4, 5};
+ *         data = { 1, 2, 3, 4, 5 };
  *     }
  *
  *     // broadcast the data from root to all other processes
  *     simplemc::mpi::broadcast(comm, data, root);
  *
  *     // print the data on all processes
- *     fmt::print("Rank {}: {}\n", comm.rank(), data);
+ *     fmt::println("Rank {}: {}", comm.rank(), data);
  * }
  * @endcode
  *
@@ -173,12 +174,36 @@
  * @defgroup simplemc-mpi-commenv Communicator and environment
  * @ingroup simplemc-mpi
  * @brief Highlevel C++ wrappers around MPI communicator objects and MPI execution environments.
+ * @details See @ref tut_mpi_1 for a simple `Hello world` example.
  */
 
 /**
  * @defgroup simplemc-mpi-types MPI datatypes
  * @ingroup simplemc-mpi
  * @brief Mapping of supported C++ types to their corresponding MPI datatypes.
+ *
+ * @details The following mappings are supported out of the box:
+ * - `MPI_CHAR` \f$ \quad \longleftrightarrow \quad \f$ `char`
+ * - `MPI_BYTE` \f$ \quad \longleftrightarrow \quad \f$ `std::byte`
+ * - `MPI_SHORT` \f$ \quad \longleftrightarrow \quad \f$ `short`
+ * - `MPI_INT` \f$ \quad \longleftrightarrow \quad \f$ `int`
+ * - `MPI_LONG` \f$ \quad \longleftrightarrow \quad \f$ `long`
+ * - `MPI_LONG_LONG` \f$ \quad \longleftrightarrow \quad \f$ `long long`
+ * - `MPI_SIGNED_CHAR` \f$ \quad \longleftrightarrow \quad \f$ `signed char`
+ * - `MPI_UNSIGNED_CHAR` \f$ \quad \longleftrightarrow \quad \f$ `unsigned char`
+ * - `MPI_UNSIGNED_SHORT` \f$ \quad \longleftrightarrow \quad \f$ `unsigned short`
+ * - `MPI_UNSIGNED` \f$ \quad \longleftrightarrow \quad \f$ `unsigned int`
+ * - `MPI_UNSIGNED_LONG` \f$ \quad \longleftrightarrow \quad \f$ `unsigned long`
+ * - `MPI_UNSIGNED_LONG_LONG` \f$ \quad \longleftrightarrow \quad \f$ `unsigned long long`
+ * - `MPI_FLOAT` \f$ \quad \longleftrightarrow \quad \f$ `float`
+ * - `MPI_DOUBLE` \f$ \quad \longleftrightarrow \quad \f$ `double`
+ * - `MPI_LONG_DOUBLE` \f$ \quad \longleftrightarrow \quad \f$ `long double`
+ * - `MPI_CXX_BOOL` \f$ \quad \longleftrightarrow \quad \f$ `bool`
+ * - `MPI_CXX_FLOAT_COMPLEX` \f$ \quad \longleftrightarrow \quad \f$ `std::complex<float>`
+ * - `MPI_CXX_DOUBLE_COMPLEX` \f$ \quad \longleftrightarrow \quad \f$ `std::complex<double>`
+ * - `MPI_CXX_LONG_DOUBLE_COMPLEX` \f$ \quad \longleftrightarrow \quad \f$ `std::complex<long double>`
+ *
+ * See @ref tut_mpi_4 on how user-defined types can be used with the **simplemc-mpi** library.
  */
 
 /**

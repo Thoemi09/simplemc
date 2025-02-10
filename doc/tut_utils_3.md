@@ -7,7 +7,7 @@ formatted data.
 
 For further examples, please look at the official [fmt documentation](https://fmt.dev/latest/index.html).
 
-@section tut_utils_3_details Tutorial
+@section tut_utils_3_details Step-by-step guide
 
 The following code snippets are all part of the same `main` function:
 

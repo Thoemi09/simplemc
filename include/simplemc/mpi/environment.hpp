@@ -29,6 +29,8 @@ namespace simplemc::mpi {
  *
  * Only very basic MPI calls are supported. For more advanced tasks, e.g. like threading support, the
  * user is advised to use the MPI C library directly.
+ *
+ * See @ref tut_mpi_1 and @ref tut_mpi_2 for full examples.
  */
 class environment {
 public:
@@ -69,12 +71,14 @@ public:
     static void finalize();
 
     /**
-     * @brief Constructor to initialize the MPI environment.
+     * @brief Constructor initializes the MPI environment.
      *
      * @details If no MPI environment has been initialized, it calls `MPI_Init` with the given
      * arguments.
      *
      * It throws an exception if any MPI call fails.
+     *
+     * See @ref tut_mpi_2 for an example on how `abort_on_exception` can be used.
      *
      * @param argc Number of arguments passed to `main()`.
      * @param argv Arguments passed to `main()`.
@@ -98,6 +102,8 @@ public:
      *
      * @details It either calls `MPI_Abort` due to an uncaught exception (if `abort_on_exception` is
      * set to `true`) or by calling `MPI_Finalize`.
+     *
+     * See @ref tut_mpi_2 for an example showing the effect of `abort_on_exception`.
      */
     ~environment();
 

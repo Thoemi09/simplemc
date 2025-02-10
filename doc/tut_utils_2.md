@@ -8,7 +8,7 @@ simplemc::flat_index function from the @ref simplemc-utils library.
 We further make use of the simplemc::row_major and simplemc::column_major tags to apply a certain
 memory layout.
 
-@section tut_utils_2_details Tutorial
+@section tut_utils_2_details Step-by-step guide
 
 The following code snippets are all part of the same `main` function:
 

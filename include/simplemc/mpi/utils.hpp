@@ -16,6 +16,11 @@ namespace simplemc::mpi {
  *
  * @details Throws a simplemc::simplemc_exception if the error code is `!= MPI_SUCCESS`.
  *
+ * @code{.cpp}
+ * int my_rank {};
+ * check_mpi_call(MPI_Comm_rank(MPI_COMM_WORLD, &my_rank), "MPI_Comm_rank");
+ * @endcode
+ *
  * @param errcode Error code returned by the MPI routine.
  * @param mpi_routine Name of the MPI routine that returned the error code.
  */

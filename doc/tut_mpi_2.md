@@ -5,6 +5,8 @@
 In this tutorial, we show how the variable `abort_on_exception` influences the behavior of a
 simplemc::mpi::environment.
 
+@section tut_mpi_2_details Step-by-step guide
+
 A simplemc::mpi::environment takes 3 arguments in its constructor.
 The first two are the usual arguments (`argc` and `argv`) passed to the `main` function, which are
 simply forwarded to the `MPI_Init` call.
@@ -23,9 +25,8 @@ the destructor will call `MPI_Finialize`.
 The following code demonstrates the default behaviour:
 
 ```cpp
-#include <simplemc/mpi.hpp>
-
 #include <fmt/ostream.h>
+#include <simplemc/mpi.hpp>
 
 #include <chrono>
 #include <iostream>
@@ -34,20 +35,20 @@ The following code demonstrates the default behaviour:
 int main(int argc, char** argv) {
     try {
         // initialize MPI environment and communicator
-        simplemc::mpi::environment env(argc, argv);
+        simplemc::mpi::environment env(argc, argv, /* abort_on_exception */ true);
         simplemc::mpi::communicator comm;
 
-        // throw an exception on rank 0
+        // throw an exception on process 0
         if (comm.rank() == 0) {
             throw simplemc::simplemc_exception("This is a test exception on rank 0");
         }
 
-        // on all other ranks, sleep for 3 seconds and print a message
+        // on all other processes, sleep for 3 seconds and print a message
         std::this_thread::sleep_for(std::chrono::seconds(3));
-        fmt::print("Hello from rank {}\n", comm.rank());
+        fmt::println("Hello from rank {}", comm.rank());
     } catch(const simplemc::simplemc_exception& e) {
         // catch any exceptions (no exception should be caught)
-        fmt::print(std::cerr, "{}\n", e.what());
+        fmt::println(std::cerr, "{}", e.what());
     }
 }
 ```
