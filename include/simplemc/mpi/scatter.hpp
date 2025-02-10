@@ -69,7 +69,7 @@ void scatter_in_place(const communicator& comm, T* in_out_values, int count, int
         return;
     }
     if (root < 0 || root >= comm.size()) {
-        throw simplemc_exception("Root process is out of bounds", "mpi::scatter");
+        throw simplemc_exception("Root process is out of bounds", "mpi::scatter_in_place");
     }
     if (comm.rank() == root) {
         check_mpi_call(

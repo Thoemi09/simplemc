@@ -2,33 +2,26 @@
 
 [TOC]
 
-In this tutorial, we show how to use some of the collective communications from the **simplemc-mpi**
+In this tutorial, we show how to use some of the @ref simplemc-mpi-coll from the **simplemc-mpi**
 library.
 
 Note that the provided routines are implemented such that simple things can be done easily. If more
 advanced functionality is needed or if performance of the MPI calls is important, it is recommended
 to fall back to the MPI C library.
 
+@section tut_mpi_3_details Step-by-step guide
+
 The following code snippets are all part of the same `main` function:
 
 ```cpp
+#include <fmt/ranges.h>
 #include <simplemc/mpi.hpp>
 
-#include <fmt/ranges.h>
-
-#include <string>
 #include <vector>
-
-// Print message only on rank 0.
-void print(int rank, const std::string& msg) {
-    if (rank == 0) {
-        fmt::print("{}", msg);
-    }
-}
 
 int main(int argc, char** argv) {
     // initialize MPI environment and communicator
-    simplemc::mpi::environment env(argc, argv);
+    simplemc::mpi::environment env(argc, argv, /* abort_on_exception */ true);
     simplemc::mpi::communicator comm;
     const int root = 0;
 
@@ -36,16 +29,16 @@ int main(int argc, char** argv) {
 }
 ```
 
-The `print` function is simply for our convenience and prints a given message only on the process with
-rank 0.
-We further initialize the MPI environment and communicator and define the root process to be the one
-with rank 0.
+We start by initializing the MPI environment and communicator and by defining the root process to be
+the one with rank 0.
 
 Let us first check how many processes we are using:
 
 ```cpp
 // print the number of processes
-print(comm.rank(), fmt::format("Number of processes: {}\n", comm.size()));
+if (comm.rank() == root) {
+    fmt::println("Number of processes: {}", comm.size());
+}
 ```
 
 Output:
@@ -57,7 +50,7 @@ Number of processes: 4
 In this case, we are running on 4 processes.
 
 To demonstrate some of the functionality offered by the @ref simplemc-mpi-coll, we first calculate
-the sum of all the MPI ranks using simplemc::mpi::reduce.
+the sum of all the MPI ranks using simplemc::mpi::all_reduce.
 
 Since the number of processes is 4, the expected result is \f$ 3 + 2 + 1 + 0 = 6 \f$.
 And in fact we are getting the correct answer:
@@ -66,13 +59,16 @@ And in fact we are getting the correct answer:
 // get the sum of all ranks using all_reduce
 int sum_of_ranks = 0;
 simplemc::mpi::all_reduce(comm, comm.rank(), sum_of_ranks, MPI_SUM);
-print(comm.rank(), fmt::format("Sum of ranks: {}\n", sum_of_ranks));
+fmt::println("Rank {}: Sum of ranks: {}", comm.rank(), sum_of_ranks);
 ```
 
 Output:
 
 ```
-Sum of ranks: 6
+Rank 0: Sum of ranks: 6
+Rank 2: Sum of ranks: 6
+Rank 1: Sum of ranks: 6
+Rank 3: Sum of ranks: 6
 ```
 
 Here, we called simplemc::mpi::all_reduce with the `MPI_SUM` operation.
@@ -82,120 +78,174 @@ For example, to find a maximum value among all process, one can pass `MPI_MAX` t
 Let's use it to find the maximum rank of all process:
 
 ```cpp
-// get the max. rank using all_reduce
-int max_rank = 0;
-simplemc::mpi::all_reduce(comm, comm.rank(), max_rank, MPI_MAX);
-print(comm.rank(), fmt::format("Max. rank: {}\n", max_rank));
+// get the max. rank using all_reduce_in_place
+int max_rank = comm.rank();
+simplemc::mpi::all_reduce_in_place(comm, max_rank, MPI_MAX);
+fmt::println("Rank {}: Max. rank: {}", comm.rank(), max_rank);
 ```
 
 Output:
 
 ```
-Max. rank: 3
+Rank 2: Max. rank: 3
+Rank 1: Max. rank: 3
+Rank 0: Max. rank: 3
+Rank 3: Max. rank: 3
 ```
 
 Since we are running on 4 processes and ranks start at 0, this is exactly what we expect.
+In contrast to the last MPI call, we have used the in place routine
+simplemc::mpi::all_reduce_in_place.
+This writes the result of the reduction directly into the provided variable (`max_rank` in our case).
 
-We now turn to the simplemc::mpi::all_gather function to gather values from all processes into a
-`std::vector`.
+We now turn to the simplemc::mpi::gather function to gather values from all processes into a
+`std::vector` on the root process.
 
 First, we create a vector to use as a receive buffer into which the values are gathered.
 Since we want to gather only a single value from each process, the vector has the size `comm.size()`.
 
-Let's gather the rank of each process into the vector:
-
-```cpp
-// gather a single value from all processes into a vector
-std::vector<int> vec(comm.size());
-simplemc::mpi::all_gather(comm, comm.rank(), vec);
-print(comm.rank(), fmt::format("Gathered vector: {}\n", vec));
-```
-
-Output:
-
-```
-Gathered vector: [0, 1, 2, 3]
-```
-
 > **Note**: The buffer into which we are gathering the values is required to have the correct size. If
 > it is too big or too small an exception will be thrown.
 
+Let's gather the rank of each process into the vector:
+
+```cpp
+// gather a single value from all processes into a vector on root
+std::vector<int> vec(comm.size());
+simplemc::mpi::gather(comm, comm.rank(), vec, root);
+fmt::println("Rank {}: Gathered vector: {}", comm.rank(), vec);
+```
+
+Output:
+
+```
+Rank 3: Gathered vector: [0, 0, 0, 0]
+Rank 2: Gathered vector: [0, 0, 0, 0]
+Rank 1: Gathered vector: [0, 0, 0, 0]
+Rank 0: Gathered vector: [0, 1, 2, 3]
+```
+
+Only the root process with rank 0 gets the result.
+To make it available to all other processes, we can broadcast it:
+
+```cpp
+// broadcast the vector to all other processes
+simplemc::mpi::broadcast(comm, vec, root);
+fmt::println("Rank {}: Broadcasted vector: {}", comm.rank(), vec);
+```
+
+Output:
+
+```
+Rank 1: Broadcasted vector: [0, 1, 2, 3]
+Rank 2: Broadcasted vector: [0, 1, 2, 3]
+Rank 0: Broadcasted vector: [0, 1, 2, 3]
+Rank 3: Broadcasted vector: [0, 1, 2, 3]
+```
+
+Now all processes have the same content in the vector.
+
+> **Note**: In practice, one would simply use simplemc::mpi::all_gather instead of
+> simplemc::mpi::gather + simplemc::mpi::broadcast.
+
 Above it was already shown, how to reduce single values across all processes.
-Now, we want to do the same with multiple values by reducing the just gathered vector using the
+Now, we want to do the same with multiple values by reducing the just broadcasted vector using the
 `MPI_PROD` operation:
 
 ```cpp
-// reduce the gathered vector on root
+// reduce the broadcasted vector on root
 std::vector<int> reduced_vec(comm.size());
 simplemc::mpi::reduce(comm, vec, reduced_vec, MPI_PROD, root);
-print(comm.rank(), fmt::format("Reduced vector: {}\n", reduced_vec));
+fmt::println("Rank {}: Reduced vector: {}", comm.rank(), reduced_vec);
 ```
 
 Output:
 
 ```
-Reduced vector: [0, 1, 16, 81]
+Rank 2: Reduced vector: [0, 0, 0, 0]
+Rank 1: Reduced vector: [0, 0, 0, 0]
+Rank 0: Reduced vector: [0, 1, 16, 81]
+Rank 3: Reduced vector: [0, 0, 0, 0]
 ```
 
-Here, we used simplemc::mpi::reduce and not simplemc::mpi::all_reduce.
-That means that the result is only available on the root process:
+Taking the elements with product of the four vectors gives the expected result \f$ (0, 1, 16, 81) \f$.
+Here, we used simplemc::mpi::reduce and not simplemc::mpi::all_reduce, so the result is only available
+on the root process.
 
-```cpp
-// print the reduced vector on all processes except root
-if (comm.rank() != root) {
-    fmt::print("Reduced vector on rank {}: {}\n", comm.rank(), reduced_vec);
-}
-```
-
-Output:
-
-```
-Reduced vector on rank 3: [0, 0, 0, 0]
-Reduced vector on rank 1: [0, 0, 0, 0]
-Reduced vector on rank 2: [0, 0, 0, 0]
-```
-
-There are 2 possibilities to distribute the results to the other processes:
+If we want to distribute the results to the other processes, we have 2 possibilities:
+- If the full vector is needed on every process, we can use simplemc::mpi::broadcast.
 - If only part of the vector (in this case a single value) is needed on the other processes, we can
 use simplemc::mpi::scatter.
-- If the full vector is needed on every process, we can use simplemc::mpi::broadcast.
 
-Let us first show how the scattering works:
+Since we have already demonstrated the first option, let us show how scattering works:
 
 ```cpp
 // scatter the reduced vector back to all processes
 int scattered_value = 0;
 simplemc::mpi::scatter(comm, reduced_vec, scattered_value, root);
-fmt::print("Scattered value on rank {}: {}\n", comm.rank(), scattered_value);
+fmt::println("Rank {}: Scattered value: {}", comm.rank(), scattered_value);
 ```
 
 Output:
 
 ```
-Scattered value on rank 0: 0
-Scattered value on rank 1: 1
-Scattered value on rank 2: 16
-Scattered value on rank 3: 81
+Rank 1: Scattered value: 1
+Rank 0: Scattered value: 0
+Rank 3: Scattered value: 81
+Rank 2: Scattered value: 16
 ```
 
 As expected, every rank receives exactly one value.
 
-What about broadcasting? Now every rank gets the full vector:
+> **Note**: When running the code, the output might appear scrambled and has been rearranged to make
+> it easier to read and follow along.
+
+@section tut_mpi_3_code Full code
 
 ```cpp
-// broadcast the reduced vector from root to all processes
-simplemc::mpi::broadcast(comm, reduced_vec, root);
-fmt::print("Broadcasted vector on rank {}: {}\n", comm.rank(), reduced_vec);
-```
+#include <fmt/ranges.h>
+#include <simplemc/mpi.hpp>
 
-Output:
+#include <vector>
 
-```
-Broadcasted vector on rank 1: [0, 1, 16, 81]
-Broadcasted vector on rank 0: [0, 1, 16, 81]
-Broadcasted vector on rank 2: [0, 1, 16, 81]
-Broadcasted vector on rank 3: [0, 1, 16, 81]
-```
+int main(int argc, char** argv) {
+    // initialize MPI environment and communicator
+    simplemc::mpi::environment env(argc, argv, /* abort_on_exception */ true);
+    simplemc::mpi::communicator comm;
+    const int root = 0;
 
-> **Note**: When running the code, the output might appear scrambled. One can try to use
-> `comm.barrier()` after the print statements to disentangle them.
+    // print the number of processes
+    if (comm.rank() == root) {
+        fmt::println("Number of processes: {}", comm.size());
+    }
+
+    // get the sum of all ranks using all_reduce
+    int sum_of_ranks = 0;
+    simplemc::mpi::all_reduce(comm, comm.rank(), sum_of_ranks, MPI_SUM);
+    fmt::println("Rank {}: Sum of ranks: {}", comm.rank(), sum_of_ranks);
+
+    // get the max. rank using all_reduce_in_place
+    int max_rank = comm.rank();
+    simplemc::mpi::all_reduce_in_place(comm, max_rank, MPI_MAX);
+    fmt::println("Rank {}: Max. rank: {}", comm.rank(), max_rank);
+
+    // gather a single value from all processes into a vector on root
+    std::vector<int> vec(comm.size());
+    simplemc::mpi::gather(comm, comm.rank(), vec, root);
+    fmt::println("Rank {}: Gathered vector: {}", comm.rank(), vec);
+
+    // broadcast the vector to all other processes
+    simplemc::mpi::broadcast(comm, vec, root);
+    fmt::println("Rank {}: Broadcasted vector: {}", comm.rank(), vec);
+
+    // reduce the broadcasted vector on root
+    std::vector<int> reduced_vec(comm.size());
+    simplemc::mpi::reduce(comm, vec, reduced_vec, MPI_PROD, root);
+    fmt::println("Rank {}: Reduced vector: {}", comm.rank(), reduced_vec);
+
+    // scatter the reduced vector back to all processes
+    int scattered_value = 0;
+    simplemc::mpi::scatter(comm, reduced_vec, scattered_value, root);
+    fmt::println("Rank {}: Scattered value: {}", comm.rank(), scattered_value);
+}
+```

@@ -134,6 +134,8 @@
  * No special attention is paid to the performance of these functions. For example, some of the
  * functions will make multiple MPI calls to check that sizes of buffers are consistent.
  *
+ * See @ref tut_mpi_3 for examples.
+ *
  * @code{.cpp}
  * #include <fmt/ranges.h>
  * #include <simplemc/mpi.hpp>
