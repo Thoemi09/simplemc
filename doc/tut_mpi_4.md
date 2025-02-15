@@ -10,9 +10,8 @@ The following code snippets are all part of the same `main` function:
 
 ```cpp
 #include <fmt/base.h>
-#include <simplemc/mpi.hpp>
-
 #include <mpi.h>
+#include <simplemc/mpi.hpp>
 
 #include <array>
 #include <type_traits>
@@ -113,25 +112,24 @@ To confirm that everything worked as expected, we print the results:
 
 ```cpp
 // print the foo object on all processes
-fmt::println("Process {}: foo.n = {}, foo.x = {}", comm.rank(), f.n, f.x);
+fmt::println("Rank {}: foo.n = {}, foo.x = {}", comm.rank(), f.n, f.x);
 ```
 
 Output:
 
 ```
-Process 0: foo.n = 42, foo.x = 3.14
-Process 3: foo.n = 42, foo.x = 3.14
-Process 1: foo.n = 42, foo.x = 3.14
-Process 2: foo.n = 42, foo.x = 3.14
+Rank 0: foo.n = 42, foo.x = 3.14
+Rank 3: foo.n = 42, foo.x = 3.14
+Rank 1: foo.n = 42, foo.x = 3.14
+Rank 2: foo.n = 42, foo.x = 3.14
 ```
 
 @section tut_mpi_4_code Full code
 
 ```cpp
 #include <fmt/base.h>
-#include <simplemc/mpi.hpp>
-
 #include <mpi.h>
+#include <simplemc/mpi.hpp>
 
 #include <array>
 #include <type_traits>
@@ -189,6 +187,6 @@ int main(int argc, char** argv) {
     simplemc::mpi::broadcast(comm, f, 0);
 
     // print the foo object on all processes
-    fmt::println("Process {}: foo.n = {}, foo.x = {}", comm.rank(), f.n, f.x);
+    fmt::println("Rank {}: foo.n = {}, foo.x = {}", comm.rank(), f.n, f.x);
 }
 ```

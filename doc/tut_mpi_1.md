@@ -10,8 +10,8 @@ In this tutorial, we show how to implement the standard `Hello world` program us
 The following code snippets are all part of the same `main` function:
 
 ```cpp
+#include <fmt/base.h>
 #include <simplemc/mpi.hpp>
-#include <fmt/core.h>
 
 int main(int argc, char** argv) {
     // code snippets go here
