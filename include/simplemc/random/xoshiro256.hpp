@@ -44,7 +44,34 @@ enum class xoshiro256_type { plus, plusplus, starstar };
  * (simplemc::xoshiro256p) as well as general purposes like Monte Carlo simulations
  * (simplemc::xoshiro256pp and simplemc::xoshiro256ss).
  *
- * The internal state is stored in 256 bits.
+ * The internal state is stored in 256 bits, a `std::array<std::uint64_t, 4>`.
+ *
+ * @code{.cpp}
+ * #include <fmt/base.h>
+ * #include <simplemc/random.hpp>
+ *
+ * int main() {
+ *     // initialize xoshiro256ss RNG
+ *     simplemc::xoshiro256ss rng{};
+ *
+ *     // print 5 random numbers
+ *     fmt::println("Random numbers in the interval [{}, {}]:", rng.min(), rng.max());
+ *     for (int i = 0; i < 5; ++i) {
+ *         fmt::println("{}", rng());
+ *     }
+ * }
+ * @endcode
+ *
+ * Output:
+ *
+ * ```
+ * Random numbers in the interval [0, 18446744073709551615]:
+ * 11488543998296168227
+ * 8622350652098268912
+ * 9422899847795208629
+ * 13062981702128504018
+ * 6540931487853183745
+ * ```
  *
  * @tparam X The simplemc::xoshiro256_type.
  */

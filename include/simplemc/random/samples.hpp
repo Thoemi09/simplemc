@@ -30,8 +30,8 @@ namespace simplemc {
  * @note It is assumed that \f$ b > a \f$.
  *
  * @param r Uniform random number from \f$ [0, 1) \f$.
- * @param a Lower limit of the interval.
- * @param b Upper limit of the interval.
+ * @param a Lower limit \f$ a \f$ of the interval.
+ * @param b Upper limit \f$ b \f$ of the interval.
  * @return Uniform random sample from \f$ [a, b) \f$.
  */
 inline double uniform_sample(double r, double a, double b) {
@@ -40,18 +40,19 @@ inline double uniform_sample(double r, double a, double b) {
 }
 
 /**
- * @brief Value of the uniform distribution defined on the interval \f$ [a, b) \f$.
+ * @brief Probability density function of the uniform distribution defined on the interval
+ * \f$ [a, b) \f$.
  *
- * @details The uniform distribution is defined as the constant function
+ * @details The PDF of the uniform distribution is defined as the constant function
  * \f[
  *   \mathcal{U}(x; a, b) = \frac{1}{b - a} \; .
  * \f]
  *
  * @note It is assumed that \f$ b > a \f$.
  *
- * @param a Lower limit of the interval.
- * @param b Upper limit of the interval.
- * @return Value of the distribution.
+ * @param a Lower limit \f$ a \f$ of the interval.
+ * @param b Upper limit \f$ b \f$ of the interval.
+ * @return Value of the PDF.
  */
 inline double uniform_pdf(double a, double b) {
     assert(b > a);
@@ -70,8 +71,8 @@ inline double uniform_pdf(double a, double b) {
  * @note It is assumed that \f$ \lambda > 0 \f$.
  *
  * @param r Uniform random number from \f$ [0, 1) \f$.
- * @param lambda Parameter of the simplemc::exponential_pdf.
- * @param a Lower limit of the interval.
+ * @param lambda Parameter \f$ \lambda \f$ of the exponential distribution.
+ * @param a Lower limit \f$ a \f$ of the interval.
  * @return Exponential random sample from \f$ [a, \infty) \f$.
  */
 inline double exponential_sample(double r, double lambda, double a = 0) {
@@ -80,19 +81,20 @@ inline double exponential_sample(double r, double lambda, double a = 0) {
 }
 
 /**
- * @brief Value of the exponential distribution defined on the interval \f$ [a, \infty) \f$.
+ * @brief Probability density function of the exponential distribution defined on the interval
+ * \f$ [a, \infty) \f$.
  *
- * @details The exponential distribution is defined as
+ * @details The PDF of the exponential distribution is defined as
  * \f[
  *   f(x; \lambda) = \lambda e^{-\lambda (x - a)} \; .
  * \f]
  *
  * @note It is assumed that \f$ \lambda > 0 \f$.
  *
- * @param x Input variable.
- * @param lambda Parameter of the distribution.
- * @param a Lower limit of the interval.
- * @return Value of the distribution at the given input variable.
+ * @param x Input variable \f$ x \f$.
+ * @param lambda Parameter \f$ \lambda \f$ of the exponential distribution.
+ * @param a Lower limit \f$ a \f$ of the interval.
+ * @return Value of the PDF at the given input variable \f$ x \f$.
  */
 inline double exponential_pdf(double x, double lambda, double a = 0) {
     assert(lambda > 0);
@@ -112,9 +114,9 @@ inline double exponential_pdf(double x, double lambda, double a = 0) {
  * @note It is assumed that \f$ \lambda \neq 0 \f$ and \f$ b > a \f$.
  *
  * @param r Uniform random number from \f$ [0, 1) \f$.
- * @param lambda Parameter of the simplemc::exponential_pdf(double, double, double, double).
- * @param a Lower limit of the interval.
- * @param b Upper limit of the interval.
+ * @param lambda Parameter \f$ \lambda \f$ of the exponential distribution.
+ * @param a Lower limit \f$ a \f$ of the interval.
+ * @param b Upper limit \f$ b \f$ of the interval.
  * @return Exponential random sample from \f$ [a, b) \f$.
  */
 inline double exponential_sample(double r, double lambda, double a, double b) {
@@ -124,20 +126,21 @@ inline double exponential_sample(double r, double lambda, double a, double b) {
 }
 
 /**
- * @brief Value of the exponential distribution defined on the interval \f$ [a, b) \f$.
+ * @brief Probability density function of the exponential distribution defined on the interval
+ * \f$ [a, b) \f$.
  *
- * @details The exponential distribution is defined as
+ * @details The PDF of the exponential distribution is defined as
  * \f[
- *   f(x; \lambda) = \frac{\lambda}{1  - e^{-\lambda (b - a)}} e^{-\lambda (x - a)} \; .
+ *   f(x; \lambda, a, b) = \frac{\lambda}{1  - e^{-\lambda (b - a)}} e^{-\lambda (x - a)} \; .
  * \f]
  *
- * @note It is assumed that \f$ \lambda \neq 0 \f$ and \f$ b > a \f$.
+ * @note It is assumed that \f$ \lambda \neq 0 \f$, \f$ b > a \f$ and \f$ a \leq x \leq b \f$.
  *
- * @param x Input variable.
- * @param lambda Parameter of the distribution.
- * @param a Lower limit of the interval.
- * @param b Upper limit of the interval.
- * @return Value of the distribution at the given input variable.
+ * @param x Input variable \f$ x \f$.
+ * @param lambda Parameter \f$ \lambda \f$ of the exponential distribution.
+ * @param a Lower limit \f$ a \f$ of the interval.
+ * @param b Upper limit \f$ b \f$ of the interval.
+ * @return Value of the PDF at the given input variable \f$ x \f$.
  */
 inline double exponential_pdf(double x, double lambda, double a, double b) {
     assert(lambda != 0.0);
@@ -146,15 +149,20 @@ inline double exponential_pdf(double x, double lambda, double a, double b) {
 }
 
 /**
- * @brief Random sample from an exponential distribution defined on the interval \f$ [a, b) \f$ with
- * some safety measures depending on the value of given \f$ \lambda \f$ parameter.
+ * @brief Random sample from a safe exponential distribution defined on the interval \f$ [a, b) \f$.
  *
- * @details There is no restriction on the value of \f$ \lambda \f$.
+ * @details Depending on the value of \f$ \lambda \f$, the random sample is either generated from
+ * an uniform (simplemc::uniform_sample) or an exponential
+ * (simplemc::exponential_sample(double, double, double, double)) distribution.
+ *
+ * See simplemc::safe_exponential_pdf.
+ *
+ * @note It is assumed that \f$ b > a \f$. There is no restriction on the value of \f$ \lambda \f$.
  *
  * @param r Uniform random number from \f$ [0, 1) \f$.
- * @param lambda Parameter of the simplemc::exponential_pdf(double, double, double, double).
- * @param a Lower limit of the interval.
- * @param b Upper limit of the interval.
+ * @param lambda Parameter \f$ \lambda \f$ of the exponential distribution.
+ * @param a Lower limit \f$ a \f$ of the interval.
+ * @param b Upper limit \f$ b \f$ of the interval.
  * @return Exponential random sample from \f$ [a, b) \f$.
  */
 inline double safe_exponential_sample(double r, double lambda, double a, double b) {
@@ -168,16 +176,29 @@ inline double safe_exponential_sample(double r, double lambda, double a, double 
 }
 
 /**
- * @brief Value of the exponential distribution defined on the interval \f$ [a, b) \f$ with some
- * safety measures depending on the value of the given \f$ \lambda \f$  parameter.
+ * @brief Probability density function of the safe exponential distribution defined on the interval
+ * \f$ [a, b) \f$.
  *
- * @details There is no restriction on the value of \f$ \lambda \f$.
+ * @details Depending on the value of \f$ \lambda \f$, we define the PDF of the safe exponential
+ * distribution as
+ * \f[
+ *   f(x; \lambda) =
+ *   \begin{cases}
+ *   \frac{\lambda}{1  - e^{-\lambda (b - a)}} e^{-\lambda (x - a)} & \text{if } \lambda > 0 \\
+ *   \frac{1}{b - a} & \text{if } \lambda = 0 \\
+ *   \frac{\lambda}{1  - e^{\lambda (b - a)}} e^{\lambda (b - x)} & \text{if } \lambda < 0
+ *   \end{cases}
+ *   \; .
+ * \f]
  *
- * @param x Input variable.
- * @param lambda Parameter of the simplemc::exponential_pdf(double, double, double, double).
- * @param a Lower limit of the interval.
- * @param b Upper limit of the interval.
- * @return Value of the distribution at the given input variable.
+ * @note It is assumed that \f$ b > a \f$ and \f$ a \leq x \leq b \f$. There is no restriction on the
+ * value of \f$ \lambda \f$.
+ *
+ * @param x Input variable \f$ x \f$.
+ * @param lambda Parameter \f$ \lambda \f$ of the exponential distribution.
+ * @param a Lower limit \f$ a \f$ of the interval.
+ * @param b Upper limit \f$ b \f$ of the interval.
+ * @return Value of the PDF at the given input variable \f$ x \f$.
  */
 inline double safe_exponential_pdf(double x, double lambda, double a, double b) {
     if (lambda > 0) {
@@ -192,14 +213,14 @@ inline double safe_exponential_pdf(double x, double lambda, double a, double b) 
 /**
  * @brief Random sample from a normal distribution.
  *
- * @details It simply uses `std::normal_distribution`.
+ * @details It simply uses `std::normal_distribution`. See simplemc::normal_pdf.
  *
  * @note It is assumed that \f$ \sigma > 0 \f$.
  *
  * @tparam RNG Random number generator type.
  * @param rng RNG object.
- * @param mu Mean parameter of the distribution.
- * @param sigma Stddev parameter of the distribution.
+ * @param mu Mean parameter \f$ \mu \f$ of the distribution.
+ * @param sigma Standard deviation parameter \f$ \sigma \f$ of the distribution.
  * @return Normal random sample.
  */
 template <typename RNG>
@@ -209,9 +230,9 @@ inline double normal_sample(RNG& rng, double mu, double sigma) {
 }
 
 /**
- * @brief Value of the normal distribution.
+ * @brief Probability density function of the normal distribution.
  *
- * @details The normal distribution is defined as
+ * @details The PDF of the normal distribution is defined as
  * \f[
  *   \mathcal{N}(x; \mu, \sigma^2) = \frac{1}{\sqrt{2 \pi \sigma^2}}
  *   e^{-\frac{(x - \mu)^2}{2 \sigma^2}} \; .
@@ -219,10 +240,10 @@ inline double normal_sample(RNG& rng, double mu, double sigma) {
  *
  * @note It is assumed that \f$ \sigma > 0 \f$.
  *
- * @param x Input variable.
- * @param mu Mean parameter of the distribution.
- * @param sigma Stddev parameter of the distribution.
- * @return Value of the distribution at the given input value.
+ * @param x Input variable \f$ x \f$.
+ * @param mu Mean parameter \f$ \mu \f$ of the distribution.
+ * @param sigma Standard deviation parameter \f$ \sigma \f$ of the distribution.
+ * @return Value of the PDF at the given input variable \f$ x \f$.
  */
 inline double normal_pdf(double x, double mu, double sigma) {
     assert(sigma > 0);
@@ -243,8 +264,8 @@ inline double normal_pdf(double x, double mu, double sigma) {
  * @note It is assumed that \f$ \gamma > 0 \f$.
  *
  * @param r Uniform random number from \f$ [0, 1) \f$.
- * @param x0 Location of the peak.
- * @param gamma Scale parameter.
+ * @param x0 Location \f$ x_0 \f$ of the peak.
+ * @param gamma Scale parameter \f$ \gamma \f$.
  * @return Cauchy random sample.
  */
 inline double cauchy_sample(double r, double x0, double gamma) {
@@ -254,9 +275,9 @@ inline double cauchy_sample(double r, double x0, double gamma) {
 }
 
 /**
- * @brief Value of the Cauchy distribution.
+ * @brief Probability density function of the Cauchy distribution.
  *
- * @details The Cauchy distribution is defined as
+ * @details The PDF of the Cauchy distribution is defined as
  * \f[
  *   f(x; x_0, \gamma) = \frac{1}{\pi \gamma \left[ 1 + \left( \frac{x - x_0}{\gamma} \right)^2
  *   \right]} \; .
@@ -264,10 +285,10 @@ inline double cauchy_sample(double r, double x0, double gamma) {
  *
  * @note It is assumed that \f$ \gamma > 0 \f$.
  *
- * @param x Input variable.
- * @param x0 Location of the peak.
- * @param gamma Scale parameter.
- * @return Value of the distribution at the given input variable.
+ * @param x Input variable \f$ x \f$.
+ * @param x0 Location \f$ x_0 \f$ of the peak.
+ * @param gamma Scale parameter \f$ \gamma \f$.
+ * @return Value of the PDF at the given input variable \f$ x \f$.
  */
 inline double cauchy_pdf(double x, double x0, double gamma) {
     assert(gamma > 0);
@@ -276,18 +297,19 @@ inline double cauchy_pdf(double x, double x0, double gamma) {
 }
 
 /**
- * @brief Random sample from a uniform integer distriubtion defined on the interval \f$ [a, b] \f$.
+ * @brief Random sample from a uniform integer distriubtion defined on the set \f$ \{ a, a+1, \dots,
+ * b \} \f$.
  *
- * @details It simply uses `std::uniform_int_distribution`.
+ * @details It simply uses `std::uniform_int_distribution`. See simplemc::uniform_int_pdf.
  *
  * @note It is assumed that \f$ b \geq a \f$.
  *
  * @tparam T Integer type.
  * @tparam RNG Random number generator type.
  * @param rng RNG object.
- * @param a Lower limit of the interval.
- * @param b Upper limit of the interval.
- * @return Uniform random integer sample from \f$ [a, b] \f$.
+ * @param a Smallest integer \f$ a \f$ of the domain.
+ * @param b Largest integer \f$ b \f$ of the domain.
+ * @return Uniform random integer sample from the set \f$ \{ a, a+1, \dots, b \} \f$.
  */
 template <typename T, typename RNG>
 inline T uniform_int_sample(RNG& rng, T a, T b) {
@@ -296,9 +318,10 @@ inline T uniform_int_sample(RNG& rng, T a, T b) {
 }
 
 /**
- * @brief Value of the uniform integer distribution defined on the interval \f$ [a, b] \f$.
+ * @brief Discrete probabilities of the uniform integer distribution defined on the set \f$ \{ a, a+1,
+ * \dots, b \} \f$.
  *
- * @details The uniform distribution is defined as the discrete constant function
+ * @details The discrete probabilities of the uniform integer distribution are defined as
  * \f[
  *   P(i; a, b) = \frac{1}{b - a + 1} \; .
  * \f]
@@ -306,9 +329,9 @@ inline T uniform_int_sample(RNG& rng, T a, T b) {
  * @note It is assumed that \f$ b \geq a \f$.
  *
  * @tparam T Integer type.
- * @param a Lower limit of the interval.
- * @param b Upper limit of the interval.
- * @return Value of the distribution.
+ * @param a Smallest integer \f$ a \f$ of the domain.
+ * @param b Largest integer \f$ b \f$ of the domain.
+ * @return Probability for choosing any integer in the set \f$ \{ a, a+1, \dots, b \} \f$.
  */
 template <typename T>
 inline double uniform_int_pdf(T a, T b) {
@@ -317,20 +340,21 @@ inline double uniform_int_pdf(T a, T b) {
 }
 
 /**
- * @brief Random sample from a uniform integer distriubtion defined on the interval \f$ [a, b] \f$
- * excluding a given value on the interval.
+ * @brief Random sample from an exclusive uniform integer distriubtion defined on the set
+ * \f$ D = \{ i : i \in \{ a, a+1, \dots, b \} \wedge i \neq y \} \f$.
  *
- * @details It is similar to simplemc::uniform_int_sample but excludes a given value.
+ * @details It is similar to simplemc::uniform_int_sample but excludes a given integer \f$ y \f$. See
+ * simplemc::exclusive_uniform_int_pdf.
  *
- * @note It is assumed that \f$ b > a \f$ and \f$ y \in [a, b] \f$.
+ * @note It is assumed that \f$ b > a \f$ and \f$ y \in \{ a, a+1, \dots, b \} \f$.
  *
  * @tparam T Integer type.
  * @tparam RNG Random number generator type.
  * @param rng RNG object.
- * @param a Lower limit of the interval.
- * @param b Upper limit of the interval.
- * @param y Value to be excluded.
- * @return Uniform random integer sample from \f$ [a, b] \f$ excluding one value.
+ * @param a Smallest integer \f$ a \f$ of the domain.
+ * @param b Largest integer \f$ b \f$ of the domain.
+ * @param y Integer to be excluded.
+ * @return Uniform random integer sample from the set \f$ D \f$.
  */
 template <typename T, typename RNG>
 inline T exclusive_uniform_int_sample(RNG& rng, T a, T b, T y) {
@@ -340,21 +364,20 @@ inline T exclusive_uniform_int_sample(RNG& rng, T a, T b, T y) {
 }
 
 /**
- * @brief Value of the uniform integer distribution defined on the interval \f$ [a, b] \f$ excluding
- * a given value on the interval.
+ * @brief Discrete probabilities of the exclusive uniform integer distribution defined on the set
+ * \f$ D = \{ i : i \in \{ a, a+1, \dots, b \} \wedge i \neq y \} \f$.
  *
- * @details The uniform distribution with one value excluded is defined as the discrete constant
- * function
+ * @details The discrete probabilities of the exclusive uniform integer distribution are defined as
  * \f[
- *   P(i; a, b) = \frac{1}{b - a} \; .
+ *   P(i; a, b) = \frac{1}{b - a + 1} \; .
  * \f]
  *
- * @note It is assumed that \f$ b > a \f$.
+ * @note It is assumed that \f$ b > a \f$ and \f$ y \in \{ a, a+1, \dots, b \} \f$.
  *
  * @tparam T Integer type.
- * @param a Lower limit of the interval.
- * @param b Upper limit of the interval.
- * @return Value of the distribution.
+ * @param a Smallest integer \f$ a \f$ of the domain.
+ * @param b Largest integer \f$ b \f$ of the domain.
+ * @return Probability for choosing any integer in the set \f$ D \f$.
  */
 template <typename T>
 inline double exclusive_uniform_int_pdf(T a, T b) {

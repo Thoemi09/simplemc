@@ -7,59 +7,63 @@
 #include <random>
 #include <sstream>
 
+// Test random number generators.
+template <typename T>
+void test_rng() {
+    // constructors
+    T rng_def {};
+    T rng_seed { T::default_seed };
+    auto seq = std::seed_seq { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    T rng_seq { seq };
+    ASSERT_EQ(rng_def, rng_seed);
+    ASSERT_NE(rng_def, rng_seq);
+
+    // discard
+    const auto n = 1000000;
+    rng_seed.discard(n);
+    ASSERT_NE(rng_def, rng_seed);
+
+    // random number generation
+    std::uniform_real_distribution dist;
+    histogram hist { 0, 1, 10 };
+    for (int i = 0; i < n; ++i) {
+        hist.add(dist(rng_def));
+    }
+    hist.print([](auto) { return 1.0; });
+    ASSERT_TRUE(hist.check([](auto) { return 1.0; }, 1e-2));
+    ASSERT_EQ(rng_def, rng_seed);
+
+    // stream operator
+    std::stringstream ss;
+    ss << rng_def;
+    ss >> rng_seq;
+    ASSERT_EQ(rng_def, rng_seq);
+}
+
 // Test the splitmix64 RNG.
 TEST(SimplemcRandom, Splitmix64) {
-    simplemc::splitmix64 eng;
-    std::uniform_real_distribution dist;
-    histogram01 hist(10);
-    for (int i = 0; i < 1000000; ++i) {
-        hist.add(dist(eng));
-    }
-    ASSERT_TRUE(hist.check_uniform(1e-2));
+    test_rng<simplemc::splitmix64>();
 }
 
-// Test restoring a splitmix64 RNG.
-TEST(SimplemcRandom, RestoreSplitmix64) {
-    simplemc::splitmix64 eng;
-    auto eng2 = eng;
-    ASSERT_EQ(eng, eng2);
-    eng.discard(100);
-    ASSERT_NE(eng, eng2);
-    std::stringstream ss;
-    ss << eng;
-    ss >> eng2;
-    ASSERT_EQ(eng, eng2);
-}
-
-// Test the xoshiro256 RNGs.
+// Test xoshiro256 RNGs.
 TEST(SimplemcRandom, Xoshiro256) {
-    using namespace simplemc;
-    xoshiro256p xop;
-    xoshiro256pp xopp;
-    xoshiro256ss xoss;
-    std::uniform_real_distribution urd;
-    histogram01 hist_p(10), hist_pp(10), hist_ss(10);
-    for (int i = 0; i < 1000000; ++i) {
-        hist_p.add(urd(xop));
-        hist_pp.add(urd(xopp));
-        hist_ss.add(urd(xoss));
-    }
-    ASSERT_TRUE(hist_p.check_uniform(1e-2));
-    ASSERT_TRUE(hist_pp.check_uniform(1e-2));
-    ASSERT_TRUE(hist_ss.check_uniform(1e-2));
+    test_rng<simplemc::xoshiro256p>();
+    test_rng<simplemc::xoshiro256pp>();
+    test_rng<simplemc::xoshiro256ss>();
 }
 
-// Test restoring a xoshiro256 RNG.
-TEST(SimplemcRandom, RestoreXoshiro256) {
-    simplemc::xoshiro256p eng;
-    auto eng2 = eng;
-    ASSERT_EQ(eng, eng2);
-    eng.jump();
-    ASSERT_NE(eng, eng2);
-    std::stringstream ss;
-    ss << eng;
-    ss >> eng2;
-    ASSERT_EQ(eng, eng2);
+// Test xoshiro256's jump method.
+TEST(SimplemcRandom, Xoshiro256Jump) {
+    simplemc::xoshiro256p rng {}, rng2 {};
+    ASSERT_EQ(rng, rng2);
+    rng.jump();
+    ASSERT_NE(rng, rng2);
+    rng2.jump();
+    ASSERT_EQ(rng, rng2);
+    rng.long_jump();
+    ASSERT_NE(rng, rng2);
+    rng2.long_jump();
+    ASSERT_EQ(rng, rng2);
 }
 
 // Test seeding RNGs.

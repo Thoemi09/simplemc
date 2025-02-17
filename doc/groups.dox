@@ -217,6 +217,7 @@
 /**
  * @defgroup simplemc-random simplemc-random
  * @brief Tools for generating random numbers and sampling various probability distributions.
+ * @details See @ref tut_random_1 for a demonstration of the provided tools.
  */
 
 /**
@@ -237,15 +238,19 @@
  * other RNG that generates 64-bit unsigned integers:
  *
  * @code{.cpp}
+ * #include <fmt/base.h>
  * #include <simplemc/random.hpp>
- * #include <fmt/core.h>
+ *
  * #include <random>
  *
  * int main() {
+ *     // construct RNG from stdlib
  *     std::mt19937_64 rng;
+ *
+ *     // print 5 random samples from a discrete distribution on [0, 1] with equal probabilities
  *     simplemc::discrete_alias_distribution<long> dist({1, 1});
- *     for (int i = 0; i < 10; ++i) {
- *         fmt::print("{}\n", dist(rng));
+ *     for (int i = 0; i < 5; ++i) {
+ *         fmt::println("{}", dist(rng));
  *     }
  * }
  * @endcode
@@ -258,11 +263,6 @@
  * 0
  * 1
  * 0
- * 1
- * 0
- * 0
- * 0
- * 1
  * ```
  */
 
@@ -286,15 +286,19 @@
  * the C++ standard library:
  *
  * @code{.cpp}
+ * #include <fmt/base.h>
  * #include <simplemc/random.hpp>
- * #include <fmt/core.h>
+ *
  * #include <random>
  *
  * int main() {
- *     simplemc::xoshiro256pp rng;
+ *     // construct a xoshiro RNG
+ *     simplemc::xoshiro256pp rng {};
+ *
+ *     // print 5 random samples generated from a normal distribution
  *     std::normal_distribution<> dist(0.0, 1.0);
- *     for (int i = 0; i < 10; ++i) {
- *         fmt::print("{}\n", dist(rng));
+ *     for (int i = 0; i < 5; ++i) {
+ *         fmt::println("{}", dist(rng));
  *     }
  * }
  * @endcode
@@ -307,11 +311,6 @@
  * -0.7263074722770705
  * -1.5160616795929558
  * 0.5778587023984532
- * -0.10984378815144101
- * -1.66535512515749
- * -0.9693599920391822
- * -0.0480113529398712
- * -0.037770675381471434
  * ```
  */
 
@@ -320,6 +319,46 @@
  * @ingroup simplemc-random
  * @brief Generate random samples from often used probability distributions and evaluate the
  * corresponding probability density functions.
+ *
+ * @details Every supported probability distribution has a *sample* and a corresponding *pdf*
+ * function.
+ *
+ * - The *sample* functions take the required parameters of the distribution and possibly either a
+ * uniform random number \f$ r \sim \mathcal{U}(0, 1) \f$ or a random number generator object to
+ * produce a random sample \f$ x \f$ from the distribution.
+ * - The *pdf* functions take the required parameters of the distribution and possibly a random sample
+ * \f$ x \f$ from the distribution and return the value of the pdf at the given \f$ x \f$.
+ *
+ * @code{.cpp}
+ * #include <fmt/base.h>
+ * #include <simplemc/random.hpp>
+ *
+ * int main() {
+ *     // construct a xoshiro256p RNG and a uniform distribution on [0, 1)
+ *     simplemc::xoshiro256p rng;
+ *     simplemc::uniform_real_distribution dist;
+ *
+ *     // generate 5 random samples from an exponential distribution \lambda e^{-\lambda x}
+ *     // and print the corresponding values of the pdf
+ *     const double lambda = 2.5;
+ *     fmt::println("{:^10}{:^10}", "x", "f(x)");
+ *     for (int i = 0; i < 5; ++i) {
+ *         const auto x = simplemc::exponential_sample(dist(rng), lambda);
+ *         fmt::println("{:^10.4f}{:^10.4f}", x, simplemc::exponential_pdf(x, lambda));
+ *     }
+ * }
+ * @endcode
+ *
+ * Output:
+ *
+ * ```
+ *    x        f(x)
+ *  1.7846    0.0289
+ *  0.1024    1.9354
+ *  1.1706    0.1340
+ *  0.3143    1.1394
+ *  0.5384    0.6506
+ * ```
  */
 
 /**

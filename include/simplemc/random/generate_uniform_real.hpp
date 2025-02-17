@@ -11,12 +11,12 @@
 
 namespace simplemc::detail {
 
-// Generate a double value on the interval [min, max) given a random 64-bit unsigned integer RNG
+// Generate a double value on the interval [a, b) given a random 64-bit unsigned integer RNG
 // (see http://prng.di.unimi.it/).
 template <typename RNG>
     requires std::is_same_v<typename RNG::result_type, std::uint64_t>
-[[nodiscard]] inline double generate_uniform_real(RNG& rng, double min, double max) {
-    return min + (max - min) * ((rng() >> 11) * 0x1.0p-53);
+[[nodiscard]] inline double generate_uniform_real(RNG& rng, double a, double b) {
+    return a + (b - a) * ((rng() >> 11) * 0x1.0p-53);
 }
 
 } // namespace simplemc::detail

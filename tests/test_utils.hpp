@@ -1,6 +1,7 @@
 #ifndef SIMPLEMC_TESTS_TEST_UTILS_HPP
 #define SIMPLEMC_TESTS_TEST_UTILS_HPP
 
+#include <fmt/ranges.h>
 #include <gtest/gtest.h>
 #include <range/v3/all.hpp>
 
@@ -66,26 +67,57 @@ void check_isnan(auto val) {
     }
 }
 
-// Simple histogram class on the interval [0, 1] for testing.
-class histogram01 {
-public:
+// Simple histogram class on the interval [a, b] for testing.
+struct histogram {
     // Constructor.
-    explicit histogram01(int nbins) : nbins_(nbins), step_(1.0 / nbins), hist_(nbins, 0.0) {}
+    histogram(double a, double b, int nbins) :
+        a(a),
+        b(b),
+        nbins(nbins),
+        step((b - a) / nbins),
+        data(nbins, 0.0) {}
 
     // Add a value to the histogram.
-    void add(double value);
+    void add(double value) {
+        nsamples += 1;
+        if (value < a || value >= b) {
+            return;
+        }
+        int idx = static_cast<int>((value - a) / step);
+        data[idx] += 1.0;
+    }
 
-    // Print the histogram.
-    void print() const;
+    // Print the histogram + a reference function.
+    void print(auto f = [](auto /* x */) { return 0; }) const {
+        const auto norm = static_cast<double>(nsamples) * step;
+        fmt::println("{:<15}{:<15}{:<15}", "x", "h(x)", "f(x)");
+        for (int i = 0; i < nbins; ++i) {
+            const auto x = a + step * (i + 0.5);
+            fmt::println("{:<15.8f}{:<15.8f}{:<15.8f}", x, data[i] / norm, f(x));
+        }
+    }
 
     // Check that the histogram is uniform within some tolerance.
-    [[nodiscard]] bool check_uniform(double tol) const;
+    [[nodiscard]] bool check(auto f, double tol) const {
+        const auto norm = static_cast<double>(nsamples) * step;
+        for (int i = 0; i < nbins; ++i) {
+            const auto x = a + step * (i + 0.5);
+            const double fx = f(x);
+            if (data[i] / norm < fx * (1 - tol) || data[i] / norm > fx * (1 + tol)) {
+                fmt::println("Histogram check failed: {} < {} || {} > {}", data[i] / norm, fx * (1 - tol),
+                    data[i] / norm, fx * (1 + tol));
+                return false;
+            }
+        }
+        return true;
+    }
 
-private:
-    long nsamples_ { 0 };
-    int nbins_;
-    double step_;
-    std::vector<double> hist_;
+    double a;
+    double b;
+    int nbins;
+    double step;
+    std::vector<double> data;
+    long nsamples { 0 };
 };
 
 #endif // SIMPLEMC_TESTS_TEST_UTILS_HPP

@@ -27,7 +27,34 @@ namespace simplemc {
  * RandomNumberEngine">RandomNumberEngine</a> and can be useful for seeding more sophisticated
  * engines.
  *
- * The internal state is a single `std::uint64_t`.
+ * The internal state is a 64 bits, a single `std::uint64_t`.
+ *
+ * @code{.cpp}
+ * #include <fmt/base.h>
+ * #include <simplemc/random.hpp>
+ *
+ * int main() {
+ *     // initialize splitmix64 RNG
+ *     simplemc::splitmix64 rng{};
+ *
+ *     // print 5 random numbers
+ *     fmt::println("Random numbers in the interval [{}, {}]:", rng.min(), rng.max());
+ *     for (int i = 0; i < 5; ++i) {
+ *         fmt::println("{}", rng());
+ *     }
+ * }
+ * @endcode
+ *
+ * Output:
+ *
+ * ```
+ * Random numbers in the interval [0, 18446744073709551615]:
+ * 1719758671208677865
+ * 13238173923722200173
+ * 13844957877086618154
+ * 16939971842163881215
+ * 15293509828263232410
+ * ```
  */
 class splitmix64 {
 public:

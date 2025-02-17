@@ -9,63 +9,68 @@
 #include <sstream>
 #include <vector>
 
-// Test uniform real distribution.
-TEST(SimplemcRandom, UniformRealDistribution) {
-    std::mt19937_64 mt_std, mt_smc;
-    std::uniform_real_distribution<double> std_urd;
-    simplemc::uniform_real_distribution smc_urd;
+// Test distributions.
+template <typename T>
+void test_dist(T& smc_dist, auto& ref_dist, const typename T::param_type& smc_params, auto const& ref_params) {
+    // constructors
+    auto def_params = typename T::param_type{};
+    T dist_def {};
+    T dist_01 { def_params };
+    T dist_p { smc_params };
+    ASSERT_EQ(dist_def, dist_01);
+    ASSERT_NE(dist_01, dist_p);
+    ASSERT_EQ(dist_01.param(), def_params);
+    ASSERT_EQ(dist_p.param(), smc_params);
+
+    // compare with reference distribution
+    std::mt19937_64 std_rng, smc_rng;
     for (int i = 0; i < 1000; ++i) {
-        ASSERT_NEAR(std_urd(mt_std), smc_urd(mt_smc), 1e-14);
+        ASSERT_NEAR(ref_dist(std_rng), smc_dist(smc_rng), 1e-14);
+        ASSERT_NEAR(ref_dist(std_rng, ref_params), smc_dist(smc_rng, smc_params), 1e-14);
     }
+
+    // stream operator
+    std::stringstream ss;
+    ss << dist_p;
+    ss >> dist_01;
+    ASSERT_EQ(dist_p, dist_01);
 }
 
-// Test restoring a uniform real distribution.
-TEST(SimplemcRandom, RestoreUniformRealDistribution) {
-    simplemc::uniform_real_distribution dist(-2.0, 5.0), dist2;
-    ASSERT_NE(dist, dist2);
-    std::stringstream ss;
-    ss << dist;
-    ss >> dist2;
-    ASSERT_EQ(dist, dist2);
+// Test uniform real distribution.
+TEST(SimplemcRandom, UniformRealDistribution) {
+    using smc_type = simplemc::uniform_real_distribution;
+    using std_type = std::uniform_real_distribution<double>;
+    auto smc_dist = smc_type {};
+    auto smc_params = smc_type::param_type { -2, 1 };
+    auto std_dist = std_type {};
+    auto std_params = std_type::param_type { -2, 1 };
+    test_dist(smc_dist, std_dist, smc_params, std_params);
 }
 
 // Test discrete distribution.
 TEST(SimplemcRandom, DiscreteDistribution) {
-    std::mt19937_64 mt_std, mt_smc;
-    simplemc::discrete_distribution<int> smc_dist { 1.0, 5.0, 4.0 };
-    std::discrete_distribution<int> std_dist { 1.0, 5.0, 4.0 };
-    for (int i = 0; i < 100; i++) {
-        ASSERT_EQ(smc_dist(mt_smc), std_dist(mt_std));
-    }
-}
-
-// Test restoring a discrete distribution.
-TEST(SimplemcRandom, RestoreDiscreteDistribution) {
-    simplemc::discrete_distribution<std::uint64_t> dist1 { 1.23, 8.2912, 4.23 }, dist2;
-    ASSERT_NE(dist1, dist2);
-    std::stringstream ss;
-    ss << dist1;
-    ss >> dist2;
-    check_range_near(dist1.probabilities(), dist2.probabilities(), 1e-14);
+    using smc_type = simplemc::discrete_distribution<int>;
+    using std_type = std::discrete_distribution<int>;
+    auto smc_dist = smc_type {};
+    auto smc_params = smc_type::param_type { 1.0, 5.0, 4.0 };
+    auto std_dist = std_type {};
+    auto std_params = std_type::param_type { 1.0, 5.0, 4.0 };
+    test_dist(smc_dist, std_dist, smc_params, std_params);
 }
 
 // Test discrete alias distribution.
 TEST(SimplemcRandom, DiscreteAliasDistribution) {
-    std::mt19937_64 mt_smc;
-    simplemc::discrete_alias_distribution<int> smc_dist { 1.0, 5.0, 4.0 };
-    std::vector<int> counts(3, 0);
-    for (int i = 0; i < 10000; i++) {
-        counts[smc_dist(mt_smc)] += 1;
-    }
-    fmt::print("Counts: {}\n", counts);
-}
+    using smc_type = simplemc::discrete_alias_distribution<long>;
+    auto smc_dist = smc_type {};
+    auto smc_params = smc_type::param_type { 1.0, 5.0, 4.0 };
+    test_dist(smc_dist, smc_dist, smc_params, smc_params);
 
-// Test restoring a discrete alias distribution.
-TEST(SimplemcRandom, RestoreDiscreteAliasDistribution) {
-    simplemc::discrete_alias_distribution<long> dist1 { 1.23, 8.2912, 4.23 }, dist2;
-    ASSERT_NE(dist1, dist2);
-    std::stringstream ss;
-    ss << dist1;
-    ss >> dist2;
-    check_range_near(dist1.probabilities(), dist2.probabilities(), 1e-14);
+    // check distribution
+    std::mt19937_64 rng;
+    smc_dist.param(smc_params);
+    std::vector<int> hist(3, 0);
+    for (int i = 0; i < 100000; i++) {
+        hist[smc_dist(rng)] += 1;
+    }
+    fmt::print("Histogram: {}\n", hist);
 }
