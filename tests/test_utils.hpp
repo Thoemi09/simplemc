@@ -17,7 +17,7 @@ inline void check_near(T1 lhs, T2 rhs, double eps = 1e-14) {
     ASSERT_NEAR(lhs, rhs, eps);
 }
 
-// Check complex numbers for nearness
+// Check complex numbers for nearness.
 template <typename T1, typename T2>
 inline void check_near(std::complex<T1> lhs, std::complex<T2> rhs, double eps = 1e-14) {
     ASSERT_NEAR(std::real(lhs), std::real(rhs), eps);
@@ -70,12 +70,7 @@ void check_isnan(auto val) {
 // Simple histogram class on the interval [a, b] for testing.
 struct histogram {
     // Constructor.
-    histogram(double a, double b, int nbins) :
-        a(a),
-        b(b),
-        nbins(nbins),
-        step((b - a) / nbins),
-        data(nbins, 0.0) {}
+    histogram(double a, double b, int nbins) : a(a), b(b), nbins(nbins), step((b - a) / nbins), data(nbins, 0.0) {}
 
     // Add a value to the histogram.
     void add(double value) {

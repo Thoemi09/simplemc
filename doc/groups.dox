@@ -369,17 +369,17 @@
  * combine two instances to form a \f$ 3 \times 3 \f$ 2-dimensional grid:
  *
  * @code{.cpp}
- * #include <simplemc/grids.hpp>
  * #include <fmt/ranges.h>
+ * #include <simplemc/grids.hpp>
  *
  * int main() {
  *     // create a 1-dimensional grid of size 3
- *     simplemc::linear_grid lg(0.0, 1.0, 3);
- *     fmt::print("1d: {}\n", lg.view());
+ *     simplemc::linear_grid grid_1d { 0.0, 1.0, 3 };
+ *     fmt::println("1d: {}", grid_1d.view());
  *
  *     // create a 2-dimensional grid of size 3x3
- *     simplemc::nd_grid grid_2d(lg, lg);
- *     fmt::print("2d: {}\n", grid_2d.view());
+ *     simplemc::nd_grid grid_2d { grid_1d, grid_1d };
+ *     fmt::println("2d: {}", grid_2d.view());
  * }
  * @endcode
  *
@@ -396,9 +396,9 @@
  * @ingroup simplemc-grids
  * @brief Various grids on \f$ \mathbb{R}^1 \f$.
  *
- * @details A 1-dimensional grid is a strictly monotone map \f$ g : \mathrm{I} \to \mathbb{R} \f$ from
- * the integer set \f$ \mathrm{I} = \{0, 1, \ldots, M-1\} \f$ to a closed interval \f$ [a, b] \f$ on
- * the real line.
+ * @details A 1-dimensional increasing grid is a strictly monotone map \f$ g : \mathrm{I} \to
+ * [a, b] \subset \mathbb{R} \f$ from the integer set \f$ \mathrm{I} = \{0, 1, \ldots, M-1\} \f$ to a
+ * closed interval \f$ [a, b] \f$ on the real line.
  *
  * It is defined by
  * - the first grid point, \f$ g(0) = a \f$,
@@ -413,8 +413,14 @@
  * Since the map is strictly monotone, one can always define the inverse map \f$ g^{-1} \f$, which
  * maps a given point on the grid to the corresponding grid index.
  *
- * The above is also true for decreasing grids, i.e. in the case that \f$ b < a \f$. The range of the
- * grid is then \f$ [b, a] \f$ and the bins are the intervals \f$ b_i = (g(i+1), g(i)] \f$.
+ * When we think about bins, we can extend the domain of this inverse map to the full interval
+ * \f$ [a, b] \f$. In this case, \f$ \tilde{g}^{-1} : [a, b] \to \mathrm{I} \f$ is the function that
+ * maps any \f$ x \in [a, b] \f$ to the index \f$ i \f$ such that \f$ x \in b_i \f$. Note that the
+ * last grid point should be mapped to the bin \f$ b_{M-1} \nsubseteq [a, b] \f$.
+ *
+ * For decreasing grids, i.e. in the case that \f$ b < a \f$, the range of the grid is given by \f$
+ * [b, a] \f$ and the bins are defined as the intervals \f$ b_i = (g(i+1), g(i)] \f$. Otherwise,
+ * everything mentioned above stays valid.
  *
  * Depending on the map, one can define different grids.
  */
@@ -428,13 +434,15 @@
  * dimension lies the grid \f$ g_1 : \mathrm{I}_1 \to \mathbb{R} \f$, along the second dimension lies
  * grid \f$ g_2 : \mathrm{I}_2 \to \mathbb{R} \f$ and so on.
  *
- * The map \f$ g : \mathrm{I} \to \mathbb{R}^N \f$ from the set \f$ \mathrm{I} = \mathrm{I}_1 \times
- * \dots \times \mathrm{I}_N \f$ to \f$ \mathbb{R}^N \f$ is then defined by \f$ g(i_1, \dots, i_N) =
- * (g_1(i_1), \dots, g_N(i_N)) \f$. The same goes for the inverse map \f$ g^{-1}(x_1, \dots, x_N) =
- * (g^{-1}_1(x_1), \dots, g^{-1}_N(x_N)) \f$.
+ * The map \f$ g : \mathrm{I} \to \mathrm{R} \f$ from the set \f$ \mathrm{I} = \mathrm{I}_1 \times
+ * \dots \times \mathrm{I}_N \f$ to \f$ \mathrm{R} = [a_1, b_1] \times \dots \times [a_N, b_N] \in
+ * \mathbb{R}^N \f$ is then defined as \f$ g(i_1, \dots, i_N) = (g_1(i_1), \dots, g_N(i_N)) \f$.
+ *
+ * The inverse map \f$ \tilde{g}^{-1} : \mathrm{R} \to \mathrm{I} \f$ is similarly defines as \f$
+ * \tilde{g}^{-1}(x_1, \dots, x_N) = (\tilde{g}^{-1}_1(x_1), \dots, \tilde{g}^{-1}_N(x_N)) \f$.
  *
  * The size of the grid, i.e. the total number of grid points, is given by \f$ M = M_1 \times \dots
- * \times M_N \f$.
+ * \times M_N \f$, where \f$ M_i \f$ is the size of the i<sup>th</sup> grid.
  *
  * Similar to the 1-dimensional case, we can also think of the grid as a collection of \f$ (M_1 - 1)
  * \times \dots \times (M_N - 1) \f$ bins or hyperrectangles. Such a hyperrectangle is simply the

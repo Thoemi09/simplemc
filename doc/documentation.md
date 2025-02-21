@@ -74,8 +74,8 @@ variable. It reduces to the simplemc::linear_grid in case that \f$ p = 1.0 \f$.
 - @ref simplemc::symmetric_power_grid consists of two simplemc::power_grid which are symmetric with
 respect to the center of the interval.
 
-Users can define their own grids by simply inheriting from simplemc::grid_base and implementing the
-purely virtual methods.
+Users can define their own grids by simply inheriting from the abstract simplemc::grid_base class and
+implementing the purely virtual methods.
 
 Furthermore, the simplemc::nd_grid class lets the user combine an arbitrary number of 1-dimensional
 grids to form @ref simplemc-grids-nd.

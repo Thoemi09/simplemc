@@ -14,18 +14,48 @@ namespace simplemc {
  * @ingroup simplemc-grids-1d
  * @brief 1-dimensional linear grid.
  *
- * @details This class inherits from simplemc::grid_base and represents a uniform grid of size
- * \f$ M \geq 2 \f$ on the interval \f$ [a, b] \f$ (or \f$ [b, a] \f$ if \f$ b < a \f$).
+ * @details In the following, we use the notation from @ref simplemc-grids-1d.
  *
- * It uses the map
+ * This class inherits from simplemc::grid_base and represents a uniform grid of size \f$ M \geq 2 \f$
+ * on the interval
+ * - \f$ \mathrm{R} = [a, b] \f$ for increasing grids, i.e. \f$ a < b \f$, or
+ * - \f$ \mathrm{R} = [b, a] \f$ for decreasing grids, i.e. \f$ a > b \f$.
+ *
+ * It uses the linear function
  * \f[
  *   g(i) = a + i * \Delta \;,
  * \f]
- * with the step size \f$ \Delta = \frac{b - a}{M - 1} \f$ and the corresponding inverse map
+ * to map an index \f$ i \in \{ 0, 1, \dots, M-1 \} \f$ to its grid point \f$ g(i) \f$, where
+ * \f$ \Delta = (b - a) / (M - 1) \f$ is the step size or the size of each bin \f$ b_i \f$.
+ *
+ * The corresponding inverse function
  * \f[
- *   g^{-1}(x) = \left\lfloor \frac{x - a}{\Delta} \right\rfloor \;,
+ *   \tilde{g}^{-1}(x) = \left\lfloor \frac{x - a}{\Delta} \right\rfloor \;,
  * \f]
- * with \f$ x \in [a, b] \f$.
+ * maps every value \f$ x \in [a, b] \f$ to the index \f$ i \f$ such that \f$ x \in b_i \f$.
+ *
+ * @code{.cpp}
+ * #include <fmt/ranges.h>
+ * #include <simplemc/grids.hpp>
+ *
+ * int main() {
+ *     // create a linear grid of size 5 on [0, 1]
+ *     simplemc::linear_grid grid { 0.0, 1.0, 5 };
+ *
+ *     // print the grid points, bin centers and bin volumes (sizes)
+ *     fmt::println("Grid points: {}", grid.view());
+ *     fmt::println("Bin centers: {}", grid.view_center());
+ *     fmt::println("Bin volumes: {}", grid.view_bin_volumes());
+ * }
+ * @endcode
+ *
+ * Output:
+ *
+ * ```
+ * Grid points: [0, 0.25, 0.5, 0.75, 1]
+ * Bin centers: [0.125, 0.375, 0.625, 0.875]
+ * Bin volumes: [0.25, 0.25, 0.25, 0.25]
+ * ```
  */
 class linear_grid : public grid_base {
 public:
@@ -40,31 +70,46 @@ public:
     using size_type = grid_base::size_type;
 
     /**
-     * @brief Construct a linear grid by specifying its first and last grid points and its size.
-     *
-     * @param first First value of the grid.
-     * @param last Last value of the grid.
-     * @param size Number of grid points.
+     * @brief Default constructor constructs a linear grid of size \f$ M = 2 \f$ on the interval \f$
+     * [0, 1] \f$.
      */
-    linear_grid(value_type first, value_type last, size_type size) { reset(first, last, size); }
+    linear_grid() = default;
 
     /**
-     * @brief Reset the linear grid by specifying its first and last grid points and its size.
+     * @brief Construct a linear grid by specifying its first and last grid points, \f$ a \f$ and \f$
+     * b \f$, and its size \f$ M \f$.
      *
-     * @param first First value of the grid.
-     * @param last Last value of the grid.
-     * @param size Number of grid points.
+     * @details It simply forwards the arguments to reset().
+     *
+     * @param a First value of the grid, \f$ a = g(0) \f$.
+     * @param b Last value of the grid, \f$ b = g(M-1) \f$.
+     * @param m Number of grid points \f$ M \f$.
      */
-    void reset(value_type first, value_type last, size_type size) {
-        grid_base::reset(first, last, size);
+    linear_grid(value_type a, value_type b, size_type m) { reset(a, b, m); }
+
+    /**
+     * @brief Reset the linear grid by specifying its first and last grid points, \f$ a \f$ and \f$ b
+     * \f$, and its size \f$ M \f$.
+     *
+     * @details It forwards the arguments to grid_base::reset and sets the step size \f$ \Delta =
+     * (b - a) / (M - 1) \f$.
+     *
+     * @param a First value of the grid, \f$ a = g(0) \f$.
+     * @param b Last value of the grid, \f$ b = g(M-1) \f$.
+     * @param m Number of grid points \f$ M \f$.
+     */
+    void reset(value_type a, value_type b, size_type m) {
+        grid_base::reset(a, b, m);
         step_ = (last_ - first_) / (static_cast<double>(size_) - 1.0);
     }
 
     /**
-     * @brief Get the grid point at a given index.
+     * @brief Get the grid point \f$ g(i) \f$ at a given index \f$ i \f$.
      *
-     * @param idx Index of the grid point.
-     * @return Grid point at the given index.
+     * @details The mapping is defined as \f$ g(i) = a + i * \Delta \f$.
+     *
+     * @param idx Index \f$ i \f$ of the grid point.
+     * @return Grid point \f$ g(i) \f$.
      */
     [[nodiscard]] value_type at(size_type idx) const override {
         assert(idx >= 0 && idx < size_);
@@ -72,10 +117,14 @@ public:
     }
 
     /**
-     * @brief Get the index of the bin to which a given value belongs.
+     * @brief Get the index \f$ i \f$ such that a given value \f$ x \in [a, b] \f$ lies in bin \f$
+     * b_i \f$.
      *
-     * @param value A value in the range of the grid.
-     * @return Index of the bin which contains the given value.
+     * @details The inverse mapping is defined as \f$ \tilde{g}^{-1}(x) = \left\lfloor (x - a) /
+     * \Delta \right\rfloor \f$.
+     *
+     * @param value Some value \f$ x \in [a, b] \f$.
+     * @return Index \f$ i = \tilde{g}^{-1}(x) \f$ of the bin \f$ b_i \f$ such that \f$ x \in b_i \f$.
      */
     [[nodiscard]] size_type index(value_type value) const override {
         assert((first_ <= value && value <= last_) || (first_ >= value && value >= last_));
@@ -83,10 +132,10 @@ public:
     }
 
     /**
-     * @brief Get the volume (size) of the bin at a given index.
+     * @brief Get the volume (size) of the bin at a given index \f$ i \f$.
      *
-     * @param idx Bin index.
-     * @return Bin volume (size) at the given index.
+     * @param idx Bin index \f$ i \f$.
+     * @return Volume (size) of the bin \f$ b_i \f$.
      */
     [[nodiscard]] value_type bin_volume([[maybe_unused]] size_type idx) const override {
         assert(idx >= 0 && idx + 1 < size_);
@@ -94,10 +143,10 @@ public:
     }
 
     /**
-     * @brief Get the center of the bin at a given index.
+     * @brief Get the center of the bin at a given index \f$ i \f$.
      *
-     * @param idx Bin index.
-     * @return Center of the bin at the given index.
+     * @param idx Bin index \f$ i \f$.
+     * @return Center of the bin \f$ b_i \f$.
      */
     [[nodiscard]] value_type center(size_type idx) const override {
         assert(idx >= 0 && idx + 1 < size_);
@@ -107,12 +156,12 @@ public:
     /**
      * @brief Get the step size between two adjacent grid points.
      *
-     * @return Distance between two adjacent grid points.
+     * @return Step size \f$ \Delta = (b - a) / (M - 1) \f$.
      */
     [[nodiscard]] value_type step() const { return step_; }
 
 private:
-    value_type step_ { 0.0 };
+    value_type step_ { 1.0 };
 };
 
 } // namespace simplemc

@@ -15,21 +15,48 @@ namespace simplemc {
  * @ingroup simplemc-grids-1d
  * @brief 1-dimensional power grid.
  *
- * @details This class inherits from simplemc::grid_base and represents a power grid of size
- * \f$ M \geq 2 \f$ on the interval \f$ [a, b] \f$ (or \f$ [b, a] \f$ if \f$ b < a \f$).
+ * @details In the following, we use the notation from @ref simplemc-grids-1d.
  *
- * It uses the map
+ * This class inherits from simplemc::grid_base and represents a power grid of size \f$ M \geq 2 \f$
+ * on the interval
+ * - \f$ \mathrm{R} = [a, b] \f$ for increasing grids, i.e. \f$ a < b \f$, or
+ * - \f$ \mathrm{R} = [b, a] \f$ for decreasing grids, i.e. \f$ a > b \f$.
+ *
+ * It uses the non-linear function
  * \f[
  *   g(i) = a + i^p * \sigma \;,
  * \f]
- * with the power parameter \f$ p > 0 \f$ and the scale factor \f$ \sigma = \frac{b - a}{(M - 1)^p}
- * \f$.
+ * to map an index \f$ i \in \{ 0, 1, \dots, M-1 \} \f$ to its grid point \f$ g(i) \f$, where \f$ p >
+ * 0 \f$ is the power parameter and \f$ \sigma = (b - a) / (M - 1)^p \f$ is the scale factor.
  *
- * The inverse map is given by
+ * The corresponding inverse function
  * \f[
- *   g^{-1}(x) = \left\lfloor \left( \frac{x - a}{\sigma} \right)^{1/p} \right\rfloor \;,
+ *   \tilde{g}^{-1}(x) = \left\lfloor \left( \frac{x - a}{\sigma} \right)^{1/p} \right\rfloor \;,
  * \f]
- * with \f$ x \in [a, b] \f$.
+ * maps every value \f$ x \in [a, b] \f$ to the index \f$ i \f$ such that \f$ x \in b_i \f$.
+ *
+ * @code{.cpp}
+ * #include <fmt/ranges.h>
+ * #include <simplemc/grids.hpp>
+ *
+ * int main() {
+ *     // create a quadratic grid of size 5 on [0, 1]
+ *     simplemc::power_grid grid { 0.0, 1.0, 5, 2 };
+ *
+ *     // print the grid points, bin centers and bin volumes (sizes)
+ *     fmt::println("Grid points: {}", grid.view());
+ *     fmt::println("Bin centers: {}", grid.view_center());
+ *     fmt::println("Bin volumes: {}", grid.view_bin_volumes());
+ * }
+ * @endcode
+ *
+ * Output:
+ *
+ * ```
+ * Grid points: [0, 0.0625, 0.25, 0.5625, 1]
+ * Bin centers: [0.03125, 0.15625, 0.40625, 0.78125]
+ * Bin volumes: [0.0625, 0.1875, 0.3125, 0.4375]
+ * ```
  */
 class power_grid : public grid_base {
 public:
@@ -44,39 +71,53 @@ public:
     using size_type = grid_base::size_type;
 
     /**
-     * @brief Construct a power grid by specifying its first and last grid points, its size and the
-     * power parameter.
-     *
-     * @param first First value of the grid.
-     * @param last Last value of the grid.
-     * @param size Number of grid points.
-     * @param power Power parameter.
+     * @brief Default constructor constructs a power grid of size \f$ M = 2 \f$ on the interval
+     * \f$ [0, 1] \f$ with \f$ p = 1 \f$.
      */
-    power_grid(value_type first, value_type last, size_type size, value_type power) { reset(first, last, size, power); }
+    power_grid() = default;
 
     /**
-     * @brief Reset a power grid by specifying its first and last grid points, its size and the power
-     * parameter.
+     * @brief Construct a power grid by specifying its first and last grid points, \f$ a \f$ and \f$
+     * b \f$, its size \f$ M \f$ and the power parameter \f$ p \f$.
      *
-     * @param first First value of the grid.
-     * @param last Last value of the grid.
-     * @param size Number of grid points.
-     * @param power Power parameter.
+     * @details It simply forwards the arguments to reset().
+     *
+     * @param a First value of the grid, \f$ a = g(0) \f$.
+     * @param b Last value of the grid, \f$ b = g(M-1) \f$.
+     * @param m Number of grid points \f$ M \f$.
+     * @param p Power parameter \f$ p \f$.
      */
-    void reset(value_type first, value_type last, size_type size, value_type power) {
-        if (power <= 0.0) {
+    power_grid(value_type a, value_type b, size_type m, value_type p) { reset(a, b, m, p); }
+
+    /**
+     * @brief Reset the power grid by specifying its first and last grid points, \f$ a \f$ and \f$ b
+     * \f$, its size \f$ M \f$ and the power parameter \f$ p \f$.
+     *
+     * @details It forwards the arguments \f$ a \f$, \f$ b \f$ and \f$ M \f$ to grid_base::reset and
+     * sets the power parameter \f$ p > 0 \f$ and the scale factor \f$ \sigma = (b - a) / (M - 1)^p
+     * \f$.
+     *
+     * @param a First value of the grid, \f$ a = g(0) \f$.
+     * @param b Last value of the grid, \f$ b = g(M-1) \f$.
+     * @param m Number of grid points \f$ M \f$.
+     * @param p Power parameter \f$ p \f$.
+     */
+    void reset(value_type a, value_type b, size_type m, value_type p) {
+        if (p <= 0.0) {
             throw simplemc_exception("Power parameter must be > 0", "power_grid::reset");
         }
-        grid_base::reset(first, last, size);
-        power_ = power;
+        grid_base::reset(a, b, m);
+        power_ = p;
         scale_ = (last_ - first_) / std::pow(size_ - 1, power_);
     }
 
     /**
-     * @brief Get the grid point at a given index.
+     * @brief Get the grid point \f$ g(i) \f$ at a given index \f$ i \f$.
      *
-     * @param idx Index of the grid point.
-     * @return Grid point at the given index.
+     * @details The mapping is defined as \f$ g(i) = a + i^p * \sigma\f$.
+     *
+     * @param idx Index \f$ i \f$ of the grid point.
+     * @return Grid point \f$ g(i) \f$.
      */
     [[nodiscard]] value_type at(size_type idx) const override {
         assert(idx >= 0 && idx < size_);
@@ -84,10 +125,14 @@ public:
     }
 
     /**
-     * @brief Get the index of the bin to which a given value belongs.
+     * @brief Get the index \f$ i \f$ such that a given value \f$ x \in [a, b] \f$ lies in bin \f$
+     * b_i \f$.
      *
-     * @param value A value in the range of the grid.
-     * @return Index of the bin which contains the given value.
+     * @details The inverse mapping is defined as \f$ \tilde{g}^{-1}(x) = \left\lfloor \left[ (x - a)
+     * / \sigma \right]^{1/p} \right\rfloor \f$.
+     *
+     * @param value Some value \f$ x \in [a, b] \f$.
+     * @return Index \f$ i = \tilde{g}^{-1}(x) \f$ of the bin \f$ b_i \f$ such that \f$ x \in b_i \f$.
      */
     [[nodiscard]] size_type index(value_type value) const override {
         assert((first_ <= value && value <= last_) || (first_ >= value && value >= last_));
@@ -97,20 +142,20 @@ public:
     /**
      * @brief Get the power parameter of the grid.
      *
-     * @return Power parameter.
+     * @return Power parameter \f$ p \f$.
      */
     [[nodiscard]] value_type power() const { return power_; }
 
     /**
      * @brief Get the scale factor of the grid.
      *
-     * @return Scaling of the distance between two grid points.
+     * @return Scale factor \f$ \sigma = (b - a) / (M - 1)^p \f$.
      */
     [[nodiscard]] value_type scale() const { return scale_; }
 
 private:
-    value_type power_ { 0.0 };
-    value_type scale_ { 0.0 };
+    value_type power_ { 1.0 };
+    value_type scale_ { 1.0 };
 };
 
 } // namespace simplemc
