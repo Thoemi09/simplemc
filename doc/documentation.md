@@ -73,6 +73,8 @@ Depending on the map, one can define different grids:
 variable. It reduces to the simplemc::linear_grid in case that \f$ p = 1.0 \f$.
 - @ref simplemc::symmetric_power_grid consists of two simplemc::power_grid which are symmetric with
 respect to the center of the interval.
+- @ref simplemc::custom_grid uses any strictly ordered array (increasing or decreasing) as its grid
+points.
 
 Users can define their own grids by simply inheriting from the abstract simplemc::grid_base class and
 implementing the purely virtual methods.

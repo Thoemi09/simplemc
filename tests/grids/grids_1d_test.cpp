@@ -1,6 +1,7 @@
 #include "../test_utils.hpp"
 
 #include <range/v3/all.hpp>
+#include <simplemc/grids/custom_grid.hpp>
 #include <simplemc/grids/linear_grid.hpp>
 #include <simplemc/grids/power_grid.hpp>
 #include <simplemc/grids/symmetric_power_grid.hpp>
@@ -76,7 +77,7 @@ TEST(SimplemcGrids, LinearGridDefault) {
 }
 
 // Test increasing linear grid.
-TEST(SimplemcGrids, LinearGridAscending) {
+TEST(SimplemcGrids, LinearGridIncreasing) {
     simplemc::linear_grid lg { 0, 10, 11 };
     auto view = ranges::iota_view(0, 11);
     auto view_center = ranges::iota_view(0, 10) | ranges::views::transform([](auto i) { return i + 0.5; });
@@ -103,7 +104,7 @@ TEST(SimplemcGrids, PowerGridDefault) {
 }
 
 // Test increasing power grid.
-TEST(SimplemcGrids, PowerGridAscending) {
+TEST(SimplemcGrids, PowerGridIncreasing) {
     // wrong power parameter
     ASSERT_THROW(simplemc::power_grid(3, 5, 11, -1.0), simplemc::simplemc_exception);
 
@@ -177,4 +178,36 @@ TEST(SimplemcGrids, SymmetricPowerGridDecreasing) {
     auto view_center = ranges::concat_view(g1.view_center(), ranges::reverse_view(g2.view_center()));
     auto view_vols = ranges::concat_view(g1.view_bin_volumes(), ranges::reverse_view(g2.view_bin_volumes()));
     test_1d_grids(pg, begin, end, view, view_center, view_vols);
+}
+
+// Test default custom grid.
+TEST(SimplemcGrids, CustomGridDefault) {
+    simplemc::custom_grid cg {};
+    auto view = std::vector<double> { 0.0, 1.0 };
+    auto view_center = std::vector<double> { 0.5 };
+    auto view_vols = std::vector<double> { 1.0 };
+    test_1d_grids(cg, 0, 1, view, view_center, view_vols);
+}
+
+// Test increasing custom grid.
+TEST(SimplemcGrids, CustomGridIncreasing) {
+    auto view = std::vector<double> { 1.0, 1.1, 2.4, 5.6, 12.3, 100.0 };
+    auto view_center = ranges::iota_view(1ul, view.size()) |
+        ranges::views::transform([&view](auto i) { return 0.5 * (view[i] + view[i - 1]); });
+    auto view_vols = ranges::iota_view(1ul, view.size()) |
+        ranges::views::transform([&view](auto i) { return view[i] - view[i - 1]; });
+    simplemc::custom_grid cg { view };
+    test_1d_grids(cg, view.front(), view.back(), view, view_center, view_vols);
+}
+
+// Test decreasing custom grid.
+TEST(SimplemcGrids, CustomGridDecreasing) {
+    auto pts = std::vector<double> { 1.0, 1.1, 2.4, 5.6, 12.3, 100.0 };
+    auto view = ranges::reverse_view(pts) | ranges::to<std::vector<double>>;
+    auto view_center = ranges::iota_view(1ul, view.size()) |
+        ranges::views::transform([&view](auto i) { return 0.5 * (view[i] + view[i - 1]); });
+    auto view_vols = ranges::iota_view(1ul, view.size()) |
+        ranges::views::transform([&view](auto i) { return view[i-1] - view[i]; });
+    simplemc::custom_grid cg { view };
+    test_1d_grids(cg, view.front(), view.back(), view, view_center, view_vols);
 }

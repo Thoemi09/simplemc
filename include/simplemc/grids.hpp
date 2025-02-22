@@ -6,6 +6,7 @@
 #ifndef SIMPLEMC_GRIDS_HPP
 #define SIMPLEMC_GRIDS_HPP
 
+#include <simplemc/grids/custom_grid.hpp>
 #include <simplemc/grids/grid_base.hpp>
 #include <simplemc/grids/linear_grid.hpp>
 #include <simplemc/grids/power_grid.hpp>

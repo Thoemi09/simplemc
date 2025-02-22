@@ -118,6 +118,7 @@
       </tab>
       <tab type="usergroup" url="@ref simplemc-grids" title="simplemc-grids">
         <tab type="usergroup" url="@ref simplemc-grids-1d" title="1-dimensional grids">
+          <tab type="user" url="@ref simplemc::custom_grid" title="custom_grid"/>
           <tab type="user" url="@ref simplemc::grid_base" title="grid_base"/>
           <tab type="user" url="@ref simplemc::linear_grid" title="linear_grid"/>
           <tab type="user" url="@ref simplemc::power_grid" title="power_grid"/>
