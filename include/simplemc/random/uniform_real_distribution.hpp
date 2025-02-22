@@ -83,7 +83,7 @@ public:
          * @param b Upper bound of the interval.
          */
         explicit param_type(double a = 0.0, double b = 1.0) : a_(a), b_(b) {
-            assert(min_ < max_);
+            assert(a_ < b_);
         }
 
         /**

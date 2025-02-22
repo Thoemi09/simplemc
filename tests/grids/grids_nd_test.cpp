@@ -65,10 +65,10 @@ TEST(SimplemcGrids, TwoDimensionalLinearGrid) {
     auto it_vv = ranges::begin(view_vols);
     for (auto [i, j] : cartesian_product(iota(0, g1.size()), iota(0, g1.size()))) {
         nd_size_type idx_arr { i, j };
-        nd_value_type val_arr { g1.at(i) + 0.1 * g1.bin_volume(i), g1.at(j) + 0.5 * g1.bin_volume(j) };
         check_range_near(grid.at(idx_arr), nd_value_type { g1.at(i), g1.at(j) });
         check_range_near(*it_v++, nd_value_type { g1.at(i), g1.at(j) });
         if (i < g1.size() - 1 && j < g1.size() - 1) {
+            nd_value_type val_arr { g1.at(i) + 0.1 * g1.bin_volume(i), g1.at(j) + 0.5 * g1.bin_volume(j) };
             check_range_near(grid.center(idx_arr), nd_value_type { g1.center(i), g1.center(j) });
             check_range_near(*it_vc++, nd_value_type { g1.center(i), g1.center(j) });
             check_range_equal(grid.index(val_arr), idx_arr);
@@ -117,11 +117,11 @@ TEST(SimplemcGrids, ThreeDimensionalGrid) {
     auto it_vv = ranges::begin(view_vols);
     for (auto [i, j, k] : cartesian_product(iota(0, g1.size()), iota(0, g2.size()), iota(0, g1.size()))) {
         nd_size_type idx_arr { i, j, k };
-        nd_value_type val_arr { view1[i] + 0.1 * view_vols1[i], view2[j] - 0.3 * view_vols2[j],
-            view1[k] + 0.7 * view_vols1[k] };
         check_range_near(grid.at(idx_arr), nd_value_type { view1[i], view2[j], view1[k] });
         check_range_near(*it_v++, nd_value_type { view1[i], view2[j], view1[k] });
         if (i < g1.size() - 1 && j < g2.size() - 1 && k < g1.size() - 1) {
+            nd_value_type val_arr { view1[i] + 0.1 * view_vols1[i], view2[j] - 0.3 * view_vols2[j],
+                view1[k] + 0.7 * view_vols1[k] };
             check_range_near(grid.center(idx_arr), nd_value_type { view_center1[i], view_center2[j], view_center1[k] });
             check_range_near(*it_vc++, nd_value_type { view_center1[i], view_center2[j], view_center1[k] });
             check_range_equal(grid.index(val_arr), idx_arr);

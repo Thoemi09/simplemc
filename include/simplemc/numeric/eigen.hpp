@@ -116,7 +116,7 @@ concept eigen_vector_cplx = (eigen_vector<V> && std::is_same_v<typename V::Scala
 template <typename V>
     requires(eigen_vector_dbl<V> || eigen_vector_cplx<V>)
 V nans_vector(long size = 1) {
-    size = (V::RowsAtCompileTime == Eigen::Dynamic ? size : V::RowsAtCompileTime);
+    size = (V::RowsAtCompileTime == Eigen::Dynamic ? size : static_cast<long>(V::RowsAtCompileTime));
     constexpr auto nan = std::numeric_limits<double>::quiet_NaN();
     if constexpr (std::is_same_v<typename V::Scalar, double>) {
         return V::Constant(size, nan);
@@ -137,8 +137,8 @@ V nans_vector(long size = 1) {
  */
 template <eigen_matrix M>
 M nans_matrix(long rows = 1, long cols = 1) {
-    rows = (M::RowsAtCompileTime == Eigen::Dynamic ? rows : M::RowsAtCompileTime);
-    cols = (M::ColsAtCompileTime == Eigen::Dynamic ? cols : M::ColsAtCompileTime);
+    rows = (M::RowsAtCompileTime == Eigen::Dynamic ? rows : static_cast<long>(M::RowsAtCompileTime));
+    cols = (M::ColsAtCompileTime == Eigen::Dynamic ? cols : static_cast<long>(M::ColsAtCompileTime));
     constexpr auto nan = std::numeric_limits<double>::quiet_NaN();
     if constexpr (std::is_same_v<typename M::value_type, double>) {
         return M::Constant(rows, cols, nan);
