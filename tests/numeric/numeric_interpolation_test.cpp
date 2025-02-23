@@ -6,6 +6,23 @@
 #include <simplemc/numeric/cubic_spline_interpolation.hpp>
 #include <simplemc/numeric/linear_interpolation.hpp>
 #include <simplemc/numeric/polynomial_interpolation.hpp>
+#include <simplemc/utils/ranges.hpp>
+
+#include <cstddef>
+#include <vector>
+
+namespace rgs = simplemc::ranges;
+
+// Construct vector from view.
+template <typename R>
+auto to_vector(R&& view) { // NOLINT (ranges need not be forwarded)
+    auto vec = std::vector<rgs::range_value_t<R>>{};
+    vec.reserve(static_cast<std::size_t>(rgs::size(view)));
+    for (auto x : view) {
+        vec.push_back(x);
+    }
+    return vec;
+}
 
 inline double line(double x, double a = 0.0, double k = 1.0) {
     return a + x * k;
@@ -233,7 +250,7 @@ TEST(SimplemcNumeric, CubicSplineInterpolation) {
     double yp_n = 3 * a - 2 * b + c;
     simplemc::cubic_spline_interpolation ci(xgrid, f);
     simplemc::cubic_spline_interpolation ci_wf(xgrid, f, yp_0, yp_n);
-    auto xvals = xgrid.view() | ranges::to_vector;
+    auto xvals = to_vector(xgrid.view());
     tk::spline tki(xvals, f);
     tk::spline tki_wf(
         xvals, f, tk::spline::cspline, false, tk::spline::first_deriv, yp_0, tk::spline::first_deriv, yp_n);

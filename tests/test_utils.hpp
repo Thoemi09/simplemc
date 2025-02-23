@@ -3,7 +3,7 @@
 
 #include <fmt/ranges.h>
 #include <gtest/gtest.h>
-#include <range/v3/all.hpp>
+#include <simplemc/utils/ranges.hpp>
 
 #include <cmath>
 #include <complex>
@@ -42,17 +42,18 @@ inline void check_equal(std::complex<T1> lhs, std::complex<T2> rhs) {
 }
 
 // Check two ranges for nearness.
-void check_range_near(ranges::input_range auto&& rg, ranges::input_range auto&& exp_rg, double eps = 1e-14) {
-    ASSERT_EQ(ranges::size(rg), ranges::size(exp_rg));
-    for (auto&& [x, y] : ranges::views::zip(rg, exp_rg)) {
+void check_range_near(
+    simplemc::ranges::input_range auto&& rg, simplemc::ranges::input_range auto&& exp_rg, double eps = 1e-14) {
+    ASSERT_EQ(simplemc::ranges::size(rg), simplemc::ranges::size(exp_rg));
+    for (auto&& [x, y] : simplemc::ranges::views::zip(rg, exp_rg)) {
         check_near(x, y, eps);
     }
 }
 
 // Check two ranges for equality.
-void check_range_equal(ranges::input_range auto&& rg, ranges::input_range auto&& exp_rg) {
-    ASSERT_EQ(ranges::size(rg), ranges::size(exp_rg));
-    for (auto&& [x, y] : ranges::views::zip(rg, exp_rg)) {
+void check_range_equal(simplemc::ranges::input_range auto&& rg, simplemc::ranges::input_range auto&& exp_rg) {
+    ASSERT_EQ(simplemc::ranges::size(rg), simplemc::ranges::size(exp_rg));
+    for (auto&& [x, y] : simplemc::ranges::views::zip(rg, exp_rg)) {
         check_equal(x, y);
     }
 }

@@ -4,7 +4,6 @@
 #include <simplemc/numeric/eigen.hpp>
 
 #include <Eigen/Dense>
-#include <range/v3/view/enumerate.hpp>
 
 #include <tuple>
 #include <utility>
@@ -24,11 +23,11 @@ template <simplemc::varalg A, typename S>
 [[nodiscard]] auto mean_data(const S& sp) {
     using vec_type = Eigen::VectorX<typename S::value_type>;
     vec_type res = vec_type::Zero(S::state_size);
-    for (const auto& [i, s] : ranges::views::enumerate(sp.samples)) {
+    for (int i = 0; const auto& s : sp.samples) {
         if constexpr (A == standard) {
             res += s.matrix();
         } else {
-            res = res + (s.matrix() - res) / static_cast<double>(i + 1);
+            res = res + (s.matrix() - res) / static_cast<double>(i++ + 1);
         }
     }
     return res;
@@ -39,14 +38,14 @@ template <simplemc::varalg A, typename S>
 [[nodiscard]] auto accumulate_data(const S& sp) {
     Eigen::VectorXd mdata = Eigen::VectorXd::Zero(S::state_size);
     Eigen::MatrixXd cdata = Eigen::MatrixXd::Zero(S::state_size, S::state_size);
-    for (const auto& [i, s] : ranges::views::enumerate(sp.samples)) {
+    for (int i = 0; const auto& s : sp.samples) {
         if constexpr (A == standard) {
             const auto tmp = s.matrix();
             mdata += tmp;
             cdata += tmp * tmp.transpose();
         } else {
             const auto tmp = (s.matrix() - mdata).eval();
-            mdata += tmp / static_cast<double>(i + 1);
+            mdata += tmp / static_cast<double>(i++ + 1);
             cdata += tmp * (s.matrix() - mdata).transpose();
         }
     }

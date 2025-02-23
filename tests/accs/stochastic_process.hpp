@@ -3,9 +3,9 @@
 
 #include <simplemc/numeric/eigen.hpp>
 #include <simplemc/utils/concepts.hpp>
+#include <simplemc/utils/ranges.hpp>
 
 #include <fmt/ranges.h>
-#include <range/v3/all.hpp>
 
 #include <complex>
 #include <cstddef>
@@ -126,7 +126,7 @@ struct stochastic_process {
 template <typename S>
 [[nodiscard]] auto analytic_mean(const S& sp) {
     auto mean = S::vec_type::Zero().eval();
-    for (const auto& [s, p] : ranges::views::zip(sp.states, sp.probs)) {
+    for (const auto& [s, p] : simplemc::ranges::views::zip(sp.states, sp.probs)) {
         mean += p * s;
     }
     return mean;
@@ -148,7 +148,7 @@ template <typename S>
 [[nodiscard]] auto analytic_variance(const S& sp) {
     auto var = S::vec_type::Zero().eval();
     auto mean = analytic_mean(sp);
-    for (const auto& [s, p] : ranges::views::zip(sp.states, sp.probs)) {
+    for (const auto& [s, p] : simplemc::ranges::views::zip(sp.states, sp.probs)) {
         var += p * (s - mean).square();
     }
     return var;
@@ -161,7 +161,7 @@ template <typename S>
     auto im_var = S::dbl_vec_type::Zero().eval();
     auto re_im_cov = S::dbl_vec_type::Zero().eval();
     auto mean = analytic_mean(sp);
-    for (const auto& [s, p] : ranges::views::zip(sp.states, sp.probs)) {
+    for (const auto& [s, p] : simplemc::ranges::views::zip(sp.states, sp.probs)) {
         auto tmp = s - mean;
         re_var += p * tmp.real().square();
         im_var += p * tmp.imag().square();
@@ -212,7 +212,7 @@ template <typename S>
 [[nodiscard]] auto analytic_covariance(const S& sp) {
     auto cov = S::mat_type::Zero().eval();
     auto mean = analytic_mean(sp);
-    for (const auto& [s, p] : ranges::views::zip(sp.states, sp.probs)) {
+    for (const auto& [s, p] : simplemc::ranges::views::zip(sp.states, sp.probs)) {
         cov += (p * (s - mean).matrix() * (s - mean).matrix().transpose()).array();
     }
     return cov;
@@ -225,7 +225,7 @@ template <typename S>
     auto im_cov = S::dbl_mat_type::Zero().eval();
     auto re_im_cov = S::dbl_mat_type::Zero().eval();
     auto mean = analytic_mean(sp);
-    for (const auto& [s, p] : ranges::views::zip(sp.states, sp.probs)) {
+    for (const auto& [s, p] : simplemc::ranges::views::zip(sp.states, sp.probs)) {
         auto tmp = s - mean;
         re_cov += (p * tmp.real().matrix() * tmp.real().matrix().transpose()).array();
         im_cov += (p * tmp.imag().matrix() * tmp.imag().matrix().transpose()).array();

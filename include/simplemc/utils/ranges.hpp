@@ -9,6 +9,7 @@
 #include <simplemc/config.hpp>
 
 #ifdef SIMPLEMC_USE_STD_RANGES
+
 #include <ranges>
 
 namespace simplemc {
@@ -23,6 +24,15 @@ namespace ranges = std::ranges;
 #else
 
 #include <range/v3/all.hpp>
+
+namespace simplemc {
+
+/**
+ * @brief Alias for `::ranges` to make it interchangeable with the standard library.
+ */
+namespace ranges = ::ranges;
+
+} // namespace simplemc
 
 #endif // SIMPLMEC_USE_STD_RANGES
 

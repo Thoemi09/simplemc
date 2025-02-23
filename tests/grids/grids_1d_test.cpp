@@ -1,24 +1,41 @@
 #include "../test_utils.hpp"
 
-#include <range/v3/all.hpp>
 #include <simplemc/grids/custom_grid.hpp>
 #include <simplemc/grids/linear_grid.hpp>
 #include <simplemc/grids/power_grid.hpp>
 #include <simplemc/grids/symmetric_power_grid.hpp>
+#include <simplemc/utils/ranges.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
+#include <cstddef>
 #include <vector>
+
+namespace rgs = simplemc::ranges;
+
+// Concatenate 2 views.
+template <typename R1, typename R2>
+auto concat(R1&& view1, R2&& view2) { // NOLINT (ranges need not be forwarded)
+    std::vector<rgs::range_value_t<R1>> vec {};
+    vec.reserve(static_cast<std::size_t>(rgs::size(view1) + rgs::size(view2)));
+    for (auto x : view1) {
+        vec.push_back(x);
+    }
+    for (auto x : view2) {
+        vec.push_back(x);
+    }
+    return vec;
+}
 
 // Test 1d grids.
 void test_1d_grids(const auto& g, auto a, auto b, auto&& view, auto&& view_center, auto&& view_vols) {
     // basic grid info
-    ASSERT_EQ(g.size(), ranges::size(view));
+    ASSERT_EQ(g.size(), rgs::size(view));
     ASSERT_EQ(g.first(), a);
     ASSERT_EQ(g.last(), b);
 
     // loop over bins and grid points
     double fac = (a < b ? 1 : -1);
-    for (int i = 0; auto [pt, c, vol] : ranges::views::zip(view, view_center, view_vols)) {
+    for (int i = 0; auto [pt, c, vol] : rgs::views::zip(view, view_center, view_vols)) {
         ASSERT_DOUBLE_EQ(g.at(i), pt);
         ASSERT_DOUBLE_EQ(g.center(i), c);
         ASSERT_DOUBLE_EQ(g.bin_volume(i), vol);
@@ -79,18 +96,18 @@ TEST(SimplemcGrids, LinearGridDefault) {
 // Test increasing linear grid.
 TEST(SimplemcGrids, LinearGridIncreasing) {
     simplemc::linear_grid lg { 0, 10, 11 };
-    auto view = ranges::iota_view(0, 11);
-    auto view_center = ranges::iota_view(0, 10) | ranges::views::transform([](auto i) { return i + 0.5; });
-    auto view_vols = ranges::views::repeat(1.0) | ranges::views::take(10);
+    auto view = rgs::iota_view(0, 11);
+    auto view_center = rgs::iota_view(0, 10) | rgs::views::transform([](auto i) { return i + 0.5; });
+    auto view_vols = rgs::views::repeat(1.0) | rgs::views::take(10);
     test_1d_grids(lg, 0, 10, view, view_center, view_vols);
 }
 
 // Test decreasing linear grid.
 TEST(SimplemcGrids, LinearGridDescending) {
     simplemc::linear_grid lg { 0, -10, 11 };
-    auto view = ranges::iota_view(0, 11) | ranges::views::transform([](auto i) { return -i; });
-    auto view_center = ranges::iota_view(0, 10) | ranges::views::transform([](auto i) { return -i - 0.5; });
-    auto view_vols = ranges::views::repeat(1.0) | ranges::views::take(10);
+    auto view = rgs::iota_view(0, 11) | rgs::views::transform([](auto i) { return -i; });
+    auto view_center = rgs::iota_view(0, 10) | rgs::views::transform([](auto i) { return -i - 0.5; });
+    auto view_vols = rgs::views::repeat(1.0) | rgs::views::take(10);
     test_1d_grids(lg, 0, -10, view, view_center, view_vols);
 }
 
@@ -151,9 +168,9 @@ TEST(SimplemcGrids, SymmetricPowerGridIncreasing) {
     simplemc::symmetric_power_grid pg { begin, end, size, power };
     check_range_near(pg.grid1().view(), g1.view());
     check_range_near(pg.grid2().view(), g2.view());
-    auto view = ranges::concat_view(g1.view(), ranges::drop_view(ranges::reverse_view(g2.view()), 1));
-    auto view_center = ranges::concat_view(g1.view_center(), ranges::reverse_view(g2.view_center()));
-    auto view_vols = ranges::concat_view(g1.view_bin_volumes(), ranges::reverse_view(g2.view_bin_volumes()));
+    auto view = concat(g1.view(), rgs::drop_view(rgs::reverse_view(g2.view()), 1));
+    auto view_center = concat(g1.view_center(), rgs::reverse_view(g2.view_center()));
+    auto view_vols = concat(g1.view_bin_volumes(), rgs::reverse_view(g2.view_bin_volumes()));
     test_1d_grids(pg, begin, end, view, view_center, view_vols);
 }
 
@@ -174,9 +191,9 @@ TEST(SimplemcGrids, SymmetricPowerGridDecreasing) {
     simplemc::symmetric_power_grid pg { begin, end, size, power };
     check_range_near(pg.grid1().view(), g1.view());
     check_range_near(pg.grid2().view(), g2.view());
-    auto view = ranges::concat_view(g1.view(), ranges::drop_view(ranges::reverse_view(g2.view()), 1));
-    auto view_center = ranges::concat_view(g1.view_center(), ranges::reverse_view(g2.view_center()));
-    auto view_vols = ranges::concat_view(g1.view_bin_volumes(), ranges::reverse_view(g2.view_bin_volumes()));
+    auto view = concat(g1.view(), rgs::drop_view(rgs::reverse_view(g2.view()), 1));
+    auto view_center = concat(g1.view_center(), rgs::reverse_view(g2.view_center()));
+    auto view_vols = concat(g1.view_bin_volumes(), rgs::reverse_view(g2.view_bin_volumes()));
     test_1d_grids(pg, begin, end, view, view_center, view_vols);
 }
 
@@ -192,22 +209,21 @@ TEST(SimplemcGrids, CustomGridDefault) {
 // Test increasing custom grid.
 TEST(SimplemcGrids, CustomGridIncreasing) {
     auto view = std::vector<double> { 1.0, 1.1, 2.4, 5.6, 12.3, 100.0 };
-    auto view_center = ranges::iota_view(1ul, view.size()) |
-        ranges::views::transform([&view](auto i) { return 0.5 * (view[i] + view[i - 1]); });
-    auto view_vols = ranges::iota_view(1ul, view.size()) |
-        ranges::views::transform([&view](auto i) { return view[i] - view[i - 1]; });
+    auto view_center = rgs::iota_view(1ul, view.size()) |
+        rgs::views::transform([&view](auto i) { return 0.5 * (view[i] + view[i - 1]); });
+    auto view_vols =
+        rgs::iota_view(1ul, view.size()) | rgs::views::transform([&view](auto i) { return view[i] - view[i - 1]; });
     simplemc::custom_grid cg { view };
     test_1d_grids(cg, view.front(), view.back(), view, view_center, view_vols);
 }
 
 // Test decreasing custom grid.
 TEST(SimplemcGrids, CustomGridDecreasing) {
-    auto pts = std::vector<double> { 1.0, 1.1, 2.4, 5.6, 12.3, 100.0 };
-    auto view = ranges::reverse_view(pts) | ranges::to<std::vector<double>>;
-    auto view_center = ranges::iota_view(1ul, view.size()) |
-        ranges::views::transform([&view](auto i) { return 0.5 * (view[i] + view[i - 1]); });
-    auto view_vols = ranges::iota_view(1ul, view.size()) |
-        ranges::views::transform([&view](auto i) { return view[i-1] - view[i]; });
+    auto view = std::vector<double> { 100.0, 12.3, 5.6, 2.4, 1.1, 1.0 };
+    auto view_center = rgs::iota_view(1ul, view.size()) |
+        rgs::views::transform([&view](auto i) { return 0.5 * (view[i] + view[i - 1]); });
+    auto view_vols =
+        rgs::iota_view(1ul, view.size()) | rgs::views::transform([&view](auto i) { return view[i - 1] - view[i]; });
     simplemc::custom_grid cg { view };
     test_1d_grids(cg, view.front(), view.back(), view, view_center, view_vols);
 }

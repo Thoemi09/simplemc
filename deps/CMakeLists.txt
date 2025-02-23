@@ -42,24 +42,26 @@ else()
 endif()
 
 # range-v3
-if(SIMPLEMC_FETCH_RANGEV3)
-    FetchContent_Declare(rangev3
-        GIT_REPOSITORY https://github.com/ericniebler/range-v3.git
-        GIT_TAG origin/master) # 7e6f34b1e
-    set(RANGES_BUILD_CALENDAR_EXAMPLE OFF CACHE BOOL "")
+if(NOT SIMPLEMC_USE_STD_RANGES)
+    if(SIMPLEMC_FETCH_RANGEV3)
+        FetchContent_Declare(rangev3
+            GIT_REPOSITORY https://github.com/ericniebler/range-v3.git
+            GIT_TAG origin/master) # 7e6f34b1e
+        set(RANGES_BUILD_CALENDAR_EXAMPLE OFF CACHE BOOL "")
+        message(STATUS "-----------------------------------------------")
+        message(STATUS "Fetching range-v3 ...")
+        FetchContent_MakeAvailable(rangev3)
+        message(STATUS "rangev3_SOURCE_DIR: ${rangev3_SOURCE_DIR}")
+        message(STATUS "-----------------------------------------------")
+    else()
     message(STATUS "-----------------------------------------------")
-    message(STATUS "Fetching range-v3 ...")
-    FetchContent_MakeAvailable(rangev3)
-    message(STATUS "rangev3_SOURCE_DIR: ${rangev3_SOURCE_DIR}")
-    message(STATUS "-----------------------------------------------")
-else()
-message(STATUS "-----------------------------------------------")
-    message(STATUS "Finding range-v3: range-v3_DIR = ${range-v3_DIR}")
-    find_package(range-v3 REQUIRED)
-    set_target_properties(range-v3::range-v3 PROPERTIES IMPORTED_GLOBAL TRUE)
-    get_target_property(RANGEV3_TMP range-v3 INTERFACE_INCLUDE_DIRECTORIES)
-    message(STATUS "range-v3 found: Include directories = ${RANGEV3_TMP}")
-    message(STATUS "-----------------------------------------------")
+        message(STATUS "Finding range-v3: range-v3_DIR = ${range-v3_DIR}")
+        find_package(range-v3 REQUIRED)
+        set_target_properties(range-v3::range-v3 PROPERTIES IMPORTED_GLOBAL TRUE)
+        get_target_property(RANGEV3_TMP range-v3 INTERFACE_INCLUDE_DIRECTORIES)
+        message(STATUS "range-v3 found: Include directories = ${RANGEV3_TMP}")
+        message(STATUS "-----------------------------------------------")
+    endif()
 endif()
 
 # mpi

@@ -1,11 +1,13 @@
 #include "../test_utils.hpp"
 
-#include <range/v3/all.hpp>
 #include <simplemc/grids/linear_grid.hpp>
 #include <simplemc/grids/nd_grid.hpp>
 #include <simplemc/grids/power_grid.hpp>
+#include <simplemc/utils/ranges.hpp>
 
 #include <vector>
+
+namespace rgs = simplemc::ranges;
 
 // Test 2-dimensional default constructed linear - power grid.
 TEST(SimplemcGrids, TwoDimensionalLinearPowerGridDefault) {
@@ -55,14 +57,14 @@ TEST(SimplemcGrids, TwoDimensionalLinearGrid) {
     check_range_near(grid.last(), nd_value_type { g1.last(), g1.last() });
 
     // loop over 2D grid and its views
-    using ranges::views::cartesian_product;
-    using ranges::views::iota;
+    using rgs::views::cartesian_product;
+    using rgs::views::iota;
     auto view = grid.view();
     auto view_center = grid.view_center();
     auto view_vols = grid.view_bin_volumes();
-    auto it_v = ranges::begin(view);
-    auto it_vc = ranges::begin(view_center);
-    auto it_vv = ranges::begin(view_vols);
+    auto it_v = rgs::begin(view);
+    auto it_vc = rgs::begin(view_center);
+    auto it_vv = rgs::begin(view_vols);
     for (auto [i, j] : cartesian_product(iota(0, g1.size()), iota(0, g1.size()))) {
         nd_size_type idx_arr { i, j };
         check_range_near(grid.at(idx_arr), nd_value_type { g1.at(i), g1.at(j) });
@@ -107,14 +109,14 @@ TEST(SimplemcGrids, ThreeDimensionalGrid) {
     check_range_near(grid.last(), nd_value_type { g1.last(), g2.last(), g1.last() });
 
     // loop over 3D grid and its views
-    using ranges::views::cartesian_product;
-    using ranges::views::iota;
+    using rgs::views::cartesian_product;
+    using rgs::views::iota;
     auto view = grid.view();
     auto view_center = grid.view_center();
     auto view_vols = grid.view_bin_volumes();
-    auto it_v = ranges::begin(view);
-    auto it_vc = ranges::begin(view_center);
-    auto it_vv = ranges::begin(view_vols);
+    auto it_v = rgs::begin(view);
+    auto it_vc = rgs::begin(view_center);
+    auto it_vv = rgs::begin(view_vols);
     for (auto [i, j, k] : cartesian_product(iota(0, g1.size()), iota(0, g2.size()), iota(0, g1.size()))) {
         nd_size_type idx_arr { i, j, k };
         check_range_near(grid.at(idx_arr), nd_value_type { view1[i], view2[j], view1[k] });
