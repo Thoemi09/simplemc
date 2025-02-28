@@ -15,7 +15,7 @@ namespace simplemc {
 /**
  * @ingroup simplemc-numeric-utils
  * @brief Map a domain \f$ [a, b] \f$ to the range \f$ [c, d] \f$ (and vice versa) via a linear
- * function.
+ * function \f$ y : [a, b] \in \mathbb{R} \to [c, d] \in \mathbb{R} \f$.
  *
  * @details The linear function is defined by
  * \f[
@@ -44,28 +44,26 @@ public:
     linear_map() = default;
 
     /**
-     * @brief Construct a linear map from \f$ [a, b] \f$ to \f$ [c, d] \f$.
+     * @brief Construct the linear map \f$ y : [a, b] \to [c, d] \f$.
      *
-     * @param dom `std::array<double, 2>` containing the lower and upper bound of the domain.
-     * @param rg `std::array<double, 2>` containing the lower and upper bound of the range.
+     * @param dom `std::array<double, 2>` containing the domain \f$ [a, b] \f$.
+     * @param rg `std::array<double, 2>` containing the range \f$ [c, d] \f$.
      */
     linear_map(const interval_type& dom, const interval_type& rg) { set(dom, rg); }
 
     /**
      * @brief Set the domain and the range of the linear map.
      *
-     * @param dom `std::array<double, 2>` containing the lower and upper bound of the domain.
-     * @param rg `std::array<double, 2>` containing the lower and upper bound of the range.
+     * @param dom `std::array<double, 2>` containing the domain \f$ [a, b] \f$.
+     * @param rg `std::array<double, 2>` containing the range \f$ [c, d] \f$.
      */
     void set(const interval_type& dom, const interval_type& rg);
 
     /**
      * @brief Map a value \f$ x \f$ from the domain \f$ [a, b] \f$ to the range \f$ [c, d] \f$.
      *
-     * @details It is assumed that \f$ x \in [a, b] \f$.
-     *
-     * @param x Input value \f$ \in [a, b] \f$.
-     * @return Mapped value \f$ \in [c, d] \f$.
+     * @param x Input value \f$ x \in [a, b] \f$.
+     * @return Mapped value \f$ y(x) \in [c, d] \f$.
      */
     [[nodiscard]] double map(double x) const {
         assert(x >= domain_[0] && x <= domain_[1]);
@@ -73,30 +71,28 @@ public:
     }
 
     /**
-     * @brief Use the inverse function to map a value \f$ y \f$ from the original range \f$ [c, d] \f$
+     * @brief Use the inverse function to map a value \f$ x \f$ from the original range \f$ [c, d] \f$
      * to the original domain \f$ [a, b] \f$.
      *
-     * @details It is assumed that \f$ y \in [c, d] \f$.
-     *
-     * @param y Input value \f$ \in [c, d] \f$.
-     * @return Mapped value \f$ \in [a, b] \f$.
+     * @param x Input value \f$ x \in [c, d] \f$.
+     * @return Mapped value \f$ y^{-1}(x) \in [a, b] \f$.
      */
-    [[nodiscard]] double inverse_map(double y) const {
-        assert(y >= range_[0] && y <= range_[1]);
-        return (y - beta_) / alpha_;
+    [[nodiscard]] double inverse_map(double x) const {
+        assert(x >= range_[0] && x <= range_[1]);
+        return (x - beta_) / alpha_;
     }
 
     /**
      * @brief Get the domain of the linear map.
      *
-     * @return `std::array<double, 2>` containing the lower and upper bound of the domain.
+     * @return `std::array<double, 2>` containing the domain \f$ [a, b] \f$.
      */
     [[nodiscard]] auto domain() const { return domain_; }
 
     /**
      * @brief Get the range of the linear map.
      *
-     * @return `std::array<double, 2>` containing the lower and upper bound of the range.
+     * @return `std::array<double, 2>`containing the domain \f$ [c, d] \f$.
      */
     [[nodiscard]] auto range() const { return range_; }
 

@@ -155,7 +155,7 @@ TEST(SimplemcNumeric, MakeSpan) {
     auto sp_mn = simplemc::make_span(mn);
     ASSERT_EQ(sp_mn.size(), mn.size());
     ASSERT_EQ(sp_mn.data(), &mn(0, 0));
-    Eigen::Array44f a44 = Eigen::Array44f::Random();
+    const Eigen::Array44f a44 = Eigen::Array44f::Random();
     auto sp_a44 = simplemc::make_span(a44);
     ASSERT_EQ(sp_a44.size(), a44.size());
     ASSERT_EQ(sp_a44.data(), &a44(0, 0));
@@ -194,6 +194,55 @@ TEST(SimplemcNumeric, PolarCartesianConversion) {
     Eigen::Vector2d v2_c { 1.0, 1.0 };
     check_range_near(simplemc::polar_to_cartesian(v2_p), v2_c);
     check_range_near(simplemc::cartesian_to_polar(v2_c), v2_p);
+}
+
+// Test the angle between two vectors.
+TEST(SimplemcNumeric, AngleBetweenVectors) {
+    using std::numbers::pi;
+
+    // 2D
+    Eigen::Vector2d v1 { 1, 0 };
+    Eigen::Vector2d v2 { 1, 0 };
+    ASSERT_DOUBLE_EQ(simplemc::angle(v1, v2), 0);
+    v2 = { -1, 0 };
+    ASSERT_DOUBLE_EQ(simplemc::angle(v1, v2), pi);
+    v2 = { 0, 1 };
+    ASSERT_DOUBLE_EQ(simplemc::angle(v1, v2), pi / 2);
+    v2 = { 1, 1 };
+    ASSERT_DOUBLE_EQ(simplemc::angle(v1, v2), pi / 4);
+    v2 = { 1, -1 };
+    ASSERT_DOUBLE_EQ(simplemc::angle(v1, v2), pi / 4);
+    v2 = { -1, 1 };
+    ASSERT_DOUBLE_EQ(simplemc::angle(v1, v2), 3 * pi / 4);
+    v2 = { -1, -1 };
+    ASSERT_DOUBLE_EQ(simplemc::angle(v1, v2), 3 * pi / 4);
+
+    // 3D
+    Eigen::Vector3d v3 { 1, 0, 0 };
+    Eigen::Vector3d v4 { 1, 0, 0 };
+    ASSERT_DOUBLE_EQ(simplemc::angle(v3, v4), 0);
+    v4 = { -1, 0, 0 };
+    ASSERT_DOUBLE_EQ(simplemc::angle(v3, v4), pi);
+    v4 = { 0, 0, 1 };
+    ASSERT_DOUBLE_EQ(simplemc::angle(v3, v4), pi / 2);
+    v4 = { 1, 1, 0 };
+    ASSERT_DOUBLE_EQ(simplemc::angle(v3, v4), pi / 4);
+    v4 = { 1, 0, 1 };
+    ASSERT_DOUBLE_EQ(simplemc::angle(v3, v4), pi / 4);
+}
+
+// Test the check for singular matrix.
+TEST(SimplemcNumeric, IsMatrixSingular) {
+    // 1D
+    ASSERT_TRUE(simplemc::is_matrix_singular(Eigen::Matrix<double, 1, 1> { 0 }));
+    ASSERT_FALSE(simplemc::is_matrix_singular(Eigen::Matrix<double, 1, 1> { 1e-12 }));
+
+    // 2D
+    auto mat_2d = Eigen::Matrix2d { { 1, 0 }, { 1, 0 } };
+    ASSERT_TRUE(simplemc::is_matrix_singular(mat_2d));
+    auto mat_eps = Eigen::Matrix2d { { 0, 0 }, { 0, 1e-12 } };
+    ASSERT_FALSE(simplemc::is_matrix_singular(mat_2d + mat_eps));
+    ASSERT_TRUE(simplemc::is_matrix_singular(mat_2d + mat_eps - mat_eps));
 }
 
 // Test linear maps.

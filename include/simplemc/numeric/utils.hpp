@@ -55,7 +55,7 @@ template <typename T>
  * @tparam T2 Arithmetic type.
  * @param t1 Arithmetic value #1.
  * @param t2 Arithmetic value #2.
- * @return Absolute value of their difference.
+ * @return Absolute value of their difference, i.e. \f$ | t_1 - t_2 | \f$.
  */
 template <typename T1, typename T2>
     requires std::is_arithmetic_v<T1> && std::is_arithmetic_v<T2>
@@ -69,7 +69,7 @@ template <typename T1, typename T2>
  * @tparam T Value type of `std::complex`.
  * @param z1 Complex value #1.
  * @param z2 Complex value #2.
- * @return Modulus of their difference.
+ * @return Modulus of their difference, i.e. \f$ | z_1 - z_2 | \f$.
  */
 template <typename T>
 [[nodiscard]] inline constexpr auto abs_diff(const std::complex<T>& z1, const std::complex<T>& z2) {
@@ -78,6 +78,11 @@ template <typename T>
 
 /**
  * @brief Relative difference between two arithmetic values.
+ *
+ * @details We define the relative difference as \f$ | t_1 - t_2 | / \min\{ |t_1|, |t_2| \} \f$.
+ *
+ * In case that \f$ t_1 = 0 \f$ or \f$ t_2 = 0 \f$, we set the value to the very small number
+ * `std::numeric_limits<double>::min()`, respectively.
  *
  * @tparam T1 Arithmetic type.
  * @tparam T2 Arithmetic type.
@@ -102,6 +107,11 @@ template <typename T1, typename T2>
 /**
  * @brief Relative difference between two complex values.
  *
+ * @details We define the relative difference as \f$ | z_1 - z_2 | / \min\{ |z_1|, |z_2| \} \f$.
+ *
+ * In case that \f$ |z_1| = 0 \f$ or \f$ |z_2| = 0 \f$, we set the value to the very small real number
+ * `std::numeric_limits<double>::min()`, respectively.
+ *
  * @tparam T Value type of `std::complex`.
  * @param z1 Complex value #1.
  * @param z2 Complex value #2.
@@ -121,45 +131,45 @@ template <typename T>
 }
 
 /**
- * @brief Map the given value to its principle interval `(a, b]` excluding the lower bound and
+ * @brief Map a given value \f$ x \f$ to the interval \f$ (a, b] \f$ excluding the lower bound and
  * including the upper bound.
  *
- * @details The difference `b - a` will be added to/subtracted from the given value until it lies
- * within `(a, b]`.
+ * @details The difference \f$ b - a \f$ will be added to/subtracted from \f$ x \f$ until it lies
+ * within \f$ (a, b] \f$.
  *
- * @param val Value to be mapped.
+ * @param x Value \f$ x \f$ to be mapped.
  * @param a Lower bound of the interval.
  * @param b Upper bound of the interval.
- * @return Value mapped to its principle interval.
+ * @return Mapped value \f$ \in (a, b] \f$.
  */
-[[nodiscard]] double map_to_interval(double val, double a, double b);
+[[nodiscard]] double map_to_interval(double x, double a, double b);
 
 /**
- * @brief Map the given value to its principle interval `[a, b)` excluding the upper bound and
+ * @brief Map a given value \f$ x \f$ to the interval \f$ [a, b) \f$ excluding the upper bound and
  * including the lower bound.
  *
- * @details The difference `b - a` will be added to/subtracted from the given value until it lies
- * within `[a, b)`.
+ * @details The difference \f$ b - a \f$ will be added to/subtracted from \f$ x \f$ until it lies
+ * within \f$ [a, b) \f$.
  *
- * @param val Value to be mapped.
+ * @param x Value \f$ x \f$ to be mapped.
  * @param a Lower bound of the interval.
  * @param b Upper bound of the interval.
- * @return Value mapped to its principle interval.
+ * @return Mapped value \f$ \in [a, b) \f$.
  */
-[[nodiscard]] double map_to_interval_lb(double val, double a, double b);
+[[nodiscard]] double map_to_interval_lb(double x, double a, double b);
 
 /**
- * @brief Check if a value lies within certain bounds, i.e. in the interval `(a + min_diff, b -
- * min_diff)`.
+ * @brief Check if a value \f$ x \f$ lies within certain bounds, i.e. if \f$ a + \epsilon \leq x \leq
+ * b - \epsilon \f$.
  *
- * @param val Value to be checked.
- * @param a Lower bound.
- * @param b Upper bound.
- * @param min_diff Minimum distance to bounds.
- * @return True if value lies within `(a + min_diff, b - min_diff)`.
+ * @param x Value \f$ x \f$ to be checked.
+ * @param a Lower bound \f$ a \f$.
+ * @param b Upper bound \f$ b \f$.
+ * @param eps Minimum distance \f$ \epsilon \f$ to bounds.
+ * @return True if \f$ x \in [a + \epsilon, b - \epsilon] \f$.
  */
-[[nodiscard]] inline constexpr bool within_bounds(double val, double a, double b, double min_diff) {
-    return val > a + min_diff && val < b - min_diff && isfinite(val);
+[[nodiscard]] inline constexpr bool within_bounds(double x, double a, double b, double eps) {
+    return x >= a + eps && x <= b - eps && isfinite(x);
 }
 
 /** @} */

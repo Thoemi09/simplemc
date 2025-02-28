@@ -84,16 +84,16 @@ grids to form @ref simplemc-grids-nd.
 
 ## Numerics library
 
-@ref simplemc-numeric contains some basic tools and functionality useful in many numerical and physics
-related simulations.
+@ref simplemc-numeric contains some basic tools and functionality useful in many numerical
+calculations and physics related simulations.
 
 It provides
 
 - Various @ref simplemc-numeric-lattices in 1D, 2D and 3D.
 - @ref simplemc-numeric-interpolation to perform linear and polynomial interpolation of arbitrary
 order (in N-dimensions) as well as cubic spline interpolation (only in 1D).
-- General @ref simplemc-numeric-utils that include the Eigen library and other useful functionality
-for numerical calculations.
+- General @ref simplemc-numeric-utils that include the Eigen library and other convenient features to
+simplify numerical calculations.
 - @ref simplemc-numeric-quadrature to do basic numerical integration in 1D.
 - Some @ref simplemc-numeric-functions (orthogonal polynomials), like Legendre polynomials or
 Chebyshev polynomials, that are especially useful for general Fourier series.
