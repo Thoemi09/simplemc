@@ -9,6 +9,8 @@
 
 #include <fmt/format.h>
 
+#include <string>
+
 namespace simplemc {
 
 std::string lattice_tag_to_string(const lattice_tag& tag) {

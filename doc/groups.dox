@@ -462,33 +462,74 @@
  * @ingroup simplemc-numeric
  * @brief Bravais lattices in 1D, 2D and 3D.
  *
- * @details **simplemc-numeric** defines the simplemc::bravais_class to represent a Bravais lattice
- * as well as several convenience functions that should make it easier to work with them.
+ * @details An N-dimensional Bravais lattice is defined by \f$ N \f$ linearly indepdent basis vectors
+ * \f$ \{ \mathbf{a}_1, \dots, \mathbf{a}_N \} \f$. One lattice point, \f$ \mathbf{R}^0 \f$, is in the
+ * origin and all others are obtained by translating the origin using linear combinations of the
+ * basis vectors:
+ * \f[
+ *   \mathbf{R}^{\mathbf{n}} = n_1 \mathbf{a}_1 + \dots + n_N \mathbf{a}_N = \sum_{i=1}^N n_i
+ *   \mathbf{a}_i = \mathbf{A} \mathbf{n} \; .
+ * \f]
+ * Here, \f$ \mathbf{A} = \big(\mathbf{a}_1 \cdots \mathbf{a}_N \big) \f$ is the matrix with the
+ * lattice basis vectors in its columns and \f$ \mathbf{n} = (n_1, \dots, n_N) \in \mathbb{Z}^N \f$
+ * corresponds to the lattice vector \f$ \mathbf{R}^{\mathbf{n}} \f$ in the lattice basis. In fact,
+ * any vector \f$ \mathbf{r} \f$ can be transformed from the lattice basis \f$ \{ \mathbf{a}_1, \dots,
+ * \mathbf{a}_N \} \f$ to the standard basis \f$ \{ \mathbf{e}_1, \dots, \mathbf{e}_N \} \f$ and back
+ * with \f$ \mathbf{x} = \mathbf{A} \mathbf{r} \f$ and \f$ \mathbf{r} = \mathbf{A}^{-1} \mathbf{x}
+ * \f$, respectively.
  *
- * It is recommended to use one of the provided factory functions when creating a Bravais lattice.
- * They are defined in @ref simplemc-numeric-lattices-1d, @ref simplemc-numeric-lattices-2d and
- * @ref simplemc-numeric-lattices-3d.
+ * Every real space lattice has a corresponding reciprocal lattice. The reciprocal lattice is defined
+ * by the set of vectors \f$ \{ \mathbf{b}_1, \dots, \mathbf{b}_N \} \f$ that satisfy the condition
+ * \f[
+ *   \mathbf{b}_i \cdot \mathbf{a}_j = 2 \pi \delta_{ij} \; .
+ * \f]
+ * In matrix notation, we can write this condition as \f$ \mathbf{B}^T \mathbf{A} = 2 \pi \mathbf{I}
+ * \f$, where \f$ \mathbf{B} = \big(\mathbf{b}_1 \cdots \mathbf{b}_N \big) \f$ is the matrix
+ * containing the reciprocal basis vectors as its columns and \f$ \mathbf{I} \f$ is the identity
+ * matrix. Similar to the real space lattice, any reciprocal lattice vector, \f$
+ * \mathbf{K}^{\mathbf{m}} \f$, can be obtained by a linear combination of the basis vectors, i.e.
+ * \f[
+ *   \mathbf{K}^{\mathbf{m}} = m_1 \mathbf{b}_1 + \dots + m_N \mathbf{b}_N = \sum_{i=1}^N m_i
+ *   \mathbf{b}_i = \mathbf{B} \mathbf{m} \; ,
+ * \f]
+ * with \f$ \mathbf{m} = (m_1, \dots, m_N) \in \mathbb{Z}^n \f$. To transform a vector \f$ \mathbf{k}
+ * \f$ in the reciprocal basis to the standard basis and vice versa, one uses \f$ \mathbf{x} =
+ * \mathbf{B} \mathbf{k} \f$. and \f$ \mathbf{k} = \mathbf{B}^{-1} \mathbf{x} \f$, respectively.
+ * Combining the transformation rules, we find \f$ \mathbf{r} = \mathbf{A}^{-1} \mathbf{B} \mathbf{k}
+ * \f$ and \f$ \mathbf{k} = \mathbf{B}^{-1} \mathbf{A} \mathbf{r} \f$ which maps vectors from the
+ * reciprocal to real space and back.
+ *
+ * **simplemc-numeric** defines the simplemc::bravais_lattice class to represent a Bravais
+ * lattice as well as several convenience functions that should make it easier to work with them.
+ *
+ * The lattice can be in 1, 2 or 3 dimensions. Other dimensions are not supported. It is recommended
+ * to use one of the provided factory functions when creating a Bravais lattice. They are defined in
+ * - @ref simplemc-numeric-lattices-1d,
+ * - @ref simplemc-numeric-lattices-2d and
+ * - @ref simplemc-numeric-lattices-3d.
+ *
+ * See simplemc::lattice_tag for an overview of the supported Bravais lattices.
  *
  * @code
- * #include <fmt/core.h>
+ * #include <fmt/base.h>
  * #include <simplemc/numeric.hpp>
  * #include <simplemc/utils.hpp>
  *
  * int main() {
  *     // create an FCC lattice with a lattic constant of 1.5
- *     auto fcc = simplemc::make_fcc_lattice(1.5);
+ *     auto [fcc, lattice_params] = simplemc::make_fcc_lattice(1.5);
  *
  *     // print the lattice vectors of the primitive cell
- *     fmt::print("Lattice vectors:\n{}\n", simplemc::to_string(fcc.real_lattice_vectors()));
+ *     fmt::println("Lattice vectors:\n{}\n", simplemc::to_string(fcc.real_lattice_vectors()));
  *
  *     // print the volume of the primitive cell
- *     fmt::print("Volume: {}\n", fcc.real_cell_volume());
+ *     fmt::println("Volume: {}\n", fcc.real_cell_volume());
  *
  *     // print the reciprocal lattice vectors
- *     fmt::print("Reciprocal lattice vectors:\n{}\n", simplemc::to_string(fcc.reciprocal_lattice_vectors()));
+ *     fmt::println("Reciprocal lattice vectors:\n{}\n", simplemc::to_string(fcc.reciprocal_lattice_vectors()));
  *
  *     // print the volume of the reciprocal cell
- *     fmt::print("Reciprocal volume: {}\n", fcc.reciprocal_cell_volume());
+ *     fmt::println("Reciprocal volume: {}", fcc.reciprocal_cell_volume());
  * }
  * @endcode
  *
@@ -499,11 +540,14 @@
  *    0 0.75 0.75
  * 0.75    0 0.75
  * 0.75 0.75    0
+ *
  * Volume: 0.84375
+ *
  * Reciprocal lattice vectors:
  * -4.18879  4.18879  4.18879
  *  4.18879 -4.18879  4.18879
  *  4.18879  4.18879 -4.18879
+ *
  * Reciprocal volume: 293.98543815395374
  * ```
  */
@@ -512,18 +556,54 @@
  * @defgroup simplemc-numeric-lattices-1d Bravais lattices in 1D
  * @ingroup simplemc-numeric-lattices
  * @brief Factory functions for Bravais lattices in 1D.
+ *
+ * @details In the following, we use the notation from @ref simplemc-numeric-lattices.
+ *
+ * Let \f$ \{ \mathbf{a} \} \f$ be the set of basis vectors. The 1 Bravais lattices in 1D is defined
+ * by the parameter
+ *  - \f$ a = \lVert \mathbf{a} \rVert > 0 \f$, the lattice constant in direction \f$ \mathbf{a} \f$.
+ *
+ * @note The unused parameters in the simplemc::lattice_parameters object, \f$ b \f$, \f$ c \f$, \f$
+ * \alpha \f$, \f$ \beta \f$ and \f$ \gamma \f$, are undefined and should not be used.
  */
 
 /**
  * @defgroup simplemc-numeric-lattices-2d Bravais lattices in 2D
  * @ingroup simplemc-numeric-lattices
  * @brief Factory functions for Bravais lattices in 2D.
+ *
+ * @details In the following, we use the notation from @ref simplemc-numeric-lattices.
+ *
+ * Let \f$ \{ \mathbf{a}, \mathbf{b} \} \f$ be the set of basis vectors. The 5 Bravais lattices in 2D
+ * are defined by the parameters
+ * - \f$ a = \lVert \mathbf{a} \rVert > 0 \f$, the lattice constant in direction \f$ \mathbf{a} \f$,
+ * - \f$ b = \lVert \mathbf{b} \rVert > 0 \f$, the lattice constant in direction \f$ \mathbf{b} \f$
+ * and
+ * - \f$ \gamma = \angle(\mathbf{a}, \mathbf{b}) \in (0, \pi] \f$, the angle between \f$ \mathbf{a}
+ * \f$ and \f$ \mathbf{b} \f$.
+ *
+ * @note The unused parameters in the simplemc::lattice_parameters object, \f$ c \f$, \f$ \alpha \f$
+ * and \f$ \beta \f$, are undefined and should not be used.
  */
 
 /**
  * @defgroup simplemc-numeric-lattices-3d Bravais lattices in 3D
  * @ingroup simplemc-numeric-lattices
  * @brief Factory functions for Bravais lattices in 3D.
+ *
+ * @details In the following, we use the notation from @ref simplemc-numeric-lattices.
+ *
+ * Let \f$ \{ \mathbf{a}, \mathbf{b}, \mathbf{c} \} \f$ be the set of basis vectors. The 14 Bravais
+ * lattices in 3D are defined by the parameters
+ * - \f$ a = \lVert \mathbf{a} \rVert > 0 \f$, the lattice constant in direction \f$ \mathbf{a} \f$,
+ * - \f$ b = \lVert \mathbf{b} \rVert > 0 \f$, the lattice constant in direction \f$ \mathbf{b} \f$,
+ * - \f$ c = \lVert \mathbf{c} \rVert > 0 \f$, the lattice constant in direction \f$ \mathbf{c} \f$,
+ * - \f$ \alpha = \angle(\mathbf{b}, \mathbf{c}) \in (0, \pi] \f$, the angle between \f$ \mathbf{b}
+ * \f$ and \f$ \mathbf{c} \f$,
+ * - \f$ \beta = \angle(\mathbf{a}, \mathbf{c}) \in (0, \pi] \f$, the angle between \f$ \mathbf{a}
+ * \f$ and \f$ \mathbf{c} \f$ and
+ * - \f$ \gamma = \angle(\mathbf{a}, \mathbf{b}) \in (0, \pi] \f$, the angle between \f$ \mathbf{a}
+ * \f$ and \f$ \mathbf{b} \f$.
  */
 
 /**
