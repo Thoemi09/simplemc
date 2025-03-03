@@ -14,6 +14,7 @@
 | @ref tut_random_1 | Approximating PDFs with histograms from @ref simplemc-random-samples |
 | @ref tut_grids_1 | Showcase the different @ref simplemc-grids-1d |
 | @ref tut_grids_2 | Showcase @ref simplemc-grids-nd |
+| @ref tut_numeric_1 | Working with @ref simplemc-numeric-lattices |
 
 @section tut_compilation Compiling the tutorials
 
