@@ -121,6 +121,7 @@
       </tab>
       <tab type="usergroup" url="@ref simplemc-grids" title="simplemc-grids">
         <tab type="usergroup" url="@ref simplemc-grids-1d" title="1-dimensional grids">
+          <tab type="user" url="@ref simplemc::grid_1d" title="grid_1d"/>
           <tab type="user" url="@ref simplemc::custom_grid" title="custom_grid"/>
           <tab type="user" url="@ref simplemc::grid_base" title="grid_base"/>
           <tab type="user" url="@ref simplemc::linear_grid" title="linear_grid"/>
@@ -128,8 +129,10 @@
           <tab type="user" url="@ref simplemc::symmetric_power_grid" title="symmetric_power_grid"/>
         </tab>
         <tab type="usergroup" url="@ref simplemc-grids-nd" title="N-dimensional grids">
+          <tab type="user" url="@ref simplemc::grid_nd" title="grid_nd"/>
           <tab type="user" url="@ref simplemc::nd_grid" title="nd_grid"/>
         </tab>
+        <tab type="user" url="@ref simplemc::grid_common" title="grid_common"/>
       </tab>
       <tab type="usergroup" url="@ref simplemc-numeric" title="simplemc-numeric">
         <tab type="usergroup" url="@ref simplemc-numeric-lattices" title="Bravais lattices">
