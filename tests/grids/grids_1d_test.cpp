@@ -1,9 +1,11 @@
 #include "../test_utils.hpp"
 
+#include <simplemc/grids/concepts.hpp>
 #include <simplemc/grids/custom_grid.hpp>
 #include <simplemc/grids/linear_grid.hpp>
 #include <simplemc/grids/power_grid.hpp>
 #include <simplemc/grids/symmetric_power_grid.hpp>
+#include <simplemc/grids/utils.hpp>
 #include <simplemc/utils/ranges.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
@@ -38,7 +40,7 @@ void test_1d_grids(const auto& g, auto a, auto b, auto&& view, auto&& view_cente
     for (int i = 0; auto [pt, c, vol] : rgs::views::zip(view, view_center, view_vols)) {
         ASSERT_DOUBLE_EQ(g.at(i), pt);
         ASSERT_DOUBLE_EQ(g.center(i), c);
-        ASSERT_DOUBLE_EQ(g.bin_volume(i), vol);
+        ASSERT_DOUBLE_EQ(g.volume(i), vol);
         ASSERT_EQ(g.index(pt + fac * 1e-10), i);
         ASSERT_EQ(g.index(pt + fac * 0.3 * vol), i);
         ++i;
@@ -46,10 +48,16 @@ void test_1d_grids(const auto& g, auto a, auto b, auto&& view, auto&& view_cente
     ASSERT_DOUBLE_EQ(g.at(g.size() - 1), b);
 
     // views
-    check_range_near(g.view(), view);
-    check_range_near(g.view_center(), view_center);
-    check_range_near(g.view_bin_volumes(), view_vols);
+    check_range_near(simplemc::grid_view(g), view);
+    check_range_near(simplemc::bin_center_view(g), view_center);
+    check_range_near(simplemc::bin_volume_view(g), view_vols);
 }
+
+// Test concept.
+static_assert(simplemc::grid_1d<simplemc::linear_grid>);
+static_assert(simplemc::grid_1d<simplemc::power_grid>);
+static_assert(simplemc::grid_1d<simplemc::symmetric_power_grid>);
+static_assert(simplemc::grid_1d<simplemc::custom_grid>);
 
 // Test incorrect grid sizes.
 TEST(SimplemcGrids, GridSizeCheck) {
@@ -60,28 +68,29 @@ TEST(SimplemcGrids, GridSizeCheck) {
 
 // Test index_subrange on increasing grids.
 TEST(SimplemcGrids, IndexSubrangeIncreasingGrid) {
-    simplemc::linear_grid lg { 0, 10, 11 };
-    ASSERT_EQ(lg.index_subrange(2, 0.5), 0);
-    ASSERT_EQ(lg.index_subrange(3, 1.5), 0);
-    ASSERT_EQ(lg.index_subrange(3, 2.5), 1);
-    ASSERT_EQ(lg.index_subrange(4, 2.5), 1);
-    ASSERT_EQ(lg.index_subrange(5, 2.5), 0);
-    ASSERT_EQ(lg.index_subrange(4, 9.5), 7);
-    ASSERT_EQ(lg.index_subrange(3, 9.5), 8);
-    ASSERT_EQ(lg.index_subrange(2, 9.5), 9);
+    using namespace simplemc;
+    linear_grid lg { 0, 10, 11 };
+    ASSERT_EQ(simplemc::index_subrange(lg, 2, 0.5), 0);
+    ASSERT_EQ(simplemc::index_subrange(lg, 3, 1.5), 0);
+    ASSERT_EQ(simplemc::index_subrange(lg, 3, 2.5), 1);
+    ASSERT_EQ(simplemc::index_subrange(lg, 4, 2.5), 1);
+    ASSERT_EQ(simplemc::index_subrange(lg, 5, 2.5), 0);
+    ASSERT_EQ(simplemc::index_subrange(lg, 4, 9.5), 7);
+    ASSERT_EQ(simplemc::index_subrange(lg, 3, 9.5), 8);
+    ASSERT_EQ(simplemc::index_subrange(lg, 2, 9.5), 9);
 }
 
 // Test index_subrange on decreasing grids.
 TEST(SimplemcGrids, IndexSubrangeDecreasingGrid) {
     simplemc::linear_grid lg { 10, 0, 11 };
-    ASSERT_EQ(lg.index_subrange(2, 0.5), 9);
-    ASSERT_EQ(lg.index_subrange(3, 1.5), 7);
-    ASSERT_EQ(lg.index_subrange(3, 2.5), 6);
-    ASSERT_EQ(lg.index_subrange(4, 2.5), 6);
-    ASSERT_EQ(lg.index_subrange(5, 2.5), 5);
-    ASSERT_EQ(lg.index_subrange(4, 8.5), 0);
-    ASSERT_EQ(lg.index_subrange(3, 8.5), 0);
-    ASSERT_EQ(lg.index_subrange(2, 8.5), 1);
+    ASSERT_EQ(simplemc::index_subrange(lg, 2, 0.5), 9);
+    ASSERT_EQ(simplemc::index_subrange(lg, 3, 1.5), 7);
+    ASSERT_EQ(simplemc::index_subrange(lg, 3, 2.5), 6);
+    ASSERT_EQ(simplemc::index_subrange(lg, 4, 2.5), 6);
+    ASSERT_EQ(simplemc::index_subrange(lg, 5, 2.5), 5);
+    ASSERT_EQ(simplemc::index_subrange(lg, 4, 8.5), 0);
+    ASSERT_EQ(simplemc::index_subrange(lg, 3, 8.5), 0);
+    ASSERT_EQ(simplemc::index_subrange(lg, 2, 8.5), 1);
 }
 
 // Test default linear grid.
@@ -153,8 +162,10 @@ TEST(SimplemcGrids, SymmetricPowerGridDefault) {
 
 // Test increasing symmetric power grid.
 TEST(SimplemcGrids, SymmetricPowerGridIncreasing) {
+    using namespace simplemc;
+
     // wrong grid size
-    ASSERT_THROW(simplemc::symmetric_power_grid(3, 5, 10, 1.0), simplemc::simplemc_exception);
+    ASSERT_THROW(symmetric_power_grid(3, 5, 10, 1.0), simplemc_exception);
 
     // test grid
     double begin = -10;
@@ -163,14 +174,14 @@ TEST(SimplemcGrids, SymmetricPowerGridIncreasing) {
     double power = 2.0;
     long size = 21;
     long mid_idx = static_cast<long>(size / 2) + 1;
-    simplemc::power_grid g1 { begin, mid, mid_idx, power };
-    simplemc::power_grid g2 { end, mid, mid_idx, power };
-    simplemc::symmetric_power_grid pg { begin, end, size, power };
-    check_range_near(pg.grid1().view(), g1.view());
-    check_range_near(pg.grid2().view(), g2.view());
-    auto view = concat(g1.view(), rgs::drop_view(rgs::reverse_view(g2.view()), 1));
-    auto view_center = concat(g1.view_center(), rgs::reverse_view(g2.view_center()));
-    auto view_vols = concat(g1.view_bin_volumes(), rgs::reverse_view(g2.view_bin_volumes()));
+    power_grid g1 { begin, mid, mid_idx, power };
+    power_grid g2 { end, mid, mid_idx, power };
+    symmetric_power_grid pg { begin, end, size, power };
+    check_range_near(grid_view(pg.grid1()), grid_view(g1));
+    check_range_near(grid_view(pg.grid2()), grid_view(g2));
+    auto view = concat(grid_view(g1), rgs::drop_view(rgs::reverse_view(grid_view(g2)), 1));
+    auto view_center = concat(bin_center_view(g1), rgs::reverse_view(bin_center_view(g2)));
+    auto view_vols = concat(bin_volume_view(g1), rgs::reverse_view(bin_volume_view(g2)));
     test_1d_grids(pg, begin, end, view, view_center, view_vols);
 }
 
@@ -189,11 +200,11 @@ TEST(SimplemcGrids, SymmetricPowerGridDecreasing) {
     simplemc::power_grid g1 { begin, mid, mid_idx, power };
     simplemc::power_grid g2 { end, mid, mid_idx, power };
     simplemc::symmetric_power_grid pg { begin, end, size, power };
-    check_range_near(pg.grid1().view(), g1.view());
-    check_range_near(pg.grid2().view(), g2.view());
-    auto view = concat(g1.view(), rgs::drop_view(rgs::reverse_view(g2.view()), 1));
-    auto view_center = concat(g1.view_center(), rgs::reverse_view(g2.view_center()));
-    auto view_vols = concat(g1.view_bin_volumes(), rgs::reverse_view(g2.view_bin_volumes()));
+    check_range_near(grid_view(pg.grid1()), grid_view(g1));
+    check_range_near(grid_view(pg.grid2()), grid_view(g2));
+    auto view = concat(grid_view(g1), rgs::drop_view(rgs::reverse_view(grid_view(g2)), 1));
+    auto view_center = concat(bin_center_view(g1), rgs::reverse_view(bin_center_view(g2)));
+    auto view_vols = concat(bin_volume_view(g1), rgs::reverse_view(bin_volume_view(g2)));
     test_1d_grids(pg, begin, end, view, view_center, view_vols);
 }
 

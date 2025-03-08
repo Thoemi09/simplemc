@@ -8,7 +8,10 @@
 
 namespace simplemc {
 
+template <typename>
 class grid_base;
+
+class custom_grid;
 class linear_grid;
 class power_grid;
 class symmetric_power_grid;

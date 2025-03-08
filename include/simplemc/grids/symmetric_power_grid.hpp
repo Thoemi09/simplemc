@@ -17,8 +17,8 @@ namespace simplemc {
  *
  * @details In the following, we use the notation from @ref simplemc-grids-1d.
  *
- * This class inherits from simplemc::grid_base and represents a symmetric power grid of odd size
- * \f$ M > 2 \f$ on the interval
+ * This class inherits from simplemc::grid_base and satisfies the simplemc::grid_1d concept. It
+ * represents a symmetric power grid of odd size \f$ M > 2 \f$ on the interval
  * - \f$ \mathrm{R} = [a, b] \f$ for increasing grids, i.e. \f$ a < b \f$, or
  * - \f$ \mathrm{R} = [b, a] \f$ for decreasing grids, i.e. \f$ a > b \f$.
  *
@@ -58,9 +58,9 @@ namespace simplemc {
  *     simplemc::symmetric_power_grid grid { 0.0, 1.0, 9, 2 };
  *
  *     // print the grid points, bin centers and bin volumes (sizes)
- *     fmt::println("Grid points: {}", grid.view());
- *     fmt::println("Bin centers: {}", grid.view_center());
- *     fmt::println("Bin volumes: {}", grid.view_bin_volumes());
+ *     fmt::println("Grid points: {}", simplemc::grid_view(grid));
+ *     fmt::println("Bin centers: {}", simplemc::bin_center_view(grid));
+ *     fmt::println("Bin volumes: {}", simplemc::bin_volume_view(grid));
  * }
  * @endcode
  *
@@ -72,17 +72,12 @@ namespace simplemc {
  * Bin volumes: [0.03125, 0.09375, 0.15625, 0.21875, 0.21875, 0.15625, 0.09375, 0.03125]
  * ```
  */
-class symmetric_power_grid : public grid_base {
+class symmetric_power_grid : public grid_base<symmetric_power_grid> {
 public:
     /**
-     * @brief Type of the grid's range, i.e. the type of the grid points.
+     * @brief Type of the CRTP base class.
      */
-    using value_type = grid_base::value_type;
-
-    /**
-     * @brief Type of the grid's domain, i.e. the type of the grid indices.
-     */
-    using size_type = grid_base::size_type;
+    using base_type = grid_base<symmetric_power_grid>;
 
     /**
      * @brief Default constructor constructs a symmetric power grid of size \f$ M = 3 \f$ on the
@@ -122,7 +117,7 @@ public:
             throw simplemc_exception("Number of grid points needs to be odd in symmetric_power_grid",
                 "symmetric_power_grid::check_odd_size");
         }
-        grid_base::reset(a, b, m);
+        base_type::reset(a, b, m);
         midpoint_ = (first_ + last_) / 2;
         g1_.reset(first_, midpoint_, static_cast<size_type>(size_ / 2) + 1, p);
         g2_.reset(last_, midpoint_, static_cast<size_type>(size_ / 2) + 1, p);
@@ -137,7 +132,7 @@ public:
      * @param idx Index \f$ i \f$ of the grid point.
      * @return Grid point \f$ g(i) \f$.
      */
-    [[nodiscard]] value_type at(size_type idx) const override {
+    [[nodiscard]] value_type at(size_type idx) const {
         assert(idx >= 0 && idx < size_);
         if (idx <= (size_ - 1) / 2) {
             return g1_.at(idx);
@@ -158,7 +153,7 @@ public:
      * @param value Some value \f$ x \in [a, b] \f$.
      * @return Index \f$ i = \tilde{g}^{-1}(x) \f$ of the bin \f$ b_i \f$ such that \f$ x \in b_i \f$.
      */
-    [[nodiscard]] size_type index(value_type value) const override {
+    [[nodiscard]] size_type index(value_type value) const {
         assert((first_ <= value && value <= last_) || (first_ >= value && value >= last_));
         if ((value <= midpoint_ && first_ < last_) || (value >= midpoint_ && first_ > last_)) {
             return g1_.index(value);

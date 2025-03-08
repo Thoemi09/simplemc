@@ -33,9 +33,9 @@ void test_grid(const auto& grid, std::string_view name) {
     fmt::println("{} grid of size {} on the interval [{},{}]\n", name, grid.size(), grid.first(), grid.last());
 
     // print the grid points, bin centers and bin volumes (sizes)
-    fmt::println("Grid points: {::.4g}", grid.view());
-    fmt::println("Bin centers: {::.4g}", grid.view_center());
-    fmt::println("Bin volumes: {::.4g}\n", grid.view_bin_volumes());
+    fmt::println("Grid points: {::.4g}", simplemc::grid_view(grid));
+    fmt::println("Bin centers: {::.4g}", simplemc::bin_center_view(grid));
+    fmt::println("Bin volumes: {::.4g}\n", simplemc::bin_volume_view(grid));
 
     // find the bin b_i to which a value x belongs
     simplemc::xoshiro256pp rng {};
@@ -293,9 +293,9 @@ void test_grid(const auto& grid, std::string_view name) {
     fmt::println("{} grid of size {} on the interval [{},{}]\n", name, grid.size(), grid.first(), grid.last());
 
     // print the grid points, bin centers and bin volumes (sizes)
-    fmt::println("Grid points: {::.4g}", grid.view());
-    fmt::println("Bin centers: {::.4g}", grid.view_center());
-    fmt::println("Bin volumes: {::.4g}\n", grid.view_bin_volumes());
+    fmt::println("Grid points: {::.4g}", simplemc::grid_view(grid));
+    fmt::println("Bin centers: {::.4g}", simplemc::bin_center_view(grid));
+    fmt::println("Bin volumes: {::.4g}\n", simplemc::bin_volume_view(grid));
 
     // find the bin b_i to which a value x belongs
     simplemc::xoshiro256pp rng {};

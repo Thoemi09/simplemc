@@ -88,7 +88,7 @@ To better see this, let's print the grid points of our 2D grid in matrix form:
 ```cpp
 // print grid points
 fmt::println("Grid points:");
-print_2d_view(grid_2d.view(), shape[0], shape[1]);
+print_2d_view(simplemc::grid_view(grid_2d), shape[0], shape[1]);
 ```
 
 Output:
@@ -118,10 +118,10 @@ The views on bin centers and bin volumes are traversed in the same way, except t
 
 ```cpp
 // print bin centers
-fmt::println("Bin centers: {}\n", grid_2d.view_center());
+fmt::println("Bin centers: {}\n", simplemc::bin_center_view(grid_2d));
 
 // print bin volumes
-fmt::println("Bin volumes: {}\n", grid_2d.view_bin_volumes());
+fmt::println("Bin volumes: {}\n", simplemc::bin_volume_view(grid_2d));
 ```
 
 Output:
@@ -221,13 +221,13 @@ int main() {
 
     // print grid points
     fmt::println("Grid points:");
-    print_2d_view(grid_2d.view(), shape[0], shape[1]);
+    print_2d_view(simplemc::grid_view(grid_2d), shape[0], shape[1]);
 
     // print bin centers
-    fmt::println("Bin centers: {}\n", grid_2d.view_center());
+    fmt::println("Bin centers: {}\n", simplemc::bin_center_view(grid_2d));
 
     // print bin volumes
-    fmt::println("Bin volumes: {}\n", grid_2d.view_bin_volumes());
+    fmt::println("Bin volumes: {}\n", simplemc::bin_volume_view(grid_2d));
 
     // find the bin b_i to which a value x belongs
     simplemc::xoshiro256pp rng {};

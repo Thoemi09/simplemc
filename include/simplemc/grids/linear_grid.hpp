@@ -16,8 +16,8 @@ namespace simplemc {
  *
  * @details In the following, we use the notation from @ref simplemc-grids-1d.
  *
- * This class inherits from simplemc::grid_base and represents a uniform grid of size \f$ M \geq 2 \f$
- * on the interval
+ * This class inherits from simplemc::grid_base and satisfies the simplemc::grid_1d concept. It
+ * represents a uniform grid of size \f$ M \geq 2 \f$ on the interval
  * - \f$ \mathrm{R} = [a, b] \f$ for increasing grids, i.e. \f$ a < b \f$, or
  * - \f$ \mathrm{R} = [b, a] \f$ for decreasing grids, i.e. \f$ a > b \f$.
  *
@@ -43,9 +43,9 @@ namespace simplemc {
  *     simplemc::linear_grid grid { 0.0, 1.0, 5 };
  *
  *     // print the grid points, bin centers and bin volumes (sizes)
- *     fmt::println("Grid points: {}", grid.view());
- *     fmt::println("Bin centers: {}", grid.view_center());
- *     fmt::println("Bin volumes: {}", grid.view_bin_volumes());
+ *     fmt::println("Grid points: {}", simplemc::grid_view(grid));
+ *     fmt::println("Bin centers: {}", simplemc::bin_center_view(grid));
+ *     fmt::println("Bin volumes: {}", simplemc::bin_volume_view(grid));
  * }
  * @endcode
  *
@@ -57,17 +57,12 @@ namespace simplemc {
  * Bin volumes: [0.25, 0.25, 0.25, 0.25]
  * ```
  */
-class linear_grid : public grid_base {
+class linear_grid : public grid_base<linear_grid> {
 public:
     /**
-     * @brief Type of the grid's range, i.e. the type of the grid points.
+     * @brief Type of the CRTP base class.
      */
-    using value_type = grid_base::value_type;
-
-    /**
-     * @brief Type of the grid's domain, i.e. the type of the grid indices.
-     */
-    using size_type = grid_base::size_type;
+    using base_type = grid_base<linear_grid>;
 
     /**
      * @brief Default constructor constructs a linear grid of size \f$ M = 2 \f$ on the interval \f$
@@ -91,7 +86,7 @@ public:
      * @brief Reset the linear grid by specifying its first and last grid points, \f$ a \f$ and \f$ b
      * \f$, and its size \f$ M \f$.
      *
-     * @details It forwards the arguments to grid_base::reset and sets the step size \f$ \Delta =
+     * @details It forwards the arguments to base_type::reset and sets the step size \f$ \Delta =
      * (b - a) / (M - 1) \f$.
      *
      * @param a First value of the grid, \f$ a = g(0) \f$.
@@ -99,7 +94,7 @@ public:
      * @param m Number of grid points \f$ M \f$.
      */
     void reset(value_type a, value_type b, size_type m) {
-        grid_base::reset(a, b, m);
+        base_type::reset(a, b, m);
         step_ = (last_ - first_) / (static_cast<double>(size_) - 1.0);
     }
 
@@ -111,7 +106,7 @@ public:
      * @param idx Index \f$ i \f$ of the grid point.
      * @return Grid point \f$ g(i) \f$.
      */
-    [[nodiscard]] value_type at(size_type idx) const override {
+    [[nodiscard]] value_type at(size_type idx) const {
         assert(idx >= 0 && idx < size_);
         return first_ + step_ * static_cast<double>(idx);
     }
@@ -126,7 +121,7 @@ public:
      * @param value Some value \f$ x \in [a, b] \f$.
      * @return Index \f$ i = \tilde{g}^{-1}(x) \f$ of the bin \f$ b_i \f$ such that \f$ x \in b_i \f$.
      */
-    [[nodiscard]] size_type index(value_type value) const override {
+    [[nodiscard]] size_type index(value_type value) const {
         assert((first_ <= value && value <= last_) || (first_ >= value && value >= last_));
         return static_cast<size_type>((value - first_) / step_);
     }
@@ -137,7 +132,7 @@ public:
      * @param idx Bin index \f$ i \f$.
      * @return Volume (size) of the bin \f$ b_i \f$.
      */
-    [[nodiscard]] value_type bin_volume([[maybe_unused]] size_type idx) const override {
+    [[nodiscard]] value_type volume([[maybe_unused]] size_type idx) const {
         assert(idx >= 0 && idx + 1 < size_);
         return std::abs(step_);
     }
@@ -148,7 +143,7 @@ public:
      * @param idx Bin index \f$ i \f$.
      * @return Center of the bin \f$ b_i \f$.
      */
-    [[nodiscard]] value_type center(size_type idx) const override {
+    [[nodiscard]] value_type center(size_type idx) const {
         assert(idx >= 0 && idx + 1 < size_);
         return at(idx) + step_ / 2.;
     }

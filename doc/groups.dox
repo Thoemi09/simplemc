@@ -375,11 +375,11 @@
  * int main() {
  *     // create a 1-dimensional grid of size 3
  *     simplemc::linear_grid grid_1d { 0.0, 1.0, 3 };
- *     fmt::println("1d: {}", grid_1d.view());
+ *     fmt::println("1d: {}", simplemc::grid_view(grid_1d));
  *
  *     // create a 2-dimensional grid of size 3x3
  *     simplemc::nd_grid grid_2d { grid_1d, grid_1d };
- *     fmt::println("2d: {}", grid_2d.view());
+ *     fmt::println("2d: {}", simplemc::grid_view(grid_2d));
  * }
  * @endcode
  *
@@ -431,15 +431,17 @@
  * @brief A generic grid on \f$ \mathbb{R}^N \f$.
  *
  * @details An N-dimensional grid consists of \f$ N \f$ @ref simplemc-grids-1d, i.e. along the first
- * dimension lies the grid \f$ g_1 : \mathrm{I}_1 \to \mathbb{R} \f$, along the second dimension lies
- * grid \f$ g_2 : \mathrm{I}_2 \to \mathbb{R} \f$ and so on.
+ * dimension lies the grid \f$ g_1 : \mathrm{I}_1 \to [a_1, b_1] = \mathrm{R}_1 \f$, along the second
+ * dimension lies grid \f$ g_2 : \mathrm{I}_2 \to [a_2, b_2] = \mathrm{R}_2 \f$ and so on.
  *
  * The map \f$ g : \mathrm{I} \to \mathrm{R} \f$ from the set \f$ \mathrm{I} = \mathrm{I}_1 \times
  * \dots \times \mathrm{I}_N \f$ to \f$ \mathrm{R} = [a_1, b_1] \times \dots \times [a_N, b_N] \in
- * \mathbb{R}^N \f$ is then defined as \f$ g(i_1, \dots, i_N) = (g_1(i_1), \dots, g_N(i_N)) \f$.
+ * \mathbb{R}^N \f$ is then defined as \f$ g(\mathbf{i}) =  g(i_1, \dots, i_N) = (g_1(i_1), \dots,
+ * g_N(i_N)) \f$.
  *
- * The inverse map \f$ \tilde{g}^{-1} : \mathrm{R} \to \mathrm{I} \f$ is similarly defines as \f$
- * \tilde{g}^{-1}(x_1, \dots, x_N) = (\tilde{g}^{-1}_1(x_1), \dots, \tilde{g}^{-1}_N(x_N)) \f$.
+ * The inverse map \f$ \tilde{g}^{-1} : \mathrm{R} \to \mathrm{I} \f$ is similarly defined as \f$
+ * \tilde{g}^{-1}(\mathbf{x}) = \tilde{g}^{-1}(x_1, \dots, x_N) = (\tilde{g}^{-1}_1(x_1), \dots,
+ * \tilde{g}^{-1}_N(x_N)) \f$.
  *
  * The size of the grid, i.e. the total number of grid points, is given by \f$ M = M_1 \times \dots
  * \times M_N \f$, where \f$ M_i \f$ is the size of the i<sup>th</sup> grid.
