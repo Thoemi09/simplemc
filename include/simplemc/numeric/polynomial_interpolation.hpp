@@ -118,7 +118,7 @@ public:
      * @return Interpolated value.
      */
     [[nodiscard]] double operator()(double x) const {
-        auto idx = grid_.index_subrange(npoints_, x);
+        auto idx = index_subrange(grid_, npoints_, x);
         for (std::size_t i = 0; i < npoints_; ++i) {
             fvec_[i] = fvals_[idx + i];
             xvec_[i] = x - grid_.at(idx + i);
@@ -221,13 +221,12 @@ public:
         grid_(grid),
         fvals_(fvals),
         npoints_(degree + 1) {
-        if (grid_.size() != static_cast<grid_type::size_type>(fvals_.size())) {
+        if (grid_.size() != static_cast<long>(fvals_.size())) {
             throw simplemc_exception("Number of grid points not equal to number of y values.",
                 "polynomial_interpolation_nd::polynomial_interpolation_nd");
         }
         if (std::apply(
-                [this](const auto... x) { return ((x.size() < static_cast<grid_type::size_type>(npoints_)) && ...); },
-                grid_.grids())) {
+                [this](const auto... x) { return ((x.size() < static_cast<long>(npoints_)) && ...); }, grid_.grids())) {
             throw simplemc_exception(
                 "Degree of polynomial too high", "polynomial_interpolation_nd::polynomial_interpolation_nd");
         }
@@ -246,8 +245,8 @@ public:
      * @param x_arr Value array at which we seek the function value, i.e. \f$ \mathbf{x} \f$.
      * @return Interpolated value.
      */
-    [[nodiscard]] double operator()(const grid_type::nd_value_type& x_arr) const {
-        const auto idx_arr = grid_.index_subrange(npoints_, x_arr);
+    [[nodiscard]] double operator()(const grid_type::value_type& x_arr) const {
+        const auto idx_arr = index_subrange(grid_, npoints_, x_arr);
         return interp_poly_nd<dim() - 1>(x_arr, idx_arr, grid_.shape());
     }
 
@@ -263,7 +262,7 @@ public:
      */
     template <typename... Vals>
     [[nodiscard]] double operator()(Vals... xs) const {
-        return this->operator()(typename grid_type::nd_value_type { xs... });
+        return this->operator()(typename grid_type::value_type { xs... });
     }
 
     /**
@@ -292,8 +291,8 @@ private:
     // function value (the vector x), the index array representing the lower left corner of the
     // hypercube in which we interpolate and the shape of the grid.
     template <int N>
-    double interp_poly_nd(const typename grid_type::nd_value_type& x_arr, const typename Grid::nd_size_type& idx_arr,
-        const typename Grid::nd_size_type& shape_arr) const {
+    double interp_poly_nd(const typename grid_type::value_type& x_arr, const typename Grid::size_type& idx_arr,
+        const typename Grid::size_type& shape_arr) const {
         static_assert(N >= 0 && N < Grid::dim(), "Invalid template parameter in interp_poly_nd.");
         auto idx_p_arr = idx_arr;
         const auto& grid_n = std::get<N>(grid_.grids());

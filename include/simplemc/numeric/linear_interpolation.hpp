@@ -36,8 +36,8 @@ inline double interp_linear_1d(double xd, double f0, double f1) {
 //
 // This function is called recursively, with N being the current dimension.
 template <int N, typename Grid, nd_order Order = column_major>
-inline double interp_linear_nd(const typename Grid::nd_size_type& idx_arr, const typename Grid::nd_value_type& xd_arr,
-    const std::span<double>& fvals, const typename Grid::nd_size_type& shape_arr,
+inline double interp_linear_nd(const typename Grid::size_type& idx_arr, const typename Grid::value_type& xd_arr,
+    const std::span<double>& fvals, const typename Grid::size_type& shape_arr,
     [[maybe_unused]] Order order = Order {}) {
     static_assert(N >= 0 && N < Grid::dim(), "Invalid template parameter in interp_linear_nd.");
     auto idx_p1_arr = idx_arr;
@@ -59,9 +59,9 @@ inline double interp_linear_nd(const typename Grid::nd_size_type& idx_arr, const
 // index array of the lower left corner of the hypercube, the value array containing the point x and
 // the grid.
 template <typename Grid, std::size_t... Is>
-inline auto distance_ratios(const typename Grid::nd_size_type& idx_arr, const typename Grid::nd_value_type& x_arr,
+inline auto distance_ratios(const typename Grid::size_type& idx_arr, const typename Grid::value_type& x_arr,
     const Grid& grid, std::index_sequence<Is...>) {
-    return typename Grid::nd_value_type { (x_arr[Is] - std::get<Is>(grid.grids()).at(idx_arr[Is])) /
+    return typename Grid::value_type { (x_arr[Is] - std::get<Is>(grid.grids()).at(idx_arr[Is])) /
         (std::get<Is>(grid.grids()).at(idx_arr[Is] + 1) - std::get<Is>(grid.grids()).at(idx_arr[Is]))... };
 }
 
@@ -131,7 +131,7 @@ public:
      * @return Interpolated value.
      */
     [[nodiscard]] double operator()(double x) const {
-        const auto idx = grid_.index_subrange(2, x);
+        const auto idx = index_subrange(grid_, 2, x);
         const auto xd = (x - grid_.at(idx)) / (grid_.at(idx + 1) - grid_.at(idx));
         return detail::interp_linear_1d(xd, fvals_[idx], fvals_[idx + 1]);
     }
@@ -218,7 +218,7 @@ public:
         const grid_type& grid, const std::span<double>& fvals, [[maybe_unused]] Order order = Order {}) :
         grid_(grid),
         fvals_(fvals) {
-        if (grid.size() != static_cast<grid_type::size_type>(fvals_.size())) {
+        if (grid.size() != static_cast<long>(fvals_.size())) {
             throw simplemc_exception("Number of grid points not equal to number of y values.",
                 "linear_interpolation_nd::linear_interplation_nd");
         }
@@ -233,8 +233,8 @@ public:
      * @param x_arr Value array at which we seek the function value, i.e. \f$ \mathbf{x} \f$.
      * @return Interpolated value.
      */
-    [[nodiscard]] double operator()(const grid_type::nd_value_type& x_arr) const {
-        const auto idxs = grid_.index_subrange(2, x_arr);
+    [[nodiscard]] double operator()(const grid_type::value_type& x_arr) const {
+        const auto idxs = index_subrange(grid_, 2, x_arr);
         const auto xds = detail::distance_ratios(idxs, x_arr, grid_, std::make_index_sequence<dim()>());
         return detail::interp_linear_nd<dim() - 1, grid_type>(idxs, xds, fvals_, grid_.shape(), Order {});
     }
@@ -251,7 +251,7 @@ public:
      */
     template <typename... Vals>
     [[nodiscard]] double operator()(Vals... xs) const {
-        return this->operator()(typename grid_type::nd_value_type { xs... });
+        return this->operator()(typename grid_type::value_type { xs... });
     }
 
     /**

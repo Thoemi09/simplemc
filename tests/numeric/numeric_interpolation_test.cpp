@@ -250,7 +250,7 @@ TEST(SimplemcNumeric, CubicSplineInterpolation) {
     double yp_n = 3 * a - 2 * b + c;
     simplemc::cubic_spline_interpolation ci(xgrid, f);
     simplemc::cubic_spline_interpolation ci_wf(xgrid, f, yp_0, yp_n);
-    auto xvals = to_vector(xgrid.view());
+    auto xvals = to_vector(simplemc::grid_view(xgrid));
     tk::spline tki(xvals, f);
     tk::spline tki_wf(
         xvals, f, tk::spline::cspline, false, tk::spline::first_deriv, yp_0, tk::spline::first_deriv, yp_n);

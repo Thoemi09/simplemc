@@ -206,7 +206,7 @@ public:
      * @return Interpolated value.
      */
     [[nodiscard]] double operator()(double x) const {
-        const auto idx = grid_.index_subrange(2, x);
+        const auto idx = index_subrange(grid_, 2, x);
         const double xp1 = grid_.at(idx + 1);
         const double xp = grid_.at(idx);
         const double h = xp1 - xp;
