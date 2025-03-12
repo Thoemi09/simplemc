@@ -613,13 +613,38 @@
  * @ingroup simplemc-numeric
  * @brief Basic interpolation strategies in N-dimensions.
  *
- * @details For interpolating 1-dimensional functions, **simplemc-numeric** implements the following
- * strategies:
+ * @details The interpolation tools in **simplemc** are restricted to scalar-valued functions of the
+ * form \f$ f : \mathrm{D} \subset \mathbb{R} \to \mathbb{R} \f$ and \f$ f : \mathrm{D} \subset
+ * \mathbb{R}^N \to \mathbb{R} \f$, where \f$ \mathrm{D} \f$ is some bounded domain. They all work on
+ * the same principles.
+ *
+ * In case \f$ \mathrm{D} \subset \mathbb{R} \f$,
+ * - Discretize the domain \f$ \mathrm{D} \f$ using a grid \f$ g \f$ satisfying the simplemc::grid_1d
+ * concept.
+ * - Obtain function values \f$ f_i = f(g(i)) \f$ at all grid points \f$ g(i) \f$.
+ * - Construct an interpolation object `interp` with the grid \f$ g \f$ and the functions values \f$
+ * f_i \f$.
+ * - Use the function call operator `interp(x)` to interpolate at the value \f$ x \in \mathrm{D} \f$.
+ *
+ * In case \f$ \mathrm{D} \subset \mathbb{R}^N \f$,
+ * - Discretize the domain \f$ \mathrm{D} \f$ using a grid \f$ g \f$ satisfying the simplemc::grid_nd
+ * concept.
+ * - Obtain function values \f$ f_{i_1 \cdots i_N} = f(g(i_1, \dots, i_N)) \f$ at all grid points
+ * \f$ g(i_1, \dots, i_N) \f$ in N-dimensions.
+ * - Construct an interpolation object `interp` with the grid \f$ g \f$, the functions values \f$
+ * f_{i_1 \cdots i_N} \f$ and a simplemc::nd_order that specifies in what order the function values
+ * are stored in memory.
+ * - Use the function call operator `interp(x)` to interpolate at the value \f$ \mathbf{x} = (x_1,
+ * \dots, x_N) \in \mathrm{D} \f$.
+ *
+ * For interpolating scalar-valued functions defined on \f$ \mathrm{D} \subset \mathbb{R} \f$,
+ * **simplemc-numeric** implements the following strategies:
  * - simplemc::linear_interpolation,
  * - simplemc::polynomial_interpolation and
  * - simplemc::cubic_spline_interpolation.
  *
- * For interpolating functions in higher dimensions, one can use
+ * For interpolating scalar-valued functions defined on \f$ \mathrm{D} \subset \mathbb{R}^N \f$, one
+ * can use
  * - simplemc::linear_interpolation_nd and
  * - simplemc::polynomial_interpolation_nd.
  */
