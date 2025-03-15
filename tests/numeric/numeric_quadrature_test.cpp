@@ -1,20 +1,31 @@
 #include "../test_utils.hpp"
 
+#include <fmt/base.h>
 #include <simplemc/grids.hpp>
 #include <simplemc/numeric/polynomial_interpolation.hpp>
 #include <simplemc/numeric/quadrature.hpp>
 
-#include <fmt/core.h>
-
+#include <array>
 #include <cmath>
 #include <numbers>
+#include <vector>
 
 // Test basic quadrature class.
 TEST(SimplemcNumeric, BasicQuadrature) {
-    auto integrand = [](double x) { return std::sin(x); };
-    simplemc::basic_quadrature bq(0, std::numbers::pi);
+    using std::numbers::pi;
+    simplemc::basic_quadrature bq([](double x) { return std::sin(x); }, 0, pi);
+    ASSERT_EQ(bq.integration_limits(), (std::array { 0.0, pi }));
+    ASSERT_EQ(bq.level(), 1);
+    ASSERT_DOUBLE_EQ(bq.current(), (std::sin(pi) - std::sin(0)) * 0.5 * pi);
+    double current = bq.current();
+    double last = 0.0;
     for (int i = 0; i < 20; ++i) {
-        bq.next(integrand);
+        bq.next();
+        ASSERT_EQ(bq.last(), current);
+        last = current;
+        current = bq.current();
+        ASSERT_EQ(std::abs(current - last) <= 1e-5 * std::abs(current), bq.is_converged(1e-5));
+        ASSERT_EQ(bq.level(), i + 2);
     }
     ASSERT_NEAR(bq.current(), 2.0, 1e-10);
 }
