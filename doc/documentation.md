@@ -95,8 +95,8 @@ order (in N-dimensions) as well as cubic spline interpolation (only in 1D).
 - General @ref simplemc-numeric-utils that include the Eigen library and other convenient features to
 simplify numerical calculations.
 - @ref simplemc-numeric-quadrature to do basic numerical integration in 1D.
-- Some @ref simplemc-numeric-functions (orthogonal polynomials), like Legendre polynomials or
-Chebyshev polynomials, that are especially useful for general Fourier series.
+- Some implementations of @ref simplemc-numeric-poly, like Legendre polynomials or Chebyshev
+polynomials, that are especially useful for general Fourier series.
 
 ## Accumulator library
 

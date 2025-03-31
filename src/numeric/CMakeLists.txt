@@ -17,8 +17,7 @@ target_sources(simplemc-numeric
         legendre_polynomial.cpp
         chebyshev_polynomial.cpp
         laguerre_polynomial.cpp
-        hermite_polynomial.cpp
-        trigonometric_polynomial.cpp)
+        hermite_polynomial.cpp)
 target_link_libraries(simplemc-numeric
     PUBLIC
         simplemc::simplemc-grids

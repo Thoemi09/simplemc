@@ -708,49 +708,35 @@
  */
 
 /**
- * @defgroup simplemc-numeric-functions Special functions
+ * @defgroup simplemc-numeric-poly Orthogonal polynomials
  * @ingroup simplemc-numeric
- * @brief Implementation of special functions.
+ * @brief Implementation of various types of orthogonal polynomials.
  *
- * @details **simplemc-numeric** provides some useful implementations of orthogonal polynomials. All
- * of them use a recurrence relation to calculate higher order polynomials at some specific \f$ x \f$
- * value. This is often needed when estimating or evaluating a generalized Fourier series
+ * @details An orthogonal polynomial is a sequence of functions \f$ (p_l)_{l=0}^\infty \f$ such that
+ * any two different polynomials in the sequence are orthogonal with respect to the inner product
+ * \f[
+ *   \langle p_l, p_k \rangle = \int_a^b p_l(x) p_k(x) W(x) dx = N_l \delta_{lk} \; ,
+ * \f]
+ * where \f$ l \f$ is the order of the polynomial \f$ p_l \f$, \f$ W(x) \f$ is a weight function, \f$ [
+ * a, b] \f$ is the domain of the polynomials, i.e. \f$ p_l : \mathrm{D} = [a, b] \to \mathbb{R} \f$,
+ * and \f$ N_l \f$ is an order dependent normalization factor.
+ *
+ * **simplemc-numeric** provides implementations of some common types of orthogonal polynomials:
+ * - simplemc::legendre_polynomial: Legendre polynomials \f$ P_l(x) \f$.
+ * - simplemc::chebyshev_polynomial_first: Chebyshev polynomials of the first kind \f$ T_l(x) \f$.
+ * - simplemc::chebyshev_polynomial_second: Chebyshev polynomials of the second kind \f$ U_l(x) \f$.
+ * - simplemc::hermite_polynomial: Hermite polynomials \f$ H_l(x) \f$.
+ * - simplemc::laguerre_polynomial: Laguerre polynomials \f$ L_l(x) \f$.
+ *
+ *
+ * All of them use a recurrence relation to evaluate higher order polynomials \f$ p_l(x) \f$ at a
+ * specific \f$ x \in \mathrm{D} \f$ based on previous orders \f$ p_{l-1}(x) \f$, \f$ p_{l-2}(x) \f$,
+ * \f$ \dots \f$. This is often useful when estimating or evaluating a generalized Fourier series
  * \f[
  *   f(x) = \sum_{l=0}^\infty f_l p_l(x) \; ,
  * \f]
  * where \f$ f_l \f$ is a Fourier coefficient and \f$ p_l(x) \f$ is the l<sup>th</sup> order
  * polynomial.
- *
- * The following example simply outputs the first ten Legendre polynomials evaluated at \f$ x = 0.1234
- * \f$:
- *
- * @code
- * // create a legendre polynomial object at x
- * const double x = 0.1234;
- * auto lp = simplemc::legendre_polynomial(x);
- *
- * // output the first 10 Legendre polynomials evaluated at x
- * fmt::print("{:<5}{:<15}\n", "l", "p_l(x)");
- * for (int i = 0; i < 10; ++i) {
- *     fmt::print("{:<5}{:<15.10f}\n", i, lp.next());
- * }
- * @endcode
- *
- * Output:
- *
- * ```
- * l    p_l(x)
- * 0    1.0000000000
- * 1    0.1234000000
- * 2    -0.4771586600
- * 3    -0.1804022977
- * 4    0.3189111188
- * 5    0.2151583759
- * 6    -0.2170832691
- * 7    -0.2341707480
- * 8    0.1357666036
- * 9    0.2397974628
- * ```
  */
 
 /**

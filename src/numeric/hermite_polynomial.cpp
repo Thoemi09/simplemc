@@ -7,26 +7,21 @@
 
 namespace simplemc {
 
-hermite_polynomial::hermite_polynomial(double x) : orthogonal_polynomial { x, 1.0, 2.0 * x, 0.0, 2.0 } {}
+hermite_polynomial::hermite_polynomial(double x) : x_(x), hlm1_(0), hl_(1), dhlm1_(0), dhl_(0) {}
 
 double hermite_polynomial::next() {
-    switch (l_) {
-        case 0:
-            yl_ = y1_;
-            ylm1_ = y0_;
-            dyl_ = dy1_;
-            dylm1_ = dy0_;
-            break;
-        default:
-            double ylp1 = 2.0 * x_ * yl_ - 2.0 * l_ * ylm1_;
-            double dylp1 = 2.0 * (l_ + 1) * yl_;
-            ylm1_ = yl_;
-            yl_ = ylp1;
-            dylm1_ = dyl_;
-            dyl_ = dylp1;
+    double hlp1 = 2.0 * x_;
+    double dhp1 = 2.0;
+    if (l_ > 0) {
+        hlp1 = 2.0 * x_ * hl_ - 2.0 * l_ * hlm1_;
+        dhp1 = 2.0 * (l_ + 1) * hl_;
     }
+    hlm1_ = hl_;
+    hl_ = hlp1;
+    dhlm1_ = dhl_;
+    dhl_ = dhp1;
     ++l_;
-    return ylm1_;
+    return hlm1_;
 }
 
 } // namespace simplemc

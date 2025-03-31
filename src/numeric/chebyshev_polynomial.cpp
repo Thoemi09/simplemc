@@ -8,43 +8,37 @@
 
 namespace simplemc {
 
-chebyshev_polynomial_first::chebyshev_polynomial_first(double x) : orthogonal_polynomial { x, 1.0, x, 0.0, 1.0 } {
+chebyshev_polynomial_first::chebyshev_polynomial_first(double x) : x_(x), tlm1_(0), tl_(1), dtlm1_(0), dtl_(0) {
     if (std::abs(x_) > 1) {
         throw simplemc_exception("Chebyshev polynomials are only defined on the interval [-1, 1]",
             "chebyshev_polynomial_first::chebyshev_polynomial_first");
     }
 }
 
-double chebyshev_polynomial_first::normalization(int l) const {
+double chebyshev_polynomial_first::norm(int l) const {
     assert(l >= 0);
-    switch (l) { // NOLINT (no default is intended)
-        case 0: return std::numbers::pi;
+    if (l == 0) {
+        return std::numbers::pi;
     }
-    return 2.0 * std::numbers::pi;
+    return 0.5 * std::numbers::pi;
 }
 
 double chebyshev_polynomial_first::next() {
-    switch (l_) {
-        case 0:
-            yl_ = y1_;
-            ylm1_ = y0_;
-            dyl_ = dy1_;
-            dylm1_ = dy0_;
-            break;
-        default:
-            double ylp1 = 2.0 * x_ * yl_ - ylm1_;
-            double dylp1 = 2.0 * (yl_ + x_ * dyl_) - dylm1_;
-            ylm1_ = yl_;
-            yl_ = ylp1;
-            dylm1_ = dyl_;
-            dyl_ = dylp1;
+    double tlp1 = x_;
+    double dtlp1 = 1;
+    if (l_ > 0) {
+        tlp1 = 2.0 * x_ * tl_ - tlm1_;
+        dtlp1 = 2.0 * (tl_ + x_ * dtl_) - dtlm1_;
     }
+    tlm1_ = tl_;
+    tl_ = tlp1;
+    dtlm1_ = dtl_;
+    dtl_ = dtlp1;
     ++l_;
-    return ylm1_;
+    return tlm1_;
 }
 
-chebyshev_polynomial_second::chebyshev_polynomial_second(double x) :
-    orthogonal_polynomial { x, 1.0, 2.0 * x, 0.0, 2.0 } {
+chebyshev_polynomial_second::chebyshev_polynomial_second(double x) : x_(x), ulm1_(0), ul_(1), dulm1_(0), dul_(0) {
     if (std::abs(x_) > 1) {
         throw simplemc_exception("Chebyshev polynomials are only defined on the interval [-1, 1]",
             "chebyshev_polynomial_second::chebyshev_polynomial_second");
@@ -52,23 +46,18 @@ chebyshev_polynomial_second::chebyshev_polynomial_second(double x) :
 }
 
 double chebyshev_polynomial_second::next() {
-    switch (l_) {
-        case 0:
-            yl_ = y1_;
-            ylm1_ = y0_;
-            dyl_ = dy1_;
-            dylm1_ = dy0_;
-            break;
-        default:
-            double ylp1 = 2.0 * x_ * yl_ - ylm1_;
-            double dylp1 = 2.0 * (yl_ + x_ * dyl_) - dylm1_;
-            ylm1_ = yl_;
-            yl_ = ylp1;
-            dylm1_ = dyl_;
-            dyl_ = dylp1;
+    double ulp1 = 2.0 * x_;
+    double dulp1 = 2.0;
+    if (l_ > 0) {
+        ulp1 = 2.0 * x_ * ul_ - ulm1_;
+        dulp1 = 2.0 * (ul_ + x_ * dul_) - dulm1_;
     }
+    ulm1_ = ul_;
+    ul_ = ulp1;
+    dulm1_ = dul_;
+    dul_ = dulp1;
     ++l_;
-    return ylm1_;
+    return ulm1_;
 }
 
 } // namespace simplemc

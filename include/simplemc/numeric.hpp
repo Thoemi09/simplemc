@@ -20,7 +20,6 @@
 #include <simplemc/numeric/linear_map.hpp>
 #include <simplemc/numeric/orthogonal_polynomial.hpp>
 #include <simplemc/numeric/polynomial_interpolation.hpp>
-#include <simplemc/numeric/trigonometric_polynomial.hpp>
 #include <simplemc/numeric/quadrature.hpp>
 #include <simplemc/numeric/utils.hpp>
 

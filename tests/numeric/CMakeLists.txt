@@ -8,7 +8,8 @@
 # numeric-3d-lattices-test: Executable to test the 3D lattices of simplemc-numeric.
 # numeric-interpolation-test: Executable to test the interpolation tools of simplemc-numeric.
 # numeric-quadrature-test: Executable to test the quadrature tools of simplemc-numeric.
-# numeric-special-functions-test: Executable to test the special functions of simplemc-numeric.
+# numeric-orthogonal-polynomials-test: Executable to test the orthogonal polynomials of
+# simplemc-numeric.
 
 # create executables
 add_executable(numeric-utils-test numeric_utils_test.cpp)
@@ -29,8 +30,8 @@ target_link_libraries(numeric-interpolation-test PRIVATE simplemc-test)
 add_executable(numeric-quadrature-test numeric_quadrature_test.cpp)
 target_link_libraries(numeric-quadrature-test PRIVATE simplemc-test)
 
-add_executable(numeric-special-functions-test numeric_special_functions_test.cpp)
-target_link_libraries(numeric-special-functions-test PRIVATE simplemc-test)
+add_executable(numeric-orthogonal-polynomials-test numeric_orthogonal_polynomials_test.cpp)
+target_link_libraries(numeric-orthogonal-polynomials-test PRIVATE simplemc-test)
 
 # add tests
 add_test(NAME numeric-utils-test COMMAND numeric-utils-test)
@@ -39,4 +40,4 @@ add_test(NAME numeric-2d-lattices-test COMMAND numeric-2d-lattices-test)
 add_test(NAME numeric-3d-lattices-test COMMAND numeric-3d-lattices-test)
 add_test(NAME numeric-interpolation-test COMMAND numeric-interpolation-test)
 add_test(NAME numeric-quadrature-test COMMAND numeric-quadrature-test)
-add_test(NAME numeric-special-functions-test COMMAND numeric-special-functions-test)
+add_test(NAME numeric-orthogonal-polynomials-test COMMAND numeric-orthogonal-polynomials-test)

@@ -162,15 +162,13 @@
         <tab type="usergroup" url="@ref simplemc-numeric-quadrature" title="Quadrature tools">
           <tab type="user" url="@ref simplemc::basic_quadrature" title="basic_quadrature"/>
         </tab>
-        <tab type="usergroup" url="@ref simplemc-numeric-functions" title="Special functions">
+        <tab type="usergroup" url="@ref simplemc-numeric-poly" title="Orthogonal polynomials">
+          <tab type="user" url="@ref simplemc::orthogonal_polynomial" title="orthogonal_polynomial"/>
           <tab type="user" url="@ref simplemc::chebyshev_polynomial_first" title="chebyshev_polynomial_first"/>
           <tab type="user" url="@ref simplemc::chebyshev_polynomial_second" title="chebyshev_polynomial_second"/>
-          <tab type="user" url="@ref simplemc::cosine" title="cosine"/>
           <tab type="user" url="@ref simplemc::hermite_polynomial" title="hermite_polynomial"/>
           <tab type="user" url="@ref simplemc::laguerre_polynomial" title="laguerre_polynomial"/>
           <tab type="user" url="@ref simplemc::legendre_polynomial" title="legendre_polynomial"/>
-          <tab type="user" url="@ref simplemc::orthogonal_polynomial" title="orthogonal_polynomial"/>
-          <tab type="user" url="@ref simplemc::sine" title="sine"/>
         </tab>
       </tab>
       <tab type="usergroup" url="@ref simplemc-accs" title="simplemc-accs">

@@ -8,7 +8,7 @@
 
 namespace simplemc {
 
-laguerre_polynomial::laguerre_polynomial(double x) : orthogonal_polynomial { x, 1.0, 1.0 - x, 0.0, -1.0 } {
+laguerre_polynomial::laguerre_polynomial(double x) : x_(x), llm1_(0), ll_(1), dllm1_(0), dll_(0) {
     if (x < 0) {
         throw simplemc_exception("Lagurre polynomials are only defined on the interval [0, inf)",
             "laguerre_polynomial::laguerre_polynomial");
@@ -16,26 +16,21 @@ laguerre_polynomial::laguerre_polynomial(double x) : orthogonal_polynomial { x, 
 }
 
 double laguerre_polynomial::next() {
-    switch (l_) {
-        case 0:
-            yl_ = y1_;
-            ylm1_ = y0_;
-            dyl_ = dy1_;
-            dylm1_ = dy0_;
-            break;
-        default:
-            double a = -1.0 / (l_ + 1);
-            double b = 2.0 + a;
-            double c = 1.0 + a;
-            double ylp1 = (a * x_ + b) * yl_ - c * ylm1_;
-            double dylp1 = a * yl_ + (a * x_ + b) * dyl_ - c * dylm1_;
-            ylm1_ = yl_;
-            yl_ = ylp1;
-            dylm1_ = dyl_;
-            dyl_ = dylp1;
+    double llp1 = 1.0 - x_;
+    double dllp1 = -1.0;
+    if (l_ > 0) {
+        const double a = -1.0 / (l_ + 1);
+        const double b = 2.0 + a;
+        const double c = 1.0 + a;
+        llp1 = (a * x_ + b) * ll_ - c * llm1_;
+        dllp1 = a * ll_ + (a * x_ + b) * dll_ - c * dllm1_;
     }
+    llm1_ = ll_;
+    ll_ = llp1;
+    dllm1_ = dll_;
+    dll_ = dllp1;
     ++l_;
-    return ylm1_;
+    return llm1_;
 }
 
 } // namespace simplemc

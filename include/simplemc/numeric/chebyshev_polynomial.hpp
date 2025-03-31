@@ -1,13 +1,13 @@
 /**
  * @file
- * @brief Recursive implementation of Chebyshev polynomials of the first and second kind.
+ * @brief Implementation of Chebyshev polynomials of the first and second kind using recurrence
+ * relations.
  */
 
 #ifndef SIMPLEMC_NUMERIC_CHEBYSHEV_POLYNOMIAL_HPP
 #define SIMPLEMC_NUMERIC_CHEBYSHEV_POLYNOMIAL_HPP
 
-#include <simplemc/numeric/orthogonal_polynomial.hpp>
-
+#include <array>
 #include <cassert>
 #include <cmath>
 #include <numbers>
@@ -15,64 +15,136 @@
 namespace simplemc {
 
 /**
- * @addtogroup simplemc-numeric-functions
+ * @addtogroup simplemc-numeric-poly
  * @{
  */
 
 /**
- * @brief Recursive implementation of Chebyshev polynomials of the first kind.
+ * @brief Implementation of Chebyshev polynomials of the first kind using recurrence relations.
  *
- * @details Chebyshev polynomials of the first kind are defined on the interval \f$ [-1, 1] \f$. The
- * weight function is \f$ W(x) = 1 / \sqrt{1 - x^2} \f$ and it has an order dependent normalization
- * factor \f$ N_l \f$:
+ * @details In the following, we use the notation from @ref simplemc-numeric-poly.
+ *
+ * Chebyshev polynomials of the first kind, \f$ T_l(x) \f$, are defined on the interval \f$ \mathrm{D}
+ * = [-1, 1] \f$. Their weight function is \f$ W(x) = 1 / \sqrt{1 - x^2} \f$ and their order dependent
+ * normalization factor is \f$ N_l \f$:
  * \f[
- *   \langle T_l, T_k \rangle = \int_{-1}^1 T_l(x) T_k(x) W(x) dx =
+ *   \langle T_l, T_k \rangle = \int_{-1}^1 T_l(x) T_k(x) \frac{1}{\sqrt{1 - x^2}} dx =
  *   \begin{cases}
  *   0 & \text{if } l \neq k \; , \\
  *   \pi & \text{if } l = k = 0 \; , \\
- *   \frac{\pi}{2} & \text{if } l = k \neq 0 \; .
+ *   \frac{\pi}{2} & \text{if } l = k \neq 0
  *   \end{cases}
+ *   = N_l \delta{lk} \; .
  * \f]
  *
  * The recurrence relation is given by
  * \f[
- *   T_{l+1}(x) = 2x T_l(x) - T_{l-1}(x) \; ,
+ *   T_{l+1}(x) = 2 x T_l(x) - T_{l-1}(x) \; ,
  * \f]
  * with \f$ T_0(x) = 1 \f$ and \f$ T_1(x) = x \f$.
  *
- * Then we get for the derivative
+ * For the derivative we have
  * \f[
- *   \frac{d}{dx} T_{l+1}(x) = 2 \left(T_l(x) + x \frac{d}{dx} T_{l}(x) \right) - \frac{d}{dx}
- *   T_{l-1}(x) \; ,
+ *   T'_{l+1}(x) = 2 \left(T_l(x) + x T'_{l}(x) \right) - T'_{l-1}(x) \; ,
  * \f]
- * with \f$ \frac{d}{dx} T_{0}(x) = 0 \f$ and \f$ \frac{d}{dx} T_{1}(x) = 1 \f$.
+ * with \f$ T'_{0}(x) = 0 \f$ and \f$ T'_{1}(x) = 1 \f$.
  *
  * See [Wikipedia](https://en.wikipedia.org/wiki/Chebyshev_polynomials) for more information.
  */
-class chebyshev_polynomial_first : public orthogonal_polynomial {
+class chebyshev_polynomial_first {
 public:
     /**
-     * @brief Construct a Chebyshev polynomial of the first kind for a specific \f$ x \f$ value.
+     * @brief Construct a sequence of Chebyshev polynomials of the first kind for a specific \f$ x \f$
+     * value.
      *
-     * @param x Value at which the polynomial is evaluated.
+     * @details It sets \f$ x \f$ and initializes \f$ l = 0 \f$, \f$ T_0(x) = 1 \f$, \f$ T_1(x) = x
+     * \f$, \f$ T'_0(x) = 0 \f$ and \f$ T'_1(x) = 1 \f$.
+     *
+     * @param x Value at which the polynomials and its derivatives are evaluated.
      */
     chebyshev_polynomial_first(double x = 0.0);
 
     /**
-     * @brief Get the normalization factor of the l<sup>th</sup> order polynomial.
+     * @brief Get the domain \f$ \mathrm{D} \f$ on which the polynomials are defined.
      *
-     * @param l Order of the polynomial.
-     * @return Normalization factor.
+     * @return `std::array<double, 2>` representing the interval \f$ \mathrm{D} = [-1, 1] \f$.
      */
-    [[nodiscard]] double normalization(int l) const override;
+    [[nodiscard]] constexpr auto domain() const { return std::array<double, 2> { -1.0, 1.0 }; }
 
     /**
-     * @brief Get the value of the weight function evaluated at a given \f$ x \f$.
+     * @brief Get the order \f$ l \f$ of the currently processed polynomial \f$ T_l(x) \f$.
+     *
+     * @return Order \f$ l \f$.
+     */
+    [[nodiscard]] int order() const { return l_; }
+
+    /**
+     * @brief Get the \f$ x \f$ value at which the polynomials are evaluated.
+     *
+     * @return \f$ x \f$ value given at construction.
+     */
+    [[nodiscard]] double x() const { return x_; }
+
+    /**
+     * @brief Get the function value of the currently processed polynomial.
+     *
+     * @return \f$ T_l(x) \f$.
+     */
+    [[nodiscard]] double current() const { return tl_; }
+
+    /**
+     * @brief Get the function value of the previously processed polynomial.
+     *
+     * @return \f$ T_{l-1}(x) \f$.
+     */
+    [[nodiscard]] double prev() const {
+        assert(l_ > 0);
+        return tlm1_;
+    }
+
+    /**
+     * @brief Get the derivative of the currently processed polynomial.
+     *
+     * @return \f$ T'_l(x) \f$.
+     */
+    [[nodiscard]] double current_derivative() const { return dtl_; };
+
+    /**
+     * @brief Get the derivative of the previously processed polynomial.
+     *
+     * @return \f$ T'_{l-1}(x) \f$.
+     */
+    [[nodiscard]] double prev_derivative() const {
+        assert(l_ > 0);
+        return dtlm1_;
+    };
+
+    /**
+     * @brief Get the normalization factor \f$ N_l = \langle T_l, T_l \rangle \f$ of the l<sup>th
+     * </sup> order polynomial.
+     *
+     * @details The normalization factor is given by
+     * \f[
+     *   N_l =
+     *   \begin{cases}
+     *   \pi & \text{if } l = 0 \; , \\
+     *   \frac{\pi}{2} & \text{if } l \neq 0
+     *   \end{cases}
+     *   \; .
+     * \f]
+     *
+     * @param l Order of the polynomial.
+     * @return Normalization factor \f$ N_l \f$.
+     */
+    [[nodiscard]] double norm(int l) const;
+
+    /**
+     * @brief Get the value of the weight function \f$ W(x) \f$ evaluated at a given \f$ x \f$.
      *
      * @param x Value at which the weight function is evaluated.
-     * @return Value of the weight function.
+     * @return Weight function \f$ W(x) = 1 / \sqrt{1 - x^2} \f$.
      */
-    [[nodiscard]] double weight(double x) const override {
+    [[nodiscard]] double weight(double x) const {
         assert(std::abs(x) <= 1.0);
         return 1.0 / std::sqrt(1 - x * x);
     }
@@ -80,19 +152,39 @@ public:
     /**
      * @brief Increase the order from \f$ l \f$ to \f$ l + 1 \f$.
      *
-     * @return Value of the l<sup>th</sup> order polynomial evaluated at the stored \f$ x \f$.
+     * @details It applies the recurrence relations
+     * \f[
+     *   T_{l+1}(x) = 2 x T_l(x) - T_{l-1}(x) \; ,
+     * \f]
+     * and
+     * \f[
+     *   T'_{l+1}(x) = 2 \left(T_l(x) + x T'_{l}(x) \right) - T'_{l-1}(x) \; .
+     * \f]
+     *
+     * @return Function value of the polynomial \f$ T_l(x) \f$.
      */
-    double next() override;
+    double next();
+
+private:
+    int l_ { 0 };
+    double x_;
+    double tlm1_;
+    double tl_;
+    double dtlm1_;
+    double dtl_;
 };
 
 /**
- * @brief Recursive implementation of Chebyshev polynomials of the second kind.
+ * @brief Implementation of Chebyshev polynomials of the second kind using recurrence relations.
  *
- * @details Chebyshev polynomials of the second kind are defined on the interval \f$ [-1, 1] \f$. The
- * weight function is \f$ W(x) = \sqrt{1 - x^2} \f$ and the order dependent normalization factor is
- * \f$ N_l = \pi / 2 \f$:
+ * @details In the following, we use the notation from @ref simplemc-numeric-poly.
+ *
+ * Chebyshev polynomials of the second kind, \f$ U_l(x) \f$, are defined on the interval \f$
+ * \mathrm{D} = [-1, 1] \f$. Their weight function is \f$ W(x) = \sqrt{1 - x^2} \f$ and their order
+ * dependent normalization factor is \f$ N_l = \pi / 2 \f$:
  * \f[
- *   \langle U_l, U_k \rangle = \int_{-1}^1 U_l(x) U_k(x) W(x) dx = \frac{\pi}{2} \delta_{lk} \; .
+ *   \langle U_l, U_k \rangle = \int_{-1}^1 U_l(x) U_k(x) \sqrt{1 - x^2} dx = \frac{\pi}{2}
+ *   \delta_{lk} = N_l \delta{lk} \; .
  * \f]
  *
  * The recurrence relation is given by
@@ -101,39 +193,98 @@ public:
  * \f]
  * with \f$ U_0(x) = 1 \f$ and \f$ U_1(x) = 2 x \f$.
  *
- * Then we get for the derivative
+ * For the derivative we have
  * \f[
- *   \frac{d}{dx} U_{l+1}(x) = 2 \left(U_l(x) + x \frac{d}{dx} U_{l}(x) \right) - \frac{d}{dx}
- *   U_{l-1}(x) \; ,
+ *   U'_{l+1}(x) = 2 \left(U_l(x) + x U'_{l}(x) \right) - U'_{l-1}(x) \; ,
  * \f]
- * with \f$ \frac{d}{dx} U_{0}(x) = 0 \f$ and \f$ \frac{d}{dx} U_{1}(x) = 2 \f$.
+ * with \f$ U'_{0}(x) = 0 \f$ and \f$ U'_{1}(x) = 2 \f$.
  *
  * See [Wikipedia](https://en.wikipedia.org/wiki/Chebyshev_polynomials) for more information.
  */
-class chebyshev_polynomial_second : public orthogonal_polynomial {
+class chebyshev_polynomial_second {
 public:
     /**
-     * @brief Construct a Chebyshev polynomial of the second kind for a specific \f$ x \f$ value.
+     * @brief Construct a sequence of Chebyshev polynomials of the second kind for a specific \f$ x
+     * \f$ value.
      *
-     * @param x Value at which the polynomial is evaluated.
+     * @details It sets \f$ x \f$ and initializes \f$ l = 0 \f$, \f$ U_0(x) = 1 \f$, \f$ U_1(x) = 2 x
+     * \f$, \f$ U'_0(x) = 0 \f$ and \f$ U'_1(x) = 2 \f$.
+     *
+     * @param x Value at which the polynomials and its derivatives are evaluated.
      */
     chebyshev_polynomial_second(double x = 0.0);
 
     /**
-     * @brief Get the normalization factor of the l<sup>th</sup> order polynomial.
+     * @brief Get the domain \f$ \mathrm{D} \f$ on which the polynomials are defined.
      *
-     * @param l Order of the polynomial.
-     * @return Normalization factor.
+     * @return `std::array<double, 2>` representing the interval \f$ \mathrm{D} = [-1, 1] \f$.
      */
-    [[nodiscard]] double normalization([[maybe_unused]] int l) const override { return 2.0 * std::numbers::pi; }
+    [[nodiscard]] constexpr auto domain() const { return std::array<double, 2> { -1.0, 1.0 }; }
 
     /**
-     * @brief Get the value of the weight function evaluated at a given \f$ x \f$.
+     * @brief Get the order \f$ l \f$ of the currently processed polynomial \f$ U_l(x) \f$.
+     *
+     * @return Order \f$ l \f$.
+     */
+    [[nodiscard]] int order() const { return l_; }
+
+    /**
+     * @brief Get the \f$ x \f$ value at which the polynomials are evaluated.
+     *
+     * @return \f$ x \f$ value given at construction.
+     */
+    [[nodiscard]] double x() const { return x_; }
+
+    /**
+     * @brief Get the function value of the currently processed polynomial.
+     *
+     * @return \f$ U_l(x) \f$.
+     */
+    [[nodiscard]] double current() const { return ul_; }
+
+    /**
+     * @brief Get the function value of the previously processed polynomial.
+     *
+     * @return \f$ U_{l-1}(x) \f$.
+     */
+    [[nodiscard]] double prev() const {
+        assert(l_ > 0);
+        return ulm1_;
+    }
+
+    /**
+     * @brief Get the derivative of the currently processed polynomial.
+     *
+     * @return \f$ U'_l(x) \f$.
+     */
+    [[nodiscard]] double current_derivative() const { return dul_; };
+
+    /**
+     * @brief Get the derivative of the previously processed polynomial.
+     *
+     * @return \f$ U'_{l-1}(x) \f$.
+     */
+    [[nodiscard]] double prev_derivative() const {
+        assert(l_ > 0);
+        return dulm1_;
+    };
+
+    /**
+     * @brief Get the normalization factor \f$ N_l = \langle U_l, U_l \rangle \f$ of the l<sup>th
+     * </sup> order polynomial.
+     *
+     * @param l Order of the polynomial.
+     * @return Normalization factor \f$ N_l = \pi / 2 \f$.
+     */
+    [[nodiscard]] constexpr double norm([[maybe_unused]] int l) const { return 0.5 * std::numbers::pi; }
+
+    /**
+     * @brief Get the value of the weight function \f$ W(x) \f$ evaluated at a given \f$ x \f$.
      *
      * @param x Value at which the weight function is evaluated.
-     * @return Value of the weight function.
+     * @return Weight function \f$ W(x) = \sqrt{1 - x^2} \f$.
      */
-    [[nodiscard]] double weight(double x) const override {
+    [[nodiscard]] double weight(double x) const {
         assert(std::abs(x) <= 1.0);
         return std::sqrt(1 - x * x);
     }
@@ -141,9 +292,26 @@ public:
     /**
      * @brief Increase the order from \f$ l \f$ to \f$ l + 1 \f$.
      *
-     * @return Value of the l<sup>th</sup> order polynomial evaluated at the stored \f$ x \f$.
+     * @details It applies the recurrence relations
+     * \f[
+     *   U_{l+1}(x) = 2x U_l(x) - U_{l-1}(x) \; ,
+     * \f]
+     * and
+     * \f[
+     *   U'_{l+1}(x) = 2 \left(U_l(x) + x U'_{l}(x) \right) - U'_{l-1}(x) \; .
+     * \f]
+     *
+     * @return Function value of the polynomial \f$ U_l(x) \f$.
      */
-    double next() override;
+    double next();
+
+private:
+    int l_ { 0 };
+    double x_;
+    double ulm1_;
+    double ul_;
+    double dulm1_;
+    double dul_;
 };
 
 /** @} */
