@@ -46,6 +46,33 @@ namespace simplemc {
 class legendre_polynomial {
 public:
     /**
+     * @brief Get the domain \f$ \mathrm{D} \f$ on which the polynomials are defined.
+     *
+     * @return `std::array<double, 2>` representing the interval \f$ \mathrm{D} = [-1, 1] \f$.
+     */
+    [[nodiscard]] static constexpr auto domain() { return std::array<double, 2> { -1.0, 1.0 }; }
+
+    /**
+     * @brief Get the normalization factor \f$ N_l = \langle P_l, P_l \rangle \f$ of the
+     * l<sup>th</sup> order polynomial.
+     *
+     * @param l Order of the polynomial.
+     * @return Normalization factor \f$ N_l = 2 / (2 l + 1) \f$.
+     */
+    [[nodiscard]] static double norm(int l) {
+        assert(l >= 0);
+        return 2.0 / (2.0 * l + 1);
+    }
+
+    /**
+     * @brief Get the value of the weight function \f$ W(x) \f$ evaluated at a given \f$ x \f$.
+     *
+     * @param x Value at which the weight function is evaluated.
+     * @return Weight function \f$ W(x) = 1 \f$.
+     */
+    [[nodiscard]] static double weight([[maybe_unused]] double x) { return 1.0; }
+
+    /**
      * @brief Construct a sequence of Legendre polynomials for a specific \f$ x \f$ value.
      *
      * @details It sets \f$ x \f$ and initializes \f$ l = 0 \f$, \f$ P_0(x) = 1 \f$, \f$ P_1(x) = x
@@ -54,13 +81,6 @@ public:
      * @param x Value at which the polynomials and its derivatives are evaluated.
      */
     legendre_polynomial(double x = 0.0);
-
-    /**
-     * @brief Get the domain \f$ \mathrm{D} \f$ on which the polynomials are defined.
-     *
-     * @return `std::array<double, 2>` representing the interval \f$ \mathrm{D} = [-1, 1] \f$.
-     */
-    [[nodiscard]] constexpr auto domain() const { return std::array<double, 2> { -1.0, 1.0 }; }
 
     /**
      * @brief Get the order \f$ l \f$ of the currently processed polynomial \f$ P_l(x) \f$.
@@ -109,26 +129,6 @@ public:
         assert(l_ > 0);
         return dplm1_;
     };
-
-    /**
-     * @brief Get the normalization factor \f$ N_l = \langle P_l, P_l \rangle \f$ of the
-     * l<sup>th</sup> order polynomial.
-     *
-     * @param l Order of the polynomial.
-     * @return Normalization factor \f$ N_l = 2 / (2 l + 1) \f$.
-     */
-    [[nodiscard]] double norm(int l) const {
-        assert(l >= 0);
-        return 2.0 / (2.0 * l + 1);
-    }
-
-    /**
-     * @brief Get the value of the weight function \f$ W(x) \f$ evaluated at a given \f$ x \f$.
-     *
-     * @param x Value at which the weight function is evaluated.
-     * @return Weight function \f$ W(x) = 1 \f$.
-     */
-    [[nodiscard]] double weight([[maybe_unused]] double x) const { return 1.0; }
 
     /**
      * @brief Increase the order from \f$ l \f$ to \f$ l + 1 \f$.

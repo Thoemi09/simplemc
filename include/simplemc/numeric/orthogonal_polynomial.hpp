@@ -24,18 +24,18 @@ namespace simplemc {
  *
  * - `P(double)` constructs a new instance `p` for a specific \f$ x \f$ and initializes \f$ p_l(x) =
  * p_0(x) \f$.
- * - `p.domain()` returns the domain \f$ \mathrm{D} = [a, b] \f$ on which the polynomials \f$ p_l(x)
+ * - `P::domain()` returns the domain \f$ \mathrm{D} = [a, b] \f$ on which the polynomials \f$ p_l(x)
  * \f$ are defined.
- * - `p.norm(int)` returns the normalization \f$ N_l \f$ for a given order \f$ l \f$.
- * - `p.weight(double)` returns the value of the weight function \f$ W(x) \f$ at a given \f$ x \f$.
+ * - `P::norm(int)` returns the normalization \f$ N_l \f$ for a given order \f$ l \f$.
+ * - `P::weight(double)` returns the value of the weight function \f$ W(x) \f$ at a given \f$ x \f$.
  * - `p.next()` increases the order from \f$ l \f$ to \f$ l + 1 \f$ and returns \f$ p_{l}(x) \f$.
  */
 template <typename P>
 concept orthogonal_polynomial = requires(P& p, const P& cp, double x, int l) {
     P(x);
-    { cp.domain() } -> std::same_as<std::array<double, 2>>;
-    { cp.norm(l) } -> std::same_as<double>;
-    { cp.weight(x) } -> std::same_as<double>;
+    { P::domain() } -> std::same_as<std::array<double, 2>>;
+    { P::norm(l) } -> std::same_as<double>;
+    { P::weight(x) } -> std::same_as<double>;
     { p.next() } -> std::same_as<double>;
 };
 

@@ -49,6 +49,37 @@ namespace simplemc {
 class hermite_polynomial {
 public:
     /**
+     * @brief Get the domain \f$ \mathrm{D} \f$ on which the polynomials are defined.
+     *
+     * @return `std::array<double, 2>` representing the interval \f$ \mathrm{D} = (-\infty, \infty)
+     * \f$.
+     */
+    [[nodiscard]] static constexpr auto domain() {
+        return std::array<double, 2> { -std::numeric_limits<double>::infinity(),
+            std::numeric_limits<double>::infinity() };
+    }
+
+    /**
+     * @brief Get the normalization factor \f$ N_l = \langle H_l, H_l \rangle \f$ of the
+     * l<sup>th</sup> order polynomial.
+     *
+     * @param l Order of the polynomial.
+     * @return Normalization factor \f$ N_l = \sqrt{\pi} 2^l l! \f$.
+     */
+    [[nodiscard]] static double norm(int l) {
+        assert(l >= 0);
+        return std::pow(2, l) * std::tgamma(l + 1) / std::numbers::inv_sqrtpi;
+    }
+
+    /**
+     * @brief Get the value of the weight function \f$ W(x) \f$ evaluated at a given \f$ x \f$.
+     *
+     * @param x Value at which the weight function is evaluated.
+     * @return Weight function \f$ W(x) = e^{-x^2} \f$.
+     */
+    [[nodiscard]] static double weight([[maybe_unused]] double x) { return std::exp(-x * x); }
+
+    /**
      * @brief Construct a sequence of Hermite polynomials for a specific \f$ x \f$ value.
      *
      * @details It sets \f$ x \f$ and initializes \f$ l = 0 \f$, \f$ H_0(x) = 1 \f$, \f$ H_1(x) = 2x
@@ -57,17 +88,6 @@ public:
      * @param x Value at which the polynomials and its derivatives are evaluated.
      */
     hermite_polynomial(double x = 0.0);
-
-    /**
-     * @brief Get the domain \f$ \mathrm{D} \f$ on which the polynomials are defined.
-     *
-     * @return `std::array<double, 2>` representing the interval \f$ \mathrm{D} = (-\infty, \infty)
-     * \f$.
-     */
-    [[nodiscard]] constexpr auto domain() const {
-        return std::array<double, 2> { -std::numeric_limits<double>::infinity(),
-            std::numeric_limits<double>::infinity() };
-    }
 
     /**
      * @brief Get the order \f$ l \f$ of the currently processed polynomial \f$ H_l(x) \f$.
@@ -116,26 +136,6 @@ public:
         assert(l_ > 0);
         return dhlm1_;
     };
-
-    /**
-     * @brief Get the normalization factor \f$ N_l = \langle H_l, H_l \rangle \f$ of the
-     * l<sup>th</sup> order polynomial.
-     *
-     * @param l Order of the polynomial.
-     * @return Normalization factor \f$ N_l = \sqrt{\pi} 2^l l! \f$.
-     */
-    [[nodiscard]] double norm(int l) const {
-        assert(l >= 0);
-        return std::pow(2, l) * std::tgamma(l + 1) / std::numbers::inv_sqrtpi;
-    }
-
-    /**
-     * @brief Get the value of the weight function \f$ W(x) \f$ evaluated at a given \f$ x \f$.
-     *
-     * @param x Value at which the weight function is evaluated.
-     * @return Weight function \f$ W(x) = e^{-x^2} \f$.
-     */
-    [[nodiscard]] double weight([[maybe_unused]] double x) const { return std::exp(-x * x); }
 
     /**
      * @brief Increase the order from \f$ l \f$ to \f$ l + 1 \f$.

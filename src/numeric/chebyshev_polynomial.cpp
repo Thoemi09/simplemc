@@ -15,7 +15,7 @@ chebyshev_polynomial_first::chebyshev_polynomial_first(double x) : x_(x), tlm1_(
     }
 }
 
-double chebyshev_polynomial_first::norm(int l) const {
+double chebyshev_polynomial_first::norm(int l) {
     assert(l >= 0);
     if (l == 0) {
         return std::numbers::pi;

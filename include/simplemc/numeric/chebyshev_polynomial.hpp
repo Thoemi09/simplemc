@@ -54,6 +54,43 @@ namespace simplemc {
 class chebyshev_polynomial_first {
 public:
     /**
+     * @brief Get the domain \f$ \mathrm{D} \f$ on which the polynomials are defined.
+     *
+     * @return `std::array<double, 2>` representing the interval \f$ \mathrm{D} = [-1, 1] \f$.
+     */
+    [[nodiscard]] static constexpr auto domain() { return std::array<double, 2> { -1.0, 1.0 }; }
+
+    /**
+     * @brief Get the normalization factor \f$ N_l = \langle T_l, T_l \rangle \f$ of the l<sup>th
+     * </sup> order polynomial.
+     *
+     * @details The normalization factor is given by
+     * \f[
+     *   N_l =
+     *   \begin{cases}
+     *   \pi & \text{if } l = 0 \; , \\
+     *   \frac{\pi}{2} & \text{if } l \neq 0
+     *   \end{cases}
+     *   \; .
+     * \f]
+     *
+     * @param l Order of the polynomial.
+     * @return Normalization factor \f$ N_l \f$.
+     */
+    [[nodiscard]] static double norm(int l);
+
+    /**
+     * @brief Get the value of the weight function \f$ W(x) \f$ evaluated at a given \f$ x \f$.
+     *
+     * @param x Value at which the weight function is evaluated.
+     * @return Weight function \f$ W(x) = 1 / \sqrt{1 - x^2} \f$.
+     */
+    [[nodiscard]] static double weight(double x) {
+        assert(std::abs(x) <= 1.0);
+        return 1.0 / std::sqrt(1 - x * x);
+    }
+
+    /**
      * @brief Construct a sequence of Chebyshev polynomials of the first kind for a specific \f$ x \f$
      * value.
      *
@@ -63,13 +100,6 @@ public:
      * @param x Value at which the polynomials and its derivatives are evaluated.
      */
     chebyshev_polynomial_first(double x = 0.0);
-
-    /**
-     * @brief Get the domain \f$ \mathrm{D} \f$ on which the polynomials are defined.
-     *
-     * @return `std::array<double, 2>` representing the interval \f$ \mathrm{D} = [-1, 1] \f$.
-     */
-    [[nodiscard]] constexpr auto domain() const { return std::array<double, 2> { -1.0, 1.0 }; }
 
     /**
      * @brief Get the order \f$ l \f$ of the currently processed polynomial \f$ T_l(x) \f$.
@@ -118,36 +148,6 @@ public:
         assert(l_ > 0);
         return dtlm1_;
     };
-
-    /**
-     * @brief Get the normalization factor \f$ N_l = \langle T_l, T_l \rangle \f$ of the l<sup>th
-     * </sup> order polynomial.
-     *
-     * @details The normalization factor is given by
-     * \f[
-     *   N_l =
-     *   \begin{cases}
-     *   \pi & \text{if } l = 0 \; , \\
-     *   \frac{\pi}{2} & \text{if } l \neq 0
-     *   \end{cases}
-     *   \; .
-     * \f]
-     *
-     * @param l Order of the polynomial.
-     * @return Normalization factor \f$ N_l \f$.
-     */
-    [[nodiscard]] double norm(int l) const;
-
-    /**
-     * @brief Get the value of the weight function \f$ W(x) \f$ evaluated at a given \f$ x \f$.
-     *
-     * @param x Value at which the weight function is evaluated.
-     * @return Weight function \f$ W(x) = 1 / \sqrt{1 - x^2} \f$.
-     */
-    [[nodiscard]] double weight(double x) const {
-        assert(std::abs(x) <= 1.0);
-        return 1.0 / std::sqrt(1 - x * x);
-    }
 
     /**
      * @brief Increase the order from \f$ l \f$ to \f$ l + 1 \f$.
@@ -204,6 +204,33 @@ private:
 class chebyshev_polynomial_second {
 public:
     /**
+     * @brief Get the domain \f$ \mathrm{D} \f$ on which the polynomials are defined.
+     *
+     * @return `std::array<double, 2>` representing the interval \f$ \mathrm{D} = [-1, 1] \f$.
+     */
+    [[nodiscard]] static constexpr auto domain() { return std::array<double, 2> { -1.0, 1.0 }; }
+
+    /**
+     * @brief Get the normalization factor \f$ N_l = \langle U_l, U_l \rangle \f$ of the l<sup>th
+     * </sup> order polynomial.
+     *
+     * @param l Order of the polynomial.
+     * @return Normalization factor \f$ N_l = \pi / 2 \f$.
+     */
+    [[nodiscard]] static constexpr double norm([[maybe_unused]] int l) { return 0.5 * std::numbers::pi; }
+
+    /**
+     * @brief Get the value of the weight function \f$ W(x) \f$ evaluated at a given \f$ x \f$.
+     *
+     * @param x Value at which the weight function is evaluated.
+     * @return Weight function \f$ W(x) = \sqrt{1 - x^2} \f$.
+     */
+    [[nodiscard]] static double weight(double x) {
+        assert(std::abs(x) <= 1.0);
+        return std::sqrt(1 - x * x);
+    }
+
+    /**
      * @brief Construct a sequence of Chebyshev polynomials of the second kind for a specific \f$ x
      * \f$ value.
      *
@@ -213,13 +240,6 @@ public:
      * @param x Value at which the polynomials and its derivatives are evaluated.
      */
     chebyshev_polynomial_second(double x = 0.0);
-
-    /**
-     * @brief Get the domain \f$ \mathrm{D} \f$ on which the polynomials are defined.
-     *
-     * @return `std::array<double, 2>` representing the interval \f$ \mathrm{D} = [-1, 1] \f$.
-     */
-    [[nodiscard]] constexpr auto domain() const { return std::array<double, 2> { -1.0, 1.0 }; }
 
     /**
      * @brief Get the order \f$ l \f$ of the currently processed polynomial \f$ U_l(x) \f$.
@@ -268,26 +288,6 @@ public:
         assert(l_ > 0);
         return dulm1_;
     };
-
-    /**
-     * @brief Get the normalization factor \f$ N_l = \langle U_l, U_l \rangle \f$ of the l<sup>th
-     * </sup> order polynomial.
-     *
-     * @param l Order of the polynomial.
-     * @return Normalization factor \f$ N_l = \pi / 2 \f$.
-     */
-    [[nodiscard]] constexpr double norm([[maybe_unused]] int l) const { return 0.5 * std::numbers::pi; }
-
-    /**
-     * @brief Get the value of the weight function \f$ W(x) \f$ evaluated at a given \f$ x \f$.
-     *
-     * @param x Value at which the weight function is evaluated.
-     * @return Weight function \f$ W(x) = \sqrt{1 - x^2} \f$.
-     */
-    [[nodiscard]] double weight(double x) const {
-        assert(std::abs(x) <= 1.0);
-        return std::sqrt(1 - x * x);
-    }
 
     /**
      * @brief Increase the order from \f$ l \f$ to \f$ l + 1 \f$.
