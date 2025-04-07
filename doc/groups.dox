@@ -717,8 +717,8 @@
  * \f[
  *   \langle p_l, p_k \rangle = \int_a^b p_l(x) p_k(x) W(x) dx = N_l \delta_{lk} \; ,
  * \f]
- * where \f$ l \f$ is the order of the polynomial \f$ p_l \f$, \f$ W(x) \f$ is a weight function, \f$ [
- * a, b] \f$ is the domain of the polynomials, i.e. \f$ p_l : \mathrm{D} = [a, b] \to \mathbb{R} \f$,
+ * where \f$ l \f$ is the order of the polynomial \f$ p_l \f$, \f$ W(x) \f$ is a weight function, \f$
+ * [a, b] \f$ is the domain of the polynomials, i.e. \f$ p_l : \mathrm{D} = [a, b] \to \mathbb{R} \f$,
  * and \f$ N_l \f$ is an order dependent normalization factor.
  *
  * **simplemc-numeric** provides implementations of some common types of orthogonal polynomials:
@@ -727,7 +727,6 @@
  * - simplemc::chebyshev_polynomial_second: Chebyshev polynomials of the second kind \f$ U_l(x) \f$.
  * - simplemc::hermite_polynomial: Hermite polynomials \f$ H_l(x) \f$.
  * - simplemc::laguerre_polynomial: Laguerre polynomials \f$ L_l(x) \f$.
- *
  *
  * All of them use a recurrence relation to evaluate higher order polynomials \f$ p_l(x) \f$ at a
  * specific \f$ x \in \mathrm{D} \f$ based on previous orders \f$ p_{l-1}(x) \f$, \f$ p_{l-2}(x) \f$,

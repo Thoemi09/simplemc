@@ -15,6 +15,7 @@
 | @ref tut_grids_1 | Showcase the different @ref simplemc-grids-1d |
 | @ref tut_grids_2 | Showcase @ref simplemc-grids-nd |
 | @ref tut_numeric_1 | Working with @ref simplemc-numeric-lattices |
+| @ref tut_numeric_2 | Approximate a function using @ref simplemc-numeric-poly |
 
 @section tut_compilation Compiling the tutorials
 
