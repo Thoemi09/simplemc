@@ -42,16 +42,28 @@ class batch_acc;
  * - the algorithm (simplemc::varalg) that should be used to accumulate the data.
  *
  * Both of them determine how the accumulation is actually done and what is stored in the accumulator.
- * The accumulated data is stored in a single vector. Please see simplemc::accs::mean for more
- * details.
+ * The accumulated data is stored in a single vector \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$. Please 
+ * see simplemc::accs::mean for more details.
  *
  * @code{.cpp}
- * std::vector<double> data = {1.0, 2.0, 3.0, 4.0, 5.0};
- * simplemc::mean_acc<Eigen::Vector<double, 1>> acc;
- * for (auto& val : data) {
- *     acc << val;
+ * #include <fmt/ranges.h>
+ * #include <simplemc/accs/mean_acc.hpp>
+ * 
+ * #include <vector>
+ *
+ * int main() {
+ *     // data to be sampled
+ *     std::vector<double> data = { 1.0, 2.0, 3.0, 4.0, 5.0 };
+ * 
+ *     // accumulate samples into a mean accumulator of size 1
+ *     simplemc::mean_acc_single<double> acc;
+ *     for (auto& val : data) {
+ *         acc << val;
+ *     }
+ * 
+ *     // print the mean of the accumulated data
+ *     fmt::println("Mean: {}", acc.mean());
  * }
- * fmt::print("Mean: {}\n", acc.mean());
  * @endcode
  *
  * Output:
@@ -67,7 +79,7 @@ template <eigen_vector V, varalg A = varalg::welford>
 class mean_acc {
 public:
     /**
-     * @brief Type of accumulated values.
+     * @brief Type of accumulated values (simplemc::double_or_complex).
      */
     using value_type = typename V::value_type;
 
@@ -87,7 +99,7 @@ public:
     static constexpr bool returns_scalar = (!is_dynamic && static_size == 1);
 
     /**
-     * @brief Type for counting the number of accumulated values.
+     * @brief Type for counting the number of accumulated samples.
      */
     using count_type = std::uint64_t;
 
@@ -109,7 +121,7 @@ public:
     /**
      * @brief Get the algorithm used to accumulate the data.
      *
-     * @return The simplemc::varalg tag.
+     * @return Its simplemc::varalg tag.
      */
     static constexpr auto varalg() { return A; }
 
@@ -137,33 +149,34 @@ private:
 
 public:
     /**
-     * @brief Construct a mean accumulator with a given number of elements.
+     * @brief Construct a mean accumulator with a given number of elements \f$ M \f$.
      *
      * @details For dynamically sized accumulators, it throws a simplemc::simplemc_exception if the
-     * given size is <= 0.
+     * given size \f$ M \leq 0 \f$.
      *
-     * For static sized accumulators, the `num` parameter is ignored.
+     * For statically sized accumulators, \f$ M \f$ is ignored.
      *
-     * @param num Number of elements.
+     * @param m Number of elements \f$ M \f$.
      */
-    explicit mean_acc(size_type num = 1) : mdata_(vec_type::Zero(is_dynamic ? num : static_size)), count_(0), idx_(0) {
+    explicit mean_acc(size_type m = 1) : mdata_(vec_type::Zero(is_dynamic ? m : static_size)), count_(0), idx_(0) {
         if constexpr (is_dynamic) {
-            if (num <= 0) {
+            if (m <= 0) {
                 throw simplemc_exception("Dynamic size <= 0", "mean_acc::mean_acc");
             }
         }
     }
 
     /**
-     * @brief Construct a mean accumulator with a given data storage and count.
+     * @brief Construct a mean accumulator with the given accumulated data \f$ \mathbf{m}^{(N)}/
+     * \mathbf{n}^{(N)} \f$ and number of samples \f$ N \f$.
      *
-     * @details For dynamically sized accumulators, the size of the data storage must be >= 1.
-     * Otherwise, it throws a simplemc::simplemc_exception.
+     * @details For dynamically sized accumulators, the size \f$ M \f$ of the data storage must be
+     * \f$ \geq 1 \f$. Otherwise, it throws a simplemc::simplemc_exception.
      *
-     * @param md Accumulated mean data.
-     * @param ct Number of accumulated values.
+     * @param md Accumulated mean data \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$.
+     * @param n Number of accumulated samples \f$ N \f$.
      */
-    mean_acc(const vec_type& md, count_type ct) : mdata_(md), count_(ct), idx_(0) {
+    mean_acc(const vec_type& md, count_type n) : mdata_(md), count_(n), idx_(0) {
         if constexpr (is_dynamic) {
             if (mdata_.size() <= 0) {
                 throw simplemc_exception("Dynamic size <= 0", "mean_acc::mean_acc");
@@ -181,53 +194,53 @@ public:
     }
 
     /**
-     * @brief Subscript operator sets the index and returns a reference to this object.
+     * @brief Subscript operator sets the index \f$ i \f$ and returns a reference to `this` object.
      *
-     * @param idx Index.
-     * @return Reference to this object.
+     * @param i Index \f$ i \f$.
+     * @return Reference to `this` object.
      */
-    mean_acc& operator[](size_type idx) {
-        idx_ = idx;
+    mean_acc& operator[](size_type i) {
+        idx_ = i;
         return *this;
     }
 
     /**
-     * @brief Stream operator for accumulating a single value.
+     * @brief Stream operator for accumulating a single value \f$ x \f$.
      *
-     * @details For accumulators with size > 1, the value is added to the element at the current
-     * index.
+     * @details For accumulators with size \f$ M > 1 \f$, the value is added to the element at the
+     * current index \f$ i \f$ (see operator[]()).
      *
-     * See @ref simplemc-accs-accs for a code example.
+     * See also @ref simplemc-accs-accs-how.
      *
      * @tparam T Type of the value to be accumulated.
-     * @param val Value to be accumulated.
-     * @return Reference to this object.
+     * @param x Value \f$ x \f$ to be accumulated.
+     * @return Reference to `this` object.
      */
     template <typename T>
         requires std::convertible_to<T, value_type>
-    mean_acc& operator<<(const T& val) {
+    mean_acc& operator<<(const T& x) {
         ++count_;
-        add_value(val, idx_, count_);
+        add_value(x, idx_, count_);
         return *this;
     }
 
     /**
-     * @brief Stream operator for accumulating a vector.
+     * @brief Stream operator for accumulating a vector \f$ \mathbf{v} \f$.
      *
-     * @details See @ref simplemc-accs-accs for a code example.
+     * @details See also @ref simplemc-accs-accs-how.
      *
      * @tparam W Eigen vector/array/expression type.
-     * @param vec Vector/Array/Expression to be accumulated.
-     * @return Reference to this object.
+     * @param v Vector/Array/Expression \f$ \mathbf{v} \f$ to be accumulated.
+     * @return Reference to `this` object.
      */
     template <typename W>
-    mean_acc& operator<<(const W& vec) {
-        assert(vec.size() == size());
+    mean_acc& operator<<(const W& v) {
+        assert(v.size() == size());
         ++count_;
         if constexpr (varalg() == varalg::standard) {
-            mdata_ += vec.matrix();
+            mdata_ += v.matrix();
         } else {
-            mdata_ += (vec.matrix() - mdata_) / static_cast<double>(count_);
+            mdata_ += (v.matrix() - mdata_) / static_cast<double>(count_);
         }
         return *this;
     }
@@ -243,21 +256,23 @@ public:
      *
      * - `welford`:
      *   - \f$ \mathbf{n}^{(N)} = \frac{N_1}{N}\mathbf{n}_{1}^{(N_1)} + \frac{N_2}{N}
-     *     \mathbf{n}_{2}^{(N_2)} \f$ .
+     *     \mathbf{n}_{2}^{(N_2)} \f$.
      *
-     * @param acc simplemc::mean_acc to be incorporated.
-     * @return Reference to this object.
+     * See also @ref simplemc-accs-accs-how.
+     *
+     * @param acc_other simplemc::mean_acc to be incorporated.
+     * @return Reference to `this` object.
      */
-    mean_acc& operator<<(const mean_acc& acc) {
-        assert(size() == acc.size());
+    mean_acc& operator<<(const mean_acc& acc_other) {
+        assert(size() == acc_other.size());
         if constexpr (varalg() == varalg::standard) {
-            mdata_ += acc.mdata_;
+            mdata_ += acc_other.mdata_;
         } else {
             const auto n1 = static_cast<double>(count_);
-            const auto n2 = static_cast<double>(acc.count_);
-            mdata_ = mdata_ * n1 / (n1 + n2) + acc.mdata_ * n2 / (n1 + n2);
+            const auto n2 = static_cast<double>(acc_other.count_);
+            mdata_ = mdata_ * n1 / (n1 + n2) + acc_other.mdata_ * n2 / (n1 + n2);
         }
-        count_ += acc.count_;
+        count_ += acc_other.count_;
         return *this;
     }
 
@@ -265,35 +280,37 @@ public:
      * @brief Accumulate a range of values to consecutive elements in the accumulator.
      *
      * @details The values are added to consecutive elements in the accumulator starting with the
-     * element at the given index. The size of the range is assumed to be <= size() - `idx`.
+     * element at the given index \f$ i \f$. The size \f$ n \f$ of the range is assumed to satisfy \f$
+     * n \leq M - i \f$.
      *
-     * See @ref simplemc-accs-accs for a code example.
+     * See also @ref simplemc-accs-accs-how.
      *
      * @tparam R Input range of values.
      * @param rg Range of values to be accumulated.
-     * @param idx Starting index for the accumulator.
+     * @param i Index \f$ i \f$ of the first element in the accumulator that a value will be added to.
      */
     template <ranges::input_range R>
-    void accumulate(R&& rg, size_type idx = 0) { // NOLINT (ranges need not be forwarded)
+    void accumulate(R&& rg, size_type i = 0) { // NOLINT (ranges need not be forwarded)
         ++count_;
         for (auto val : rg) {
-            add_value(val, idx, count_);
-            ++idx;
+            add_value(val, i, count_);
+            ++i;
         }
     }
 
     /**
-     * @brief Accumulate a range of values to arbitrary elements but with different indices.
+     * @brief Accumulate a range of values to arbitrary elements with the given indices.
      *
-     * @details Each value of the given value range is accumulated at the corresponding index of the
-     * given index range. Every index should only appear once.
+     * @details Each value \f$ v_{i_j} \f$ of the given value range is accumulated at the
+     * corresponding index \f$ i_j \f$ in the accumulator. Every index \f$ i_j \f$ should only appear
+     * once in index range. Both ranges are assumed to be of the same size \f$ n \leq M \f$.
      *
-     * See @ref simplemc-accs-accs for a code example.
+     * See also @ref simplemc-accs-accs-how.
      *
      * @tparam R1 Input range of values.
      * @tparam R2 Input range of indices.
      * @param rg Range of values to be accumulated.
-     * @param idxs Range of indices.
+     * @param idxs Range of indices at which the values should be accumulated.
      */
     template <ranges::input_range R1, ranges::input_range R2>
     void accumulate(R1&& rg, R2&& idxs) { // NOLINT (ranges need not be forwarded)
@@ -308,40 +325,42 @@ public:
      *
      * @details See simplemc::multivalue_acc.
      *
-     * @return Multi-value accumulator.
+     * @return Multi-value accumulator wrapping `this` object.
      */
     mva_type make_mva() { return mva_type(*this); }
 
     /**
-     * @brief Get the size of the accumulator.
+     * @brief Get the size \f$ M \f$ of the accumulator.
      *
      * @return Number of elements.
      */
     [[nodiscard]] auto size() const { return mdata_.size(); }
 
     /**
-     * @brief Get the total number of accumulated values.
+     * @brief Get the total number of accumulated samples \f$ N \f$.
      *
-     * @return Number of accumulated values.
+     * @return Number of accumulated samples.
      */
     [[nodiscard]] auto count() const { return count_; }
 
     /**
-     * @brief Get accumulated data used for estimating the mean.
+     * @brief Get the accumulated data \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$ used for estimating 
+     * the mean.
      *
-     * @return Data storage (content depends on the algorithm, see simplemc::accs::mean).
+     * @return simplemc::eigen_vector of size \f$ M \f$ containing \f$ \mathbf{m}^{(N)}/
+     * \mathbf{n}^{(N)} \f$ (content depends on the algorithm, see simplemc::accs::mean).
      */
     [[nodiscard]] const vec_type& mdata() const { return mdata_; }
 
     /**
-     * @brief Calculate the sample mean from the accumulated data.
+     * @brief Calculate the sample mean \f$ \overline{\mathbf{z}}^{(N)} \f$.
      *
-     * @details Calls simplemc::accs::mean with the accumulated mean data and the count.
+     * @details It calls simplemc::accs::mean with the accumulated mean data and the count.
      *
-     * For statically sized accumulators with a size() == 1, it returns a single value. Otherwise, it
-     * returns a mean_acc::vec_type object.
+     * For statically sized accumulators with \f$ M = 1 \f$, it returns a scalar of type
+     * mean_acc::value_type. Otherwise, it returns a mean_acc::vec_type object.
      *
-     * @return Sample mean.
+     * @return Sample mean \f$ \overline{\mathbf{z}}^{(N)} \f$.
      */
     [[nodiscard]] auto mean() const {
         using simplemc::accs::mean;
@@ -389,7 +408,7 @@ private:
 /**
  * @brief Alias for a statically sized mean accumulator of size 1.
  *
- * @tparam T Type of accumulated data.
+ * @tparam T Type of accumulated values (simplemc::double_or_complex).
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  */
 template <double_or_complex T, varalg A = varalg::welford>
@@ -398,7 +417,7 @@ using mean_acc_single = mean_acc<Eigen::Matrix<T, 1, 1>, A>;
 /**
  * @brief Alias for a statically sized mean accumulator.
  *
- * @tparam T Type of accumulated data.
+ * @tparam T Type of accumulated values (simplemc::double_or_complex).
  * @tparam M Size of the accumulator.
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  */
@@ -409,7 +428,7 @@ using mean_acc_static = mean_acc<Eigen::Matrix<T, M, 1>, A>;
 /**
  * @brief Alias for a dynamically sized mean accumulator.
  *
- * @tparam T Type of accumulated data.
+ * @tparam T Type of accumulated values (simplemc::double_or_complex).
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  */
 template <double_or_complex T, varalg A = varalg::welford>

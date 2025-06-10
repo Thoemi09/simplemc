@@ -177,11 +177,11 @@
         <tab type="usergroup" url="@ref simplemc-accs-accs" title="Accumulators">
           <tab type="user" url="@ref simplemc::batch_acc" title="batch_acc"/>
           <tab type="user" url="@ref simplemc::covar_acc" title="covar_acc"/>
-          <tab type="user" url="@ref simplemc::covar_acc< X, A >" title="covar_acc for dbl"/>
+          <tab type="user" url="@ref simplemc::covar_acc< X, A >" title="covar_acc for real"/>
           <tab type="user" url="@ref simplemc::covar_acc< Z, A >" title="covar_acc for cplx"/>
           <tab type="user" url="@ref simplemc::mean_acc" title="mean_acc"/>
           <tab type="user" url="@ref simplemc::var_acc" title="var_acc"/>
-          <tab type="user" url="@ref simplemc::var_acc< X, A >" title="var_acc for dbl"/>
+          <tab type="user" url="@ref simplemc::var_acc< X, A >" title="var_acc for real"/>
           <tab type="user" url="@ref simplemc::var_acc< Z, A >" title="var_acc for clpx"/>
         </tab>
         <tab type="usergroup" url="@ref simplemc-accs-wrappers" title="Accumulator wrappers">

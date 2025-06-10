@@ -69,15 +69,7 @@ TEST_F(SimplemcAccs, UtilsMean) {
     auto mdata_d = mean_data<standard>(sp_d);
     check_range_near(mean<standard>(mdata_d, sp_d.total_count), sm_d, tol);
 
-    // standard, double, finite shift
-    mdata_d = mean_data<standard>(sp_d);
-    check_range_near(mean<standard>(mdata_d, sp_d.total_count), sm_d, tol);
-
     // welford, double, zero shift
-    mdata_d = mean_data<welford>(sp_d);
-    check_range_near(mean<welford>(mdata_d, sp_d.total_count), sm_d, tol);
-
-    // welford, double, finite shift
     mdata_d = mean_data<welford>(sp_d);
     check_range_near(mean<welford>(mdata_d, sp_d.total_count), sm_d, tol);
 
@@ -85,15 +77,7 @@ TEST_F(SimplemcAccs, UtilsMean) {
     auto mdata_c = mean_data<standard>(sp_c);
     check_range_near(mean<standard>(mdata_c, sp_c.total_count), sm_c, tol);
 
-    // standard, complex, finite shift
-    mdata_c = mean_data<standard>(sp_c);
-    check_range_near(mean<standard>(mdata_c, sp_c.total_count), sm_c, tol);
-
     // welford, complex, zero shift
-    mdata_c = mean_data<welford>(sp_c);
-    check_range_near(mean<welford>(mdata_c, sp_c.total_count), sm_c, tol);
-
-    // welford, complex, finite shift
     mdata_c = mean_data<welford>(sp_c);
     check_range_near(mean<welford>(mdata_c, sp_c.total_count), sm_c, tol);
 }
@@ -109,17 +93,7 @@ TEST_F(SimplemcAccs, UtilsDiagCovariance) {
     check_range_near(
         diag_covariance<standard>(mdata_d, mdata_d, dbl_vec_type(cdata_d.diagonal()), sp_d.total_count), sv_d, tol);
 
-    // standard, double, finite shift
-    std::tie(mdata_d, cdata_d) = accumulate_data<standard>(sp_d);
-    check_range_near(
-        diag_covariance<standard>(mdata_d, mdata_d, dbl_vec_type(cdata_d.diagonal()), sp_d.total_count), sv_d, tol);
-
     // welford, double, zero shift
-    std::tie(mdata_d, cdata_d) = accumulate_data<welford>(sp_d);
-    check_range_near(
-        diag_covariance<welford>(mdata_d, mdata_d, dbl_vec_type(cdata_d.diagonal()), sp_d.total_count), sv_d, tol);
-
-    // welford, double, finite shift
     std::tie(mdata_d, cdata_d) = accumulate_data<welford>(sp_d);
     check_range_near(
         diag_covariance<welford>(mdata_d, mdata_d, dbl_vec_type(cdata_d.diagonal()), sp_d.total_count), sv_d, tol);
@@ -137,17 +111,7 @@ TEST_F(SimplemcAccs, UtilsCovariance) {
     check_range_near(
         make_span(covariance<standard>(mdata_d, mdata_d, cdata_d, sp_d.total_count)), make_span(scv_d), tol);
 
-    // standard, double, finite shift
-    std::tie(mdata_d, cdata_d) = accumulate_data<standard>(sp_d);
-    check_range_near(
-        make_span(covariance<standard>(mdata_d, mdata_d, cdata_d, sp_d.total_count)), make_span(scv_d), tol);
-
     // welford, double, zero shift
-    std::tie(mdata_d, cdata_d) = accumulate_data<welford>(sp_d);
-    check_range_near(
-        make_span(covariance<welford>(mdata_d, mdata_d, cdata_d, sp_d.total_count)), make_span(scv_d), tol);
-
-    // welford, double, finite shift
     std::tie(mdata_d, cdata_d) = accumulate_data<welford>(sp_d);
     check_range_near(
         make_span(covariance<welford>(mdata_d, mdata_d, cdata_d, sp_d.total_count)), make_span(scv_d), tol);

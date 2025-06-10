@@ -1,4 +1,5 @@
 #include <iostream>
+#include <simplemc/accs/utils.hpp>
 
 struct foo {
     foo(int x = 2) : x(x) { std::cout << "Default constructor\n"; }

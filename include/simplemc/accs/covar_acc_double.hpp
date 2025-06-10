@@ -26,34 +26,46 @@ namespace simplemc {
 
 /**
  * @ingroup simplemc-accs-accs
- * @brief Specialization of simplemc::covar_acc for real random vectors.
+ * @brief Specialization of simplemc::covar_acc for real random vectors \f$ \mathbf{X} \f$.
  *
  * @details The accumulated data is stored in two objects:
- * - a real vector for the mean data and
- * - a real matrix for the covariance data.
+ * - a real vector \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$ for the mean data and
+ * - a real matrix \f$ \mathbf{C}^{(N)}/\mathbf{D}^{(N)} \f$ for the covariance data.
  *
  * See simplemc::accs::mean and simplemc::accs::covariance.
  *
  * @code{.cpp}
- * using vec_type = Eigen::Vector<double, 2>;
- * std::mt19937_64 rng;
- * std::uniform_real_distribution<double> uni_dist(-1.0, 1.0);
- * std::normal_distribution<double> normal_dist(-3.0, 0.5);
- * simplemc::covar_acc<vec_type> acc;
- * for (int i = 0; i < 100000; ++i) {
- *     acc << vec_type{ uni_dist(rng), normal_dist(rng) };
+ * #include <fmt/ranges.h>
+ * #include <simplemc/accs.hpp>
+ * #include <simplemc/utils/to_string.hpp>
+ *
+ * #include <random>
+ *
+ * int main() {
+ *     // normal distribution to be sampled: mu = 2, sigma = 1
+ *     std::mt19937_64 rng;
+ *     std::normal_distribution<double> normal_dist(2.0, 1.0);
+ *
+ *     // accumulate samples into a covariance accumulator of size 2
+ *     simplemc::covar_acc_dynamic<double> acc{2};
+ *     for (int i = 0; i < 100000; ++i) {
+ *         auto sample = normal_dist(rng);
+ *         acc << Eigen::Vector2d{ sample, 2.0 * sample };
+ *     }
+ *
+ *     // print the mean and covariance matrix of the accumulated data
+ *     fmt::println("Mean: {}", acc.mean());
+ *     fmt::println("Covariance:\n{}", simplemc::to_string(acc.covariance_of_data()));
  * }
- * fmt::print("Mean: [{:.5f}, {:.5f}]\n", acc.mean()(0), acc.mean()(1));
- * fmt::print("Covariance:\n{}\n", simplemc::to_string(acc.covariance_of_data()));
  * @endcode
  *
  * Output:
  *
  * ```
- * Mean: [0.00041, -3.00108]
+ * Mean: [2.002072302074497, 4.004144604148994]
  * Covariance:
- *    0.332466 0.000303671
- * 0.000303671    0.249371
+ * 1.00378 2.00756
+ * 2.00756 4.01513
  * ```
  *
  * @tparam X simplemc::eigen_vector_dbl type.
@@ -105,13 +117,13 @@ public:
     /**
      * @brief Get the algorithm used to accumulate the data.
      *
-     * @return The simplemc::varalg tag.
+     * @return Its simplemc::varalg tag.
      */
     static constexpr auto varalg() { return A; }
 
 private:
-    // Add a single values to the accumulator without increasing the count (the given count is assumed
-    // to be already increased by one).
+    // Add values to the accumulator without increasing the count (the given count is assumed to be
+    // already increased by one).
     // The range of indices is assumed to be sorted and that each index is unique.
     // Only the lower triangular part of the covariance matrix is updated.
     template <ranges::input_range R1, ranges::input_range R2>
@@ -153,38 +165,39 @@ private:
 
 public:
     /**
-     * @brief Construct a covariance accumulator with a given number of elements.
+     * @brief Construct a covariance accumulator with a given number of elements \f$ M \f$.
      *
      * @details For dynamically sized accumulators, it throws a simplemc::simplemc_exception if the
-     * given size is <= 0.
+     * given size \f$ M \leq 0 \f$.
      *
-     * For static sized accumulators, the `num` parameter is ignored.
+     * For statically sized accumulators, \f$ M \f$ is ignored.
      *
-     * @param num Number of elements.
+     * @param m Number of elements \f$ M \f$.
      */
-    explicit covar_acc(size_type num = 1) :
-        mdata_(vec_type::Zero(is_dynamic ? num : static_size)),
-        cdata_(mat_type::Zero(is_dynamic ? num : static_size, is_dynamic ? num : static_size)),
+    explicit covar_acc(size_type m = 1) :
+        mdata_(vec_type::Zero(is_dynamic ? m : static_size)),
+        cdata_(mat_type::Zero(is_dynamic ? m : static_size, is_dynamic ? m : static_size)),
         count_(0),
         idx_(0) {
         if constexpr (is_dynamic) {
-            if (num <= 0) {
+            if (m <= 0) {
                 throw simplemc_exception("Dynamic size <= 0", "covar_acc::covar_acc");
             }
         }
     }
 
     /**
-     * @brief Construct a covariance accumulator with given data storages and count.
+     * @brief Construct a covariance accumulator with the given accumulated data and number of
+     * samples \f$ N \f$.
      *
-     * @details For dynamically sized accumulators, the size of the data storages must match and be
-     * >= 1. Otherwise, it throws a simplemc::simplemc_exception.
+     * @details For dynamically sized accumulators, the size \f$ M \f$ of the data storages must be
+     * \f$ \geq 1 \f$. Otherwise, it throws a simplemc::simplemc_exception.
      *
-     * @param md Accumulated mean data.
-     * @param cd Accumulated covariance data.
-     * @param ct Number of accumulated values.
+     * @param md Accumulated mean data \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$.
+     * @param cd Accumulated covariance data \f$ \mathbf{C}^{(N)}/\mathbf{D}^{(N)} \f$.
+     * @param n Number of accumulated samples \f$ N \f$.
      */
-    covar_acc(const vec_type& md, const mat_type& cd, count_type ct) : mdata_(md), cdata_(cd), count_(ct), idx_(0) {
+    covar_acc(const vec_type& md, const mat_type& cd, count_type n) : mdata_(md), cdata_(cd), count_(n), idx_(0) {
         if constexpr (is_dynamic) {
             if (mdata_.size() <= 0) {
                 throw simplemc_exception("Dynamic size <= 0", "covar_acc::covar_acc");
@@ -206,56 +219,56 @@ public:
     }
 
     /**
-     * @brief Subscript operator sets the index and returns a reference to this object.
+     * @brief Subscript operator sets the index \f$ i \f$ and returns a reference to `this` object.
      *
-     * @param idx Index.
-     * @return Reference to this object.
+     * @param i Index \f$ i \f$.
+     * @return Reference to `this` object.
      */
-    covar_acc& operator[](size_type idx) {
-        idx_ = idx;
+    covar_acc& operator[](size_type i) {
+        idx_ = i;
         return *this;
     }
 
     /**
-     * @brief Stream operator for accumulating a single value.
+     * @brief Stream operator for accumulating a single value \f$ x \f$.
      *
-     * @details For accumulators with size > 1, the value is added to the element at the current
-     * index.
+     * @details For accumulators with size \f$ M > 1 \f$, the value is added to the element at the
+     * current index \f$ i \f$ (see operator[]()).
      *
-     * See @ref simplemc-accs-accs for a code example.
+     * See also @ref simplemc-accs-accs-how.
      *
      * @tparam T Type of the value to be accumulated.
-     * @param val Value to be accumulated.
-     * @return Reference to this object.
+     * @param x Value \f$ x \f$ to be accumulated.
+     * @return Reference to `this` object.
      */
     template <typename T>
         requires std::convertible_to<T, value_type>
-    covar_acc& operator<<(const T& val) {
+    covar_acc& operator<<(const T& x) {
         ++count_;
-        add_values(std::array<value_type, 1> { val }, std::array<size_type, 1> { idx_ }, count_);
+        add_values(std::array<value_type, 1> { x }, std::array<size_type, 1> { idx_ }, count_);
         return *this;
     }
 
     /**
-     * @brief Stream operator for accumulating a vector.
+     * @brief Stream operator for accumulating a vector \f$ \mathbf{v} \f$.
      *
-     * @details See @ref simplemc-accs-accs for a code example.
+     * @details See also @ref simplemc-accs-accs-how.
      *
      * @tparam W Eigen vector/array/expression type.
-     * @param vec Vector/Array/Expression to be accumulated.
-     * @return Reference to this object.
+     * @param v Vector/Array/Expression \f$ \mathbf{v} \f$ to be accumulated.
+     * @return Reference to `this` object.
      */
     template <typename W>
-    covar_acc& operator<<(const W& vec) {
-        assert(vec.size() == size());
+    covar_acc& operator<<(const W& v) {
+        assert(v.size() == size());
         ++count_;
         if constexpr (varalg() == varalg::standard) {
-            mdata_ += vec.matrix();
-            cdata_ += (vec.matrix() * vec.matrix().transpose()).template triangularView<Eigen::Lower>();
+            mdata_ += v.matrix();
+            cdata_ += (v.matrix() * v.matrix().transpose()).template triangularView<Eigen::Lower>();
         } else {
-            const auto tmp = (vec.matrix() - mdata_).eval();
+            const auto tmp = (v.matrix() - mdata_).eval();
             mdata_ += tmp / static_cast<double>(count_);
-            cdata_ += (tmp * (vec.matrix() - mdata_).transpose()).template triangularView<Eigen::Lower>();
+            cdata_ += (tmp * (v.matrix() - mdata_).transpose()).template triangularView<Eigen::Lower>();
         }
         return *this;
     }
@@ -276,26 +289,28 @@ public:
      *   - \f$ \mathbf{D}^{(N)} = \mathbf{D}_{1}^{(N_1)} + \mathbf{D}_{2}^{(N_2)} + N_1 \left(
      *     \mathbf{n}_{1}^{(N_1)} - \mathbf{n}^{(N)} \right) \left( \mathbf{n}_{1}^{(N_1)} -
      *     \mathbf{n}^{(N)} \right)^T + N_2 \left( \mathbf{n}_{2}^{(N_2)} - \mathbf{n}^{(N)} \right)
-     *     \left( \mathbf{n}_{2}^{(N_2)} - \mathbf{n}^{(N)} \right)^T \f$ .
+     *     \left( \mathbf{n}_{2}^{(N_2)} - \mathbf{n}^{(N)} \right)^T \f$.
+     * 
+     * See also @ref simplemc-accs-accs-how.
      *
-     * @param acc simplemc::covar_acc to be incorporated.
-     * @return Reference to this object.
+     * @param acc_other simplemc::covar_acc<X, A> to be incorporated.
+     * @return Reference to `this` object.
      */
-    covar_acc& operator<<(const covar_acc& acc) {
-        assert(size() == acc.size());
+    covar_acc& operator<<(const covar_acc& acc_other) {
+        assert(size() == acc_other.size());
         if constexpr (varalg() == varalg::standard) {
-            mdata_ += acc.mdata_;
-            cdata_ += acc.cdata_.template triangularView<Eigen::Lower>();
+            mdata_ += acc_other.mdata_;
+            cdata_ += acc_other.cdata_.template triangularView<Eigen::Lower>();
         } else {
             const auto n1 = static_cast<double>(count_);
-            const auto n2 = static_cast<double>(acc.count_);
-            const auto m = mdata_ * n1 / (n1 + n2) + acc.mdata_ * n2 / (n1 + n2);
-            cdata_ += (acc.cdata_ + n1 * (mdata_ - m) * (mdata_ - m).transpose() +
-                n2 * (acc.mdata_ - m) * (acc.mdata_ - m).transpose())
+            const auto n2 = static_cast<double>(acc_other.count_);
+            const auto m = mdata_ * n1 / (n1 + n2) + acc_other.mdata_ * n2 / (n1 + n2);
+            cdata_ += (acc_other.cdata_ + n1 * (mdata_ - m) * (mdata_ - m).transpose() +
+                n2 * (acc_other.mdata_ - m) * (acc_other.mdata_ - m).transpose())
                           .template triangularView<Eigen::Lower>();
             mdata_ = m;
         }
-        count_ += acc.count_;
+        count_ += acc_other.count_;
         return *this;
     }
 
@@ -303,32 +318,36 @@ public:
      * @brief Accumulate a range of values to consecutive elements in the accumulator.
      *
      * @details The values are added to consecutive elements in the accumulator starting with the
-     * element at the given index. The size of the range is assumed to be <= size() - `idx`.
+     * element at the given index \f$ i \f$. The size \f$ n \f$ of the range is assumed to satisfy \f$
+     * n \leq M - i \f$.
      *
-     * See @ref simplemc-accs-accs for a code example.
+     * See also @ref simplemc-accs-accs-how.
      *
      * @tparam R Input range of values.
      * @param rg Range of values to be accumulated.
-     * @param idx Starting index for the accumulator.
+     * @param i Index \f$ i \f$ of the first element in the accumulator that a value will be added to.
      */
     template <ranges::input_range R>
-    void accumulate(R&& rg, size_type idx = 0) {
+    void accumulate(R&& rg, size_type i = 0) {
         ++count_;
-        add_values(std::forward<R>(rg), ranges::views::iota(idx), count_);
+        add_values(std::forward<R>(rg), ranges::views::iota(i), count_);
     }
 
     /**
-     * @brief Accumulate a range of values to arbitrary elements but with different indices.
+     * @brief Accumulate a range of values to arbitrary elements with the given indices.
      *
-     * @details For performance reasonses, we assume that the range of indices is sorted and that each
-     * index is unique.
+     * @details Each value \f$ v_{i_j} \f$ of the given value range is accumulated at the
+     * corresponding index \f$ i_j \f$ in the accumulator. Every index \f$ i_j \f$ should only appear
+     * once in index range. Both ranges are assumed to be of the same size \f$ n \leq M \f$.
      *
-     * See @ref simplemc-accs-accs for a code example.
+     * See also @ref simplemc-accs-accs-how.
+     *
+     * @note For performance reasonses, we assume that the range of indices is sorted.
      *
      * @tparam R1 Input range of values.
      * @tparam R2 Input range of indices.
      * @param rg Range of values to be accumulated.
-     * @param idxs Range of indices (sorted).
+     * @param idxs (Sorted) range of indices at which the values should be accumulated.
      */
     template <ranges::input_range R1, ranges::input_range R2>
     void accumulate(R1&& rg, R2&& idxs) {
@@ -337,59 +356,65 @@ public:
     }
 
     /**
-     * @brief Get the size of the accumulator.
+     * @brief Get the size \f$ M \f$ of the accumulator.
      *
      * @return Number of elements.
      */
     [[nodiscard]] auto size() const { return mdata_.size(); }
 
     /**
-     * @brief Get the total number of accumulated values.
+     * @brief Get the total number of accumulated samples \f$ N \f$.
      *
-     * @return Number of accumulated values.
+     * @return Number of accumulated samples.
      */
     [[nodiscard]] auto count() const { return count_; }
 
     /**
-     * @brief Get accumulated data used for estimating the mean.
+     * @brief Get the accumulated data \f$ \mathbf{m}^{(N)}/ \mathbf{n}^{(N)} \f$ used for estimating 
+     * the mean.
      *
-     * @return Data storage (content depends on the algorithm, see simplemc::accs::mean).
+     * @return simplemc::eigen_vector_dbl of size \f$ M \f$ containing \f$ \mathbf{m}^{(N)}/
+     * \mathbf{n}^{(N)} \f$ (content depends on the algorithm, see simplemc::accs::mean).
      */
     [[nodiscard]] const vec_type& mdata() const { return mdata_; }
 
     /**
-     * @brief Get accumulated data used for estimating the covariance.
+     * @brief Get the accumulated data \f$ \mathbf{C}^{(N)}/\mathbf{D}^{(N)} \f$ used for estimating 
+     * the covariance.
      *
-     * @warning Only the lower triangular part of the covariance matrix is valid. Use
+     * @note Only the lower triangular part of the covariance matrix is valid. Use
      * `selfadjointView<Eigen::Lower>()` to get the full covariance matrix.
      *
-     * @return Data storage (content depends on the algorithm, see simplemc::accs::covariance).
+     * @return simplemc::eigen_matrix_dbl of size \f$ M \times M \f$ containing \f$ \mathbf{C}^{(N)}/
+     * \mathbf{D}^{(N)} \f$ (content depends on the algorithm, see simplemc::accs::covariance).
      */
     [[nodiscard]] const mat_type& cdata() const { return cdata_; }
 
     /**
-     * @brief Calculate the sample mean from the accumulated data.
+     * @brief Calculate the sample mean \f$ \overline{\mathbf{x}}^{(N)} \f$.
      *
-     * @details Calls simplemc::accs::mean with the accumulated mean data and the count.
+     * @details It calls simplemc::accs::mean with the accumulated mean data and the count.
      *
-     * For statically sized accumulators with a size() == 1, it returns a single value. Otherwise, it
-     * returns a vector.
+     * For statically sized accumulators with \f$ M = 1 \f$, it returns a real scalar. Otherwise, it
+     * returns a vec_type object.
      *
-     * @return Sample mean.
+     * @return Sample mean \f$ \overline{\mathbf{x}}^{(N)} \f$.
      */
     [[nodiscard]] auto mean() const {
         return detail::scalar_or_matrix<returns_scalar>(simplemc::accs::mean<varalg()>(mdata_, count_));
     }
 
     /**
-     * @brief Calculate the sample covariance matrix of the mean.
+     * @brief Calculate the sample covariance matrix \f$ s_{\overline{\mathbf{X}}
+     * \overline{\mathbf{X}}}^2 \f$ of the mean.
      *
-     * @details Calls covariance_of_data() and divides the result by the count.
+     * @details It calls covariance_of_data() and divides the result by count().
      *
-     * For statically sized accumulators with a size() == 1, it returns a single value. Otherwise, it
-     * returns a vector.
+     * For statically sized accumulators with \f$ M = 1 \f$, it returns a real scalar. Otherwise, it
+     * returns a mat_type object.
      *
-     * @return Sample covariance matrix of the mean.
+     * @return Sample covariance matrix of the mean \f$ s_{\overline{\mathbf{X}}
+     * \overline{\mathbf{X}}}^2 \f$.
      */
     [[nodiscard]] auto covariance() const {
         auto res = covariance_of_data() / static_cast<double>(count_);
@@ -401,14 +426,14 @@ public:
     }
 
     /**
-     * @brief Calculate the sample covariance matrix of the accumulated data.
+     * @brief Calculate the sample covariance matrix \f$ s_{\mathbf{X} \mathbf{X}}^2 \f$.
      *
-     * @details Calls simplemc::accs::covariance with the accumulated data and the count.
+     * @details It calls simplemc::accs::covariance with the accumulated data and the count.
      *
-     * For statically sized accumulators with a size() == 1, it returns a single value. Otherwise, it
-     * returns a vector.
+     * For statically sized accumulators with \f$ M = 1 \f$, it returns a real scalar. Otherwise, it
+     * returns a mat_type object.
      *
-     * @return Sample covariance matrix of the accumulated data.
+     * @return Sample covariance matrix \f$ s_{\mathbf{X} \mathbf{X}}^2 \f$.
      */
     [[nodiscard]] auto covariance_of_data() const {
         using simplemc::accs::covariance;

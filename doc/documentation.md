@@ -100,13 +100,16 @@ polynomials, that are especially useful for general Fourier series.
 
 ## Accumulator library
 
-@ref simplemc-accs provides various accumulators and other tools to collect and analyze data:
+@ref simplemc-accs implements various accumulators and other tools to collect and analyze data.
 
-- @ref simplemc::mean_acc
-- @ref simplemc::var_acc
-- @ref simplemc::block_acc
-- @ref simplemc::covar_acc
-- @ref simplemc::autocorr_acc
+It provides
+
+- @ref simplemc-accs-utils which are mostly used internally in the **simplemc-accs** library.
+- Several @ref simplemc-accs-accs to calculate the mean, variance and covariance of a set of random
+samples.
+- Various @ref simplemc-accs-wrappers that can be used with specific accumulator types to extend or
+modify their functionality.
+- Tools and techniques for @ref simplemc-accs-resampling.
 
 ## JSON library
 

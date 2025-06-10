@@ -27,8 +27,8 @@ namespace simplemc {
  * definition of those quantities.
  *
  * The variance estimation does not account for any correlation between the samples. To get more
- * reliable results in case autocorrelation is a problem, see simplemc::block_acc and
- * simplemc::autocorr_acc.
+ * reliable results in case autocorrelation is a problem, see simplemc::block_acc,
+ * simplemc::autocorr_acc or simplemc::batch_acc.
  *
  * The accumulator takes two template parameters:
  * - the type of the random samples (a simplemc::eigen_vector type) and
@@ -38,7 +38,7 @@ namespace simplemc {
  * Please have a look at simplemc::accs::diag_covariance.
  *
  * The implementation for real and complex random vectors is quite different. See the specializations
- * - @ref "simplemc::var_acc< X, A >" "simplemc::var_acc for dbl" and
+ * - @ref "simplemc::var_acc< X, A >" "simplemc::var_acc for real" and
  * - @ref "simplemc::var_acc< Z, A >" "simplemc::var_acc for cplx"
  * for more details.
  *

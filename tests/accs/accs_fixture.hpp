@@ -24,6 +24,7 @@ protected:
     void SetUp() override {
         using namespace std::literals::complex_literals;
 
+        // set up stochastic process with real states
         auto s1_d = state_d { 1.0, 0.0, 0.0 };
         auto s2_d = state_d { 0.0, 1.0, 0.0 };
         auto s3_d = state_d { 0.0, 0.0, 1.0 };
@@ -36,6 +37,7 @@ protected:
         sp_d.mcmc_warmup(steps);
         sp_d.mcmc_run(steps);
 
+        // set up stochastic process with complex states
         auto s1_c = state_c { 1.0 - 0.5i, 0.0 + 0.0i, 0.0 + 0.0i };
         auto s2_c = state_c { 0.0 + 0.0i, -0.3 + 0.8i, 0.0 + 0.0i };
         auto s3_c = state_c { 0.0 + 0.0i, 0.0 + 0.0i, 0.9 + 3.4i };

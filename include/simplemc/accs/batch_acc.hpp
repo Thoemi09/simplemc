@@ -30,34 +30,34 @@ namespace simplemc {
  * @ingroup simplemc-accs-utils
  * @brief Merge batches together.
  *
- * @details It takes a vector of \f$ N \f$ batches (simplemc::mean_acc) and combines them into \f$ N`
- * = \lfloor N / c \rfloor \f$ new batches, where \f$ c \f$ is the given number of batches that should
- * be merged together. If \f$ c \f$ is not a divisor of \f$ N \f$, the left over batches are simply
- * discarded.
+ * @details It takes a vector of \f$ M_b \f$ batches (simplemc::mean_acc) and combines them into \f$
+ * M_b' = \lfloor M_b / c \rfloor \f$ new batches, where \f$ c \f$ is the given number of batches that
+ * should be merged together. If \f$ c \f$ is not a divisor of \f$ M_b \f$, the left over batches are
+ * simply discarded.
  *
- * If \f$ c < 2 \f$ or \f$ c > N \f$, no merges are performed and batches are left unchanged.
+ * If \f$ c < 2 \f$ or \f$ c > M_b \f$, no merges are performed and batches are left unchanged.
  *
- * It is assumed, that the batches all have the same size.
+ * It is assumed, that the batches all have the same size \f$ M \f$.
  *
- * @param nb Number of batches to merge together.
- * @param batches `std::vector` containing the batches before the merge.
+ * @param c Number of batches to merge together.
+ * @param batches `std::vector` containing the \f$ M_b \f$ batches before the merge.
  */
 template <eigen_vector V, varalg A>
-void merge_batches(std::size_t nb, std::vector<mean_acc<V, A>>& batches) {
-    // do if the number of batches to combine is < 2 or > N
-    if (nb < 2 || nb > batches.size()) {
+void merge_batches(std::size_t c, std::vector<mean_acc<V, A>>& batches) {
+    // early return if the number of batches to combine is < 2 or > M_b
+    if (c < 2 || c > batches.size()) {
         return;
     }
 
     // combine the batches
-    const auto sz = batches.size() / nb;
-    for (std::size_t i = 0; i < sz; ++i) {
-        batches[i] = batches[i * nb];
-        for (std::size_t j = 1; j < nb; ++j) {
-            batches[i] << batches[i * nb + j];
+    const auto mb_p = batches.size() / c;
+    for (std::size_t i = 0; i < mb_p; ++i) {
+        batches[i] = batches[i * c];
+        for (std::size_t j = 1; j < c; ++j) {
+            batches[i] << batches[i * c + j];
         }
     }
-    batches.resize(sz);
+    batches.resize(mb_p);
 }
 
 /**
@@ -72,42 +72,67 @@ void merge_batches(std::size_t nb, std::vector<mean_acc<V, A>>& batches) {
  * effective and uncorrelated (if their count is large enough) random samples. That means that once
  * the accumlation is done, they can be used for further statistical analysis, i.e. calculating the
  * sample mean and its (blocked) variance, estimate the autocorrelation time and so on. Furthermore,
- * the batches can form the basis for the Jackknife tools provided by **simplemc**.
+ * the batches can form the basis for @ref simplemc-accs-resampling.
  *
  * The order of the random samples in the batches is preserved. To do this efficiently and in a simple
- * way, we have two vectors of `N` batches:
- * - The first vector stores currently full batches. They all contain the same number of samples.
+ * way, the accumulator stores two vectors each containing \f$ M_b \f$ batches:
+ * - The first vector stores currently full batches. They all contain the same number of samples, i.e.
+ * the current batch count \f$ N_b \f$.
  * - The second vector is used for actually accumulating new the data into batches. Once, all the
- * batches contain the same number of samples as the batches in the first vector, they are merged
- * together into the first vector and batches in the second vector are reset.
- *
- * @note If the number of batches in the two vectors is \f$ N \f$, respectively, then the resulting
- * number of full batches ready to be used for further analysis will be somewhere between \f$ [N, 2N)
- * \f$ depending on the number of random samples accumulated.
+ * accumulating batches contain the same number of samples as the batches in the first vector, i.e.
+ * \f$ N_b \f$, they are merged together into the first vector and batches in the second vector are
+ * reset. After the merge, the new batch count has doubled, \f$ N_b \gets N_b * 2 \f$.
  *
  * A batch accumulator is therefore similar to a simplemc::block_acc. The main difference is that
- * instead of specifying the block size, one specifies the number of blocks/batches. An advantage of
- * the batch accumulator is that one has access to the individual blocks/batches, which is not the
- * case for the block accumulator.
+ * instead of specifying the block size \f$ B \f$, one specifies the number of blocks/batches \f$ M_b
+ * \f$. An advantage of the batch accumulator is that one has access to the individual blocks/batches,
+ * which is not the case for the block accumulator. Under the hood, a single batch is just a
+ * simplemc::mean_acc.
  *
- * Multi-value accumulation is possible but has the same requirements as for the simplemc::block_acc:
- * @code{.cpp}
- * auto mva = bacc.make_mva();
- * mva[idx1] << val1;
- * mva[idx2] << val2;
- * mva.increment_count();
- * blacc.check_and_advance();
- * @endcode
- * @note The user is responsible for calling the simplemc::multivalue_acc::increment_count method as
- * well as the check_and_advance() method, otherwise the number of samples will not be correct.
- *
- * Under the hood, a single batch is just a mean accumulator.
- *
+ * Given that the total number \f$ N \f$ of accumulated samples is \f$ > 2 M_b \f$, the resulting 
+ * number \f$ \tilde{M}_b \f$ of full batches ready to be used for further analysis will always be 
+ * somewhere between \f$ [M_b, 2 M_b) \f$.
+ * 
  * The accumulator takes two template parameters:
  * - the type of the random samples (a simplemc::eigen_vector type) and
  * - the algorithm (simplemc::varalg) that should be used to accumulate the data.
- * Both of them determine the type of simplemc::mean_acc accumulators to be used for storing the batch
- * data.
+ *
+ * Both of them determine how the accumulation is actually done and what is stored in the accumulator.
+ * 
+ * @code{.cpp}
+ * #include <fmt/ranges.h>
+ * #include <simplemc/accs.hpp>
+ * 
+ * #include <random>
+ * 
+ * int main() {
+ *     // AR(1) parameters and white noise distribution: phi = 0.9, sigma = 1.0
+ *     const double phi = 0.9;
+ *     const double sigma = 1.0;
+ *     std::mt19937_64 rng;
+ *     std::normal_distribution<double> normal_dist(0.0, sigma);
+ * 
+ *     // accumulate samples into a batch accumulator
+ *     simplemc::batch_acc_single<double> acc {};
+ *     double x_t = 0.0;
+ *     for (int i = 0; i < 1000000; ++i) {
+ *         acc << x_t;
+ *         x_t = phi * x_t + normal_dist(rng);
+ *     }
+ * 
+ *     // print the mean and variance of the accumulated data
+ *     auto vacc = acc.var_accumulator();
+ *     fmt::println("Mean: {}", vacc.mean());
+ *     fmt::println("Variance: {}", vacc.variance());
+ * }
+ * @endcode
+ * 
+ * Output:
+ * 
+ * ```
+ * Mean: 0.002233435848225748
+ * Variance: 0.00010741776938402939
+ * ```
  *
  * @tparam V simplemc::eigen_vector type.
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
@@ -116,7 +141,7 @@ template <eigen_vector V, varalg A = varalg::welford>
 class batch_acc {
 public:
     /**
-     * @brief Type of accumulated values.
+     * @brief Type of accumulated values (simplemc::double_or_complex).
      */
     using value_type = typename V::value_type;
 
@@ -153,7 +178,7 @@ public:
     /**
      * @brief Get the algorithm used to accumulate the data.
      *
-     * @return The simplemc::varalg tag.
+     * @return Its simplemc::varalg tag.
      */
     static constexpr auto varalg() { return A; }
 
@@ -206,29 +231,29 @@ private:
 
 public:
     /**
-     * @brief Construct a batch accumulator with a given number of elements and batches.
+     * @brief Construct a batch accumulator with a given number of elements \f$ M \f$ and batches \f$
+     * M_b \f$.
      *
-     * @details It throws a simplemc::simplemc_exception if the given number of batches is < 2 or odd.
+     * @details For dynamically sized accumulators, it throws a simplemc::simplemc_exception if the
+     * given size \f$ M \leq 0 \f$.
      *
-     * For dynamically sized accumulators, it throws a simplemc::simplemc_exception if the given size
-     * is <= 0.
+     * For static sized accumulators, \f$ M \f$ is ignored.
      *
-     * For static sized accumulators, the `num` parameter is ignored.
+     * It calls check_batches() to check the given input parameters.
      *
-     * @param num Number of elements.
-     * @param nb Number of batches.
+     * @param m Number of elements \f$ M \f$.
+     * @param m_b Number of batches \f$ M_b \f$.
      */
-    explicit batch_acc(size_type num = 1, std::size_t nb = 64) :
-        full_batches_(nb, mean_acc_type { num }),
-        acc_batches_(nb, mean_acc_type { num }) {
+    explicit batch_acc(size_type m = 1, std::size_t m_b = 256) :
+        full_batches_(m_b, mean_acc_type { m }),
+        acc_batches_(m_b, mean_acc_type { m }) {
         check_batches();
     }
 
     /**
-     * @brief Construct a batch accumulator from the given data storages.
+     * @brief Construct a batch accumulator with the given vectors of full and accumulating batches.
      *
-     * @details It throws a simplemc::simplemc_exception if the given data storages are inconsistent.
-     * See simplemc::batch_acc::check_batches for more details.
+     * @details It calls check_batches() to check the given batches.
      *
      * @param full_batches Vector of mean accumulators for storing full batches.
      * @param acc_batches Vector of mean accumulators for accumulating new batches.
@@ -258,48 +283,56 @@ public:
     }
 
     /**
-     * @brief Subscript operator sets the index of the current accumulating batch and returns a
-     * reference to this object.
+     * @brief Subscript operator sets the index \f$ i \f$ of the current accumulating batch and 
+     * returns a reference to `this` object.
      *
-     * @param idx Index.
-     * @return Reference to this object.
+     * @param i Index \f$ i \f$.
+     * @return Reference to `this` object.
      */
-    batch_acc& operator[](size_type idx) {
-        acc_batches_[bidx_][idx];
+    batch_acc& operator[](size_type i) {
+        acc_batches_[bidx_][i];
         return *this;
     }
 
     /**
-     * @brief Stream operator for accumulating a single value.
+     * @brief Stream operator for accumulating a single value \f$ x \f$.
      *
-     * @details It simply calls simplemc::mean_acc::operator<<(value_type) of the mean accumulator of
-     * the current accumulating batch.
+     * @details It simply calls 
+     * - simplemc::mean_acc::operator<<(const T &) of the mean accumulator of the current 
+     * accumulating batch and
+     * - check_and_advance() to check if the batch is full.
+     * 
+     * See also @ref simplemc-accs-accs-how.
      *
      * @tparam T Type of the value to be accumulated.
-     * @param val Value to be accumulated.
-     * @return Reference to this object.
+     * @param x Value \f$ x \f$ to be accumulated.
+     * @return Reference to `this` object.
      */
     template <typename T>
         requires std::convertible_to<T, value_type>
-    batch_acc& operator<<(const T& val) {
-        acc_batches_[bidx_] << val;
+    batch_acc& operator<<(const T& x) {
+        acc_batches_[bidx_] << x;
         check_and_advance();
         return *this;
     }
 
     /**
-     * @brief Stream operator for accumulating a vector.
+     * @brief Stream operator for accumulating a vector \f$ \mathbf{v} \f$.
      *
-     * @details It simply calls simplemc::mean_acc::operator<<(const W&) of the mean accumulator of
-     * the current accumulating batch.
+     * @details It simply calls 
+     * - simplemc::mean_acc::operator<<(const W&) of the mean accumulator of the current accumulating 
+     * batch and 
+     * - check_and_advance() to check if the batch is full.
+     * 
+     * See also @ref simplemc-accs-accs-how.
      *
      * @tparam W Eigen vector/array/expression type.
-     * @param vec Vector/Array/Expression to be accumulated.
-     * @return Reference to this object.
+     * @param v Vector/Array/Expression \f$ \mathbf{v} \f$ to be accumulated.
+     * @return Reference to `this` object.
      */
     template <typename W>
-    batch_acc& operator<<(const W& vec) {
-        acc_batches_[bidx_] << vec;
+    batch_acc& operator<<(const W& v) {
+        acc_batches_[bidx_] << v;
         check_and_advance();
         return *this;
     }
@@ -307,29 +340,37 @@ public:
     /**
      * @brief Accumulate a range of values to consecutive elements in the accumulator.
      *
-     * @details It simply calls simplemc::mean_acc::accumulate(R&&, size_type) of the mean accumulator
-     * of the current accumulating batch.
+     * @details It simply calls 
+     * - simplemc::mean_acc::accumulate(R&&, size_type) of the mean accumulator of the current 
+     * accumulating batch and
+     * - check_and_advance() to check if the batch is full.
+     * 
+     * See also @ref simplemc-accs-accs-how.
      *
      * @tparam R Input range of values.
      * @param rg Range of values to be accumulated.
-     * @param idx Starting index for the accumulator.
+     * @param i Index \f$ i \f$ of the first element in the batch that a value will be added to.
      */
     template <ranges::input_range R>
-    void accumulate(R&& rg, size_type idx = 0) {
-        acc_batches_[bidx_].accumulate(std::forward<R>(rg), idx);
+    void accumulate(R&& rg, size_type i = 0) {
+        acc_batches_[bidx_].accumulate(std::forward<R>(rg), i);
         check_and_advance();
     }
 
     /**
-     * @brief Accumulate a range of values to arbitrary elements but with different indices.
+     * @brief Accumulate a range of values to arbitrary elements with the given indices.
      *
-     * @details It simply calls simplemc::mean_acc::accumulate(R1&&, R2&&) of the mean accumulator of
-     * the current accumulating batch.
+     * @details It simply calls 
+     * - simplemc::mean_acc::accumulate(R1&&, R2&&) of the mean accumulator of the current 
+     * accumulating batch and
+     * - check_and_advance() to check if the batch is full.
+     * 
+     * See also @ref simplemc-accs-accs-how.
      *
      * @tparam R1 Input range of values.
      * @tparam R2 Input range of indices.
      * @param rg Range of values to be accumulated.
-     * @param idxs Range of indices.
+     * @param idxs Range of indices at which the values should be accumulated.
      */
     template <ranges::input_range R1, ranges::input_range R2>
     void accumulate(R1&& rg, R2&& idxs) {
@@ -340,23 +381,33 @@ public:
     /**
      * @brief Create a multi-value accumulator.
      *
-     * @details See simplemc::multivalue_acc.
+     * @details The user is responsible for calling simplemc::multivalue_acc::increment_count as well 
+     * as check_and_advance() after all values have been added, otherwise the number of samples will 
+     * not be correct. For example,
+     * @code{.cpp}
+     * auto mva = acc.make_mva();
+     * mva[i_1] << v_i_1;
+     * // ...
+     * mva[i_n] << v_i_n;
+     * mva.increment_count();
+     * acc.check_and_advance();
+     * @endcode
      *
-     * @return Multi-value accumulator.
+     * @return Multi-value accumulator wrapping `this` object.
      */
-    mva_type make_mva() { return mva_type(acc_batches_[bidx_]); }
+    [[nodiscard]] mva_type make_mva() { return mva_type(acc_batches_[bidx_]); }
 
     /**
-     * @brief Get the size of the accumulator.
+     * @brief Get the size \f$ M \f$ of the accumulator.
      *
      * @return Number of elements.
      */
     [[nodiscard]] auto size() const { return full_batches_[0].size(); }
 
     /**
-     * @brief Get the total number of accumulated values.
+     * @brief Get the total number of accumulated samples \f$ N \f$.
      *
-     * @return Number of accumulated values.
+     * @return Number of accumulated samples.
      */
     [[nodiscard]] auto count() const {
         auto op = [](count_type sum, const mean_acc_type& acc) { return sum + acc.count(); };
@@ -366,16 +417,16 @@ public:
     }
 
     /**
-     * @brief Get the count in the full batches.
+     * @brief Get the count \f$ N_b \f$ in the full batches.
      *
      * @return Number of accumulated values in a single full batch.
      */
     [[nodiscard]] auto batch_count() const { return full_batches_[0].count(); }
 
     /**
-     * @brief Get the number of full batches.
+     * @brief Get the number of full batches \f$ \tilde{M}_b \in [M_b, 2 M_b) \f$.
      *
-     * @details This is equal to calling `batches().size()`.
+     * @details This is equal to calling `batches().%size()`.
      *
      * @return Number of currently full batches.
      */
@@ -387,14 +438,16 @@ public:
      * @details It takes all the batches which are currently considered to be full and uses
      * simplemc::merge_batches to merge a given number of them together.
      *
-     * It returns an empty vector if no merge has been performed so far.
+     * It returns an empty vector
+     * - if the current batch count is zero, i.e. \f$ N_b = 0 \f$, or
+     * - if \f$ c > \tilde{M}_b \f$, i.e. there are not enough full batches to merge.
      *
-     * @param nb Number of batches to merge together.
-     * @return `std::vector` containing the full (and merged) batches.
+     * @param c Number of batches to merge together.
+     * @return `std::vector` containing \f$ \tilde{M}_b \in [M_b, 2M_b) \f$ full (and merged) batches.
      */
-    [[nodiscard]] auto batches(std::size_t nb = 1) const {
+    [[nodiscard]] auto batches(std::size_t c = 1) const {
         // return an empty vector if we don't have enough full batches
-        if (is_first_merge() || nb > full_batches_.size() + bidx_) {
+        if (is_first_merge() || c > full_batches_.size() + bidx_) {
             return std::vector<mean_acc_type> {};
         }
 
@@ -404,7 +457,7 @@ public:
         std::transform(acc_batches_.begin(), it, std::back_inserter(res), [](const auto& acc) { return acc; });
 
         // merge the batches
-        merge_batches(nb, res);
+        merge_batches(c, res);
         return res;
     }
 
@@ -423,9 +476,9 @@ public:
     [[nodiscard]] const auto& batch_vector_accumulating() const { return acc_batches_; }
 
     /**
-     * @brief Get a mean accumulator with all the accumulated data.
+     * @brief Get a mean accumulator with all \f$ N \f$ accumulated samples.
      *
-     * @return batch_acc::mean_acc_type object as if all the data was accumulated in a single batch.
+     * @return batch_acc::mean_acc_type object as if all the data was accumulated into a single batch.
      */
     [[nodiscard]] auto mean_accumulator() const {
         mean_acc_type res { size() };
@@ -439,47 +492,50 @@ public:
     }
 
     /**
-     * @brief Get a variance accumulator with full batches as effective samples.
+     * @brief Get a variance accumulator with all \f$ \tilde{M}_b \f$ full batches as effective 
+     * samples.
      *
-     * @details Full batches can optionally (`nb > 2`) be merged together before being used as
-     * effective samples.
+     * @details Full batches can optionally be merged together before being used as effective samples.
      *
      * The resulting variance accumulator is identical to a simplemc::block_acc with a block size of
-     * `batch_count() * nb`.
+     * \f$ N_b * c \f$.
      *
-     * @param nb Number of batches to be combined into an effective sample.
+     * @param c Number of batches to be combined into an effective sample.
      * @return simplemc::var_acc object.
      */
-    [[nodiscard]] auto var_accumulator(std::size_t nb = 1) const {
+    [[nodiscard]] auto var_accumulator(std::size_t c = 1) const {
         simplemc::var_acc<vec_type, varalg()> res { size() };
-        for (const auto& acc : batches(nb)) {
+        for (const auto& acc : batches(c)) {
             res << acc.mean();
         }
         return res;
     }
 
     /**
-     * @brief Get a covariance accumulator with full batches as effective samples.
+     * @brief Get a covariance accumulator with all \f$ \tilde{M}_b \f$ full batches as effective 
+     * samples.
      *
-     * @details Full batches can optionally (`nb > 2`) be merged together before being used as
-     * effective samples.
+     * @details Full batches can optionally be merged together before being used as effective samples.
      *
-     * The resulting variance accumulator is identical to a simplemc::block_acc with a block size of
-     * `batch_count() * nb`.
+     * The resulting covariance accumulator is identical to a simplemc::block_acc with a block size of
+     * \f$ N_b * c \f$.
      *
-     * @param nb Number of batches to be combined into an effective sample.
+     * @param c Number of batches to be combined into an effective sample.
      * @return simplemc::covar_acc object.
      */
-    [[nodiscard]] auto covar_accumulator(std::size_t nb = 1) const {
+    [[nodiscard]] auto covar_accumulator(std::size_t c = 1) const {
         simplemc::covar_acc<vec_type, varalg()> res { size() };
-        for (const auto& acc : batches(nb)) {
+        for (const auto& acc : batches(c)) {
             res << acc.mean();
         }
         return res;
     }
 
     /**
-     * @brief Check if the current batch is full and advance to the next one if so.
+     * @brief Check if the current accumulating batch is full and advance to the next one if so.
+     * 
+     * @details If all accumulating batches are full, the full and accumulating batches are merged 
+     * together and the accumulating batches are reset. 
      */
     void check_and_advance() {
         if (is_batch_full()) {
@@ -494,7 +550,18 @@ public:
     /**
      * @brief Check batches and parameters for consistency.
      *
-     * @details It throws a simplemc::simplemc_exception in case of inconsistencies.
+     * @details It throws a simplemc::simplemc_exception if
+     * - the index \f$ i_b \f$ of the current accumulating batch is \f$ \geq M_b \f$,
+     * - \f$ M_b < 2 \f$ or if \f$ M_b \f$ is not even,
+     * - the number of full batches is not equal to the number of accumulating batches,
+     * - the number of samples in full batches is
+     *   - \f$ \neq 0 \f$ in case no merge has happened yet,
+     *   - \f$ \neq N_b \f$ otherwise,
+     * - the number of samples in an accumulating batch with index \f$ i \f$ is
+     *   - \f$ \neq N_b \f$ in case \f$ i < i_b \f$,
+     *   - \f$ < N_b \f$ in case \f$ i = i_b \f$,
+     *   - \f$ \neq 0 \f$ in case \f$ i > i_b \f$,
+     * - the sizes of all batches are \f$ \neq M \f$.
      */
     void check_batches() {
         // check the batch size
@@ -561,6 +628,9 @@ public:
      *
      * @details Batches from different processes are not merged together. Instead, they are simply
      * gathered into a vector.
+     * 
+     * If `same_count` is true, it will enforce that all gathered batches have the same number of 
+     * accumulated samples, i.e. it will merge batches together if necessary.
      *
      * It throws an exception, if the size of the accumulator is not equal on all processes.
      *

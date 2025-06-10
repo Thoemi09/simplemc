@@ -329,6 +329,7 @@ TEST_F(SimplemcAccs, CovarAccAutocorrelation) {
 
     // check block variance accumulators with increasing block sizes and autocorrelation times
     using simplemc::make_span;
+    using simplemc::accs::tau;
     auto [bsp_d, btau_v, btau_c] = blocking_autocorr(sp_d);
     const auto max_level = acc_vec.find_level(2);
     auto check_level = [&bsp_d, &btau_c](const auto& acc, auto i) {
@@ -338,10 +339,10 @@ TEST_F(SimplemcAccs, CovarAccAutocorrelation) {
         const auto blsize = acc.block_sizes()[i];
         if constexpr (std::decay_t<decltype(acc)>::static_size == 1) {
             check_near(acc.accumulators()[i].covariance_of_data(), c_d(0, 0), tol);
-            check_near(acc.tau(ac0_d, ac_d, blsize), btau_c[i](0, 0), tol);
+            check_near(tau(ac0_d, ac_d, blsize), btau_c[i](0, 0), tol);
         } else {
             check_range_near(make_span(acc.accumulators()[i].covariance_of_data()), make_span(c_d), tol);
-            check_range_near(make_span(acc.tau(ac0_d, ac_d, blsize)), make_span(btau_c[i]), tol);
+            check_range_near(make_span(tau(ac0_d, ac_d, blsize)), make_span(btau_c[i]), tol);
         }
     };
     for (std::size_t i = 0; i < max_level; ++i) {
