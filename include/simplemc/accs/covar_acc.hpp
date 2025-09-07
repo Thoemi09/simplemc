@@ -21,7 +21,7 @@
 namespace simplemc {
 
 /**
- * @addtogroup simplemc-accs-accs
+ * @addtogroup simplemc-accs-accs-covar
  * @{
  */
 
@@ -33,8 +33,8 @@ namespace simplemc {
  *
  * It throws a simplemc::simplemc_exception if the range is empty.
  *
- * @tparam R simplemc::random_sample_range type.
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
+ * @tparam R simplemc::random_sample_range type.
  * @param rg Range containing the random samples \f$ \left\{ \mathbf{z}^{(j)} : j = 1, \dots, N
  * \right\} \f$.
  * @param t Optional vector/scalar shift \f$ \mathbf{t} \f$ that is applied when accumulating the
@@ -63,8 +63,8 @@ template <varalg A = varalg::welford, random_sample_range R>
  *
  * It throws a simplemc::simplemc_exception if the range is empty.
  *
- * @tparam R simplemc::random_sample_range type.
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
+ * @tparam R simplemc::random_sample_range type.
  * @param rg Range containing the random samples \f$ \left\{ \mathbf{z}^{(j)} : j = 1, \dots, N
  * \right\} \f$.
  * @param b Block size \f$ B \f$.
@@ -98,8 +98,8 @@ template <varalg A = varalg::welford, random_sample_range R>
  *
  * It throws a simplemc::simplemc_exception if the range is empty.
  *
- * @tparam R simplemc::random_sample_range type.
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
+ * @tparam R simplemc::random_sample_range type.
  * @param rg Range containing the random samples \f$ \left\{ \mathbf{z}^{(j)} : j = 1, \dots, N
  * \right\} \f$.
  * @param t Optional vector/scalar shift \f$ \mathbf{t} \f$ that is applied when accumulating the

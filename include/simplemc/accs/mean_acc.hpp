@@ -24,28 +24,29 @@
 namespace simplemc {
 
 /**
- * @addtogroup simplemc-accs-accs
+ * @addtogroup simplemc-accs-accs-mean
  * @{
  */
+
+/// @cond
 
 /* Forward declarations. */
 template <eigen_vector V, varalg A>
 class batch_acc;
 
+/// @endcond
+
 /**
  * @brief Accumulator for calculating the sample mean of a random vector.
  *
- * @details The sample mean is used as an approximation to the exact expectation value. See
- * @ref simplemc-accs for a definition of the sample mean and expectation value.
- *
- * The accumulator takes two template parameters:
+ * @details The accumulator takes two template parameters:
  * - the type of the random samples (a simplemc::eigen_vector type) and
  * - the algorithm (simplemc::varalg) that should be used to accumulate the data.
  *
  * Both of them determine how the accumulation is actually done and what is stored in the accumulator.
  * The accumulated data is stored in a single vector \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$. Please
  * see simplemc::accs::mean for more details.
- *
+ * 
  * @code{.cpp}
  * #include <fmt/ranges.h>
  * #include <simplemc/accs/mean_acc.hpp>
@@ -443,8 +444,8 @@ using mean_acc_dynamic = mean_acc<Eigen::Matrix<T, Eigen::Dynamic, 1>, A>;
  *
  * It throws a simplemc::simplemc_exception if the range is empty.
  *
- * @tparam R simplemc::random_sample_range type.
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
+ * @tparam R simplemc::random_sample_range type.
  * @param rg Range containing the random samples \f$ \left\{ \mathbf{z}^{(j)} : j = 1, \dots, N
  * \right\} \f$.
  * @param t Optional vector/scalar shift \f$ \mathbf{t} \f$ that is applied when accumulating the

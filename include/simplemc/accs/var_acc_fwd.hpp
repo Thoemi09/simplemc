@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Forward declaration of simplemc::var_acc.
+ * @brief Forward declaration of simplemc::var_acc and type aliases.
  */
 
 #ifndef SIMPLEMC_ACCS_VAR_ACC_FWD_HPP
@@ -15,29 +15,14 @@
 namespace simplemc {
 
 /**
- * @addtogroup simplemc-accs-accs
+ * @addtogroup simplemc-accs-accs-var
  * @{
  */
 
 /**
- * @brief Accumulator for calculating the sample mean and sample variance of a random vector.
+ * @brief Class template for variance accumulators.
  *
- * @details The sample mean and the sample variance are used as approximations to the exact
- * expectation value and diagonal of the covariance matrix, respectively. See @ref simplemc-accs for a
- * definition of those quantities.
- *
- * The variance estimation does not account for any correlation between the samples. To get more
- * reliable results in case autocorrelation is a problem, see simplemc::block_acc,
- * simplemc::autocorr_acc or simplemc::batch_acc.
- *
- * The accumulator takes two template parameters:
- * - the type of the random samples (a simplemc::eigen_vector type) and
- * - the algorithm (simplemc::varalg) that should be used to accumulate the data.
- *
- * Both of them determine how the accumulation is actually done and what is stored in the accumulator.
- * Please have a look at simplemc::accs::diag_covariance.
- *
- * The implementation for real and complex random vectors is quite different. See the specializations
+ * @details Please see the specializations
  * - @ref "simplemc::var_acc< X, A >" "simplemc::var_acc for real" and
  * - @ref "simplemc::var_acc< Z, A >" "simplemc::var_acc for cplx"
  * for more details.

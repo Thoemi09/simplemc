@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Specialization of simplemc::var_acc for complex random vectors.
+ * @brief Accumulator for calculating the sample mean and sample variance of a complex random vector.
  */
 
 #ifndef SIMPLEMC_ACCS_VAR_ACC_COMPLEX_HPP
@@ -25,11 +25,16 @@
 namespace simplemc {
 
 /**
- * @ingroup simplemc-accs-accs
- * @brief Specialization of simplemc::var_acc for complex random vectors \f$ \mathbf{Z} = \mathbf{X} +
- * i \mathbf{Y} \f$.
+ * @ingroup simplemc-accs-accs-var
+ * @brief Accumulator for calculating the sample mean and sample variance of a complex random vector 
+ * \f$ \mathbf{Z} = \mathbf{X} + i \mathbf{Y} \f$.
  *
- * @details The accumulated data is stored in four vectors:
+ * @details The accumulator takes two template parameters:
+ * - the type of the random samples (a simplemc::eigen_vector_cplx type) and
+ * - the algorithm (simplemc::varalg) that should be used to accumulate the data.
+ * 
+ * Both of them determine how the accumulation is actually done and what is stored in the accumulator.
+ * The accumulated data is stored in four vectors:
  * - a complex vector \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$ for the mean data,
  * - a real vector \f$ \mathbf{c}_r^{(N)}/\mathbf{d}_r^{(N)} \f$ for the variance data of the real
  * part \f$ \mathbf{X} \f$ of the random vector,

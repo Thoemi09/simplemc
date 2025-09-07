@@ -63,39 +63,14 @@ void merge_batches(std::size_t c, std::vector<mean_acc<V, A>>& batches) {
 }
 
 /**
- * @addtogroup simplemc-accs-accs
+ * @addtogroup simplemc-accs-accs-batch
  * @{
  */
 
 /**
  * @brief Accumulator for grouping samples of a random vector into a fixed number of batches.
  *
- * @details Random samples are accumulated into a fixed number of batches. The batches correspond to
- * effective and uncorrelated (if their count is large enough) random samples. That means that once
- * the accumlation is done, they can be used for further statistical analysis, i.e. calculating the
- * sample mean and its (blocked) variance, estimate the autocorrelation time and so on. Furthermore,
- * the batches can form the basis for @ref simplemc-accs-resampling.
- *
- * The order of the random samples in the batches is preserved. To do this efficiently and in a simple
- * way, the accumulator stores two vectors each containing \f$ M_b \f$ batches:
- * - The first vector stores currently full batches. They all contain the same number of samples, i.e.
- * the current batch count \f$ N_b \f$.
- * - The second vector is used for actually accumulating new the data into batches. Once, all the
- * accumulating batches contain the same number of samples as the batches in the first vector, i.e.
- * \f$ N_b \f$, they are merged together into the first vector and batches in the second vector are
- * reset. After the merge, the new batch count has doubled, \f$ N_b \gets N_b * 2 \f$.
- *
- * A batch accumulator is therefore similar to a simplemc::block_acc. The main difference is that
- * instead of specifying the block size \f$ B \f$, one specifies the number of blocks/batches \f$ M_b
- * \f$. An advantage of the batch accumulator is that one has access to the individual blocks/batches,
- * which is not the case for the block accumulator. Under the hood, a single batch is just a
- * simplemc::mean_acc.
- *
- * Given that the total number \f$ N \f$ of accumulated samples is \f$ > 2 M_b \f$, the resulting
- * number \f$ \tilde{M}_b \f$ of full batches ready to be used for further analysis will always be
- * somewhere between \f$ [M_b, 2 M_b) \f$.
- *
- * The accumulator takes two template parameters:
+ * @details The accumulator takes two template parameters:
  * - the type of the random samples (a simplemc::eigen_vector type) and
  * - the algorithm (simplemc::varalg) that should be used to accumulate the data.
  *
@@ -729,8 +704,8 @@ using batch_acc_dynamic = batch_acc<Eigen::Matrix<T, Eigen::Dynamic, 1>, A>;
  *
  * It throws a simplemc::simplemc_exception if the range is empty.
  *
- * @tparam R simplemc::random_sample_range type.
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
+ * @tparam R simplemc::random_sample_range type.
  * @param rg Range containing the random samples \f$ \left\{ \mathbf{z}^{(j)} : j = 1, \dots, N
  * \right\} \f$.
  * @param m_b Number of batches \f$ M_b \f$.

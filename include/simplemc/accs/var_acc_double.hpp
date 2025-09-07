@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Specialization of simplemc::var_acc for real random vectors.
+ * @brief Accumulator for calculating the sample mean and sample variance of a real random vector.
  */
 
 #ifndef SIMPLEMC_ACCS_VAR_ACC_DOUBLE_HPP
@@ -24,10 +24,16 @@
 namespace simplemc {
 
 /**
- * @ingroup simplemc-accs-accs
- * @brief Specialization of simplemc::var_acc for real random vectors \f$ \mathbf{X} \f$.
+ * @ingroup simplemc-accs-accs-var
+ * @brief Accumulator for calculating the sample mean and sample variance of a real random vector 
+ * \f$ \mathbf{X} \f$.
  *
- * @details The accumulated data is stored in two vectors:
+ * @details The accumulator takes two template parameters:
+ * - the type of the random samples (a simplemc::eigen_vector_dbl type) and
+ * - the algorithm (simplemc::varalg) that should be used to accumulate the data.
+ *
+ * Both of them determine how the accumulation is actually done and what is stored in the accumulator.
+ * The accumulated data is stored in two vectors:
  * - a real vector \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$ for the mean data and
  * - a real vector \f$ \mathbf{c}^{(N)}/\mathbf{d}^{(N)} \f$ for the variance data.
  *
