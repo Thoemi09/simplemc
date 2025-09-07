@@ -1,6 +1,7 @@
 #include "./accs_fixture.hpp"
 
 #include <simplemc/accs/mean_acc.hpp>
+#include <simplemc/utils/ranges.hpp>
 
 #include <complex>
 #include <numeric>
@@ -97,13 +98,25 @@ TEST_F(SimplemcAccs, MeanAccSingle) {
     acc_std_c1 << acc_std_c2;
     acc_wel_c1 << acc_wel_c2;
 
+    // factory function
+    auto dview = simplemc::ranges::transform_view(sp_d.samples, [](const auto& s) { return s(0); });
+    auto acc_std_d3 = make_mean_acc<standard>(dview);
+    auto acc_wel_d3 = make_mean_acc(dview);
+    auto cview = simplemc::ranges::transform_view(sp_c.samples, [](const auto& s) { return s(0); });
+    auto acc_std_c3 = make_mean_acc<standard>(cview);
+    auto acc_wel_c3 = make_mean_acc(cview);
+
     // check mean
     const auto m_d = sample_mean(sp_d);
     const auto m_c = sample_mean(sp_c);
     check_near(acc_std_d1.mean(), m_d[0], tol);
     check_near(acc_wel_d1.mean(), m_d[0], tol);
+    check_near(acc_std_d3.mean(), m_d[0], tol);
+    check_near(acc_wel_d3.mean(), m_d[0], tol);
     check_near(acc_std_c1.mean(), m_c[0], tol);
     check_near(acc_wel_c1.mean(), m_c[0], tol);
+    check_near(acc_std_c3.mean(), m_c[0], tol);
+    check_near(acc_wel_c3.mean(), m_c[0], tol);
 }
 
 // Check mean accumulator using the full random vectors.
@@ -148,13 +161,25 @@ TEST_F(SimplemcAccs, MeanAccVector) {
     acc_std_c1 << acc_std_c2;
     acc_wel_c1 << acc_wel_c2;
 
+    // factory function
+    auto dview = simplemc::ranges::transform_view(sp_d.samples, [](const auto& s) { return Eigen::Vector3d(s); });
+    auto acc_std_d3 = make_mean_acc<standard>(dview);
+    auto acc_wel_d3 = make_mean_acc(dview);
+    auto cview = simplemc::ranges::transform_view(sp_c.samples, [](const auto& s) { return Eigen::Vector3cd(s); });
+    auto acc_std_c3 = make_mean_acc<standard>(cview);
+    auto acc_wel_c3 = make_mean_acc(cview);
+
     // check mean
     const auto m_d = sample_mean(sp_d);
     const auto m_c = sample_mean(sp_c);
     check_range_near(acc_std_d1.mean(), m_d, tol);
     check_range_near(acc_wel_d1.mean(), m_d, tol);
+    check_range_near(acc_std_d3.mean(), m_d, tol);
+    check_range_near(acc_wel_d3.mean(), m_d, tol);
     check_range_near(acc_std_c1.mean(), m_c, tol);
     check_range_near(acc_wel_c1.mean(), m_c, tol);
+    check_range_near(acc_std_c3.mean(), m_c, tol);
+    check_range_near(acc_wel_c3.mean(), m_c, tol);
 }
 
 // Check mean accumulator using only part of random vectors.

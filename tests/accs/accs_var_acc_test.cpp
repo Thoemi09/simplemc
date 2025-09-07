@@ -101,6 +101,14 @@ TEST_F(SimplemcAccs, VarAccSingle) {
     acc_std_c1 << acc_std_c2;
     acc_wel_c1 << acc_wel_c2;
 
+    // factory function
+    auto dview = simplemc::ranges::transform_view(sp_d.samples, [](const auto& s) { return s(0); });
+    auto acc_std_d3 = make_var_acc<standard>(dview);
+    auto acc_wel_d3 = make_var_acc(dview);
+    auto cview = simplemc::ranges::transform_view(sp_c.samples, [](const auto& s) { return s(0); });
+    auto acc_std_c3 = make_var_acc<standard>(cview);
+    auto acc_wel_c3 = make_var_acc(cview);
+
     // check mean and variance
     const auto m_d = sample_mean(sp_d);
     const auto v_d = sample_variance(sp_d);
@@ -110,6 +118,10 @@ TEST_F(SimplemcAccs, VarAccSingle) {
     check_near(acc_std_d1.variance_of_data(), v_d[0], tol);
     check_near(acc_wel_d1.mean(), m_d[0], tol);
     check_near(acc_wel_d1.variance_of_data(), v_d[0], tol);
+    check_near(acc_std_d3.mean(), m_d[0], tol);
+    check_near(acc_std_d3.variance_of_data(), v_d[0], tol);
+    check_near(acc_wel_d3.mean(), m_d[0], tol);
+    check_near(acc_wel_d3.variance_of_data(), v_d[0], tol);
     check_near(acc_std_c1.mean(), m_c[0], tol);
     check_near(acc_std_c1.variance_of_real_data(), r_c[0], tol);
     check_near(acc_std_c1.variance_of_imag_data(), i_c[0], tol);
@@ -118,6 +130,14 @@ TEST_F(SimplemcAccs, VarAccSingle) {
     check_near(acc_wel_c1.variance_of_real_data(), r_c[0], tol);
     check_near(acc_wel_c1.variance_of_imag_data(), i_c[0], tol);
     check_near(acc_wel_c1.covariance_of_real_and_imag_data(), ri_c[0], tol);
+    check_near(acc_std_c3.mean(), m_c[0], tol);
+    check_near(acc_std_c3.variance_of_real_data(), r_c[0], tol);
+    check_near(acc_std_c3.variance_of_imag_data(), i_c[0], tol);
+    check_near(acc_std_c3.covariance_of_real_and_imag_data(), ri_c[0], tol);
+    check_near(acc_wel_c3.mean(), m_c[0], tol);
+    check_near(acc_wel_c3.variance_of_real_data(), r_c[0], tol);
+    check_near(acc_wel_c3.variance_of_imag_data(), i_c[0], tol);
+    check_near(acc_wel_c3.covariance_of_real_and_imag_data(), ri_c[0], tol);
 }
 
 // Check variance accumulator using the full random vectors.
@@ -162,6 +182,14 @@ TEST_F(SimplemcAccs, VarAccVector) {
     acc_std_c1 << acc_std_c2;
     acc_wel_c1 << acc_wel_c2;
 
+    // factory function
+    auto dview = simplemc::ranges::transform_view(sp_d.samples, [](const auto& s) { return Eigen::Vector3d(s); });
+    auto acc_std_d3 = make_var_acc<standard>(dview);
+    auto acc_wel_d3 = make_var_acc(dview);
+    auto cview = simplemc::ranges::transform_view(sp_c.samples, [](const auto& s) { return Eigen::Vector3cd(s); });
+    auto acc_std_c3 = make_var_acc<standard>(cview);
+    auto acc_wel_c3 = make_var_acc(cview);
+
     // check mean and variance
     const auto m_d = sample_mean(sp_d);
     const auto v_d = sample_variance(sp_d);
@@ -171,6 +199,10 @@ TEST_F(SimplemcAccs, VarAccVector) {
     check_range_near(acc_std_d1.variance_of_data(), v_d, tol);
     check_range_near(acc_wel_d1.mean(), m_d, tol);
     check_range_near(acc_wel_d1.variance_of_data(), v_d, tol);
+    check_range_near(acc_std_d3.mean(), m_d, tol);
+    check_range_near(acc_std_d3.variance_of_data(), v_d, tol);
+    check_range_near(acc_wel_d3.mean(), m_d, tol);
+    check_range_near(acc_wel_d3.variance_of_data(), v_d, tol);
     check_range_near(acc_std_c1.mean(), m_c, tol);
     check_range_near(acc_std_c1.variance_of_real_data(), r_c, tol);
     check_range_near(acc_std_c1.variance_of_imag_data(), i_c, tol);
@@ -179,6 +211,14 @@ TEST_F(SimplemcAccs, VarAccVector) {
     check_range_near(acc_wel_c1.variance_of_real_data(), r_c, tol);
     check_range_near(acc_wel_c1.variance_of_imag_data(), i_c, tol);
     check_range_near(acc_wel_c1.covariance_of_real_and_imag_data(), ri_c, tol);
+    check_range_near(acc_std_c3.mean(), m_c, tol);
+    check_range_near(acc_std_c3.variance_of_real_data(), r_c, tol);
+    check_range_near(acc_std_c3.variance_of_imag_data(), i_c, tol);
+    check_range_near(acc_std_c3.covariance_of_real_and_imag_data(), ri_c, tol);
+    check_range_near(acc_wel_c3.mean(), m_c, tol);
+    check_range_near(acc_wel_c3.variance_of_real_data(), r_c, tol);
+    check_range_near(acc_wel_c3.variance_of_imag_data(), i_c, tol);
+    check_range_near(acc_wel_c3.covariance_of_real_and_imag_data(), ri_c, tol);
 }
 
 // Check variance accumulator using only part of random vectors.
@@ -297,12 +337,18 @@ TEST_F(SimplemcAccs, VarAccBlocked) {
     // merge accumulators
     acc_wel_d1 << acc_wel_d2;
 
+    // factory function
+    auto dview = simplemc::ranges::transform_view(sp_d.samples, [](const auto& s) { return Eigen::Vector3d(s); });
+    auto acc_wel_d3 = make_block_var_acc(dview, block_size);
+
     // check mean and variance
     auto bsp_d = block_samples(sp_d, block_size);
     const auto m_d = sample_mean(bsp_d);
     const auto v_d = sample_variance(bsp_d);
     check_range_near(acc_wel_d1.accumulator().mean(), m_d, tol);
     check_range_near(acc_wel_d1.accumulator().variance_of_data(), v_d, tol);
+    check_range_near(acc_wel_d3.accumulator().mean(), m_d, tol);
+    check_range_near(acc_wel_d3.accumulator().variance_of_data(), v_d, tol);
 }
 
 // Check autocorrelation wrapper of variance accumulator.
@@ -321,6 +367,10 @@ TEST_F(SimplemcAccs, VarAccAutocorrelation) {
         acc_acc2.accumulate(sp_d.samples[i], 0);
         acc_single << sp_d.samples[i](0);
     }
+
+    // factory function
+    auto dview = simplemc::ranges::transform_view(sp_d.samples, [](const auto& s) { return Eigen::VectorXd(s); });
+    auto acc_vec2 = make_autocorr_var_acc(dview);
 
     // check block variance accumulators with increasing block sizes and autocorrelation times
     using simplemc::accs::tau;
@@ -342,6 +392,7 @@ TEST_F(SimplemcAccs, VarAccAutocorrelation) {
     for (std::size_t i = 0; i < max_level; ++i) {
         check_level(acc_single, i);
         check_level(acc_vec, i);
+        check_level(acc_vec2, i);
         check_level(acc_acc1, i);
         check_level(acc_acc2, i);
     }

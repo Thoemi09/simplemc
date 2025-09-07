@@ -66,7 +66,7 @@ public:
      * @param l Order of the polynomial.
      * @return Normalization factor \f$ N_l = 1 \f$.
      */
-    [[nodiscard]] static constexpr double norm(int l) {
+    [[nodiscard]] static constexpr double norm([[maybe_unused]] int l) {
         assert(l >= 0);
         return 1;
     }

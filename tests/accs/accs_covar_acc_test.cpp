@@ -101,6 +101,14 @@ TEST_F(SimplemcAccs, CovarAccSingle) {
     acc_std_c1 << acc_std_c2;
     acc_wel_c1 << acc_wel_c2;
 
+    // factory function
+    auto dview = simplemc::ranges::transform_view(sp_d.samples, [](const auto& s) { return s(0); });
+    auto acc_std_d3 = make_covar_acc<standard>(dview);
+    auto acc_wel_d3 = make_covar_acc(dview);
+    auto cview = simplemc::ranges::transform_view(sp_c.samples, [](const auto& s) { return s(0); });
+    auto acc_std_c3 = make_covar_acc<standard>(cview);
+    auto acc_wel_c3 = make_covar_acc(cview);
+
     // check mean and variance
     const auto m_d = sample_mean(sp_d);
     const auto c_d = sample_covariance(sp_d);
@@ -110,6 +118,10 @@ TEST_F(SimplemcAccs, CovarAccSingle) {
     check_near(acc_std_d1.covariance_of_data(), c_d(0, 0), tol);
     check_near(acc_wel_d1.mean(), m_d(0), tol);
     check_near(acc_wel_d1.covariance_of_data(), c_d(0, 0), tol);
+    check_near(acc_std_d3.mean(), m_d(0), tol);
+    check_near(acc_std_d3.covariance_of_data(), c_d(0, 0), tol);
+    check_near(acc_wel_d3.mean(), m_d(0), tol);
+    check_near(acc_wel_d3.covariance_of_data(), c_d(0, 0), tol);
     check_near(acc_std_c1.mean(), m_c(0), tol);
     check_near(acc_std_c1.covariance_of_real_data(), r_c(0, 0), tol);
     check_near(acc_std_c1.covariance_of_imag_data(), i_c(0, 0), tol);
@@ -118,6 +130,14 @@ TEST_F(SimplemcAccs, CovarAccSingle) {
     check_near(acc_wel_c1.covariance_of_real_data(), r_c(0, 0), tol);
     check_near(acc_wel_c1.covariance_of_imag_data(), i_c(0, 0), tol);
     check_near(acc_wel_c1.covariance_of_real_and_imag_data(), ri_c(0, 0), tol);
+    check_near(acc_std_c3.mean(), m_c(0), tol);
+    check_near(acc_std_c3.covariance_of_real_data(), r_c(0, 0), tol);
+    check_near(acc_std_c3.covariance_of_imag_data(), i_c(0, 0), tol);
+    check_near(acc_std_c3.covariance_of_real_and_imag_data(), ri_c(0, 0), tol);
+    check_near(acc_wel_c3.mean(), m_c(0), tol);
+    check_near(acc_wel_c3.covariance_of_real_data(), r_c(0, 0), tol);
+    check_near(acc_wel_c3.covariance_of_imag_data(), i_c(0, 0), tol);
+    check_near(acc_wel_c3.covariance_of_real_and_imag_data(), ri_c(0, 0), tol);
 }
 
 // Check covariance accumulator using the full random vectors.
@@ -162,6 +182,14 @@ TEST_F(SimplemcAccs, CovarAccVector) {
     acc_std_c1 << acc_std_c2;
     acc_wel_c1 << acc_wel_c2;
 
+    // factory function
+    auto dview = simplemc::ranges::transform_view(sp_d.samples, [](const auto& s) { return Eigen::Vector3d(s); });
+    auto acc_std_d3 = make_covar_acc<standard>(dview);
+    auto acc_wel_d3 = make_covar_acc(dview);
+    auto cview = simplemc::ranges::transform_view(sp_c.samples, [](const auto& s) { return Eigen::Vector3cd(s); });
+    auto acc_std_c3 = make_covar_acc<standard>(cview);
+    auto acc_wel_c3 = make_covar_acc(cview);
+
     // check mean and variance
     using simplemc::make_span;
     const auto m_d = sample_mean(sp_d);
@@ -172,6 +200,10 @@ TEST_F(SimplemcAccs, CovarAccVector) {
     check_range_near(make_span(acc_std_d1.covariance_of_data()), make_span(c_d), tol);
     check_range_near(acc_wel_d1.mean(), m_d, tol);
     check_range_near(make_span(acc_wel_d1.covariance_of_data()), make_span(c_d), tol);
+    check_range_near(acc_std_d3.mean(), m_d, tol);
+    check_range_near(make_span(acc_std_d3.covariance_of_data()), make_span(c_d), tol);
+    check_range_near(acc_wel_d3.mean(), m_d, tol);
+    check_range_near(make_span(acc_wel_d3.covariance_of_data()), make_span(c_d), tol);
     check_range_near(acc_std_c1.mean(), m_c, tol);
     check_range_near(make_span(acc_std_c1.covariance_of_real_data()), make_span(r_c), tol);
     check_range_near(make_span(acc_std_c1.covariance_of_imag_data()), make_span(i_c), tol);
@@ -180,6 +212,14 @@ TEST_F(SimplemcAccs, CovarAccVector) {
     check_range_near(make_span(acc_wel_c1.covariance_of_real_data()), make_span(r_c), tol);
     check_range_near(make_span(acc_wel_c1.covariance_of_imag_data()), make_span(i_c), tol);
     check_range_near(make_span(acc_wel_c1.covariance_of_real_and_imag_data()), make_span(ri_c), tol);
+    check_range_near(acc_std_c3.mean(), m_c, tol);
+    check_range_near(make_span(acc_std_c3.covariance_of_real_data()), make_span(r_c), tol);
+    check_range_near(make_span(acc_std_c3.covariance_of_imag_data()), make_span(i_c), tol);
+    check_range_near(make_span(acc_std_c3.covariance_of_real_and_imag_data()), make_span(ri_c), tol);
+    check_range_near(acc_wel_c3.mean(), m_c, tol);
+    check_range_near(make_span(acc_wel_c3.covariance_of_real_data()), make_span(r_c), tol);
+    check_range_near(make_span(acc_wel_c3.covariance_of_imag_data()), make_span(i_c), tol);
+    check_range_near(make_span(acc_wel_c3.covariance_of_real_and_imag_data()), make_span(ri_c), tol);
 }
 
 // Check covariance accumulator using only part of random vectors.
@@ -301,6 +341,10 @@ TEST_F(SimplemcAccs, CovarAccBlocked) {
     // merge accumulators
     acc_wel_d1 << acc_wel_d2;
 
+    // factory function
+    auto dview = simplemc::ranges::transform_view(sp_d.samples, [](const auto& s) { return Eigen::Vector3d(s); });
+    auto acc_wel_d3 = make_block_covar_acc(dview, block_size);
+
     // check mean and variance
     using simplemc::make_span;
     auto bsp_d = block_samples(sp_d, block_size);
@@ -308,6 +352,8 @@ TEST_F(SimplemcAccs, CovarAccBlocked) {
     const auto c_d = sample_covariance(bsp_d);
     check_range_near(acc_wel_d1.accumulator().mean(), m_d, tol);
     check_range_near(make_span(acc_wel_d1.accumulator().covariance_of_data()), make_span(c_d), tol);
+    check_range_near(acc_wel_d3.accumulator().mean(), m_d, tol);
+    check_range_near(make_span(acc_wel_d3.accumulator().covariance_of_data()), make_span(c_d), tol);
 }
 
 // Check autocorrelation wrapper of covariance accumulator.
@@ -326,6 +372,10 @@ TEST_F(SimplemcAccs, CovarAccAutocorrelation) {
         acc_acc2.accumulate(sp_d.samples[i], 0);
         acc_single << sp_d.samples[i](0);
     }
+
+    // factory function
+    auto dview = simplemc::ranges::transform_view(sp_d.samples, [](const auto& s) { return Eigen::VectorXd(s); });
+    auto acc_vec2 = make_autocorr_covar_acc(dview);
 
     // check block variance accumulators with increasing block sizes and autocorrelation times
     using simplemc::make_span;
@@ -348,6 +398,7 @@ TEST_F(SimplemcAccs, CovarAccAutocorrelation) {
     for (std::size_t i = 0; i < max_level; ++i) {
         check_level(acc_single, i);
         check_level(acc_vec, i);
+        check_level(acc_vec2, i);
         check_level(acc_acc1, i);
         check_level(acc_acc2, i);
     }

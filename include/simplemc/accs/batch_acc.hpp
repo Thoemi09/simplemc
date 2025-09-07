@@ -13,6 +13,8 @@
 #include <simplemc/accs/var_acc.hpp>
 #include <simplemc/numeric/eigen.hpp>
 #include <simplemc/utils/concepts.hpp>
+#include <simplemc/utils/ranges.hpp>
+#include <simplemc/utils/simplemc_exception.hpp>
 
 #include <Eigen/Dense>
 
@@ -21,7 +23,7 @@
 #include <cstdint>
 #include <iterator>
 #include <numeric>
-#include <ranges>
+#include <optional>
 #include <vector>
 
 namespace simplemc {
@@ -89,29 +91,29 @@ void merge_batches(std::size_t c, std::vector<mean_acc<V, A>>& batches) {
  * which is not the case for the block accumulator. Under the hood, a single batch is just a
  * simplemc::mean_acc.
  *
- * Given that the total number \f$ N \f$ of accumulated samples is \f$ > 2 M_b \f$, the resulting 
- * number \f$ \tilde{M}_b \f$ of full batches ready to be used for further analysis will always be 
+ * Given that the total number \f$ N \f$ of accumulated samples is \f$ > 2 M_b \f$, the resulting
+ * number \f$ \tilde{M}_b \f$ of full batches ready to be used for further analysis will always be
  * somewhere between \f$ [M_b, 2 M_b) \f$.
- * 
+ *
  * The accumulator takes two template parameters:
  * - the type of the random samples (a simplemc::eigen_vector type) and
  * - the algorithm (simplemc::varalg) that should be used to accumulate the data.
  *
  * Both of them determine how the accumulation is actually done and what is stored in the accumulator.
- * 
+ *
  * @code{.cpp}
  * #include <fmt/ranges.h>
  * #include <simplemc/accs.hpp>
- * 
+ *
  * #include <random>
- * 
+ *
  * int main() {
  *     // AR(1) parameters and white noise distribution: phi = 0.9, sigma = 1.0
  *     const double phi = 0.9;
  *     const double sigma = 1.0;
  *     std::mt19937_64 rng;
  *     std::normal_distribution<double> normal_dist(0.0, sigma);
- * 
+ *
  *     // accumulate samples into a batch accumulator
  *     simplemc::batch_acc_single<double> acc {};
  *     double x_t = 0.0;
@@ -119,16 +121,16 @@ void merge_batches(std::size_t c, std::vector<mean_acc<V, A>>& batches) {
  *         acc << x_t;
  *         x_t = phi * x_t + normal_dist(rng);
  *     }
- * 
+ *
  *     // print the mean and variance of the accumulated data
  *     auto vacc = acc.var_accumulator();
  *     fmt::println("Mean: {}", vacc.mean());
  *     fmt::println("Variance: {}", vacc.variance());
  * }
  * @endcode
- * 
+ *
  * Output:
- * 
+ *
  * ```
  * Mean: 0.002233435848225748
  * Variance: 0.00010741776938402939
@@ -283,7 +285,7 @@ public:
     }
 
     /**
-     * @brief Subscript operator sets the index \f$ i \f$ of the current accumulating batch and 
+     * @brief Subscript operator sets the index \f$ i \f$ of the current accumulating batch and
      * returns a reference to `this` object.
      *
      * @param i Index \f$ i \f$.
@@ -297,11 +299,11 @@ public:
     /**
      * @brief Stream operator for accumulating a single value \f$ x \f$.
      *
-     * @details It simply calls 
-     * - simplemc::mean_acc::operator<<(const T &) of the mean accumulator of the current 
+     * @details It simply calls
+     * - simplemc::mean_acc::operator<<(const T &) of the mean accumulator of the current
      * accumulating batch and
      * - check_and_advance() to check if the batch is full.
-     * 
+     *
      * See also @ref simplemc-accs-accs-how.
      *
      * @tparam T Type of the value to be accumulated.
@@ -319,11 +321,11 @@ public:
     /**
      * @brief Stream operator for accumulating a vector \f$ \mathbf{v} \f$.
      *
-     * @details It simply calls 
-     * - simplemc::mean_acc::operator<<(const W&) of the mean accumulator of the current accumulating 
-     * batch and 
+     * @details It simply calls
+     * - simplemc::mean_acc::operator<<(const W&) of the mean accumulator of the current accumulating
+     * batch and
      * - check_and_advance() to check if the batch is full.
-     * 
+     *
      * See also @ref simplemc-accs-accs-how.
      *
      * @tparam W Eigen vector/array/expression type.
@@ -340,11 +342,11 @@ public:
     /**
      * @brief Accumulate a range of values to consecutive elements in the accumulator.
      *
-     * @details It simply calls 
-     * - simplemc::mean_acc::accumulate(R&&, size_type) of the mean accumulator of the current 
+     * @details It simply calls
+     * - simplemc::mean_acc::accumulate(R&&, size_type) of the mean accumulator of the current
      * accumulating batch and
      * - check_and_advance() to check if the batch is full.
-     * 
+     *
      * See also @ref simplemc-accs-accs-how.
      *
      * @tparam R Input range of values.
@@ -360,11 +362,11 @@ public:
     /**
      * @brief Accumulate a range of values to arbitrary elements with the given indices.
      *
-     * @details It simply calls 
-     * - simplemc::mean_acc::accumulate(R1&&, R2&&) of the mean accumulator of the current 
+     * @details It simply calls
+     * - simplemc::mean_acc::accumulate(R1&&, R2&&) of the mean accumulator of the current
      * accumulating batch and
      * - check_and_advance() to check if the batch is full.
-     * 
+     *
      * See also @ref simplemc-accs-accs-how.
      *
      * @tparam R1 Input range of values.
@@ -381,8 +383,8 @@ public:
     /**
      * @brief Create a multi-value accumulator.
      *
-     * @details The user is responsible for calling simplemc::multivalue_acc::increment_count as well 
-     * as check_and_advance() after all values have been added, otherwise the number of samples will 
+     * @details The user is responsible for calling simplemc::multivalue_acc::increment_count as well
+     * as check_and_advance() after all values have been added, otherwise the number of samples will
      * not be correct. For example,
      * @code{.cpp}
      * auto mva = acc.make_mva();
@@ -492,7 +494,7 @@ public:
     }
 
     /**
-     * @brief Get a variance accumulator with all \f$ \tilde{M}_b \f$ full batches as effective 
+     * @brief Get a variance accumulator with all \f$ \tilde{M}_b \f$ full batches as effective
      * samples.
      *
      * @details Full batches can optionally be merged together before being used as effective samples.
@@ -512,7 +514,7 @@ public:
     }
 
     /**
-     * @brief Get a covariance accumulator with all \f$ \tilde{M}_b \f$ full batches as effective 
+     * @brief Get a covariance accumulator with all \f$ \tilde{M}_b \f$ full batches as effective
      * samples.
      *
      * @details Full batches can optionally be merged together before being used as effective samples.
@@ -533,9 +535,9 @@ public:
 
     /**
      * @brief Check if the current accumulating batch is full and advance to the next one if so.
-     * 
-     * @details If all accumulating batches are full, the full and accumulating batches are merged 
-     * together and the accumulating batches are reset. 
+     *
+     * @details If all accumulating batches are full, the full and accumulating batches are merged
+     * together and the accumulating batches are reset.
      */
     void check_and_advance() {
         if (is_batch_full()) {
@@ -628,8 +630,8 @@ public:
      *
      * @details Batches from different processes are not merged together. Instead, they are simply
      * gathered into a vector.
-     * 
-     * If `same_count` is true, it will enforce that all gathered batches have the same number of 
+     *
+     * If `same_count` is true, it will enforce that all gathered batches have the same number of
      * accumulated samples, i.e. it will merge batches together if necessary.
      *
      * It throws an exception, if the size of the accumulator is not equal on all processes.
@@ -672,9 +674,9 @@ public:
         // each process broadcasts its batches to all other processes
         std::size_t prev_idx = 0;
         for (int i = 0; i < comm.size(); ++i) {
-            auto view = std::views::drop(res, prev_idx) | std::views::take(vec_sz[i]);
+            auto view = ranges::views::drop(res, prev_idx) | ranges::views::take(vec_sz[i]);
             if (comm.rank() == i) {
-                std::ranges::copy(bs, std::ranges::begin(view));
+                std::ranges::copy(bs, ranges::begin(view));
             }
             for (auto& macc : view) {
                 macc.broadcast(comm, i);
@@ -719,6 +721,35 @@ using batch_acc_static = batch_acc<Eigen::Matrix<T, M, 1>, A>;
  */
 template <double_or_complex T, varalg A = varalg::welford>
 using batch_acc_dynamic = batch_acc<Eigen::Matrix<T, Eigen::Dynamic, 1>, A>;
+
+/**
+ * @brief Accumulate (complex) random samples in a simplemc::batch_acc.
+ *
+ * @details See simplemc::batch_acc for more details on how the random samples are accumulated.
+ *
+ * It throws a simplemc::simplemc_exception if the range is empty.
+ *
+ * @tparam R simplemc::random_sample_range type.
+ * @tparam A simplemc::varalg algorithm used to accumulate the data.
+ * @param rg Range containing the random samples \f$ \left\{ \mathbf{z}^{(j)} : j = 1, \dots, N
+ * \right\} \f$.
+ * @param m_b Number of batches \f$ M_b \f$.
+ * @param t Optional vector/scalar shift \f$ \mathbf{t} \f$ that is applied when accumulating the
+ * data.
+ * @return simplemc::batch_acc containing the accumulated random samples from the given range.
+ */
+template <varalg A = varalg::welford, random_sample_range R>
+[[nodiscard]] auto make_batch_acc(R&& rg, std::size_t m_b, // NOLINT (ranges need not be forwarded)
+    std::optional<ranges::range_value_t<R>> t = std::nullopt) {
+    using value_type = ranges::range_value_t<R>;
+
+    auto const sz = detail::random_sample_size(*ranges::begin(rg));
+    if constexpr (double_or_complex<value_type>) {
+        return detail::make_acc<batch_acc_single<value_type, A>>(rg, t, sz, m_b);
+    } else {
+        return detail::make_acc<batch_acc<value_type, A>>(rg, t, sz, m_b);
+    }
+}
 
 /** @} */
 

@@ -2,11 +2,14 @@
 
 #include <simplemc/accs/utils.hpp>
 #include <simplemc/numeric/eigen.hpp>
+#include <simplemc/utils/ranges.hpp>
 
 #include <Eigen/Dense>
 
+#include <array>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 // anonymous namespace with parameters
 namespace {
@@ -115,4 +118,32 @@ TEST_F(SimplemcAccs, UtilsCovariance) {
     std::tie(mdata_d, cdata_d) = accumulate_data<welford>(sp_d);
     check_range_near(
         make_span(covariance<welford>(mdata_d, mdata_d, cdata_d, sp_d.total_count)), make_span(scv_d), tol);
+}
+
+// Test random sample concepts and helper functions.
+TEST_F(SimplemcAccs, UtilsRandomSamples) {
+    // random_sample concept
+    static_assert(simplemc::random_sample<double>);
+    static_assert(simplemc::random_sample<std::complex<double>>);
+    static_assert(simplemc::random_sample<Eigen::VectorXd>);
+    static_assert(!simplemc::random_sample<int>);
+    static_assert(!simplemc::random_sample<Eigen::MatrixXd>);
+
+    // random_sample_range concept
+    static_assert(simplemc::random_sample_range<std::vector<double>>);
+    static_assert(simplemc::random_sample_range<std::array<std::complex<double>, 5>>);
+    static_assert(simplemc::random_sample_range<std::vector<Eigen::VectorXd>>);
+    auto view = simplemc::ranges::transform_view(sp_d.samples, [](const auto& s) { return Eigen::VectorXd{s}; });
+    static_assert(simplemc::random_sample_range<decltype(view)>);
+
+    // random sample size
+    EXPECT_EQ(simplemc::detail::random_sample_size(1.0), 1);
+    EXPECT_EQ(simplemc::detail::random_sample_size(Eigen::Vector3d()), 3);
+    EXPECT_EQ(simplemc::detail::random_sample_size(Eigen::VectorXcd(5)), 5);
+
+    // zero sample
+    EXPECT_EQ(simplemc::detail::zero_sample(1.0), 0.0);
+    EXPECT_EQ(simplemc::detail::zero_sample(std::complex<double>(1.0, -1.0)), std::complex<double>(0.0, 0.0));
+    EXPECT_EQ(simplemc::detail::zero_sample(Eigen::Vector3d()), Eigen::Vector3d::Zero());
+    EXPECT_EQ(simplemc::detail::zero_sample(Eigen::VectorXcd(5)), Eigen::VectorXcd::Zero(5));
 }

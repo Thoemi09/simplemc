@@ -19,6 +19,7 @@
 
 #include <cassert>
 #include <cstdint>
+#include <optional>
 
 namespace simplemc {
 
@@ -42,25 +43,25 @@ class batch_acc;
  * - the algorithm (simplemc::varalg) that should be used to accumulate the data.
  *
  * Both of them determine how the accumulation is actually done and what is stored in the accumulator.
- * The accumulated data is stored in a single vector \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$. Please 
+ * The accumulated data is stored in a single vector \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$. Please
  * see simplemc::accs::mean for more details.
  *
  * @code{.cpp}
  * #include <fmt/ranges.h>
  * #include <simplemc/accs/mean_acc.hpp>
- * 
+ *
  * #include <vector>
  *
  * int main() {
  *     // data to be sampled
  *     std::vector<double> data = { 1.0, 2.0, 3.0, 4.0, 5.0 };
- * 
+ *
  *     // accumulate samples into a mean accumulator of size 1
  *     simplemc::mean_acc_single<double> acc;
  *     for (auto& val : data) {
  *         acc << val;
  *     }
- * 
+ *
  *     // print the mean of the accumulated data
  *     fmt::println("Mean: {}", acc.mean());
  * }
@@ -344,7 +345,7 @@ public:
     [[nodiscard]] auto count() const { return count_; }
 
     /**
-     * @brief Get the accumulated data \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$ used for estimating 
+     * @brief Get the accumulated data \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$ used for estimating
      * the mean.
      *
      * @return simplemc::eigen_vector of size \f$ M \f$ containing \f$ \mathbf{m}^{(N)}/
@@ -433,6 +434,35 @@ using mean_acc_static = mean_acc<Eigen::Matrix<T, M, 1>, A>;
  */
 template <double_or_complex T, varalg A = varalg::welford>
 using mean_acc_dynamic = mean_acc<Eigen::Matrix<T, Eigen::Dynamic, 1>, A>;
+
+/**
+ * @brief Accumulate (complex) random samples in a simplemc::mean_acc.
+ *
+ * @details See simplemc::accs::mean and simplemc::mean_acc for more details on how the random samples
+ * are accumulated.
+ *
+ * It throws a simplemc::simplemc_exception if the range is empty.
+ *
+ * @tparam R simplemc::random_sample_range type.
+ * @tparam A simplemc::varalg algorithm used to accumulate the data.
+ * @param rg Range containing the random samples \f$ \left\{ \mathbf{z}^{(j)} : j = 1, \dots, N
+ * \right\} \f$.
+ * @param t Optional vector/scalar shift \f$ \mathbf{t} \f$ that is applied when accumulating the
+ * data.
+ * @return simplemc::mean_acc containing the accumulated random samples from the given range.
+ */
+template <varalg A = varalg::welford, random_sample_range R>
+[[nodiscard]] auto make_mean_acc(R&& rg, // NOLINT (ranges need not be forwarded)
+    std::optional<ranges::range_value_t<R>> t = std::nullopt) {
+    using value_type = ranges::range_value_t<R>;
+
+    auto const sz = detail::random_sample_size(*ranges::begin(rg));
+    if constexpr (double_or_complex<value_type>) {
+        return detail::make_acc<mean_acc_single<value_type, A>>(rg, t, sz);
+    } else {
+        return detail::make_acc<mean_acc<value_type, A>>(rg, t, sz);
+    }
+}
 
 /** @} */
 

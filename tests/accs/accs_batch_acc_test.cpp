@@ -77,6 +77,12 @@ TEST_F(SimplemcAccs, BatchAccSingle) {
         acc_autocorr << sp_d.samples[i](0);
     }
 
+    // factory function
+    auto dview = simplemc::ranges::transform_view(sp_d.samples, [](const auto& s) { return s(0); });
+    auto acc_vec2 = make_batch_acc<standard>(dview, 256);
+    acc_vec.push_back(std::move(acc_vec2));
+    num_vec.push_back(256);
+
     // check accumulators with different batch numbers
     for (const auto& bacc : acc_vec) {
         EXPECT_EQ(bacc.count(), steps);
@@ -94,17 +100,30 @@ TEST_F(SimplemcAccs, BatchAccSingle) {
     auto vacc_32 = acc_vec[0].var_accumulator();
     auto vacc_64 = acc_vec[1].var_accumulator();
     auto vacc_64_c2 = acc_vec[1].var_accumulator(2);
+    auto vacc_128 = acc_vec[2].var_accumulator();
     auto vacc_128_c2 = acc_vec[2].var_accumulator(2);
     auto vacc_128_c4 = acc_vec[2].var_accumulator(4);
+    auto vacc_256_c2 = acc_vec[3].var_accumulator(2);
+    auto vacc_256_c4 = acc_vec[3].var_accumulator(4);
+    auto vacc_256_c8 = acc_vec[3].var_accumulator(8);
     EXPECT_EQ(vacc_32.count(), vacc_64_c2.count());
     EXPECT_EQ(vacc_32.count(), vacc_128_c4.count());
     EXPECT_EQ(vacc_64.count(), vacc_128_c2.count());
+    EXPECT_EQ(vacc_32.count(), vacc_256_c8.count());
+    EXPECT_EQ(vacc_64.count(), vacc_256_c4.count());
+    EXPECT_EQ(vacc_128.count(), vacc_256_c2.count());
     check_range_near(vacc_32.mdata(), vacc_64_c2.mdata(), tol);
     check_range_near(vacc_32.vdata(), vacc_64_c2.vdata(), tol);
     check_range_near(vacc_32.mdata(), vacc_128_c4.mdata(), tol);
     check_range_near(vacc_32.vdata(), vacc_128_c4.vdata(), tol);
+    check_range_near(vacc_32.mdata(), vacc_256_c8.mdata(), tol);
+    check_range_near(vacc_32.vdata(), vacc_256_c8.vdata(), tol);
     check_range_near(vacc_64.mdata(), vacc_128_c2.mdata(), tol);
     check_range_near(vacc_64.vdata(), vacc_128_c2.vdata(), tol);
+    check_range_near(vacc_64.mdata(), vacc_256_c4.mdata(), tol);
+    check_range_near(vacc_64.vdata(), vacc_256_c4.vdata(), tol);
+    check_range_near(vacc_128.mdata(), vacc_256_c2.mdata(), tol);
+    check_range_near(vacc_128.vdata(), vacc_256_c2.vdata(), tol);
 }
 
 // Check batch accumulator using the full random vectors.
@@ -131,6 +150,12 @@ TEST_F(SimplemcAccs, BatchAccVec) {
         }
         acc_autocorr << sp_c.samples[i];
     }
+
+    // factory function
+    auto cview = simplemc::ranges::transform_view(sp_c.samples, [](const auto& s) { return Eigen::VectorXcd(s); });
+    auto acc_vec2 = make_batch_acc(cview, 256);
+    acc_vec.push_back(std::move(acc_vec2));
+    num_vec.push_back(256);
 
     // check accumulators with different batch numbers
     for (const auto& bacc : acc_vec) {

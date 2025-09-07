@@ -8,17 +8,25 @@
 
 #include <simplemc/numeric/eigen.hpp>
 #include <simplemc/utils/concepts.hpp>
+#include <simplemc/utils/ranges.hpp>
+#include <simplemc/utils/simplemc_exception.hpp>
 
 #include <Eigen/Dense>
 
 #include <cassert>
 #include <cstdint>
+#include <optional>
+#include <type_traits>
 #include <utility>
 
 namespace simplemc {
 
 /**
- * @ingroup simplemc-accs-utils
+ * @addtogroup simplemc-accs-utils
+ * @{
+ */
+
+/**
  * @brief Enumerate the different strategies how to accumulate data.
  *
  * @details The following two strategies are available:
@@ -30,6 +38,29 @@ namespace simplemc {
  * details how the choice of the algorithm affects the accumulation of the data.
  */
 enum class varalg { standard, welford };
+
+/**
+ * @brief A concept that checks if a type can be used as a random sample for statistical analysis.
+ *
+ * @details `T` has to be either `double`, `std::complex<double>` or a simplemc::eigen_vector type.
+ *
+ * @tparam T Type to check.
+ */
+template <typename T>
+concept random_sample = double_or_complex<std::remove_cvref_t<T>> || eigen_vector<std::remove_cvref_t<T>>;
+
+/**
+ * @brief A concept that checks if a range contains simplemc::random_sample types.
+ *
+ * @details The range must be a sized range and a forward range.
+ *
+ * @tparam R Range type to check.
+ */
+template <typename R>
+concept random_sample_range =
+    ranges::sized_range<R> && ranges::forward_range<R> && random_sample<ranges::range_value_t<R>>;
+
+/** @} */
 
 } // namespace simplemc
 
@@ -277,7 +308,7 @@ template <eigen_matrix_dbl M>
  *
  * @details See simplemc::accs::tau(const M&, const M&, std::uint64_t) for details.
  *
- * @param s_naive Naive (unblocked) estimate of the sample (cross)-covariance \f$ s_{XY}^2 \f$ or the 
+ * @param s_naive Naive (unblocked) estimate of the sample (cross)-covariance \f$ s_{XY}^2 \f$ or the
  * sample variance \f$ s_{X}^2 \f$.
  * @param s_blocked Blocked estimate of the sample (cross)-covariance \f$ s_{\overline{X}^{(B)}
  * \overline{Y}^{(B)}}^2 \f$ or the sample variance \f$ s_{\overline{X}^{(B)}}^2 \f$.
@@ -303,6 +334,45 @@ auto scalar_or_matrix(T&& obj) {
     } else {
         return std::forward<T>(obj);
     }
+}
+
+// Get the number of elements in a random sample.
+template <random_sample T>
+long random_sample_size([[maybe_unused]] const T& sample) {
+    if constexpr (double_or_complex<T>) {
+        return 1;
+    } else {
+        return sample.size();
+    }
+}
+
+// Get a zero scalar/vector depending on the given sample type.
+template <random_sample T>
+auto zero_sample([[maybe_unused]] const T& sample) {
+    if constexpr (double_or_complex<T>) {
+        return T { 0.0 };
+    } else {
+        return T::Zero(sample.size());
+    }
+}
+
+// Factory function to create an accumulator with the given random samples.
+template <typename A, random_sample_range R, typename... Args>
+[[nodiscard]] A make_acc(R&& rg, // NOLINT (ranges need not be forwarded)
+    std::optional<ranges::range_value_t<R>> t, Args&&... args) {
+    using value_type = ranges::range_value_t<R>;
+    using acc_type = A;
+
+    if (ranges::size(rg) == 0) {
+        throw simplemc_exception("Empty range of random samples", "detail::make_acc");
+    }
+
+    acc_type acc(std::forward<Args>(args)...);
+    value_type t_shift = (t ? *t : zero_sample(*ranges::begin(rg)));
+    for (auto const& sample : rg) {
+        acc << (sample - t_shift);
+    }
+    return acc;
 }
 
 } // namespace simplemc::detail
