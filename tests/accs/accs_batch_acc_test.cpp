@@ -93,7 +93,7 @@ TEST_F(SimplemcAccs, BatchAccSingle) {
         const auto& vacc_exp = acc_autocorr.accumulators()[lvl];
         EXPECT_EQ(vacc.count(), vacc_exp.count());
         check_range_near(vacc.mdata(), vacc_exp.mdata(), tol);
-        check_range_near(vacc.vdata(), vacc_exp.vdata(), tol);
+        check_range_near(vacc.cdata(), vacc_exp.cdata(), tol);
     }
 
     // check combining full batches
@@ -113,17 +113,17 @@ TEST_F(SimplemcAccs, BatchAccSingle) {
     EXPECT_EQ(vacc_64.count(), vacc_256_c4.count());
     EXPECT_EQ(vacc_128.count(), vacc_256_c2.count());
     check_range_near(vacc_32.mdata(), vacc_64_c2.mdata(), tol);
-    check_range_near(vacc_32.vdata(), vacc_64_c2.vdata(), tol);
+    check_range_near(vacc_32.cdata(), vacc_64_c2.cdata(), tol);
     check_range_near(vacc_32.mdata(), vacc_128_c4.mdata(), tol);
-    check_range_near(vacc_32.vdata(), vacc_128_c4.vdata(), tol);
+    check_range_near(vacc_32.cdata(), vacc_128_c4.cdata(), tol);
     check_range_near(vacc_32.mdata(), vacc_256_c8.mdata(), tol);
-    check_range_near(vacc_32.vdata(), vacc_256_c8.vdata(), tol);
+    check_range_near(vacc_32.cdata(), vacc_256_c8.cdata(), tol);
     check_range_near(vacc_64.mdata(), vacc_128_c2.mdata(), tol);
-    check_range_near(vacc_64.vdata(), vacc_128_c2.vdata(), tol);
+    check_range_near(vacc_64.cdata(), vacc_128_c2.cdata(), tol);
     check_range_near(vacc_64.mdata(), vacc_256_c4.mdata(), tol);
-    check_range_near(vacc_64.vdata(), vacc_256_c4.vdata(), tol);
+    check_range_near(vacc_64.cdata(), vacc_256_c4.cdata(), tol);
     check_range_near(vacc_128.mdata(), vacc_256_c2.mdata(), tol);
-    check_range_near(vacc_128.vdata(), vacc_256_c2.vdata(), tol);
+    check_range_near(vacc_128.cdata(), vacc_256_c2.cdata(), tol);
 }
 
 // Check batch accumulator using the full random vectors.

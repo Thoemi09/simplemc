@@ -25,7 +25,7 @@ namespace simplemc {
 
 /**
  * @ingroup simplemc-accs-accs-var
- * @brief Accumulator for calculating the sample mean and sample variance of a real random vector 
+ * @brief Accumulator for calculating the sample mean and sample variance of a real random vector
  * \f$ \mathbf{X} \f$.
  *
  * @details The accumulator takes two template parameters:
@@ -132,11 +132,11 @@ private:
         assert(idx >= 0 && idx < size());
         if constexpr (varalg() == varalg::standard) {
             mdata_(idx) += val;
-            vdata_(idx) += val * val;
+            cdata_(idx) += val * val;
         } else {
             const auto tmp = val - mdata_(idx);
             mdata_(idx) += tmp / static_cast<double>(count);
-            vdata_(idx) += tmp * (val - mdata_(idx));
+            cdata_(idx) += tmp * (val - mdata_(idx));
         }
     }
 
@@ -153,7 +153,7 @@ public:
      */
     explicit var_acc(size_type m = 1) :
         mdata_(vec_type::Zero(is_dynamic ? m : static_size)),
-        vdata_(vec_type::Zero(is_dynamic ? m : static_size)),
+        cdata_(vec_type::Zero(is_dynamic ? m : static_size)),
         count_(0),
         idx_(0) {
         if constexpr (is_dynamic) {
@@ -174,12 +174,12 @@ public:
      * @param cd Accumulated variance data \f$ \mathbf{c}^{(N)}/\mathbf{d}^{(N)} \f$.
      * @param n Number of accumulated samples \f$ N \f$.
      */
-    var_acc(const vec_type& md, const vec_type& cd, count_type n) : mdata_(md), vdata_(cd), count_(n), idx_(0) {
+    var_acc(const vec_type& md, const vec_type& cd, count_type n) : mdata_(md), cdata_(cd), count_(n), idx_(0) {
         if constexpr (is_dynamic) {
             if (mdata_.size() <= 0) {
                 throw simplemc_exception("Dynamic size <= 0", "var_acc::var_acc");
             }
-            if (mdata_.size() != vdata_.size()) {
+            if (mdata_.size() != cdata_.size()) {
                 throw simplemc_exception("Sizes of data storages do not match", "var_acc::var_acc");
             }
         }
@@ -190,7 +190,7 @@ public:
      */
     void reset() {
         mdata_.setZero();
-        vdata_.setZero();
+        cdata_.setZero();
         count_ = 0;
         idx_ = 0;
     }
@@ -241,11 +241,11 @@ public:
         ++count_;
         if constexpr (varalg() == varalg::standard) {
             mdata_ += v.matrix();
-            vdata_ += v.matrix().cwiseProduct(v.matrix());
+            cdata_ += v.matrix().cwiseProduct(v.matrix());
         } else {
             const auto tmp = (v.matrix() - mdata_).eval();
             mdata_ += tmp / static_cast<double>(count_);
-            vdata_ += tmp.cwiseProduct(v.matrix() - mdata_);
+            cdata_ += tmp.cwiseProduct(v.matrix() - mdata_);
         }
         return *this;
     }
@@ -268,7 +268,7 @@ public:
      *     \mathbf{n}_{1}^{(N_1)} - \mathbf{n}^{(N)} \right) \odot \left( \mathbf{n}_{1}^{(N_1)} -
      *     \mathbf{n}^{(N)} \right) + N_2 \left( \mathbf{n}_{2}^{(N_2)} - \mathbf{n}^{(N)} \right)
      *     \odot \left( \mathbf{n}_{2}^{(N_2)} - \mathbf{n}^{(N)} \right) \f$.
-     * 
+     *
      * See also @ref simplemc-accs-accs-how.
      *
      * @param acc_other simplemc::var_acc<X, A> to be incorporated.
@@ -278,12 +278,12 @@ public:
         assert(size() == acc_other.size());
         if constexpr (varalg() == varalg::standard) {
             mdata_ += acc_other.mdata_;
-            vdata_ += acc_other.vdata_;
+            cdata_ += acc_other.cdata_;
         } else {
             const auto n1 = static_cast<double>(count_);
             const auto n2 = static_cast<double>(acc_other.count_);
             const auto m = mdata_ * n1 / (n1 + n2) + acc_other.mdata_ * n2 / (n1 + n2);
-            vdata_ += acc_other.vdata_ + n1 * (mdata_ - m).cwiseProduct(mdata_ - m) +
+            cdata_ += acc_other.cdata_ + n1 * (mdata_ - m).cwiseProduct(mdata_ - m) +
                 n2 * (acc_other.mdata_ - m).cwiseProduct(acc_other.mdata_ - m);
             mdata_ = m;
         }
@@ -359,7 +359,7 @@ public:
     [[nodiscard]] auto count() const { return count_; }
 
     /**
-     * @brief Get the accumulated data \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$ used for estimating 
+     * @brief Get the accumulated data \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$ used for estimating
      * the mean.
      *
      * @return simplemc::eigen_vector_dbl of size \f$ M \f$ containing \f$ \mathbf{m}^{(N)}/
@@ -368,13 +368,13 @@ public:
     [[nodiscard]] const vec_type& mdata() const { return mdata_; }
 
     /**
-     * @brief Get the accumulated data \f$ \mathbf{c}^{(N)}/\mathbf{d}^{(N)} \f$ used for estimating 
+     * @brief Get the accumulated data \f$ \mathbf{c}^{(N)}/\mathbf{d}^{(N)} \f$ used for estimating
      * the variance.
      *
      * @return simplemc::eigen_vector_dbl of size \f$ M \f$ containing \f$ \mathbf{c}^{(N)}/
      * \mathbf{d}^{(N)} \f$ (content depends on the algorithm, see simplemc::accs::diag_covariance).
      */
-    [[nodiscard]] const vec_type& vdata() const { return vdata_; }
+    [[nodiscard]] const vec_type& cdata() const { return cdata_; }
 
     /**
      * @brief Calculate the sample mean \f$ \overline{\mathbf{x}}^{(N)} \f$.
@@ -421,7 +421,7 @@ public:
      */
     [[nodiscard]] auto variance_of_data() const {
         using simplemc::accs::diag_covariance;
-        return detail::scalar_or_matrix<returns_scalar>(diag_covariance<varalg()>(mdata_, mdata_, vdata_, count_));
+        return detail::scalar_or_matrix<returns_scalar>(diag_covariance<varalg()>(mdata_, mdata_, cdata_, count_));
     }
 
     /**
@@ -447,22 +447,22 @@ public:
         mpi::all_reduce(comm, acc.count_, res.count_, MPI_SUM);
         if constexpr (var_acc::varalg() == varalg::standard) {
             mpi::all_reduce(comm, make_span(acc.mdata_), make_span(res.mdata_), MPI_SUM);
-            mpi::all_reduce(comm, make_span(acc.vdata_), make_span(res.vdata_), MPI_SUM);
+            mpi::all_reduce(comm, make_span(acc.cdata_), make_span(res.cdata_), MPI_SUM);
         } else {
             const auto n1 = static_cast<double>(acc.count_);
             const auto n = static_cast<double>(res.count_);
             const vec_type tmp_mdata = acc.mdata_ * n1 / n;
             mpi::all_reduce(comm, make_span(tmp_mdata), make_span(res.mdata_), MPI_SUM);
             const vec_type tmp_vdata =
-                acc.vdata_ + n1 * (acc.mdata_ - res.mdata_).cwiseProduct(acc.mdata_ - res.mdata_);
-            mpi::all_reduce(comm, make_span(tmp_vdata), make_span(res.vdata_), MPI_SUM);
+                acc.cdata_ + n1 * (acc.mdata_ - res.mdata_).cwiseProduct(acc.mdata_ - res.mdata_);
+            mpi::all_reduce(comm, make_span(tmp_vdata), make_span(res.cdata_), MPI_SUM);
         }
         return res;
     }
 
 private:
     vec_type mdata_;
-    vec_type vdata_;
+    vec_type cdata_;
     count_type count_;
     size_type idx_;
 };
