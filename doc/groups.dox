@@ -1085,12 +1085,15 @@
  *   f(\mathrm{E}[\mathbf{Z}_1], \mathrm{E}[\mathbf{Z}_2], \dots) \approx
  *   f(\overline{\mathbf{z}_1}^{(N)}, \overline{\mathbf{z}_2}^{(N)}, \dots) \; .
  * \f]
- * Here, \f$ f \f$ is a scalar valued function, \f$ f : \mathbb{C}^M \to \mathbb{C} \f$
- * or \f$ f : \mathbb{R}^M \to \mathbb{R} \f$, and we use the notation from @ref simplemc-accs.
+ * Here, \f$ f \f$ can be real/complex scalar/vector valued function.
  *
  * @note It is important to distinguish between \f$ f(\mathrm{E}[\mathbf{Z}_1],
  * \mathrm{E}[\mathbf{Z}_2], \dots) \f$ and \f$ \mathrm{E}[f(\mathbf{Z}_1, \mathbf{Z}_2, \dots)] \f$.
  * They are in general not the same.
+ * 
+ * In the following, we assume that \f$ f : \mathbb{R}^M \to \mathbb{R} \f$ for simplicity and we use 
+ * the notation from @ref simplemc-accs. Generalizations to complex and/or vector valued functions are 
+ * straight forward.
  *
  * It can be shown, that the approximation \f$ f(\overline{\mathbf{z}_1}^{(N)},
  * \overline{\mathbf{z}_2}^{(N)}, \dots) \f$ has a bias of order \f$ \mathcal{O}(1/N) \f$ for
@@ -1099,8 +1102,8 @@
  * calculate
  * \f[
  *   \mathrm{Var}[f(\overline{\mathbf{Z}_1}, \overline{\mathbf{Z}_2}, \dots)] =
- *   \mathrm{E}\left[ \left| f(\overline{\mathbf{z}_1}^{(N)}, \overline{\mathbf{z}_2}^{(N)}, \dots) -
- *   f(\mathrm{E}[\mathbf{Z}_1], \mathrm{E}[\mathbf{Z}_2], \dots) \right|^2 \right] \; ,
+ *   \mathrm{E}\left[ \left( f(\overline{\mathbf{z}_1}^{(N)}, \overline{\mathbf{z}_2}^{(N)}, \dots) -
+ *   f(\mathrm{E}[\mathbf{Z}_1], \mathrm{E}[\mathbf{Z}_2], \dots) \right)^2 \right] \; ,
  * \f]
  * because it involves evaluating derivatives of \f$ f \f$ at the expectation values and to keep track
  * of various variances and covariances.
@@ -1134,8 +1137,9 @@
  *   \overline{f}_{\text{JK}} \; .
  * \f]
  *
- * Additionally, we can use the \f$ f_{[i]}^{(N-1)} \f$ and \f$ \overline{f}_{\text{JK}} \f$  to approximate
- * the variance of \f$ f \f$:
+ * Additionally, we can use the \f$ f_{[i]}^{(N-1)} \f$ and \f$ \overline{f}_{\text{JK}} \f$ to 
+ * approximate the variance of \f$ f \f$ (similar equations hold for covariance matrices \f$ 
+ * s_{\mathbf{f}\mathbf{f}}^2 \f$):
  * \f[
  *   \mathrm{Var}[f(\overline{\mathbf{Z}_1}, \overline{\mathbf{Z}_2}, \dots)] \approx s_{f}^2 =
  *   \frac{N - 1}{N} \sum_{i=1}^N \left( f_{[i]}^{(N-1)} - \overline{f}_{\text{JK}} \right)^2 \; .
