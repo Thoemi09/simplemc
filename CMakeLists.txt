@@ -4,9 +4,7 @@
 # SIMPLEMC_BUILD_TESTS: Build unit tests with googletest.
 # SIMPLEMC_BUILD_EXAMPLES: Build examples.
 # SIMPLEMC_BUILD_DOC: Build documentation with Doxygen.
-# SIMPLEMC_USE_DOXYGEN_AWESOME: Use doxygen-awesome-css when building the documentation.
 # SIMPLEMC_USE_STD_RANGES: Use ranges from the standard library.
-# SIMPLEMC_WITH_H5: Use h5 for HDF5 support.
 # SIMPLEMC_FETCH_FMT: Fetch fmt from github.
 # SIMPLEMC_FETCH_RANGEV3: Fetch range-v3 from github.
 # SIMPLEMC_FETCH_EIGEN3: Fetch Eigen3 from gitlab.
@@ -45,9 +43,7 @@ option(SIMPLEMC_ENABLE_INSTALL "Enable install target" ${SIMPLEMC_MASTER_PROJECT
 option(SIMPLEMC_BUILD_TESTS "Build unit tests with googletest" ${SIMPLEMC_MASTER_PROJECT})
 option(SIMPLEMC_BUILD_EXAMPLES "Build examples" ${SIMPLEMC_MASTER_PROJECT})
 option(SIMPLEMC_BUILD_DOC "Build documentation with Doxygen" OFF)
-option(SIMPLEMC_USE_DOXYGEN_AWESOME "Use doxygen-awesome-css when building the documentation" OFF)
 option(SIMPLEMC_USE_STD_RANGES "Use ranges from the standard library" OFF)
-option(SIMPLEMC_WITH_H5 "Use h5 for HDF5 support" ON)
 option(SIMPLEMC_FETCH_FMT "Fetch fmt from github" ON)
 option(SIMPLEMC_FETCH_RANGEV3 "Fetch range-v3 from github" ON)
 option(SIMPLEMC_FETCH_EIGEN3 "Fetch Eigen3 from gitlab" ON)
@@ -59,7 +55,7 @@ message(STATUS "===============================================")
 message(STATUS "Start configuring project ${PROJECT_NAME}")
 message(STATUS "Version: ${PROJECT_VERSION}")
 message(STATUS "Master project: ${SIMPLEMC_MASTER_PROJECT}")
-message(STATUS "===============================================")
+message(STATUS "-----------------------------------------------")
 message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "Build shared libs: ${BUILD_SHARED_LIBS}")
 message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
@@ -67,15 +63,13 @@ message(STATUS "Enable install: ${SIMPLEMC_ENABLE_INSTALL}")
 message(STATUS "Build unit tests: ${SIMPLEMC_BUILD_TESTS}")
 message(STATUS "Build examples: ${SIMPLEMC_BUILD_EXAMPLES}")
 message(STATUS "Build documentation: ${SIMPLEMC_BUILD_DOC}")
-message(STATUS "Use doxygen-awesome-css: ${SIMPLEMC_USE_DOXYGEN_AWESOME}")
 message(STATUS "Use std ranges: ${SIMPLEMC_USE_STD_RANGES}")
-message(STATUS "HDF5 support: ${SIMPLEMC_WITH_H5}")
 message(STATUS "Fetch fmt: ${SIMPLEMC_FETCH_FMT}")
 message(STATUS "Fetch range-v3: ${SIMPLEMC_FETCH_RANGEV3}")
 message(STATUS "Fetch Eigen3: ${SIMPLEMC_FETCH_EIGEN3}")
 message(STATUS "Fetch nlohmann_json: ${SIMPLEMC_FETCH_NLOHMANN_JSON}")
 message(STATUS "Disable stricter compiler warnings: ${SIMPLEMC_DISABLE_WARNINGS}")
-message(STATUS "===============================================")
+message(STATUS "-----------------------------------------------")
 
 #########################
 # Build targets

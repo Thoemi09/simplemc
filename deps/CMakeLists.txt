@@ -12,132 +12,158 @@
 # The following dependencies are optional:
 # ---------------------------------
 # googletest: For testing. Only used if SIMPLEMC_BUILD_TESTS is ON.
-# h5: HDF5 wrapper for serialization. Only used if SIMPLEMC_WITH_H5 is ON.
 
 include(FetchContent)
+
+# Helper function to safely fetch or find dependencies.
+# This function checks if the target already exists before fetching or finding to avoid conflicts when
+# simplemc is used as a subdirectory.
+#
+# Parameters:
+#   TARGET_NAME: The name of the CMake target to check/create.
+#   PACKAGE_NAME: The package name for find_package (defaults to TARGET_NAME if not provided).
+#   SHOULD_FETCH: Boolean flag whether to fetch or find.
+#   FETCH_CONTENT_NAME: Name for FetchContent operations.
+#   GIT_REPO: Git repository URL.
+#   GIT_TAG: Git tag/branch to fetch.
+#   CACHE_OPTIONS: List of cache variables to set before calling FetchContent_MakeAvailable (format:
+#                  "VAR1=VAL1;VAR2=VAL2;...").
+function(simplemc_fetch_or_find_dependency)
+    cmake_parse_arguments(
+        ARG
+        ""
+        "TARGET_NAME;PACKAGE_NAME;SHOULD_FETCH;FETCH_CONTENT_NAME;GIT_REPO;GIT_TAG"
+        "CACHE_OPTIONS;FIND_PACKAGE_ARGS"
+        ${ARGN}
+    )
+
+    # default PACKAGE_NAME to TARGET_NAME if not provided
+    if(NOT ARG_PACKAGE_NAME)
+        set(ARG_PACKAGE_NAME ${ARG_TARGET_NAME})
+    endif()
+
+    # check if target already exists (from parent or previous configuration)
+    if(NOT TARGET ${ARG_TARGET_NAME})
+        if(ARG_SHOULD_FETCH)
+            # check if already fetched/populated
+            FetchContent_GetProperties(${ARG_FETCH_CONTENT_NAME})
+            string(TOLOWER ${ARG_FETCH_CONTENT_NAME} fetch_name_lower)
+            if(NOT ${fetch_name_lower}_POPULATED)
+                # declare package to be fetched if it is not already populated
+                FetchContent_Declare(${ARG_FETCH_CONTENT_NAME}
+                    GIT_REPOSITORY ${ARG_GIT_REPO}
+                    GIT_TAG ${ARG_GIT_TAG})
+
+                # set cache options as INTERNAL to avoid polluting parent scope
+                foreach(cache_opt ${ARG_CACHE_OPTIONS})
+                    string(REPLACE "=" ";" opt_list ${cache_opt})
+                    list(GET opt_list 0 opt_name)
+                    list(GET opt_list 1 opt_value)
+                    set(${opt_name} ${opt_value} CACHE INTERNAL "")
+                endforeach()
+
+                # fetch package
+                message(STATUS "-----------------------------------------------")
+                message(STATUS "Fetching ${ARG_PACKAGE_NAME} ...")
+                FetchContent_MakeAvailable(${ARG_FETCH_CONTENT_NAME})
+                message(STATUS "${ARG_FETCH_CONTENT_NAME}_SOURCE_DIR: ${${fetch_name_lower}_SOURCE_DIR}")
+                message(STATUS "-----------------------------------------------")
+            else()
+                # skip fetch if it is already populated
+                message(STATUS "-----------------------------------------------")
+                message(STATUS "${ARG_PACKAGE_NAME} already populated, skipping fetch")
+                message(STATUS "-----------------------------------------------")
+            endif()
+        else()
+            # find package all
+            message(STATUS "-----------------------------------------------")
+            message(STATUS "Finding ${ARG_PACKAGE_NAME} ...")
+            find_package(${ARG_PACKAGE_NAME} ${ARG_FIND_PACKAGE_ARGS} REQUIRED)
+
+            # make imported target global to be visible in parent scope
+            set_target_properties(${ARG_TARGET_NAME} PROPERTIES IMPORTED_GLOBAL TRUE)
+
+            # output information about the package
+            get_target_property(inc_dirs ${ARG_TARGET_NAME} INTERFACE_INCLUDE_DIRECTORIES)
+            message(STATUS "${ARG_PACKAGE_NAME} found: Include directories = ${inc_dirs}")
+            message(STATUS "-----------------------------------------------")
+        endif()
+    else()
+        message(STATUS "-----------------------------------------------")
+        message(STATUS "Target ${ARG_TARGET_NAME} already exists, skipping ${ARG_PACKAGE_NAME} fetch/find")
+        message(STATUS "-----------------------------------------------")
+    endif()
+endfunction()
 
 #########################
 # Required dependencies
 #########################
 
 # fmtlib
-if(SIMPLEMC_FETCH_FMT)
-    FetchContent_Declare(fmt
-        GIT_REPOSITORY https://github.com/fmtlib/fmt
-        GIT_TAG origin/master) # d8a79eaf
-    set(FMT_INSTALL OFF CACHE BOOL "")
-    message(STATUS "-----------------------------------------------")
-    message(STATUS "Fetching fmt ...")
-    FetchContent_MakeAvailable(fmt)
-    message(STATUS "fmt_SOURCE_DIR: ${fmt_SOURCE_DIR}")
-    message(STATUS "-----------------------------------------------")
-else()
-    message(STATUS "-----------------------------------------------")
-    message(STATUS "Finding fmtlib: fmt_DIR = ${fmt_DIR}")
-    find_package(fmt REQUIRED)
-    set_target_properties(fmt::fmt PROPERTIES IMPORTED_GLOBAL TRUE)
-    get_target_property(FMT_TMP fmt::fmt INTERFACE_INCLUDE_DIRECTORIES)
-    message(STATUS "fmt found: Include directories = ${FMT_TMP}")
-    message(STATUS "-----------------------------------------------")
-endif()
+simplemc_fetch_or_find_dependency(
+    TARGET_NAME fmt::fmt
+    PACKAGE_NAME fmt
+    SHOULD_FETCH ${SIMPLEMC_FETCH_FMT}
+    FETCH_CONTENT_NAME fmt
+    GIT_REPO https://github.com/fmtlib/fmt
+    GIT_TAG origin/master  # b6cd3561
+    CACHE_OPTIONS "FMT_INSTALL=OFF"
+)
 
 # range-v3
 if(NOT SIMPLEMC_USE_STD_RANGES)
-    if(SIMPLEMC_FETCH_RANGEV3)
-        FetchContent_Declare(rangev3
-            GIT_REPOSITORY https://github.com/ericniebler/range-v3.git
-            GIT_TAG origin/master) # 7e6f34b1e
-        set(RANGES_BUILD_CALENDAR_EXAMPLE OFF CACHE BOOL "")
-        message(STATUS "-----------------------------------------------")
-        message(STATUS "Fetching range-v3 ...")
-        FetchContent_MakeAvailable(rangev3)
-        message(STATUS "rangev3_SOURCE_DIR: ${rangev3_SOURCE_DIR}")
-        message(STATUS "-----------------------------------------------")
-    else()
-    message(STATUS "-----------------------------------------------")
-        message(STATUS "Finding range-v3: range-v3_DIR = ${range-v3_DIR}")
-        find_package(range-v3 REQUIRED)
-        set_target_properties(range-v3::range-v3 PROPERTIES IMPORTED_GLOBAL TRUE)
-        get_target_property(RANGEV3_TMP range-v3 INTERFACE_INCLUDE_DIRECTORIES)
-        message(STATUS "range-v3 found: Include directories = ${RANGEV3_TMP}")
-        message(STATUS "-----------------------------------------------")
-    endif()
+    simplemc_fetch_or_find_dependency(
+        TARGET_NAME range-v3::range-v3
+        PACKAGE_NAME range-v3
+        SHOULD_FETCH ${SIMPLEMC_FETCH_RANGEV3}
+        FETCH_CONTENT_NAME rangev3
+        GIT_REPO https://github.com/ericniebler/range-v3.git
+        GIT_TAG origin/master  # ca1388fb9
+        CACHE_OPTIONS "RANGES_BUILD_CALENDAR_EXAMPLE=OFF"
+    )
 endif()
 
-# mpi
-message(STATUS "-----------------------------------------------")
-message(STATUS "Finding MPI ...")
-find_package(MPI REQUIRED)
-set_target_properties(MPI::MPI_CXX PROPERTIES IMPORTED_GLOBAL TRUE)
-message(STATUS "MPI found: Include directories = ${MPI_CXX_INCLUDE_DIRS}")
-message(STATUS "-----------------------------------------------")
+# mpi (always use find_package, never fetch)
+simplemc_fetch_or_find_dependency(
+    TARGET_NAME MPI::MPI_CXX
+    PACKAGE_NAME MPI
+    SHOULD_FETCH OFF
+)
 
 # Eigen
-if(SIMPLEMC_FETCH_EIGEN3)
-    FetchContent_Declare(eigen3
-        GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
-        GIT_TAG master) # 24e0c2a12
-    set(EIGEN_BUILD_TESTING OFF CACHE BOOL "")
-    message(STATUS "-----------------------------------------------")
-    message(STATUS "Fetching Eigen3 ...")
-    FetchContent_MakeAvailable(eigen3)
-    message(STATUS "eigen3_SOURCE_DIR: ${eigen3_SOURCE_DIR}")
-    message(STATUS "-----------------------------------------------")
-else()
-    message(STATUS "-----------------------------------------------")
-    message(STATUS "Finding Eigen3 ...")
-    find_package(Eigen3 REQUIRED)
-    set_target_properties(Eigen3::Eigen PROPERTIES IMPORTED_GLOBAL TRUE)
-    get_target_property(EIGEN3_TMP Eigen3::Eigen INTERFACE_INCLUDE_DIRECTORIES)
-    message(STATUS "Eigen3 found: Include directories = ${EIGEN3_TMP}")
-    message(STATUS "-----------------------------------------------")
-endif()
+simplemc_fetch_or_find_dependency(
+    TARGET_NAME Eigen3::Eigen
+    PACKAGE_NAME Eigen3
+    SHOULD_FETCH ${SIMPLEMC_FETCH_EIGEN3}
+    FETCH_CONTENT_NAME eigen3
+    GIT_REPO https://gitlab.com/libeigen/eigen.git
+    GIT_TAG 5.0  # 691009cfa
+    CACHE_OPTIONS "EIGEN_BUILD_TESTING=OFF"
+)
 
 # nlohmann_json
-if(SIMPLEMC_FETCH_NLOHMANN_JSON)
-    FetchContent_Declare(nlohmann_json
-        GIT_REPOSITORY https://github.com/nlohmann/json.git
-        GIT_TAG origin/develop) # 663058e7
-    message(STATUS "-----------------------------------------------")
-    message(STATUS "Fetching nlohmann_json ...")
-    FetchContent_MakeAvailable(nlohmann_json)
-    message(STATUS "nlohmann_json_SOURCE_DIR: ${nlohmann_json_SOURCE_DIR}")
-    message(STATUS "-----------------------------------------------")
-else()
-    message(STATUS "-----------------------------------------------")
-    message(STATUS "Finding nlohmann_json: nlohmann_json_DIR = ${nlohmann_json_DIR}")
-    find_package(nlohmann_json REQUIRED)
-    set_target_properties(nlohmann_json::nlohmann_json PROPERTIES IMPORTED_GLOBAL TRUE)
-    get_target_property(NLOHMANN_JSON_TMP nlohmann_json::nlohmann_json INTERFACE_INCLUDE_DIRECTORIES)
-    message(STATUS "nlohmann_json found: Include directories = ${NLOHMANN_JSON_TMP}")
-    message(STATUS "-----------------------------------------------")
-endif()
+simplemc_fetch_or_find_dependency(
+    TARGET_NAME nlohmann_json::nlohmann_json
+    PACKAGE_NAME nlohmann_json
+    SHOULD_FETCH ${SIMPLEMC_FETCH_NLOHMANN_JSON}
+    FETCH_CONTENT_NAME nlohmann_json
+    GIT_REPO https://github.com/nlohmann/json.git
+    GIT_TAG origin/develop  # 0c9b68e11
+)
 
 #########################
-# Optional dedendencies
+# Optional dependencies
 #########################
 
-# googletest
+# googletest (always fetch when needed, typically not provided by system)
 if(SIMPLEMC_BUILD_TESTS)
-    FetchContent_Declare(googletest
-        GIT_REPOSITORY https://github.com/google/googletest
-        GIT_TAG main) # f3c355f9
-    set(INSTALL_GTEST OFF CACHE BOOL "")
-    set(BUILD_GMOCK OFF CACHE BOOL "")
-    message(STATUS "-----------------------------------------------")
-    message(STATUS "Fetching googletest ...")
-    FetchContent_MakeAvailable(googletest)
-    message(STATUS "googletest_SOURCE_DIR: ${googletest_SOURCE_DIR}")
-    message(STATUS "-----------------------------------------------")
-endif()
-
-# h5
-if(SIMPLEMC_WITH_H5)
-    message(STATUS "-----------------------------------------------")
-    message(STATUS "Finding h5: h5_DIR = ${h5_DIR}")
-    find_package(h5 REQUIRED)
-    set_target_properties(h5::h5_c PROPERTIES IMPORTED_GLOBAL TRUE)
-    get_target_property(H5_TMP h5::h5_c INTERFACE_INCLUDE_DIRECTORIES)
-    message(STATUS "h5 found: Include directories = ${H5_TMP}")
-    message(STATUS "-----------------------------------------------")
+    simplemc_fetch_or_find_dependency(
+        TARGET_NAME GTest::gtest
+        PACKAGE_NAME GTest
+        SHOULD_FETCH ON
+        FETCH_CONTENT_NAME googletest
+        GIT_REPO https://github.com/google/googletest
+        GIT_TAG main  # 6ec14dfd
+        CACHE_OPTIONS "INSTALL_GTEST=OFF;BUILD_GMOCK=OFF"
+    )
 endif()
