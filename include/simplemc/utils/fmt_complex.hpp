@@ -13,7 +13,7 @@
 namespace fmt {
 
 /**
- * @addtogroup simplemc-utils-general
+ * @addtogroup simplemc-utils-other
  * @{
  */
 

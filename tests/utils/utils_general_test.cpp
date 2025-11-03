@@ -40,9 +40,39 @@ TEST(SimplemcUtils, ComplexFormatter) {
     fmt::print("z = {:^30.15}\n", z);
 }
 
-// Test file IO.
-TEST(SimplemcUtils, FileIO) {
-    auto fp = simplemc::open_file("test_file.txt", "w");
+// Test file IO with raw functions.
+TEST(SimplemcUtils, FileIORaw) {
+    auto fp = simplemc::detail::open_file_raw("test_file_raw.txt", "w");
     fmt::print(fp, "This is test file #{}\n", 1);
-    simplemc::close_file(fp);
+    simplemc::detail::close_file_raw(fp, "test_file_raw.txt");
+}
+
+// Test file IO with RAII wrapper (recommended API).
+TEST(SimplemcUtils, FileIO) {
+    auto file = simplemc::open_file("test_file.txt", "w");
+    fmt::print(file, "This is test file #{}\n", 1);
+    ASSERT_EQ(file.name(), "test_file.txt");
+}
+
+// Test file_handle direct construction and advanced features.
+TEST(SimplemcUtils, FileHandleRAII) {
+    {
+        simplemc::file_handle file("test_file_raii.txt", "w");
+        fmt::print(file.get(), "This is RAII test file #{}\n", 2);
+        ASSERT_EQ(file.name(), "test_file_raii.txt");
+    }
+
+    // test move semantics
+    simplemc::file_handle file1("test_file_move.txt", "w");
+    fmt::print(file1.get(), "Line 1\n");
+
+    simplemc::file_handle file2(std::move(file1));
+    ASSERT_EQ(file1.get(), nullptr);
+    ASSERT_NE(file2.get(), nullptr);
+    ASSERT_EQ(file2.name(), "test_file_move.txt");
+    fmt::print(file2, "Line 2\n");
+
+    // test explicit close (and verify no double-close in destructor)
+    file2.close();
+    ASSERT_EQ(file2.get(), nullptr);
 }

@@ -8,23 +8,37 @@
 
 #include <cstdio>
 #include <string>
+#include <string_view>
 
 namespace simplemc {
 
 /**
- * @addtogroup simplemc-utils-general
+ * @addtogroup simplemc-utils-fileio
  * @{
  */
 
+namespace detail {
+
+// Open a file and return a raw file pointer.
+[[nodiscard]] std::FILE* open_file_raw(std::string_view name, std::string_view mode);
+
+// Close an already opened file given its file pointer.
+void close_file_raw(std::FILE* fp, std::string_view name = "");
+
+} // namespace detail
+
+// Forward declaration.
+class file_handle;
+
 /**
- * @brief Open a file and return the file pointer.
+ * @brief Open a file and return a RAII file handle.
  *
- * @details Throws a simplemc::simplemc_exception if it fails.
+ * @details It simply calls the file_handle::file_handle constructor.
  *
  * @code
- * auto fp = simplemc::open_file("test_file.txt", "w");
- * fmt::print(fp, "This is the test file #{}\n", 1);
- * simplemc::close_file(fp);
+ * auto file = simplemc::open_file("test_file.txt", "w");
+ * fmt::print(file, "This is the test file #{}\n", 1);
+ * // file automatically closed when going out of scope
  * @endcode
  *
  * This writes a file named `test_file.txt` with the content
@@ -35,22 +49,110 @@ namespace simplemc {
  *
  * @param name File name.
  * @param mode File mode (see <a href="https://en.cppreference.com/w/cpp/io/c/fopen">std::fopen</a>).
- * @return File pointer.
+ * @return RAII file handle.
  */
-[[nodiscard]] std::FILE* open_file(const std::string& name, const std::string& mode);
+[[nodiscard]] file_handle open_file(std::string_view name, std::string_view mode);
 
 /**
- * @brief Close an already opened file.
+ * @brief RAII wrapper for file handles.
  *
- * @details Does nothing if the file pointer is equal to `nullptr`, `stdout`, `stdin` or `stderr`.
+ * @details Automatically closes the file when the object goes out of scope, ensuring exception-safe
+ * file handling.
  *
- * Throws a simplemc::simplemc_exception if it fails.
+ * Typically created via simplemc::open_file() or constructed directly.
  *
- * See simplemc::open_file for an example.
+ * @code
+ * {
+ *     auto file = simplemc::open_file("test_file.txt", "w");
+ *     fmt::print(file, "This is the test file #{}\n", 1);
+ * } // file automatically closed here
+ * @endcode
  *
- * @param fp File pointer.
+ * This writes a file named `test_file.txt` with the content
+ *
+ * ```
+ * This is the test file #1
+ * ```
  */
-void close_file(std::FILE* fp);
+class file_handle {
+public:
+    /**
+     * @brief Construct a file handle by opening a file.
+     *
+     * @details Throws a simplemc::simplemc_exception if opening fails.
+     *
+     * @param name File name.
+     * @param mode File mode (see <a href="https://en.cppreference.com/w/cpp/io/c/fopen">std::fopen
+     * </a>).
+     */
+    file_handle(std::string_view name, std::string_view mode);
+
+    /**
+     * @brief Destructor closes the file.
+     *
+     * @details It does not throw exceptions. Errors during close are silently ignored to maintain
+     * `noexcept` guarantee in destructor.
+     */
+    ~file_handle() noexcept;
+
+    /// Deleted copy constructor.
+    file_handle(const file_handle&) = delete;
+
+    /// Deleted copy assignment operator.
+    file_handle& operator=(const file_handle&) = delete;
+
+    /**
+     * @brief Move constructor leaves `other` in a valid but unspecified state.
+     *
+     * @param other File handle to move from.
+     */
+    file_handle(file_handle&& other) noexcept;
+
+    /**
+     * @brief Move assignment operator leaves `other` in a valid but unspecified state.
+     *
+     * @details The `other` file is closed by calling close().
+     *
+     * @param other File handle to move from.
+     * @return Reference to this object.
+     */
+    file_handle& operator=(file_handle&& other) noexcept;
+
+    /**
+     * @brief Get the underlying file pointer.
+     *
+     * @return File pointer.
+     */
+    [[nodiscard]] std::FILE* get() const noexcept { return fp_; }
+
+    /**
+     * @brief Get the file name.
+     *
+     * @return File name.
+     */
+    [[nodiscard]] const std::string& name() const noexcept { return name_; }
+
+    /**
+     * @brief Implicit conversion to file pointer.
+     *
+     * @return File pointer.
+     */
+    [[nodiscard]] operator std::FILE*() const noexcept { return fp_; }
+
+    /**
+     * @brief Explicitly close the file.
+     *
+     * @details It closes the file associated with the file pointer if it is not equal to `nullptr`,
+     * `stdout`, `stdin` or `stderr` and sets the internal pointer to `nullptr`.
+     *
+     * It throws a simplemc::simplemc_exception if closing the file fails.
+     */
+    void close();
+
+private:
+    std::FILE* fp_ { nullptr };
+    std::string name_ {};
+};
 
 /** @} */
 

@@ -19,11 +19,13 @@ exceptions, it also contains a useful toolset for the user.
 
 It provides
 
+- @ref simplemc-utils-concepts that are not specific to any library.
 - Generic @ref simplemc-utils-exceptions that are used by the other **simplemc** libraries and can
 also be used in user code.
-- @ref simplemc-utils-general including some general concepts, formatted output for complex numbers
-and other convenient tools.
+- Some @ref simplemc-utils-fileio functionalities.
 - @ref simplemc-utils-indexing to map multi-dimensional indices to flat indices and vice versa.
+- @ref simplemc-utils-other including formatted output for complex numbers and conversion to a string
+representation for objects with an overloaded `operator<<`.
 - A @ref simplemc-utils-timer for easy performance and runtime measurments.
 
 ## MPI library

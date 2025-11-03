@@ -12,7 +12,7 @@
 namespace simplemc {
 
 /**
- * @addtogroup simplemc-utils-general
+ * @addtogroup simplemc-utils-concepts
  * @{
  */
 

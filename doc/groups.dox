@@ -10,9 +10,15 @@
  */
 
 /**
+ * @defgroup simplemc-utils-concepts General concepts
+ * @ingroup simplemc-utils
+ * @brief General concepts used by other **simplemc** libraries.
+ */
+
+/**
  * @defgroup simplemc-utils-exceptions Exceptions
  * @ingroup simplemc-utils
- * @brief Generic exception classes used by the other **simplemc** libraries.
+ * @brief Generic exception classes used throughout the **simplemc** library.
  *
  * @details
  * @code{.cpp}
@@ -45,9 +51,9 @@
  */
 
 /**
- * @defgroup simplemc-utils-general General utilities
+ * @defgroup simplemc-utils-fileio File I/O
  * @ingroup simplemc-utils
- * @brief General concepts, formatted output for complex numbers and other convenient tools.
+ * @brief File I/O utilities.
  */
 
 /**
@@ -60,6 +66,12 @@
  * - C style indexing (see simplemc::row_major)
  *
  * See @ref tut_utils_2 for a detailed example.
+ */
+
+/**
+ * @defgroup simplemc-utils-other Other utilities
+ * @ingroup simplemc-utils
+ * @brief Other convenient tools.
  */
 
 /**
