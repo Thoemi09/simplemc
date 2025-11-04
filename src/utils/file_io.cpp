@@ -48,6 +48,8 @@ file_handle::file_handle(std::string_view name, std::string_view mode) :
     fp_(detail::open_file_raw(name, mode)),
     name_(name) {}
 
+file_handle::file_handle(std::FILE* fp, std::string_view name) : fp_(fp), name_(name) {}
+
 file_handle::~file_handle() noexcept {
     // close current file and catch any exception to avoid throwing from destructor
     try {

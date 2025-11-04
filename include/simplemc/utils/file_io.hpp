@@ -67,6 +67,17 @@ public:
     file_handle(std::string_view name, std::string_view mode);
 
     /**
+     * @brief Construct a file handle from an existing file pointer.
+     *
+     * @details Takes ownership of the file pointer. The file will be closed when the handle is
+     * destroyed (unless it is `nullptr`, `stdout`, `stdin`, or `stderr`).
+     *
+     * @param fp File pointer to take ownership of.
+     * @param name Optional file name for error messages.
+     */
+    explicit file_handle(std::FILE* fp, std::string_view name = "");
+
+    /**
      * @brief Destructor closes the file.
      *
      * @details It does not throw exceptions. Errors during close are silently ignored to maintain
