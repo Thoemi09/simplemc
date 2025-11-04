@@ -54,6 +54,17 @@
  * @defgroup simplemc-utils-fileio File I/O
  * @ingroup simplemc-utils
  * @brief File I/O utilities.
+ * 
+ * @details
+ * @include utils/doc_file_io.cpp
+ * 
+ * This creates a file `doc_file_io.txt` and outputs:
+ * 
+ * ```
+ * File contents:
+ * Line no. 1
+ * Line no. 2
+ * ```
  */
 
 /**

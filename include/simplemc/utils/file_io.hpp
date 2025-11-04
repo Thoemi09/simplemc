@@ -35,17 +35,7 @@ class file_handle;
  *
  * @details It simply calls the file_handle::file_handle constructor.
  *
- * @code
- * auto file = simplemc::open_file("test_file.txt", "w");
- * fmt::print(file, "This is the test file #{}\n", 1);
- * // file automatically closed when going out of scope
- * @endcode
- *
- * This writes a file named `test_file.txt` with the content
- *
- * ```
- * This is the test file #1
- * ```
+ * See @ref simplemc-utils-fileio for an example.
  *
  * @param name File name.
  * @param mode File mode (see <a href="https://en.cppreference.com/w/cpp/io/c/fopen">std::fopen</a>).
@@ -61,18 +51,7 @@ class file_handle;
  *
  * Typically created via simplemc::open_file() or constructed directly.
  *
- * @code
- * {
- *     auto file = simplemc::open_file("test_file.txt", "w");
- *     fmt::print(file, "This is the test file #{}\n", 1);
- * } // file automatically closed here
- * @endcode
- *
- * This writes a file named `test_file.txt` with the content
- *
- * ```
- * This is the test file #1
- * ```
+ * See @ref simplemc-utils-fileio for an example.
  */
 class file_handle {
 public:
