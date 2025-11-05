@@ -21,32 +21,13 @@
  * @brief Generic exception classes used throughout the **simplemc** library.
  *
  * @details
- * @code{.cpp}
- * #include <fmt/base.h>
- * #include <simplemc/utils.hpp>
- *
- * int main() {
- *     // generic_error
- *     try {
- *         throw simplemc::generic_error("generic_error", "Test message", "test_function");
- *     } catch (const simplemc::generic_error& e) {
- *         fmt::println("Caught exception: {}", e.what());
- *     }
- *
- *     // simplemc_exception
- *     try {
- *         throw simplemc::simplemc_exception("This is my error message", "main");
- *     } catch (const simplemc::simplemc_exception& e) {
- *         fmt::println("Caught exception: {}", e.what());
- *     }
- * }
- * @endcode
+ * @include utils/doc_exceptions.cpp
  *
  * Output:
  *
  * ```
- * Caught exception: generic_error in function test_function: Test message
- * Caught exception: simplemc exception in function main: This is my error message
+ * Caught exception: generic_error in main: Test message
+ * Caught exception: simplemc exception at doc_exceptions.cpp:14 in int main(): Test message
  * ```
  */
 

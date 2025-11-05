@@ -8,6 +8,7 @@
 
 #include <simplemc/utils/generic_error.hpp>
 
+#include <source_location>
 #include <string_view>
 
 namespace simplemc {
@@ -19,23 +20,44 @@ namespace simplemc {
 
 /**
  * @brief Generic exception class for the **simplemc** library.
+ *
+ * @details This exception provides two construction modes:
+ *
+ * 1. Providing the throwing function name manually.
+ * 2. Automatic source location capture (recommended).
+ *
+ * See @ref simplemc-utils-exceptions for examples.
  */
 class simplemc_exception : public generic_error {
 public:
     /**
-     * @brief Construct a new exception object.
+     * @brief Construct a new exception object with a given error message and function name.
      *
-     * @details Depending on whether the function name argument is empty or not, the constructed error
-     * message will have one of the following formats:
-     *
-     * - `simplemc exception in function {func_name}: {err_msg}` or
-     * - `simplemc exception: {err_msg}`.
+     * @details See @ref generic_error::generic_error(std::string_view, std::string_view,
+     * std::string_view) "generic_error::generic_error" and @ref generic_error::make_msg(
+     * std::string_view, std::string_view, std::string_view) "generic_error::make_msg" for more
+     * details.
      *
      * @param err_msg Specific error message.
      * @param func_name Name of the function which throws.
      */
-    simplemc_exception(std::string_view err_msg, std::string_view func_name = "") :
+    simplemc_exception(std::string_view err_msg, std::string_view func_name) :
         generic_error("simplemc exception", err_msg, func_name) {}
+
+    /**
+     * @brief Construct a new exception object with a given error message and automatic source
+     * location capture.
+     *
+     * @details See @ref generic_error::generic_error(std::string_view, std::string_view,
+     * const std::source_location&) "generic_error::generic_error" and @ref generic_error::make_msg(
+     * std::string_view, std::string_view, const std::source_location&) "generic_error::make_msg" for
+     * more details.
+     *
+     * @param err_msg Specific error message.
+     * @param loc Source location information (automatically captured by default).
+     */
+    simplemc_exception(std::string_view err_msg, const std::source_location& loc = std::source_location::current()) :
+        generic_error("simplemc exception", err_msg, loc) {}
 };
 
 /** @} */
