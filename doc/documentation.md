@@ -24,8 +24,8 @@ It provides
 also be used in user code.
 - Some @ref simplemc-utils-fileio functionalities.
 - @ref simplemc-utils-indexing to map multi-dimensional indices to flat indices and vice versa.
-- @ref simplemc-utils-other including formatted output for complex numbers and conversion to a string
-representation for objects with an overloaded `operator<<`.
+- @ref simplemc-utils-other including formatted output for complex numbers and conversion to strings
+for types with an overloaded `operator<<`.
 - A @ref simplemc-utils-timer for easy performance and runtime measurments.
 
 ## MPI library
