@@ -139,6 +139,36 @@ public:
      */
     void interim() { interim_ = now(); }
 
+    /**
+     * @brief Reset all time points to current time.
+     *
+     * @details This method resets the start, stop, and interim time points to the current time,
+     * effectively resetting the timer without creating a new instance.
+     */
+    void reset() { start_ = stop_ = interim_ = now(); }
+
+    /**
+     * @brief Get elapsed time between starting the timer and the current time.
+     *
+     * @details This is a convenience method that returns the time difference between the start and
+     * the current time points. It is equivalent to calling 
+     * 
+     * @code
+     * time_passed(t.start_time(), t.now(), to_duration)
+     * @endcode
+     * 
+     * where `t` is an instance of `simplemc::timer`.
+     *
+     * @tparam D Duration type of result (default: simplemc::duration::sec).
+     *
+     * @param to_duration Instance of the duration type of the result (used for type deduction).
+     * @return Time difference between start and now().
+     */
+    template <typename D = duration::sec>
+    [[nodiscard]] auto elapsed([[maybe_unused]] const D& to_duration = D {}) const {
+        return time_passed(start_, now(), to_duration);
+    }
+
 private:
     std::chrono::time_point<clock_type> start_;
     std::chrono::time_point<clock_type> stop_;
