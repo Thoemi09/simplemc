@@ -29,11 +29,11 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(BuildAndInstallDirs)
 
-if(NOT DEFINED SIMPLEMC_MASTER_PROJECT)
-    set(SIMPLEMC_MASTER_PROJECT OFF)
-    if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
-        set(SIMPLEMC_MASTER_PROJECT ON)
-    endif()
+set(SIMPLEMC_MASTER_PROJECT ${PROJECT_IS_TOP_LEVEL})
+
+set(SIMPLEMC_USES_GNU OFF)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set(SIMPLEMC_USES_GNU ON)
 endif()
 
 #########################
@@ -43,7 +43,7 @@ option(SIMPLEMC_ENABLE_INSTALL "Enable install target" ${SIMPLEMC_MASTER_PROJECT
 option(SIMPLEMC_BUILD_TESTS "Build unit tests with googletest" ${SIMPLEMC_MASTER_PROJECT})
 option(SIMPLEMC_BUILD_EXAMPLES "Build examples" ${SIMPLEMC_MASTER_PROJECT})
 option(SIMPLEMC_BUILD_DOC "Build documentation with Doxygen" OFF)
-option(SIMPLEMC_USE_STD_RANGES "Use ranges from the standard library" OFF)
+option(SIMPLEMC_USE_STD_RANGES "Use ranges from the standard library" ${SIMPLEMC_USES_GNU})
 option(SIMPLEMC_FETCH_FMT "Fetch fmt from github" ON)
 option(SIMPLEMC_FETCH_RANGEV3 "Fetch range-v3 from github" ON)
 option(SIMPLEMC_FETCH_EIGEN3 "Fetch Eigen3 from gitlab" ON)
