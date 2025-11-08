@@ -3,8 +3,8 @@
  * @brief Convert flat indices to multi-dimensional indices and vice versa.
  */
 
-#ifndef SIMPLEMC_UTILS_INDEXING_HPP
-#define SIMPLEMC_UTILS_INDEXING_HPP
+#ifndef SIMPLEMC_UTILS_ND_INDEXING_HPP
+#define SIMPLEMC_UTILS_ND_INDEXING_HPP
 
 #include <simplemc/utils/concepts.hpp>
 
@@ -146,7 +146,7 @@ template <std::integral T, std::size_t N>
  * @return Multi-dimensional index as a `std::vector`.
  */
 template <std::integral T, nd_order Order = column_major>
-[[nodiscard]] constexpr auto multi_index(
+[[nodiscard]] constexpr auto nd_index(
     std::integral auto flat_idx, const std::vector<T>& shape, [[maybe_unused]] Order order = Order {}) {
     assert(flat_idx >= 0 && flat_idx < size_from_shape(shape));
     auto idxs = std::vector<T>(shape.size());
@@ -186,7 +186,7 @@ template <std::integral T, nd_order Order = column_major>
  */
 template <std::integral T, std::size_t N, nd_order Order = column_major>
     requires(N != 0)
-[[nodiscard]] constexpr auto multi_index(
+[[nodiscard]] constexpr auto nd_index(
     std::integral auto flat_idx, const std::array<T, N>& shape, [[maybe_unused]] Order order = Order {}) {
     assert(flat_idx >= 0 && flat_idx < size_from_shape(shape));
     auto idxs = std::array<T, N> {};
@@ -306,4 +306,4 @@ template <std::integral T>
 
 } // namespace simplemc
 
-#endif // SIMPLEMC_UTILS_INDEXING_HPP
+#endif // SIMPLEMC_UTILS_ND_INDEXING_HPP

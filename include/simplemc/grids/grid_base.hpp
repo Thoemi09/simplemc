@@ -6,7 +6,7 @@
 #ifndef SIMPLEMC_GRIDS_GRID_BASE_HPP
 #define SIMPLEMC_GRIDS_GRID_BASE_HPP
 
-#include <simplemc/utils/indexing.hpp>
+#include <simplemc/utils/nd_indexing.hpp>
 #include <simplemc/utils/ranges.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 

@@ -8,7 +8,7 @@
 
 #include <simplemc/grids/concepts.hpp>
 #include <simplemc/utils/concepts.hpp>
-#include <simplemc/utils/indexing.hpp>
+#include <simplemc/utils/nd_indexing.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
 #include <cstddef>
@@ -233,7 +233,7 @@ private:
  * #include <fmt/ranges.h>
  * #include <simplemc/grids.hpp>
  * #include <simplemc/numeric/linear_interpolation.hpp>
- * #include <simplemc/utils/indexing.hpp>
+ * #include <simplemc/utils/nd_indexing.hpp>
  * #include <simplemc/utils/ranges.hpp>
  *
  * #include <vector>

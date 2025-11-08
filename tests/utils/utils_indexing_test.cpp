@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <simplemc/utils/indexing.hpp>
+#include <simplemc/utils/nd_indexing.hpp>
 
 #include <array>
 #include <vector>
@@ -34,9 +34,9 @@ TEST(SimplemcUtils, ConstexprIndexing) {
     constexpr std::array<int, 3> exp_idxs1 { 0, 0, 0 };
     constexpr int exp_fidx1 = 0;
     constexpr auto cfidx1 = flat_index(exp_idxs1, shape);
-    constexpr auto cidxs1 = multi_index(exp_fidx1, shape);
+    constexpr auto cidxs1 = nd_index(exp_fidx1, shape);
     constexpr auto rfidx1 = flat_index(exp_idxs1, shape, row_major {});
-    constexpr auto ridxs1 = multi_index(exp_fidx1, shape, row_major {});
+    constexpr auto ridxs1 = nd_index(exp_fidx1, shape, row_major {});
     ASSERT_EQ(cfidx1, exp_fidx1);
     ASSERT_EQ(cidxs1, exp_idxs1);
     ASSERT_EQ(rfidx1, exp_fidx1);
@@ -46,9 +46,9 @@ TEST(SimplemcUtils, ConstexprIndexing) {
     constexpr std::array<int, 3> exp_idxs2 { 1, 2, 3 };
     constexpr int exp_fidx2 = 23;
     constexpr auto cfidx2 = flat_index(exp_idxs2, shape);
-    constexpr auto cidxs2 = multi_index(exp_fidx2, shape);
+    constexpr auto cidxs2 = nd_index(exp_fidx2, shape);
     constexpr auto rfidx2 = flat_index(exp_idxs2, shape, row_major {});
-    constexpr auto ridxs2 = multi_index(exp_fidx2, shape, row_major {});
+    constexpr auto ridxs2 = nd_index(exp_fidx2, shape, row_major {});
     ASSERT_EQ(cfidx2, exp_fidx2);
     ASSERT_EQ(cidxs2, exp_idxs2);
     ASSERT_EQ(rfidx2, exp_fidx2);
@@ -59,9 +59,9 @@ TEST(SimplemcUtils, ConstexprIndexing) {
     constexpr int exp_cfidx3 = 9;
     constexpr int exp_rfidx3 = 17;
     constexpr auto cfidx3 = flat_index(exp_idxs3, shape);
-    constexpr auto cidxs3 = multi_index(exp_cfidx3, shape);
+    constexpr auto cidxs3 = nd_index(exp_cfidx3, shape);
     constexpr auto rfidx3 = flat_index(exp_idxs3, shape, row_major {});
-    constexpr auto ridxs3 = multi_index(exp_rfidx3, shape, row_major {});
+    constexpr auto ridxs3 = nd_index(exp_rfidx3, shape, row_major {});
     ASSERT_EQ(cfidx3, exp_cfidx3);
     ASSERT_EQ(cidxs3, exp_idxs3);
     ASSERT_EQ(rfidx3, exp_rfidx3);
@@ -79,26 +79,26 @@ TEST(SimplemcUtils, Indexing) {
     std::vector<long> exp_idxs { 0, 0, 0 };
     int exp_fidx = 0;
     ASSERT_EQ(flat_index(exp_idxs, shape), exp_fidx);
-    ASSERT_EQ(multi_index(exp_fidx, shape), exp_idxs);
+    ASSERT_EQ(nd_index(exp_fidx, shape), exp_idxs);
     ASSERT_EQ(flat_index(exp_idxs, shape, row_major {}), exp_fidx);
-    ASSERT_EQ(multi_index(exp_fidx, shape, row_major {}), exp_idxs);
+    ASSERT_EQ(nd_index(exp_fidx, shape, row_major {}), exp_idxs);
 
     // flat index = 23, multidimensional index = (1, 2, 3) - last element
     exp_idxs = { 1, 2, 3 };
     exp_fidx = 23;
     ASSERT_EQ(flat_index(exp_idxs, shape), exp_fidx);
-    ASSERT_EQ(multi_index(exp_fidx, shape), exp_idxs);
+    ASSERT_EQ(nd_index(exp_fidx, shape), exp_idxs);
     ASSERT_EQ(flat_index(exp_idxs, shape, row_major {}), exp_fidx);
-    ASSERT_EQ(multi_index(exp_fidx, shape, row_major {}), exp_idxs);
+    ASSERT_EQ(nd_index(exp_fidx, shape, row_major {}), exp_idxs);
 
     // row- vs column-major
     exp_idxs = { 1, 1, 1 };
     exp_fidx = 9;
     ASSERT_EQ(flat_index(exp_idxs, shape), exp_fidx);
-    ASSERT_EQ(multi_index(exp_fidx, shape), exp_idxs);
+    ASSERT_EQ(nd_index(exp_fidx, shape), exp_idxs);
     exp_fidx = 17;
     ASSERT_EQ(flat_index(exp_idxs, shape, row_major {}), exp_fidx);
-    ASSERT_EQ(multi_index(exp_fidx, shape, row_major {}), exp_idxs);
+    ASSERT_EQ(nd_index(exp_fidx, shape, row_major {}), exp_idxs);
 }
 
 // Test integer subrange.

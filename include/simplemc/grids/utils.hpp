@@ -7,7 +7,7 @@
 #define SIMPLEMC_GRIDS_UTILS_HPP
 
 #include <simplemc/grids/concepts.hpp>
-#include <simplemc/utils/indexing.hpp>
+#include <simplemc/utils/nd_indexing.hpp>
 #include <simplemc/utils/ranges.hpp>
 
 #include <tuple>
