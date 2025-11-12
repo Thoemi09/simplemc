@@ -30,25 +30,25 @@ namespace simplemc {
  * @details Column-major order is the default order in Fortran. The first index varies the fastest and
  * the last index varies the slowest.
  *
- * Let \f$ \mathbf{i} = (i_1, i_2, \ldots, i_d) \f$ be a d-dimensional index and let \f$ \mathbf{N} =
- * (N_1, N_2, \ldots, N_d) \f$ be the shape of a d-dimensional array. The function \f$ f \f$ that maps
- * the multi-dimensional index to the linear/flat index is
+ * Let \f$ \mathbf{i} = (i_1, i_2, \ldots, i_N) \f$ be an N-dimensional index and let \f$ \mathbf{M} =
+ * (M_1, M_2, \ldots, M_N) \f$ be the shape of an N-dimensional array. The function \f$ f \f$ that
+ * maps the multi-dimensional index to the linear/flat index \f$ i_{\mathrm{lin}} \f$ is
  * \f[
- *   f(\mathbf{i}) = i_1 + i_2 N_1 + i_3 N_1 N_2 + \ldots + i_d N_1 N_2 \ldots N_{d-1}
- *   = \sum_{j=1}^{d} i_j \left( \prod_{k=1}^{j-1} N_k \right) \; .
+ *   f(\mathbf{i}) = i_1 + i_2 M_1 + i_3 M_1 M_2 + \ldots + i_N M_1 M_2 \ldots M_{N-1}
+ *   = \sum_{j=1}^{N} i_j \left( \prod_{k=1}^{j-1} M_k \right) = i_{\mathrm{lin}} \; .
  * \f]
  * To convert a flat index to its multi-dimensional index, we use the fact that the contribution of
- * the first \f$ m \f$ indices is smaller than the product of their extents, i.e.
+ * the first \f$ d \f$ indices is smaller than the product of their extents, i.e.
  * \f[
- *   i_1 + i_2 N_1 + i_3 N_1 N_2 + \ldots + i_m N_1 N_2 \ldots N_{m-1} < N_1 N_2 \ldots N_m \; .
+ *   i_1 + i_2 M_1 + i_3 M_1 M_2 + \ldots + i_d M_1 M_2 \ldots M_{d-1} < M_1 M_2 \ldots M_d \; .
  * \f]
  * This leads us to the following algorithm:
- * -# set \f$ t = N_1 N_2 \ldots N_{d-1} \f$ and \f$ m = d \f$
- * -# \f$ i_m = \lfloor \frac{f}{t} \rfloor \f$
- * -# \f$ f \to f - i_m t \f$
- * -# \f$ t \to \frac{t}{N_m} \f$
- * -# \f$ m \to m - 1 \f$
- * -# go to step 2 and repeat until \f$ m = 1 \f$
+ * -# set \f$ t = M_1 M_2 \ldots M_{N-1} \f$, \f$ f = i_{\mathrm{lin}} \f$ and \f$ d = N \f$
+ * -# \f$ i_d = \lfloor \frac{f}{t} \rfloor \f$
+ * -# \f$ f \to f - i_d t \f$
+ * -# \f$ t \to \frac{t}{M_d} \f$
+ * -# \f$ d \to d - 1 \f$
+ * -# go to step 2 and repeat until \f$ d = 1 \f$
  */
 struct column_major {};
 
@@ -58,26 +58,26 @@ struct column_major {};
  * @details Row-major order is the default order in C and C++. The last index varies the fastest and
  * the first index varies the slowest.
  *
- * Let \f$ \mathbf{i} = (i_1, i_2, \ldots, i_d) \f$ be a d-dimensional index and let \f$ \mathbf{N} =
- * (N_1, N_2, \ldots, N_d) \f$ be the shape of a d-dimensional array. The function \f$ f \f$ that maps
- * the multi-dimensional index to the linear/flat index is
+ * Let \f$ \mathbf{i} = (i_1, i_2, \ldots, i_N) \f$ be an N-dimensional index and let \f$ \mathbf{M} =
+ * (M_1, M_2, \ldots, M_N) \f$ be the shape of an N-dimensional array. The function \f$ f \f$ that
+ * maps the multi-dimensional index to the linear/flat index \f$ i_{\mathrm{lin}} \f$ is
  * \f[
- *   f(\mathbf{i}) = i_d + i_{d-1} N_d + i_{d-2} N_d N_{d-1} + \ldots + i_1 N_2 N_3 \ldots N_d
- *   = \sum_{j=1}^{d} i_j \left( \prod_{k=j+1}^{d} N_k \right) \; .
+ *   f(\mathbf{i}) = i_N + i_{N-1} M_N + i_{N-2} M_N M_{N-1} + \ldots + i_1 M_N M_{N-1} \ldots M_2
+ *   = \sum_{j=1}^{N} i_j \left( \prod_{k=j+1}^{N} M_k \right) = i_{\mathrm{lin}} \; .
  * \f]
  * To convert a flat index to its multi-dimensional index, we use the fact that the contribution of
- * the last \f$ m \f$ indices is smaller than the product of their extents, i.e.
+ * the last \f$ d \f$ indices is smaller than the product of their extents, i.e.
  * \f[
- *   i_d + i_{d-1} N_d + i_{d-2} N_d N_{d-1} + \ldots + i_{d-m+1} N_d N_{d-1} \ldots N_{d-m+1} <
- *   N_d N_{d-1} \ldots N_{d-m} \; .
+ *   i_N + i_{N-1} M_N + i_{N-2} M_N M_{N-1} + \ldots + i_{N-d+1} M_N M_{N-1} \ldots M_{N-d+1} <
+ *   M_N M_{N-1} \ldots M_{N-d} \; .
  * \f]
  * This leads us to the following algorithm:
- * -# set \f$ t = N_2 N_3 \ldots N_{d} \f$ and \f$ m = 1 \f$
- * -# \f$ i_m = \lfloor \frac{f}{t} \rfloor \f$
- * -# \f$ f \to f - i_m t \f$
- * -# \f$ t \to \frac{t}{N_{d-m+1}} \f$
- * -# \f$ m \to m + 1 \f$
- * -# go to step 2 and repeat until \f$ m = d \f$
+ * -# set \f$ t = M_N M_{N-1} \ldots M_2 \f$, \f$ f = i_{\mathrm{lin}} \f$ and \f$ d = 1 \f$
+ * -# \f$ i_d = \lfloor \frac{f}{t} \rfloor \f$
+ * -# \f$ f \to f - i_d t \f$
+ * -# \f$ t \to \frac{t}{M_{N-d+1}} \f$
+ * -# \f$ d \to d + 1 \f$
+ * -# go to step 2 and repeat until \f$ d = N \f$
  */
 struct row_major {};
 
@@ -93,19 +93,20 @@ concept nd_order = is_any_of<T, column_major, row_major>;
 /**
  * @brief Calculate the size of a multi-dimensional array given its shape as a `std::vector`.
  *
- * @details The size of a multi-dimensional array with shape \f$ (N_1, N_2, \ldots, N_d) \f$ is
+ * @details The size of a multi-dimensional array with shape \f$ \mathbf{M} = (M_1, M_2, \ldots, M_d)
+ * \f$ is
  * \f[
- *   s = \prod_{j=1}^{d} N_j \; .
+ *   M = \prod_{j=1}^{d} M_j \; .
  * \f]
  *
- * @note Empty shapes are not supported.
+ * @note The behavior is undefined if \f$ \mathbf{M} \f$ is empty.
  *
  * @tparam T Integral type.
- * @param shape Shape of the multi-dimensional array.
+ * @param shape Shape \f$ \mathbf{M} \f$ of the multi-dimensional array.
  * @return Number of elements in the array.
  */
 template <std::integral T>
-[[nodiscard]] constexpr auto size_from_shape(const std::vector<T>& shape) {
+[[nodiscard]] constexpr auto size_from_shape(const std::vector<T>& shape) noexcept {
     assert(!shape.empty());
     return std::accumulate(shape.begin(), shape.end(), T { 1 }, std::multiplies {});
 }
@@ -113,21 +114,22 @@ template <std::integral T>
 /**
  * @brief Calculate the size of a multi-dimensional array given its shape as a `std::array`.
  *
- * @details The size of a multi-dimensional array with shape \f$ (N_1, N_2, \ldots, N_d) \f$ is
+ * @details The size of a multi-dimensional array with shape \f$ \mathbf{M} = (M_1, M_2, \ldots, M_d)
+ * \f$ is
  * \f[
- *   s = \prod_{j=1}^{d} N_j \; .
+ *   M = \prod_{j=1}^{d} M_j \; .
  * \f]
  *
- * @note Empty shapes are not supported.
+ * @note The behavior is undefined if \f$ \mathbf{M} \f$ is empty.
  *
  * @tparam T Integral type.
  * @tparam N Number of dimensions.
- * @param shape Shape of the multi-dimensional array.
+ * @param shape Shape \f$ \mathbf{M} \f$ of the multi-dimensional array.
  * @return Number of elements in the array.
  */
 template <std::integral T, std::size_t N>
     requires(N != 0)
-[[nodiscard]] constexpr auto size_from_shape(const std::array<T, N>& shape) {
+[[nodiscard]] constexpr auto size_from_shape(const std::array<T, N>& shape) noexcept {
     return std::accumulate(shape.begin(), shape.end(), T { 1 }, std::multiplies<T> {});
 }
 
@@ -136,14 +138,17 @@ template <std::integral T, std::size_t N>
  *
  * @details See simplemc::column_major and simplemc::row_major for more information.
  *
- * @note Empty shapes are not supported.
+ * @note The behavior is undefined if one of the following conditions is met:
+ * - \f$ M_j \leq 0 \f$ for one of the dimensions \f$ j \f$,
+ * - \f$ i_{\mathrm{lin}} < 0 \f$ or \f$ i_{\mathrm{lin}} \geq M \f$,
+ * - \f$ \mathbf{M} \f$ is empty.
  *
  * @tparam T Integer type.
  * @tparam Order simplemc::nd_order tag.
- * @param flat_idx Flat index.
- * @param shape Shape of the underlying multi-dimensional array.
+ * @param flat_idx Flat index \f$ i_{\mathrm{lin}} \f$.
+ * @param shape Shape \f$ \mathbf{M} \f$ of the underlying multi-dimensional array.
  * @param order Storage order of the multi-dimensional array (used only for type deduction).
- * @return Multi-dimensional index as a `std::vector`.
+ * @return Multi-dimensional index \f$ \mathbf{i} \f$ as a `std::vector`.
  */
 template <std::integral T, nd_order Order = column_major>
 [[nodiscard]] constexpr auto nd_index(
@@ -174,20 +179,23 @@ template <std::integral T, nd_order Order = column_major>
  *
  * @details See simplemc::column_major and simplemc::row_major for more information.
  *
- * @note Empty shapes are not supported.
+ * @note The behavior is undefined if one of the following conditions is met:
+ * - \f$ M_j \leq 0 \f$ for one of the dimensions \f$ j \f$,
+ * - \f$ i_{\mathrm{lin}} < 0 \f$ or \f$ i_{\mathrm{lin}} \geq M \f$,
+ * - \f$ \mathbf{M} \f$ is empty.
  *
  * @tparam T Integer type.
  * @tparam N Number of dimensions.
  * @tparam Order simplemc::nd_order tag.
- * @param flat_idx Flat index.
- * @param shape Shape of the underlying multi-dimensional array.
+ * @param flat_idx Flat index \f$ i_{\mathrm{lin}} \f$.
+ * @param shape Shape \f$ \mathbf{M} \f$ of the underlying multi-dimensional array.
  * @param order Storage order of the multi-dimensional array (used only for type deduction).
- * @return Multi-dimensional index as a `std::array`.
+ * @return Multi-dimensional index \f$ \mathbf{i} \f$ as a `std::array`.
  */
 template <std::integral T, std::size_t N, nd_order Order = column_major>
     requires(N != 0)
 [[nodiscard]] constexpr auto nd_index(
-    std::integral auto flat_idx, const std::array<T, N>& shape, [[maybe_unused]] Order order = Order {}) {
+    std::integral auto flat_idx, const std::array<T, N>& shape, [[maybe_unused]] Order order = Order {}) noexcept {
     assert(flat_idx >= 0 && flat_idx < size_from_shape(shape));
     auto idxs = std::array<T, N> {};
     auto fac = size_from_shape(shape);
@@ -213,15 +221,17 @@ template <std::integral T, std::size_t N, nd_order Order = column_major>
  *
  * @details See simplemc::column_major and simplemc::row_major for more information.
  *
- * @note Empty shapes or empty multi-dimensional indices are not supported.
+ * @note The behavior is undefined if one of the following conditions is met:
+ * - \f$ i_j < 0 \f$ or \f$ i_j \geq M_j \f$ for one of the dimensions \f$ j \f$,
+ * - \f$ \mathbf{M} \f$ and \f$ \mathbf{i} \f$ have different number of dimensions or are empty.
  *
  * @tparam T1 Integer type.
  * @tparam T2 Integer type.
  * @tparam Order simplemc::nd_order tag.
- * @param idxs Multi-dimensional index.
- * @param shape Shape of the underlying multi-dimensional array.
+ * @param idxs Multi-dimensional index \f$ \mathbf{i} \f$.
+ * @param shape Shape \f$ \mathbf{M} \f$ of the underlying multi-dimensional array.
  * @param order Storage order of the multi-dimensional array (used only for type deduction).
- * @return Flat index.
+ * @return Flat index \f$ i_{\mathrm{lin}} \f$.
  */
 template <std::integral T1, std::integral T2, nd_order Order = column_major>
 [[nodiscard]] constexpr auto flat_index(
@@ -249,21 +259,23 @@ template <std::integral T1, std::integral T2, nd_order Order = column_major>
  *
  * @details See simplemc::column_major and simplemc::row_major for more information.
  *
- * @note Empty shapes or empty multi-dimensional indices are not supported.
+ * @note The behavior is undefined if one of the following conditions is met:
+ * - \f$ i_j < 0 \f$ or \f$ i_j \geq M_j \f$ for one of the dimensions \f$ j \f$,
+ * - \f$ \mathbf{M} \f$ and \f$ \mathbf{i} \f$ have different number of dimensions or are empty.
  *
  * @tparam T1 Integer type.
  * @tparam T2 Integer type.
  * @tparam N Number of dimensions.
  * @tparam Order simplemc::nd_order tag.
- * @param idxs Multi-dimensional index.
- * @param shape Shape of the underlying multi-dimensional array.
+ * @param idxs Multi-dimensional index \f$ \mathbf{i} \f$.
+ * @param shape Shape \f$ \mathbf{M} \f$ of the underlying multi-dimensional array.
  * @param order Storage order of the multi-dimensional array (used only for type deduction).
- * @return Flat index.
+ * @return Flat index \f$ i_{\mathrm{lin}} \f$.
  */
 template <std::integral T1, std::integral T2, std::size_t N, nd_order Order = column_major>
     requires(N != 0)
 [[nodiscard]] constexpr auto flat_index(
-    const std::array<T1, N>& idxs, const std::array<T2, N>& shape, [[maybe_unused]] Order order = Order {}) {
+    const std::array<T1, N>& idxs, const std::array<T2, N>& shape, [[maybe_unused]] Order order = Order {}) noexcept {
     if constexpr (std::same_as<Order, column_major>) {
         auto flat_idx = idxs.back();
         for (std::size_t i = 2; i <= N; ++i) {
@@ -296,7 +308,7 @@ template <std::integral T1, std::integral T2, std::size_t N, nd_order Order = co
  * @return Index `j` such that `l` lies in the middle of `(j, j+1, ..., j+m-1)`.
  */
 template <std::integral T>
-[[nodiscard]] inline constexpr auto integer_subrange(T l, T n, T m) {
+[[nodiscard]] inline constexpr auto integer_subrange(T l, T n, T m) noexcept {
     assert(l >= 0 && l < n);
     assert(m > 0 && m <= n);
     return std::clamp(static_cast<T>(m % 2 == 0 ? l + 1 - m / 2 : l - m / 2), T { 0 }, n - m);

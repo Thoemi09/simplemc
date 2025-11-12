@@ -56,6 +56,9 @@
  * @details **simplemc** supports two different indexing schemes:
  * - Fortran style indexing (see simplemc::column_major)
  * - C style indexing (see simplemc::row_major)
+ * 
+ * For a mapping between multi-dimensional indices and flat indices, see simplemc::flat_index and
+ * simplemc::nd_index.
  *
  * See @ref tut_utils_2 for a detailed example.
  */
