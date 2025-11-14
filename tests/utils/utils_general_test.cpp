@@ -79,7 +79,7 @@ TEST(SimplemcUtils, FileHandleRAII) {
 
 // Test file_handle construction from existing FILE* pointer.
 TEST(SimplemcUtils, FileHandleFromPointer) {
-    // Test with a file opened via raw function
+    // test with a file opened via raw function
     auto fp = simplemc::detail::open_file_raw("test_from_ptr.txt", "w");
     {
         simplemc::file_handle file(fp, "test_from_ptr.txt");
@@ -88,7 +88,7 @@ TEST(SimplemcUtils, FileHandleFromPointer) {
         fmt::print(file, "Wrapped existing file pointer\n");
     } // file closed here by file_handle destructor
 
-    // Test with stdout (should not be closed)
+    // test with stdout (should not be closed)
     {
         simplemc::file_handle stdout_handle(stdout, "stdout");
         ASSERT_EQ(stdout_handle.get(), stdout);
@@ -96,7 +96,7 @@ TEST(SimplemcUtils, FileHandleFromPointer) {
         fmt::print(stdout_handle, "This goes to stdout via file_handle\n");
     } // stdout not closed due to special handling
 
-    // Test with nullptr
+    // test with nullptr
     {
         simplemc::file_handle null_handle(nullptr, "null");
         ASSERT_EQ(null_handle.get(), nullptr);
