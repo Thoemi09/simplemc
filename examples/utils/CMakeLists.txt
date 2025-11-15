@@ -1,4 +1,4 @@
-# Build examples codes that use simplemc::simplemc-utils.
+# Build example codes that use simplemc::simplemc-utils.
 #
 # The following targets are defined:
 # ---------------------------------
