@@ -27,6 +27,7 @@ namespace simplemc {
  *
  * - `G::value_type` is the type of the range \f$ \mathrm{R} \f$
  * - `G::size_type` is the type of the domain \f$ \mathrm{I} \f$
+ * - `G::dim()` returns the number of dimensions \f$ N \f$
  * - `g.size()` returns the size \f$ M \f$ of the grid
  * - `g.at(size_type)` returns the grid point \f$ g(i) \f$ at the given index \f$ i \f$
  * - `g.index(value_type)` returns the index \f$ i \f$ such that the given value \f$ x \f$ lies in the
@@ -40,6 +41,7 @@ template <typename G>
 concept grid_common = requires(const G& g) {
     typename G::value_type;
     typename G::size_type;
+    std::integral_constant<std::size_t, G::dim()> {};
     { g.size() } -> std::convertible_to<long>;
     { g.at(typename G::size_type {}) } -> std::same_as<typename G::value_type>;
     { g.index(typename G::size_type {}) } -> std::same_as<typename G::size_type>;
@@ -60,7 +62,7 @@ concept grid_common = requires(const G& g) {
  * @tparam G Type to be checked.
  */
 template <typename G>
-concept grid_1d = requires(const G& g) {
+concept grid_1d = grid_common<G> && requires(const G& g) {
     // remove this check in case we want to relax the restrictions on value and size types
     requires std::same_as<typename G::value_type, double>;
     requires std::same_as<typename G::size_type, long>;
@@ -92,12 +94,12 @@ concept has_grid_1d_element_types = []<std::size_t... Is>(std::index_sequence<Is
  * @tparam G Type to be checked.
  */
 template <typename G>
-concept grid_nd = requires(const G& g) {
+concept grid_nd = grid_common<G> && requires(const G& g) {
     // remove the same_as check in case we want to relax the restrictions on value and size types
     requires std::same_as<typename G::value_type, std::array<double, G::dim()>>;
     requires std::same_as<typename G::size_type, std::array<long, G::dim()>>;
     requires detail::has_grid_1d_element_types<typename G::tuple_type>;
-    { g.grids() } -> std::same_as<const typename G::tuple_type&>;
+    { g.grids() } -> std::convertible_to<typename G::tuple_type>;
     { g.shape() } -> std::same_as<std::array<long, G::dim()>>;
 };
 
