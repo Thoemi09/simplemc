@@ -30,6 +30,8 @@ namespace simplemc {
  * - `G::size_type` is the type of the domain \f$ \mathrm{I} \f$
  * - `G::dim()` returns the number of dimensions \f$ N \f$
  * - `g.size()` returns the size \f$ M \f$ of the grid
+ * - `g.first()` returns the first grid point \f$ a \f$/\f$ \mathbf{a} \f$
+ * - `g.last()` returns the last grid point \f$ b \f$/\f$ \mathbf{b} \f$
  * - `g.at(size_type)` returns the grid point \f$ g(i) \f$ at the given index \f$ i \f$
  * - `g.index(value_type)` returns the index \f$ i \f$ such that the given value \f$ x \f$ lies in the
  * bin \f$ b_i \f$
@@ -44,8 +46,10 @@ concept grid_common = requires(const G& g) {
     typename G::size_type;
     std::integral_constant<std::size_t, G::dim()> {};
     { g.size() } -> std::convertible_to<long>;
+    { g.first() } -> std::same_as<typename G::value_type>;
+    { g.last() } -> std::same_as<typename G::value_type>;
     { g.at(typename G::size_type {}) } -> std::same_as<typename G::value_type>;
-    { g.index(typename G::size_type {}) } -> std::same_as<typename G::size_type>;
+    { g.index(typename G::value_type {}) } -> std::same_as<typename G::size_type>;
     { g.volume(typename G::size_type {}) } -> std::convertible_to<double>;
     { g.center(typename G::size_type {}) } -> std::same_as<typename G::value_type>;
 };
@@ -54,8 +58,8 @@ concept grid_common = requires(const G& g) {
  * @ingroup simplemc-grids-1d
  * @brief Concept that specifies the requirements for @ref simplemc-grids-1d.
  *
- * @details A 1-dimensional grid satisfies the simplemc::grid_common concept and in addition has the
- * following requirements:
+ * @details A 1-dimensional grid satisfies the simplemc::grid_common as well as the
+ * `std::ranges::random_access` concept and in addition has the following requirements:
  *
  * - `G::value_type` is of type `double`
  * - `G::size_type` is of type `long`
@@ -83,8 +87,8 @@ concept has_grid_1d_element_types = []<std::size_t... Is>(std::index_sequence<Is
  * @ingroup simplemc-grids-nd
  * @brief Concept that specifies the requirements for @ref simplemc-grids-nd.
  *
- * @details An N-dimensional grid satisfies the simplemc::grid_common concept and in addition has the
- * following requirements:
+ * @details An N-dimensional grid satisfies the simplemc::grid_common as well as the
+ * `std::ranges::random_access` concept and in addition has the following requirements:
  *
  * - `G::value_type` is of type `std::array<double, N>`
  * - `G::size_type` is of type `std::array<long, N>`

@@ -31,6 +31,10 @@ public:
 
     [[nodiscard]] constexpr long size() const noexcept { return size_; }
 
+    [[nodiscard]] constexpr double first() const noexcept { return 0.0; }
+
+    [[nodiscard]] constexpr double last() const noexcept { return static_cast<double>(size_ - 1); }
+
     [[nodiscard]] constexpr double at(long i) const noexcept { return static_cast<double>(i); }
 
     [[nodiscard]] constexpr long index(double x) const noexcept { return static_cast<long>(x); }
@@ -43,7 +47,9 @@ public:
 
     [[nodiscard]] constexpr auto cbegin() const noexcept { return begin(); }
 
-    [[nodiscard]] constexpr auto end() const noexcept { return simplemc::grid_iterator<dummy_grid_1d> { *this, size_ }; }
+    [[nodiscard]] constexpr auto end() const noexcept {
+        return simplemc::grid_iterator<dummy_grid_1d> { *this, size_ };
+    }
 
     [[nodiscard]] constexpr auto cend() const noexcept { return end(); }
 
@@ -71,11 +77,17 @@ public:
 
     [[nodiscard]] constexpr tuple_type grids() const noexcept { return std::make_tuple(grid0_, grid1_); }
 
+    [[nodiscard]] constexpr value_type first() const noexcept { return { grid0_.first(), grid1_.first() }; }
+
+    [[nodiscard]] constexpr value_type last() const noexcept { return { grid0_.last(), grid1_.last() }; }
+
     [[nodiscard]] constexpr value_type at(size_type idx) const noexcept {
         return { grid0_.at(idx[0]), grid1_.at(idx[1]) };
     }
 
-    [[nodiscard]] constexpr size_type index(size_type x) const noexcept { return x; }
+    [[nodiscard]] constexpr size_type index(value_type x) const noexcept {
+        return { grid0_.index(x[0]), grid1_.index(x[1]) };
+    }
 
     [[nodiscard]] constexpr double volume(size_type idx) const noexcept {
         return grid0_.volume(idx[0]) * grid1_.volume(idx[1]);
@@ -89,7 +101,9 @@ public:
 
     [[nodiscard]] constexpr auto cbegin() const noexcept { return begin(); }
 
-    [[nodiscard]] constexpr auto end() const noexcept { return simplemc::grid_iterator<dummy_grid_2d> { *this, size() }; }
+    [[nodiscard]] constexpr auto end() const noexcept {
+        return simplemc::grid_iterator<dummy_grid_2d> { *this, size() };
+    }
 
     [[nodiscard]] constexpr auto cend() const noexcept { return end(); }
 
