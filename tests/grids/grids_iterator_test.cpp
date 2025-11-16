@@ -39,6 +39,14 @@ public:
 
     [[nodiscard]] constexpr double center(long i) const noexcept { return static_cast<double>(i) + 0.5; }
 
+    [[nodiscard]] constexpr auto begin() const noexcept { return simplemc::grid_iterator<dummy_grid_1d> { *this }; }
+
+    [[nodiscard]] constexpr auto cbegin() const noexcept { return begin(); }
+
+    [[nodiscard]] constexpr auto end() const noexcept { return simplemc::grid_iterator<dummy_grid_1d> { *this, size_ }; }
+
+    [[nodiscard]] constexpr auto cend() const noexcept { return end(); }
+
 private:
     long size_;
 };
@@ -76,6 +84,14 @@ public:
     [[nodiscard]] constexpr value_type center(size_type idx) const noexcept {
         return { grid0_.center(idx[0]), grid1_.center(idx[1]) };
     }
+
+    [[nodiscard]] constexpr auto begin() const noexcept { return simplemc::grid_iterator<dummy_grid_2d> { *this }; }
+
+    [[nodiscard]] constexpr auto cbegin() const noexcept { return begin(); }
+
+    [[nodiscard]] constexpr auto end() const noexcept { return simplemc::grid_iterator<dummy_grid_2d> { *this, size() }; }
+
+    [[nodiscard]] constexpr auto cend() const noexcept { return end(); }
 
 private:
     size_type shape_;

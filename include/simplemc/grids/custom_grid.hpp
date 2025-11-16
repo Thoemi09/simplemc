@@ -7,6 +7,7 @@
 #define SIMPLEMC_GRIDS_CUSTOM_GRID_HPP
 
 #include <simplemc/grids/grid_base.hpp>
+#include <simplemc/grids/grid_iterator.hpp>
 
 #include <algorithm>
 #include <functional>
@@ -137,6 +138,34 @@ public:
      * @return `std::vector<value_type>` of grid points \f$ \mathbf{x} \f$.
      */
     [[nodiscard]] auto const& grid_points() const { return x_; }
+
+    /**
+     * @brief Get an iterator to the first grid point.
+     *
+     * @return Iterator to the first grid point \f$ g(0) \f$.
+     */
+    [[nodiscard]] auto begin() const { return grid_iterator<custom_grid> { *this }; }
+
+    /**
+     * @brief Get a const iterator to the first grid point.
+     *
+     * @return Const iterator to the first grid point \f$ g(0) \f$.
+     */
+    [[nodiscard]] auto cbegin() const { return begin(); }
+
+    /**
+     * @brief Get an iterator to one past the last grid point.
+     *
+     * @return Iterator to one past the last grid point.
+     */
+    [[nodiscard]] auto end() const { return grid_iterator<custom_grid> { *this, size_ }; }
+
+    /**
+     * @brief Get a const iterator to one past the last grid point.
+     *
+     * @return Const iterator to one past the last grid point.
+     */
+    [[nodiscard]] auto cend() const { return end(); }
 
 private:
     std::vector<value_type> x_ { 0.0, 1.0 };

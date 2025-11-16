@@ -11,6 +11,7 @@
 #include <array>
 #include <concepts>
 #include <cstddef>
+#include <ranges>
 #include <tuple>
 #include <utility>
 
@@ -62,7 +63,7 @@ concept grid_common = requires(const G& g) {
  * @tparam G Type to be checked.
  */
 template <typename G>
-concept grid_1d = grid_common<G> && requires(const G& g) {
+concept grid_1d = grid_common<G> && std::ranges::random_access_range<G> && requires(const G& g) {
     // remove this check in case we want to relax the restrictions on value and size types
     requires std::same_as<typename G::value_type, double>;
     requires std::same_as<typename G::size_type, long>;
@@ -94,7 +95,7 @@ concept has_grid_1d_element_types = []<std::size_t... Is>(std::index_sequence<Is
  * @tparam G Type to be checked.
  */
 template <typename G>
-concept grid_nd = grid_common<G> && requires(const G& g) {
+concept grid_nd = grid_common<G> && std::ranges::random_access_range<G> && requires(const G& g) {
     // remove the same_as check in case we want to relax the restrictions on value and size types
     requires std::same_as<typename G::value_type, std::array<double, G::dim()>>;
     requires std::same_as<typename G::size_type, std::array<long, G::dim()>>;

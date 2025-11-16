@@ -7,6 +7,7 @@
 #define SIMPLEMC_GRIDS_ND_GRID_HPP
 
 #include <simplemc/grids/concepts.hpp>
+#include <simplemc/grids/grid_iterator.hpp>
 #include <simplemc/utils/ranges.hpp>
 
 #include <array>
@@ -271,6 +272,34 @@ public:
     [[nodiscard]] value_type center(Idxs... idxs) const {
         return std::apply([idxs...](const auto&... gs) { return value_type { gs.center(idxs)... }; }, grids_);
     }
+
+    /**
+     * @brief Get an iterator to the first grid point.
+     *
+     * @return Iterator to the first grid point \f$ g(0, \dots, 0) \f$.
+     */
+    [[nodiscard]] auto begin() const { return grid_iterator<nd_grid> { *this }; }
+
+    /**
+     * @brief Get a const iterator to the first grid point.
+     *
+     * @return Const iterator to the first grid point \f$ g(0, \dots, 0) \f$.
+     */
+    [[nodiscard]] auto cbegin() const { return begin(); }
+
+    /**
+     * @brief Get an iterator to one past the last grid point.
+     *
+     * @return Iterator to one past the last grid point.
+     */
+    [[nodiscard]] auto end() const { return grid_iterator<nd_grid> { *this, size() }; }
+
+    /**
+     * @brief Get a const iterator to one past the last grid point.
+     *
+     * @return Const iterator to one past the last grid point.
+     */
+    [[nodiscard]] auto cend() const { return end(); }
 
 private:
     tuple_type grids_;

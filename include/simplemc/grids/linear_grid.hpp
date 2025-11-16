@@ -7,6 +7,7 @@
 #define SIMPLEMC_GRIDS_LINEAR_GRID_HPP
 
 #include <simplemc/grids/grid_base.hpp>
+#include <simplemc/grids/grid_iterator.hpp>
 
 namespace simplemc {
 
@@ -154,6 +155,34 @@ public:
      * @return Step size \f$ \Delta = (b - a) / (M - 1) \f$.
      */
     [[nodiscard]] value_type step() const { return step_; }
+
+    /**
+     * @brief Get an iterator to the first grid point.
+     *
+     * @return Iterator to the first grid point \f$ g(0) \f$.
+     */
+    [[nodiscard]] auto begin() const { return grid_iterator<linear_grid> { *this }; }
+
+    /**
+     * @brief Get a const iterator to the first grid point.
+     *
+     * @return Const iterator to the first grid point \f$ g(0) \f$.
+     */
+    [[nodiscard]] auto cbegin() const { return begin(); }
+
+    /**
+     * @brief Get an iterator to one past the last grid point.
+     *
+     * @return Iterator to one past the last grid point.
+     */
+    [[nodiscard]] auto end() const { return grid_iterator<linear_grid> { *this, size_ }; }
+
+    /**
+     * @brief Get a const iterator to one past the last grid point.
+     *
+     * @return Const iterator to one past the last grid point.
+     */
+    [[nodiscard]] auto cend() const { return end(); }
 
 private:
     value_type step_ { 1.0 };
