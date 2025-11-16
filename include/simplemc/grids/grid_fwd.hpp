@@ -9,6 +9,9 @@
 namespace simplemc {
 
 template <typename>
+class grid_iterator;
+
+template <typename>
 class grid_base;
 
 class custom_grid;
