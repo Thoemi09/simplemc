@@ -444,6 +444,11 @@
  * \times \dots \times (M_N - 1) \f$ bins or hyperrectangles. Such a hyperrectangle is simply the
  * cartesian product of the 1-dimensional bins: \f$ b_{i_1, \dots, i_N} = b_{i_1} \times \dots \times
  * b_{i_N} \f$.
+ * 
+ * Here, \f$ \mathbf{i} = (i_1, \dots, i_N) \in \mathrm{I} \f$ is a multi-dimensional index. Let us 
+ * also introduce the corresponding flat index \f$ i_{\mathrm{lin}} \in \{0, \dots, M - 1\} \f$, which
+ * is related to \f$ \mathbf{i} \f$ via a row-major flatting scheme (see simplemc::row_major and 
+ * simplemc::flat_index).
  *
  * Users are free to combine any of the @ref simplemc-grids-1d to create an N-dimensional grid.
  */

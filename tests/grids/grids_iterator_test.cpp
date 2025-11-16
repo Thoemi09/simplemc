@@ -89,6 +89,10 @@ private:
 static_assert(simplemc::grid_1d<dummy_grid_1d>);
 static_assert(simplemc::grid_nd<dummy_grid_2d>);
 
+// Verify that the iterators satisfy the random access iterator concept.
+static_assert(std::random_access_iterator<simplemc::grid_iterator<dummy_grid_1d>>);
+static_assert(std::random_access_iterator<simplemc::grid_iterator<dummy_grid_2d>>);
+
 // Test default construction and basic properties.
 TEST(SimplemcGridIterator, DefaultConstruction) {
     simplemc::grid_iterator<dummy_grid_1d> default_it_1d;

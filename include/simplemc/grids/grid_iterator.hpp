@@ -22,14 +22,14 @@ namespace simplemc {
  */
 
 /**
- * @brief CRTP iterator base class for 1- and N-dimensional grid types.
+ * @brief CRTP iterator base class for @ref simplemc-grids-1d and @ref simplemc-grids-nd.
  *
  * @details This class provides random access iteration for all grid types satisfying the
  * simplemc::grid_common concept.
  *
- * It stores the current index \f$ i \f$ (or flat index \f$ i_{\mathrm{lin}} \f$ for N-dimensional
- * grids), a pointer to the grid object being iterated over and the size of the gird. That means the
- * underlying grid must outlive the iterator.
+ * It stores the current index \f$ i \f$ (\f$ \equiv i_{\mathrm{lin}} \f$ for N-dimensional grids), a 
+ * pointer to the grid object being iterated over and the size of the grid. That means the underlying 
+ * grid must outlive the iterator.
  *
  * Dereferencing the iterator calls the grid's `at` method with the current index. For N-dimensional
  * grids, the index is first converted to a multi-dimensional index array using simplemc::nd_index.
@@ -258,7 +258,8 @@ public:
     /**
      * @brief Three-way comparison operator to define an ordering between two iterators.
      *
-     * @details The ordering is the same as that of their indices using `<=>`.
+     * @details The ordering is the same as that of their indices using `<=>` and only makes sense if
+     * both iterators point to the same grid.
      *
      * @param other Right hand side iterator.
      * @return Ordering between the two iterators.
