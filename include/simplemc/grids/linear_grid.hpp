@@ -69,7 +69,7 @@ public:
      * @brief Default constructor constructs a linear grid of size \f$ M = 2 \f$ on the interval \f$
      * [0, 1] \f$.
      */
-    linear_grid() = default;
+    constexpr linear_grid() noexcept = default;
 
     /**
      * @brief Construct a linear grid by specifying its first and last grid points, \f$ a \f$ and \f$
@@ -81,7 +81,7 @@ public:
      * @param b Last value of the grid, \f$ b = g(M-1) \f$.
      * @param m Number of grid points \f$ M \f$.
      */
-    linear_grid(value_type a, value_type b, size_type m) { reset(a, b, m); }
+    constexpr linear_grid(value_type a, value_type b, size_type m) { reset(a, b, m); }
 
     /**
      * @brief Reset the linear grid by specifying its first and last grid points, \f$ a \f$ and \f$ b
@@ -94,7 +94,7 @@ public:
      * @param b Last value of the grid, \f$ b = g(M-1) \f$.
      * @param m Number of grid points \f$ M \f$.
      */
-    void reset(value_type a, value_type b, size_type m) {
+    constexpr void reset(value_type a, value_type b, size_type m) {
         base_type::reset(a, b, m);
         step_ = (last_ - first_) / (static_cast<double>(size_) - 1.0);
     }
@@ -107,7 +107,7 @@ public:
      * @param idx Index \f$ i \f$ of the grid point.
      * @return Grid point \f$ g(i) \f$.
      */
-    [[nodiscard]] value_type at(size_type idx) const {
+    [[nodiscard]] constexpr value_type at(size_type idx) const noexcept {
         assert(idx >= 0 && idx < size_);
         return first_ + step_ * static_cast<double>(idx);
     }
@@ -122,7 +122,7 @@ public:
      * @param value Some value \f$ x \in [a, b] \f$.
      * @return Index \f$ i = \tilde{g}^{-1}(x) \f$ of the bin \f$ b_i \f$ such that \f$ x \in b_i \f$.
      */
-    [[nodiscard]] size_type index(value_type value) const {
+    [[nodiscard]] constexpr size_type index(value_type value) const noexcept {
         assert((first_ <= value && value <= last_) || (first_ >= value && value >= last_));
         return static_cast<size_type>((value - first_) / step_);
     }
@@ -133,7 +133,7 @@ public:
      * @param idx Bin index \f$ i \f$.
      * @return Volume (size) of the bin \f$ b_i \f$.
      */
-    [[nodiscard]] value_type volume([[maybe_unused]] size_type idx) const {
+    [[nodiscard]] constexpr value_type volume([[maybe_unused]] size_type idx) const noexcept {
         assert(idx >= 0 && idx + 1 < size_);
         return std::abs(step_);
     }
@@ -144,7 +144,7 @@ public:
      * @param idx Bin index \f$ i \f$.
      * @return Center of the bin \f$ b_i \f$.
      */
-    [[nodiscard]] value_type center(size_type idx) const {
+    [[nodiscard]] constexpr value_type center(size_type idx) const noexcept {
         assert(idx >= 0 && idx + 1 < size_);
         return at(idx) + step_ / 2.;
     }
@@ -154,35 +154,35 @@ public:
      *
      * @return Step size \f$ \Delta = (b - a) / (M - 1) \f$.
      */
-    [[nodiscard]] value_type step() const { return step_; }
+    [[nodiscard]] constexpr value_type step() const noexcept { return step_; }
 
     /**
      * @brief Get an iterator to the first grid point.
      *
      * @return Iterator to the first grid point \f$ g(0) \f$.
      */
-    [[nodiscard]] auto begin() const { return grid_iterator<linear_grid> { *this }; }
+    [[nodiscard]] constexpr auto begin() const noexcept { return grid_iterator<linear_grid> { *this }; }
 
     /**
      * @brief Get a const iterator to the first grid point.
      *
      * @return Const iterator to the first grid point \f$ g(0) \f$.
      */
-    [[nodiscard]] auto cbegin() const { return begin(); }
+    [[nodiscard]] constexpr auto cbegin() const noexcept { return begin(); }
 
     /**
      * @brief Get an iterator to one past the last grid point.
      *
      * @return Iterator to one past the last grid point.
      */
-    [[nodiscard]] auto end() const { return grid_iterator<linear_grid> { *this, size_ }; }
+    [[nodiscard]] constexpr auto end() const noexcept { return grid_iterator<linear_grid> { *this, size_ }; }
 
     /**
      * @brief Get a const iterator to one past the last grid point.
      *
      * @return Const iterator to one past the last grid point.
      */
-    [[nodiscard]] auto cend() const { return end(); }
+    [[nodiscard]] constexpr auto cend() const noexcept { return end(); }
 
 private:
     value_type step_ { 1.0 };

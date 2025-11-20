@@ -70,7 +70,7 @@ public:
      * @brief Default constructor constructs a power grid of size \f$ M = 2 \f$ on the interval
      * \f$ [0, 1] \f$ with \f$ p = 1 \f$.
      */
-    power_grid() = default;
+    constexpr power_grid() noexcept = default;
 
     /**
      * @brief Construct a power grid by specifying its first and last grid points, \f$ a \f$ and \f$
@@ -83,7 +83,7 @@ public:
      * @param m Number of grid points \f$ M \f$.
      * @param p Power parameter \f$ p \f$.
      */
-    power_grid(value_type a, value_type b, size_type m, value_type p) { reset(a, b, m, p); }
+    constexpr power_grid(value_type a, value_type b, size_type m, value_type p) { reset(a, b, m, p); }
 
     /**
      * @brief Reset the power grid by specifying its first and last grid points, \f$ a \f$ and \f$ b
@@ -98,7 +98,7 @@ public:
      * @param m Number of grid points \f$ M \f$.
      * @param p Power parameter \f$ p \f$.
      */
-    void reset(value_type a, value_type b, size_type m, value_type p) {
+    constexpr void reset(value_type a, value_type b, size_type m, value_type p) {
         if (p <= 0.0) {
             throw simplemc_exception("Power parameter must be > 0", "power_grid::reset");
         }
@@ -115,7 +115,7 @@ public:
      * @param idx Index \f$ i \f$ of the grid point.
      * @return Grid point \f$ g(i) \f$.
      */
-    [[nodiscard]] value_type at(size_type idx) const {
+    [[nodiscard]] constexpr value_type at(size_type idx) const noexcept {
         assert(idx >= 0 && idx < size_);
         return first_ + scale_ * std::pow(idx, power_);
     }
@@ -130,7 +130,7 @@ public:
      * @param value Some value \f$ x \in [a, b] \f$.
      * @return Index \f$ i = \tilde{g}^{-1}(x) \f$ of the bin \f$ b_i \f$ such that \f$ x \in b_i \f$.
      */
-    [[nodiscard]] size_type index(value_type value) const {
+    [[nodiscard]] constexpr size_type index(value_type value) const noexcept {
         assert((first_ <= value && value <= last_) || (first_ >= value && value >= last_));
         return static_cast<size_type>(std::pow((value - first_) / scale_, 1.0 / power_));
     }
@@ -140,42 +140,42 @@ public:
      *
      * @return Power parameter \f$ p \f$.
      */
-    [[nodiscard]] value_type power() const { return power_; }
+    [[nodiscard]] constexpr value_type power() const noexcept { return power_; }
 
     /**
      * @brief Get the scale factor of the grid.
      *
      * @return Scale factor \f$ \sigma = (b - a) / (M - 1)^p \f$.
      */
-    [[nodiscard]] value_type scale() const { return scale_; }
+    [[nodiscard]] constexpr value_type scale() const noexcept { return scale_; }
 
     /**
      * @brief Get an iterator to the first grid point.
      *
      * @return Iterator to the first grid point \f$ g(0) \f$.
      */
-    [[nodiscard]] auto begin() const { return grid_iterator<power_grid> { *this }; }
+    [[nodiscard]] constexpr auto begin() const noexcept { return grid_iterator<power_grid> { *this }; }
 
     /**
      * @brief Get a const iterator to the first grid point.
      *
      * @return Const iterator to the first grid point \f$ g(0) \f$.
      */
-    [[nodiscard]] auto cbegin() const { return begin(); }
+    [[nodiscard]] constexpr auto cbegin() const noexcept { return begin(); }
 
     /**
      * @brief Get an iterator to one past the last grid point.
      *
      * @return Iterator to one past the last grid point.
      */
-    [[nodiscard]] auto end() const { return grid_iterator<power_grid> { *this, size_ }; }
+    [[nodiscard]] constexpr auto end() const noexcept { return grid_iterator<power_grid> { *this, size_ }; }
 
     /**
      * @brief Get a const iterator to one past the last grid point.
      *
      * @return Const iterator to one past the last grid point.
      */
-    [[nodiscard]] auto cend() const { return end(); }
+    [[nodiscard]] constexpr auto cend() const noexcept { return end(); }
 
 private:
     value_type power_ { 1.0 };

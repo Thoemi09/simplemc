@@ -74,7 +74,7 @@ public:
      * @brief Default constructor constructs a custom grid of size \f$ M = 2 \f$ on the interval \f$
      * [0, 1] \f$.
      */
-    custom_grid() = default;
+    constexpr custom_grid() noexcept = default;
 
     /**
      * @brief Construct a custom grid with the given ordered array as its grid points.
@@ -86,7 +86,7 @@ public:
      *
      * @param x Ordered array of grid points.
      */
-    custom_grid(std::vector<value_type> x) { reset(std::move(x)); }
+    constexpr custom_grid(std::vector<value_type> x) { reset(std::move(x)); }
 
     /**
      * @brief Reset the custom grid by specifying the grid points.
@@ -99,7 +99,7 @@ public:
      *
      * @param x Ordered array of grid points.
      */
-    void reset(std::vector<value_type> x) {
+    constexpr void reset(std::vector<value_type> x) {
         assert(std::ranges::is_sorted(x) || std::ranges::is_sorted(x, std::greater<>()));
         x_ = std::move(x);
         base_type::reset(x_.front(), x_.back(), static_cast<size_type>(x_.size()));
@@ -111,7 +111,7 @@ public:
      * @param idx Index \f$ i \f$ of the grid point.
      * @return Grid point \f$ g(i) \f$.
      */
-    [[nodiscard]] value_type at(size_type idx) const {
+    [[nodiscard]] constexpr value_type at(size_type idx) const noexcept {
         assert(idx >= 0 && idx < size_);
         return x_[idx];
     }
@@ -123,12 +123,12 @@ public:
      * @param value Some value \f$ x \in [a, b] \f$.
      * @return Index \f$ i = \tilde{g}^{-1}(x) \f$ of the bin \f$ b_i \f$ such that \f$ x \in b_i \f$.
      */
-    [[nodiscard]] size_type index(value_type value) const {
+    [[nodiscard]] constexpr size_type index(value_type value) const noexcept {
         assert((first_ <= value && value <= last_) || (first_ >= value && value >= last_));
         if (first_ < last_) {
-            return std::distance(x_.begin(), --std::ranges::upper_bound(x_, value));
+            return std::distance(x_.cbegin(), --std::ranges::upper_bound(x_, value));
         } else {
-            return std::distance(x_.begin(), --std::ranges::upper_bound(x_, value, std::greater<>()));
+            return std::distance(x_.cbegin(), --std::ranges::upper_bound(x_, value, std::greater<>()));
         }
     }
 
@@ -137,35 +137,35 @@ public:
      *
      * @return `std::vector<value_type>` of grid points \f$ \mathbf{x} \f$.
      */
-    [[nodiscard]] auto const& grid_points() const { return x_; }
+    [[nodiscard]] constexpr auto const& grid_points() const noexcept { return x_; }
 
     /**
      * @brief Get an iterator to the first grid point.
      *
      * @return Iterator to the first grid point \f$ g(0) \f$.
      */
-    [[nodiscard]] auto begin() const { return grid_iterator<custom_grid> { *this }; }
+    [[nodiscard]] constexpr auto begin() const noexcept { return grid_iterator<custom_grid> { *this }; }
 
     /**
      * @brief Get a const iterator to the first grid point.
      *
      * @return Const iterator to the first grid point \f$ g(0) \f$.
      */
-    [[nodiscard]] auto cbegin() const { return begin(); }
+    [[nodiscard]] constexpr auto cbegin() const noexcept { return begin(); }
 
     /**
      * @brief Get an iterator to one past the last grid point.
      *
      * @return Iterator to one past the last grid point.
      */
-    [[nodiscard]] auto end() const { return grid_iterator<custom_grid> { *this, size_ }; }
+    [[nodiscard]] constexpr auto end() const noexcept { return grid_iterator<custom_grid> { *this, size_ }; }
 
     /**
      * @brief Get a const iterator to one past the last grid point.
      *
      * @return Const iterator to one past the last grid point.
      */
-    [[nodiscard]] auto cend() const { return end(); }
+    [[nodiscard]] constexpr auto cend() const noexcept { return end(); }
 
 private:
     std::vector<value_type> x_ { 0.0, 1.0 };

@@ -10,6 +10,7 @@
 #include <simplemc/utils/simplemc_exception.hpp>
 
 #include <cstddef>
+#include <numeric>
 #include <vector>
 
 namespace rgs = simplemc::ranges;
@@ -120,6 +121,31 @@ TEST(SimplemcGrids, LinearGridDescending) {
     test_1d_grids(lg, 0, -10, view, view_center, view_vols);
 }
 
+// Test constexpr functionality of linear_grid.
+TEST(SimplemcGrids, LinearGridConstexpr) {
+    constexpr simplemc::linear_grid lg { 0.0, 10.0, 11 };
+    static_assert(lg.size() == 11);
+    static_assert(lg.first() == 0.0);
+    static_assert(lg.last() == 10.0);
+    static_assert(lg.step() == 1.0);
+    static_assert(lg.at(0) == 0.0);
+    static_assert(lg.at(5) == 5.0);
+    static_assert(lg.at(10) == 10.0);
+    static_assert(lg.center(0) == 0.5);
+    static_assert(lg.center(5) == 5.5);
+    static_assert(lg.index(0.5) == 0);
+    static_assert(lg.index(5.5) == 5);
+    static_assert(lg.index(9.9) == 9);
+
+    // compile-time accumulation of all grid points using std::accumulate
+    constexpr auto sum = std::accumulate(lg.begin(), lg.end(), 0.0);
+    static_assert(sum == 55.0);
+
+    // runtime checks for volume (std::abs may not be constexpr-friendly on all compilers)
+    ASSERT_DOUBLE_EQ(lg.volume(0), 1.0);
+    ASSERT_DOUBLE_EQ(lg.volume(5), 1.0);
+}
+
 // Test default power grid.
 TEST(SimplemcGrids, PowerGridDefault) {
     simplemc::linear_grid pg {};
@@ -149,6 +175,17 @@ TEST(SimplemcGrids, PowerGridDescending) {
     std::vector<double> view_vols { 2, 6, 10 };
     simplemc::power_grid pg { -3, -21, 4, 2 };
     test_1d_grids(pg, -3, -21, view, view_center, view_vols);
+}
+
+// Test runtime accumulation for power_grid.
+TEST(SimplemcGrids, PowerGridAccumulate) {
+    // power grid: 3, 5, 11, 21
+    simplemc::power_grid pg { 3, 21, 4, 2 };
+    ASSERT_EQ(pg.size(), 4);
+
+    // runtime accumulation of all grid points: sum = 3 + 5 + 11 + 21 = 40
+    auto sum = std::accumulate(pg.begin(), pg.end(), 0.0);
+    ASSERT_DOUBLE_EQ(sum, 40.0);
 }
 
 // Test default symmetric power grid.
@@ -208,6 +245,18 @@ TEST(SimplemcGrids, SymmetricPowerGridDecreasing) {
     test_1d_grids(pg, begin, end, view, view_center, view_vols);
 }
 
+// Test runtime accumulation for symmetric_power_grid.
+TEST(SimplemcGrids, SymmetricPowerGridAccumulate) {
+    // symmetric power grid from -10 to 10 with 21 points and power 2
+    simplemc::symmetric_power_grid pg { -10.0, 10.0, 21, 2.0 };
+    ASSERT_EQ(pg.size(), 21);
+
+    // runtime accumulation of all grid points
+    // due to symmetry around 0, the sum should be 0
+    auto sum = std::accumulate(pg.begin(), pg.end(), 0.0);
+    ASSERT_NEAR(sum, 0.0, 1e-10);
+}
+
 // Test default custom grid.
 TEST(SimplemcGrids, CustomGridDefault) {
     simplemc::custom_grid cg {};
@@ -237,4 +286,23 @@ TEST(SimplemcGrids, CustomGridDecreasing) {
         rgs::iota_view(1ul, view.size()) | rgs::views::transform([&view](auto i) { return view[i - 1] - view[i]; });
     simplemc::custom_grid cg { view };
     test_1d_grids(cg, view.front(), view.back(), view, view_center, view_vols);
+}
+
+// Test runtime accumulation for custom_grid.
+TEST(SimplemcGrids, CustomGridAccumulate) {
+    simplemc::custom_grid cg { std::vector<double> { 0.0, 2.0, 5.0, 9.0, 14.0 } };
+    ASSERT_EQ(cg.size(), 5);
+    ASSERT_DOUBLE_EQ(cg.first(), 0.0);
+    ASSERT_DOUBLE_EQ(cg.last(), 14.0);
+
+    // runtime accumulation of all grid points using std::accumulate: sum = 0 + 2 + 5 + 9 + 14 = 30
+    auto sum = std::accumulate(cg.begin(), cg.end(), 0.0);
+    ASSERT_DOUBLE_EQ(sum, 30.0);
+
+    // compile-time accumulation using a constexpr lambda
+    constexpr auto constexpr_sum = []() constexpr {
+        simplemc::custom_grid cg { std::vector<double> { 0.0, 2.0, 5.0, 9.0, 14.0 } };
+        return std::accumulate(cg.begin(), cg.end(), 0.0);
+    }();
+    static_assert(constexpr_sum == 30.0);
 }

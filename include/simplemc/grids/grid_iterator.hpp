@@ -106,7 +106,7 @@ public:
      *
      * @return Grid point at the current index.
      */
-    [[nodiscard]] constexpr value_type operator*() const noexcept { return dereference(idx_); }
+    [[nodiscard]] constexpr value_type operator*() const { return dereference(idx_); }
 
     /**
      * @brief Pre-increment operator increases the index \f$ i \f$ by \f$ 1 \f$.
@@ -242,7 +242,7 @@ public:
      * @param n Index offset.
      * @return Grid point at the index\f$ i + n \f$.
      */
-    [[nodiscard]] constexpr value_type operator[](difference_type n) const noexcept { return dereference(idx_ + n); }
+    [[nodiscard]] constexpr value_type operator[](difference_type n) const { return dereference(idx_ + n); }
 
     /**
      * @brief Equality comparison operator compares the grid pointer and the indices of the two
@@ -292,7 +292,7 @@ public:
      *
      * @return Current multi-dimensional index \f$ \mathbf{i} \f$ (or \f$ i \f$ for 1D grids).
      */
-    [[nodiscard]] constexpr auto nd_index() const noexcept {
+    [[nodiscard]] constexpr auto nd_index() const {
         assert(grid_ptr_ && size_ > 0 && idx_ >= 0 && idx_ < size_);
         if constexpr (dim() == 1) {
             return idx_;
@@ -303,7 +303,7 @@ public:
 
 private:
     // Helper function calls at() method of the underlying grid.
-    constexpr auto dereference(difference_type idx) const noexcept {
+    constexpr auto dereference(difference_type idx) const {
         assert(grid_ptr_ && size_ > 0 && idx >= 0 && idx < size_);
         if constexpr (dim() == 1) {
             return grid_ptr_->at(idx);

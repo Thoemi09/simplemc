@@ -82,22 +82,22 @@ public:
 
     /**
      * @brief Default constructor constructs a symmetric power grid of size \f$ M = 3 \f$ on the
-     * interval \f$ [0, 1] \f$ with \f$ p = 1 \f$.
+     * interval \f$ [0, 1] \f$ with \f$ p = 2 \f$.
      */
-    symmetric_power_grid() { reset(0.0, 1.0, 3, 2); };
+    constexpr symmetric_power_grid() { reset(0.0, 1.0, 3, 2); }
 
     /**
      * @brief Construct a symmetric power grid by specifying its first and last grid points, \f$ a \f$
      * and \f$ b \f$, its size \f$ M \f$ and the power parameter \f$ p \f$.
      *
-     * @details @details It simply forwards the arguments to reset().
+     * @details It simply forwards the arguments to reset().
      *
      * @param a First value of the grid, \f$ a = g(0) \f$.
      * @param b Last value of the grid, \f$ b = g(M-1) \f$.
      * @param m Number of grid points \f$ M \f$.
      * @param p Power parameter \f$ p \f$.
      */
-    symmetric_power_grid(value_type a, value_type b, size_type m, value_type p) { reset(a, b, m, p); }
+    constexpr symmetric_power_grid(value_type a, value_type b, size_type m, value_type p) { reset(a, b, m, p); }
 
     /**
      * @brief Reset a symmetric power grid by specifying its first and last grid points, \f$ a \f$
@@ -113,10 +113,10 @@ public:
      * @param m Number of grid points \f$ M \f$.
      * @param p Power parameter \f$ p \f$.
      */
-    void reset(value_type a, value_type b, size_type m, value_type p) {
+    constexpr void reset(value_type a, value_type b, size_type m, value_type p) {
         if (m % 2 != 1) {
-            throw simplemc_exception("Number of grid points needs to be odd in symmetric_power_grid",
-                "symmetric_power_grid::check_odd_size");
+            throw simplemc_exception(
+                "Number of grid points needs to be odd in symmetric_power_grid", "symmetric_power_grid::reset");
         }
         base_type::reset(a, b, m);
         midpoint_ = (first_ + last_) / 2;
@@ -133,7 +133,7 @@ public:
      * @param idx Index \f$ i \f$ of the grid point.
      * @return Grid point \f$ g(i) \f$.
      */
-    [[nodiscard]] value_type at(size_type idx) const {
+    [[nodiscard]] constexpr value_type at(size_type idx) const noexcept {
         assert(idx >= 0 && idx < size_);
         if (idx <= (size_ - 1) / 2) {
             return g1_.at(idx);
@@ -154,7 +154,7 @@ public:
      * @param value Some value \f$ x \in [a, b] \f$.
      * @return Index \f$ i = \tilde{g}^{-1}(x) \f$ of the bin \f$ b_i \f$ such that \f$ x \in b_i \f$.
      */
-    [[nodiscard]] size_type index(value_type value) const {
+    [[nodiscard]] constexpr size_type index(value_type value) const noexcept {
         assert((first_ <= value && value <= last_) || (first_ >= value && value >= last_));
         if ((value <= midpoint_ && first_ < last_) || (value >= midpoint_ && first_ > last_)) {
             return g1_.index(value);
@@ -168,49 +168,49 @@ public:
      *
      * @return Center of the grid, \f$ c = (a + b) / 2 \f$.
      */
-    [[nodiscard]] value_type midpoint() const { return midpoint_; }
+    [[nodiscard]] constexpr value_type midpoint() const noexcept { return midpoint_; }
 
     /**
      * @brief Get the power grid defined on the interval \f$ [a, c] \f$.
      *
      * @return Power grid \f$ g_1 \f$.
      */
-    [[nodiscard]] const auto& grid1() const { return g1_; }
+    [[nodiscard]] constexpr const auto& grid1() const noexcept { return g1_; }
 
     /**
      * @brief Get the power grid defined on the interval \f$ [b, c] \f$.
      *
      * @return Power grid \f$ g_2 \f$.
      */
-    [[nodiscard]] const auto& grid2() const { return g2_; }
+    [[nodiscard]] constexpr const auto& grid2() const noexcept { return g2_; }
 
     /**
      * @brief Get an iterator to the first grid point.
      *
      * @return Iterator to the first grid point \f$ g(0) \f$.
      */
-    [[nodiscard]] auto begin() const { return grid_iterator<symmetric_power_grid> { *this }; }
+    [[nodiscard]] constexpr auto begin() const noexcept { return grid_iterator<symmetric_power_grid> { *this }; }
 
     /**
      * @brief Get a const iterator to the first grid point.
      *
      * @return Const iterator to the first grid point \f$ g(0) \f$.
      */
-    [[nodiscard]] auto cbegin() const { return begin(); }
+    [[nodiscard]] constexpr auto cbegin() const noexcept { return begin(); }
 
     /**
      * @brief Get an iterator to one past the last grid point.
      *
      * @return Iterator to one past the last grid point.
      */
-    [[nodiscard]] auto end() const { return grid_iterator<symmetric_power_grid> { *this, size_ }; }
+    [[nodiscard]] constexpr auto end() const noexcept { return grid_iterator<symmetric_power_grid> { *this, size_ }; }
 
     /**
      * @brief Get a const iterator to one past the last grid point.
      *
      * @return Const iterator to one past the last grid point.
      */
-    [[nodiscard]] auto cend() const { return end(); }
+    [[nodiscard]] constexpr auto cend() const noexcept { return end(); }
 
 private:
     value_type midpoint_ { 0.5 };

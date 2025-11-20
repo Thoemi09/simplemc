@@ -61,7 +61,7 @@ public:
      * @brief Default constructor constructs a basic grid of size \f$ M = 2 \f$ on the interval \f$
      * [0, 1] \f$.
      */
-    grid_base() = default;
+    constexpr grid_base() noexcept = default;
 
     /**
      * @brief Construct a base grid by specifying its first and last grid points, \f$ a \f$ and \f$ b
@@ -75,7 +75,7 @@ public:
      * @param b Last value of the grid, \f$ b = g(M-1) \f$.
      * @param m Number of grid points \f$ M \f$.
      */
-    grid_base(value_type a, value_type b, size_type m) { reset(a, b, m); }
+    constexpr grid_base(value_type a, value_type b, size_type m) { reset(a, b, m); }
 
     /**
      * @brief Reset the base grid by specifying its first and last grid points, \f$ a \f$ and \f$ b
@@ -89,7 +89,7 @@ public:
      * @param b Last value of the grid, \f$ b = g(M-1) \f$.
      * @param m Number of grid points \f$ M \f$.
      */
-    void reset(value_type a, value_type b, size_type m) {
+    constexpr void reset(value_type a, value_type b, size_type m) {
         if (m < 2) {
             throw simplemc_exception("Grid size must be >= 2", "grid_base::reset");
         }
@@ -106,21 +106,21 @@ public:
      *
      * @return Value of \f$ g(0) \f$.
      */
-    [[nodiscard]] value_type first() const { return first_; }
+    [[nodiscard]] constexpr value_type first() const noexcept { return first_; }
 
     /**
      * @brief Get the last grid point \f$ b \f$.
      *
      * @return Value of \f$ g(M-1) \f$.
      */
-    [[nodiscard]] value_type last() const { return last_; }
+    [[nodiscard]] constexpr value_type last() const noexcept { return last_; }
 
     /**
      * @brief Get the grid size.
      *
      * @return Number of grid points \f$ M \f$ on the grid.
      */
-    [[nodiscard]] size_type size() const { return size_; }
+    [[nodiscard]] constexpr size_type size() const noexcept { return size_; }
 
     /**
      * @brief Get the volume (size) of the bin at a given index \f$ i \f$.
@@ -128,7 +128,7 @@ public:
      * @param idx Bin index \f$ i \f$.
      * @return Volume (size) of the bin \f$ b_i \f$.
      */
-    [[nodiscard]] value_type volume(size_type idx) const {
+    [[nodiscard]] constexpr value_type volume(size_type idx) const {
         assert(idx >= 0 && idx + 1 < size_);
         auto& derived = static_cast<const Derived&>(*this);
         return std::abs(derived.at(idx + 1) - derived.at(idx));
@@ -140,7 +140,7 @@ public:
      * @param idx Bin index \f$ i \f$.
      * @return Center of the bin \f$ b_i \f$.
      */
-    [[nodiscard]] value_type center(size_type idx) const {
+    [[nodiscard]] constexpr value_type center(size_type idx) const {
         assert(idx >= 0 && idx + 1 < size_);
         auto& derived = static_cast<const Derived&>(*this);
         return (derived.at(idx) + derived.at(idx + 1)) / 2.;
