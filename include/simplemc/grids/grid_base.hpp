@@ -67,7 +67,7 @@ public:
      * @brief Construct a base grid by specifying its first and last grid points, \f$ a \f$ and \f$ b
      * \f$, and its size \f$ M \f$.
      *
-     * @details Throws a simplemc::simplemc_exception if
+     * @details It throws a simplemc::simplemc_exception if
      * - \f$ a = b \f$ or
      * - \f$ M < 2 \f$.
      *
@@ -81,7 +81,7 @@ public:
      * @brief Reset the base grid by specifying its first and last grid points, \f$ a \f$ and \f$ b
      * \f$, and its size \f$ M \f$.
      *
-     * @details Throws a simplemc::simplemc_exception if
+     * @details It throws a simplemc::simplemc_exception if
      * - \f$ a = b \f$ or
      * - \f$ M < 2 \f$.
      *

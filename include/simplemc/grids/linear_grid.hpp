@@ -35,20 +35,7 @@ namespace simplemc {
  * \f]
  * maps every value \f$ x \in [a, b] \f$ to the index \f$ i \f$ such that \f$ x \in b_i \f$.
  *
- * @code{.cpp}
- * #include <fmt/ranges.h>
- * #include <simplemc/grids.hpp>
- *
- * int main() {
- *     // create a linear grid of size 5 on [0, 1]
- *     simplemc::linear_grid grid { 0.0, 1.0, 5 };
- *
- *     // print the grid points, bin centers and bin volumes (sizes)
- *     fmt::println("Grid points: {}", simplemc::grid_view(grid));
- *     fmt::println("Bin centers: {}", simplemc::bin_center_view(grid));
- *     fmt::println("Bin volumes: {}", simplemc::bin_volume_view(grid));
- * }
- * @endcode
+ * @include grids/doc_linear_grid.cpp
  *
  * Output:
  *

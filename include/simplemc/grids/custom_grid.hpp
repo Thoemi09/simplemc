@@ -40,20 +40,7 @@ namespace simplemc {
  * [a, b] \f$ to the index \f$ i \f$ such that \f$ x \in b_i \f$ uses a binary search, i.e. this
  * operation is \f$ \mathcal{O}(\log M) \f$.
  *
- * @code{.cpp}
- * #include <fmt/ranges.h>
- * #include <simplemc/grids.hpp>
- *
- * int main() {
- *     // create a custom grid of size 5
- *     simplemc::custom_grid grid { std::vector<double>{ 1.0, 2.3, 2.4, 5.7, 100.0 }};
- *
- *     // print the grid points, bin centers and bin volumes (sizes)
- *     fmt::println("Grid points: {::.4g}", simplemc::grid_view(grid));
- *     fmt::println("Bin centers: {::.4g}", simplemc::bin_center_view(grid));
- *     fmt::println("Bin volumes: {::.4g}", simplemc::bin_volume_view(grid));
- * }
- * @endcode
+ * @include grids/doc_custom_grid.cpp
  *
  * Output:
  *

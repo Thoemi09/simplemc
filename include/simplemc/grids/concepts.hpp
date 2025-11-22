@@ -22,9 +22,9 @@ namespace simplemc {
  * @brief Concept that specifies the common requirements for 1-dimensional and N-dimensional grids.
  *
  * @details We can directly map the requirements to the notation used in @ref simplemc-grids-1d and
- * @ref simplemc-grids-nd. Let \f$ i \f$ denote either a 1- or N-dimensional index from the domain \f$
- * \mathrm{I} \f$ and let \f$ x \f$ denote either a 1- or N-dimensional value from the range \f$
- * \mathrm{R} \f$. Then we have
+ * @ref simplemc-grids-nd. Let \f$ i \f$/\f$ \mathbf{i} \f$ denote either a 1-/N-dimensional index 
+ * from the domain \f$ \mathrm{I} \f$ and let \f$ x \f$/\f$ \mathbf{x} \f$ denote either a 
+ * 1-/N-dimensional value from the range \f$ \mathrm{R} \f$. Then we have
  *
  * - `G::value_type` is the type of the range \f$ \mathrm{R} \f$
  * - `G::size_type` is the type of the domain \f$ \mathrm{I} \f$
@@ -32,11 +32,14 @@ namespace simplemc {
  * - `g.size()` returns the size \f$ M \f$ of the grid
  * - `g.first()` returns the first grid point \f$ a \f$/\f$ \mathbf{a} \f$
  * - `g.last()` returns the last grid point \f$ b \f$/\f$ \mathbf{b} \f$
- * - `g.at(size_type)` returns the grid point \f$ g(i) \f$ at the given index \f$ i \f$
- * - `g.index(value_type)` returns the index \f$ i \f$ such that the given value \f$ x \f$ lies in the
- * bin \f$ b_i \f$
- * - `g.volume(size_type)` returns the size/volume of bin \f$ b_i \f$ with the given index \f$ i \f$
- * - `g.center(size_type)` returns the center of bin \f$ b_i \f$ with the given index \f$ i \f$
+ * - `g.at(size_type)` returns the grid point \f$ g(i) \f$/\f$ g(\mathbf{i}) \f$ at the given index 
+ * \f$ i \f$/\f$ \mathbf{i} \f$
+ * - `g.index(value_type)` returns the index \f$ i \f$/\f$ \mathbf{i} \f$ such that the given value 
+ * \f$ x \f$/\f$ \mathbf{x} \f$ lies in the bin \f$ b_i \f$/\f$ b_{\mathbf{i}} \f$
+ * - `g.volume(size_type)` returns the size/volume of bin \f$ b_i \f$/\f$ b_{\mathbf{i}} \f$ with the 
+ * given index \f$ i \f$/\f$ \mathbf{i} \f$
+ * - `g.center(size_type)` returns the center of bin \f$ b_i \f$/\f$ b_{\mathbf{i}} \f$ with the given 
+ * index \f$ i \f$/\f$ \mathbf{i} \f$
  *
  * @tparam G Type to be checked.
  */
