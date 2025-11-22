@@ -126,6 +126,9 @@ TEST(SimplemcGrids, TwoDimensionalLinearGrid) {
     // index subrange
     check_range_equal(simplemc::index_subrange(grid, 5, 2.2, 8.2), size_type { 0, 2 });
     check_range_equal(simplemc::index_subrange(grid, 2, 10.5, 11.5), size_type { 5, 5 });
+
+    // grid as a range vs explicit view
+    check_range_near(grid, view);
 }
 
 // Test 3-dimensional grid.
@@ -179,4 +182,7 @@ TEST(SimplemcGrids, ThreeDimensionalGrid) {
     // index subrange
     check_range_equal(simplemc::index_subrange(grid, 3, 3.2, -12, 20), size_type { 0, 1, 1 });
     check_range_equal(simplemc::index_subrange(grid, 2, 20.5, -4, 8), size_type { 2, 0, 1 });
+
+    // grid as a range vs explicit view
+    check_range_near(grid, view);
 }

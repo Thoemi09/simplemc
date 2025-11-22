@@ -49,6 +49,7 @@ void test_1d_grids(const auto& g, auto a, auto b, auto&& view, auto&& view_cente
     ASSERT_DOUBLE_EQ(g.at(g.size() - 1), b);
 
     // views
+    check_range_near(g, view);
     check_range_near(simplemc::grid_view(g), view);
     check_range_near(simplemc::bin_center_view(g), view_center);
     check_range_near(simplemc::bin_volume_view(g), view_vols);

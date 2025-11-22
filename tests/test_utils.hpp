@@ -46,7 +46,11 @@ void check_range_near(
     simplemc::ranges::input_range auto&& rg, simplemc::ranges::input_range auto&& exp_rg, double eps = 1e-14) {
     ASSERT_EQ(simplemc::ranges::size(rg), simplemc::ranges::size(exp_rg));
     for (auto&& [x, y] : simplemc::ranges::views::zip(rg, exp_rg)) {
-        check_near(x, y, eps);
+        if constexpr (std::ranges::range<std::remove_reference_t<decltype(x)>>) {
+            check_range_near(x, y, eps);
+        } else {
+            check_near(x, y, eps);
+        }
     }
 }
 
