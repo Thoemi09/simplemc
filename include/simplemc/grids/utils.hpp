@@ -54,7 +54,7 @@ template <grid_1d G1>
  * the subvolume.
  */
 template <grid_nd GN>
-[[nodiscard]] auto index_subrange(const GN& grid, long m, const typename GN::value_type& x) {
+[[nodiscard]] constexpr auto index_subrange(const GN& grid, long m, const typename GN::value_type& x) {
     return std::apply([&grid, m](const auto&... args) { return index_subrange(grid, m, args...); }, x);
 }
 
@@ -74,7 +74,7 @@ template <grid_nd GN>
  * the subvolume.
  */
 template <grid_nd GN, typename... Vals>
-[[nodiscard]] auto index_subrange(const GN& grid, long m, Vals... xs) {
+[[nodiscard]] constexpr auto index_subrange(const GN& grid, long m, Vals... xs) {
     return std::apply([m, xs...](const auto&... gs) { return typename GN::size_type { index_subrange(gs, m, xs)... }; },
         grid.grids());
 }
@@ -98,7 +98,7 @@ template <grid_nd GN, typename... Vals>
  * [0, 0.25, 0.5, 0.75, 1]
  * ```
  *
- * @note All @ref simplemc-grids-1d satisfy the `std::ranges::random_access_range` concept. It might 
+ * @note All @ref simplemc-grids-1d satisfy the `std::ranges::random_access_range` concept. It might
  * be easier to use the grid directly instead of using this view.
  *
  * @tparam G1 simplemc::grid_1d type.
@@ -135,12 +135,15 @@ template <grid_1d G1>
  * [[0, 0], [0, 0.125], [0, 0.5], [0.5, 0], [0.5, 0.125], [0.5, 0.5], [1, 0], [1, 0.125], [1, 0.5]]
  * ```
  *
+ * @note All simplemc::grid_nd types satisfy the `std::ranges::random_access_range` concept. It might
+ * be easier to use the grid directly instead of using this view.
+ *
  * @tparam GN simplemc::grid_nd type.
  * @param grid N-dimensional grid \f$ g \f$.
  * @return View on the grid points.
  */
 template <grid_nd GN>
-[[nodiscard]] auto grid_view(const GN& grid) {
+[[nodiscard]] constexpr auto grid_view(const GN& grid) {
     return std::apply(
         [](const auto&... gs) {
             return ranges::views::cartesian_product(grid_view(gs)...) | ranges::views::transform([](const auto& tup) {
@@ -208,7 +211,7 @@ template <grid_1d G1>
  * @return View on the bin centers.
  */
 template <grid_nd GN>
-[[nodiscard]] auto bin_center_view(const GN& grid) {
+[[nodiscard]] constexpr auto bin_center_view(const GN& grid) {
     return std::apply(
         [](const auto&... gs) {
             return ranges::views::cartesian_product(bin_center_view(gs)...) |
@@ -277,7 +280,7 @@ template <grid_1d G1>
  * @return View on the bin volumes.
  */
 template <grid_nd GN>
-[[nodiscard]] auto bin_volume_view(const GN& grid) {
+[[nodiscard]] constexpr auto bin_volume_view(const GN& grid) {
     return std::apply(
         [](const auto&... gs) {
             return ranges::views::cartesian_product(bin_volume_view(gs)...) |
