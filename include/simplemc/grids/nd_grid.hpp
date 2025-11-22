@@ -22,43 +22,18 @@ namespace simplemc {
  *
  * @details In the following, we use the notation from @ref simplemc-grids-nd.
  *
- * A simplemc::nd_grid consists of \f$ N \f$ 1-dimensional grids and satisfies the simplemc::grid_nd
- * concept.
+ * A simplemc::nd_grid satisfies the simplemc::grid_nd concept. The underlying 1-dimensional grids 
+ * need not be of the same type as long as they satisfy the simplemc::grid_1d concept. They are stored 
+ * in a `std::tuple` and can be accessed via the grids() member function.
  *
- * The 1-dimensional grids need not be of the same type as long as they satisfy the
- * simplemc::grid_1d concept. They are stored in a `std::tuple` and can be accessed via the grids()
- * member function.
- *
- * N-dimensional indices \f$ \mathbf{i} = (i_1, \dots, i_N) \in \mathrm{I} \f$ are represented as
- * `std::array<long, N>` objects. Similarly, grid points and general points \f$ \mathbf{x} = (x_1,
- * \dots, x_N) \in \mathrm{R} \f$ are represented as `std::array<double, N>` objects.
+ * We use `std::array<long, N>` types to represent multi-dimensional indices \f$ \mathbf{i} = (i_1, 
+ * \dots, i_N) \in \mathrm{I} \f$ and `std::array<double, N>` types to represent grid points and
+ * general points \f$ \mathbf{x} = (x_1, \dots, x_N) \in \mathrm{R} \f$.
  *
  * When iterating over views of grid points, bin centers or bin volumes, the elements are traversed in
  * row-major (C) order (see simplemc::row_major).
  *
- * @code{.cpp}
- * #include <fmt/ranges.h>
- * #include <simplemc/grids.hpp>
- *
- * int main() {
- *     // create a linear grid of size 3 on [0, 1]
- *     simplemc::linear_grid lg { 0.0, 1.0, 3 };
- *
- *     // create a quadratic grid of size 3 on [0, 0.5]
- *     simplemc::power_grid pg { 0.0, 0.5, 3, 2 };
- *
- *     // combine the two 1d grids into a 2d grid
- *     simplemc::nd_grid grid_2d { lg, pg };
- *
- *     // print some basic information
- *     fmt::println("Size: {}, Shape: {}", grid_2d.size(), grid_2d.shape());
- *
- *     // print the grid points, bin centers and bin volumes (sizes)
- *     fmt::println("Grid points: {}", simplemc::grid_view(grid_2d));
- *     fmt::println("Bin centers: {}", simplemc::bin_center_view(grid_2d));
- *     fmt::println("Bin volumes: {}", simplemc::bin_volume_view(grid_2d));
- * }
- * @endcode
+ * @include grids/doc_nd_grid.cpp
  *
  * Output:
  *
@@ -100,35 +75,35 @@ public:
     /**
      * @brief Default constructor calls the default constructor of each 1-dimensional grid.
      */
-    nd_grid() = default;
+    constexpr nd_grid() = default;
 
     /**
      * @brief Construct an N-dimensional grid by specifying its 1-dimensional grids.
      *
      * @param gs simplemc::grid_1d grids.
      */
-    nd_grid(Grids... gs) : grids_(std::move(gs)...) {}
+    constexpr nd_grid(Grids... gs) : grids_(std::move(gs)...) {}
 
     /**
      * @brief Get all 1-dimensional grids.
      *
      * @return Reference to the tuple of grids.
      */
-    tuple_type& grids() { return grids_; }
+    constexpr tuple_type& grids() noexcept { return grids_; }
 
     /**
      * @brief Get all 1-dimensional grids.
      *
      * @return Const reference to the tuple of grids.
      */
-    const tuple_type& grids() const { return grids_; }
+    constexpr const tuple_type& grids() const noexcept { return grids_; }
 
     /**
      * @brief Get the first grid point \f$ \mathbf{a} = (a_1, \dots, a_N) \f$.
      *
      * @return Value of \f$ g(0, \dots, 0) = (g_1(0), \dots, g_N(0)) \f$.
      */
-    [[nodiscard]] value_type first() const {
+    [[nodiscard]] constexpr value_type first() const {
         return std::apply([](const auto&... gs) { return value_type { gs.at(0)... }; }, grids_);
     }
 
@@ -137,7 +112,7 @@ public:
      *
      * @return Value of \f$ g(M_1 - 1, \dots, M_N - 1) = (g_1(M_1 - 1), \dots, g_N(M_N - 1)) \f$.
      */
-    [[nodiscard]] value_type last() const {
+    [[nodiscard]] constexpr value_type last() const {
         return std::apply([](const auto&... gs) { return value_type { gs.at(gs.size() - 1)... }; }, grids_);
     }
 
@@ -146,7 +121,7 @@ public:
      *
      * @return Number of grid points \f$ M = M_1 \times \dots \times M_N \f$ on the grid.
      */
-    [[nodiscard]] long size() const {
+    [[nodiscard]] constexpr long size() const {
         return std::apply([](const auto&... gs) { return (1 * ... * gs.size()); }, grids_);
     }
 
@@ -156,7 +131,7 @@ public:
      * @return `std::array` containing the sizes of all 1-dimensional grids, i.e. \f$ (M_1, \dots,
      * M_N) \f$.
      */
-    [[nodiscard]] size_type shape() const {
+    [[nodiscard]] constexpr size_type shape() const {
         return std::apply([](const auto&... gs) { return size_type { gs.size()... }; }, grids_);
     }
 
@@ -167,7 +142,7 @@ public:
      * @param idx_arr Index array \f$ \mathbf{i} \in \mathrm{I} \f$ specifying the grid point.
      * @return Grid point \f$ g(\mathbf{i}) = (g_1(i_1), \dots, g_N(i_N)) \f$.
      */
-    [[nodiscard]] value_type at(const size_type& idx_arr) const {
+    [[nodiscard]] constexpr value_type at(const size_type& idx_arr) const {
         return std::apply([this](const auto&... args) { return this->at(args...); }, idx_arr);
     }
 
@@ -182,7 +157,7 @@ public:
      * @return Grid point \f$ g(\mathbf{i}) = (g_1(i_1), \dots, g_N(i_N)) \f$.
      */
     template <typename... Idxs>
-    [[nodiscard]] value_type at(Idxs... idxs) const {
+    [[nodiscard]] constexpr value_type at(Idxs... idxs) const {
         return std::apply([idxs...](const auto&... gs) { return value_type { gs.at(idxs)... }; }, grids_);
     }
 
@@ -195,7 +170,7 @@ public:
      * @return Index array \f$ \mathbf{i} = \tilde{g}^{-1}(x_1, \dots, x_N) \f$ of the bin which
      * contains the given point.
      */
-    [[nodiscard]] size_type index(const value_type& x) const {
+    [[nodiscard]] constexpr size_type index(const value_type& x) const {
         return std::apply([this](const auto&... args) { return this->index(args...); }, x);
     }
 
@@ -212,7 +187,7 @@ public:
      * contains the given point.
      */
     template <typename... Vals>
-    [[nodiscard]] size_type index(Vals... xs) const {
+    [[nodiscard]] constexpr size_type index(Vals... xs) const {
         return std::apply([xs...](const auto&... gs) { return size_type { gs.index(xs)... }; }, grids_);
     }
 
@@ -227,7 +202,7 @@ public:
      * @param idx_arr Index array \f$ \mathbf{i} \in \mathrm{I} \f$ specifying the bin.
      * @return Volume (size) of the bin \f$ b_{i_1, \dots, i_N} \f$.
      */
-    [[nodiscard]] double volume(const size_type& idx_arr) const {
+    [[nodiscard]] constexpr double volume(const size_type& idx_arr) const {
         return std::apply([this](const auto&... args) { return this->volume(args...); }, idx_arr);
     }
 
@@ -241,7 +216,7 @@ public:
      * @return Volume (size) of the bin \f$ b_{i_1, \dots, i_N} \f$.
      */
     template <typename... Idxs>
-    [[nodiscard]] double volume(Idxs... idxs) const {
+    [[nodiscard]] constexpr double volume(Idxs... idxs) const {
         return std::apply([idxs...](const auto&... gs) { return (1 * ... * gs.volume(idxs)); }, grids_);
     }
 
@@ -255,7 +230,7 @@ public:
      * @param idx_arr Index array \f$ \mathbf{i} \in \mathrm{I} \f$ specifying the bin.
      * @return Center of the bin \f$ b_{i_1, \dots, i_N} \f$.
      */
-    [[nodiscard]] value_type center(const size_type& idx_arr) const {
+    [[nodiscard]] constexpr value_type center(const size_type& idx_arr) const {
         return std::apply([this](const auto&... args) { return this->center(args...); }, idx_arr);
     }
 
@@ -269,7 +244,7 @@ public:
      * @return Center of the bin \f$ b_{i_1, \dots, i_N} \f$.
      */
     template <typename... Idxs>
-    [[nodiscard]] value_type center(Idxs... idxs) const {
+    [[nodiscard]] constexpr value_type center(Idxs... idxs) const {
         return std::apply([idxs...](const auto&... gs) { return value_type { gs.center(idxs)... }; }, grids_);
     }
 
@@ -278,28 +253,28 @@ public:
      *
      * @return Iterator to the first grid point \f$ g(0, \dots, 0) \f$.
      */
-    [[nodiscard]] auto begin() const { return grid_iterator<nd_grid> { *this }; }
+    [[nodiscard]] constexpr auto begin() const noexcept { return grid_iterator<nd_grid> { *this }; }
 
     /**
      * @brief Get a const iterator to the first grid point.
      *
      * @return Const iterator to the first grid point \f$ g(0, \dots, 0) \f$.
      */
-    [[nodiscard]] auto cbegin() const { return begin(); }
+    [[nodiscard]] constexpr auto cbegin() const noexcept { return begin(); }
 
     /**
      * @brief Get an iterator to one past the last grid point.
      *
      * @return Iterator to one past the last grid point.
      */
-    [[nodiscard]] auto end() const { return grid_iterator<nd_grid> { *this, size() }; }
+    [[nodiscard]] constexpr auto end() const noexcept { return grid_iterator<nd_grid> { *this, size() }; }
 
     /**
      * @brief Get a const iterator to one past the last grid point.
      *
      * @return Const iterator to one past the last grid point.
      */
-    [[nodiscard]] auto cend() const { return end(); }
+    [[nodiscard]] constexpr auto cend() const noexcept { return end(); }
 
 private:
     tuple_type grids_;

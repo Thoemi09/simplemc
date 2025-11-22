@@ -447,7 +447,7 @@
  * 
  * Here, \f$ \mathbf{i} = (i_1, \dots, i_N) \in \mathrm{I} \f$ is a multi-dimensional index. Let us 
  * also introduce the corresponding flat index \f$ i_{\mathrm{lin}} \in \{0, \dots, M - 1\} \f$, which
- * is related to \f$ \mathbf{i} \f$ via a row-major flatting scheme (see simplemc::row_major and 
+ * is related to \f$ \mathbf{i} \f$ via a row-major flattening scheme (see simplemc::row_major and 
  * simplemc::flat_index).
  *
  * Users are free to combine any of the @ref simplemc-grids-1d to create an N-dimensional grid.
