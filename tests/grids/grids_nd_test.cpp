@@ -1,9 +1,11 @@
 #include "../test_utils.hpp"
 
 #include <simplemc/grids/concepts.hpp>
+#include <simplemc/grids/custom_grid.hpp>
 #include <simplemc/grids/linear_grid.hpp>
 #include <simplemc/grids/nd_grid.hpp>
 #include <simplemc/grids/power_grid.hpp>
+#include <simplemc/grids/symmetric_power_grid.hpp>
 #include <simplemc/grids/utils.hpp>
 #include <simplemc/utils/ranges.hpp>
 
@@ -12,7 +14,16 @@
 namespace rgs = simplemc::ranges;
 
 // Test concept.
+static_assert(simplemc::grid_nd<simplemc::nd_grid<simplemc::linear_grid>>);
+static_assert(simplemc::grid_nd<simplemc::nd_grid<simplemc::power_grid>>);
 static_assert(simplemc::grid_nd<simplemc::nd_grid<simplemc::linear_grid, simplemc::power_grid>>);
+static_assert(simplemc::grid_nd<simplemc::nd_grid<simplemc::linear_grid, simplemc::linear_grid>>);
+static_assert(simplemc::grid_nd<simplemc::nd_grid<simplemc::power_grid, simplemc::power_grid>>);
+static_assert(simplemc::grid_nd<simplemc::nd_grid<simplemc::symmetric_power_grid, simplemc::linear_grid>>);
+static_assert(simplemc::grid_nd<simplemc::nd_grid<simplemc::custom_grid, simplemc::power_grid>>);
+static_assert(simplemc::grid_nd<simplemc::nd_grid<simplemc::linear_grid, simplemc::power_grid, simplemc::custom_grid>>);
+static_assert(simplemc::grid_nd<simplemc::nd_grid<simplemc::symmetric_power_grid, simplemc::linear_grid,
+        simplemc::power_grid, simplemc::custom_grid>>);
 
 // Test 2-dimensional default constructed linear - power grid.
 TEST(SimplemcGrids, TwoDimensionalLinearPowerGridDefault) {
@@ -44,6 +55,34 @@ TEST(SimplemcGrids, TwoDimensionalLinearPowerGridDefault) {
     check_range_near(grid.index(1, 0), value_type { 1, 0 });
     check_range_near(grid.index(1, 1), value_type { 1, 1 });
     check_range_near(grid.index(0.1, 0.7), value_type { 0, 0 });
+}
+
+// Test constexpr functionality of nd_grid.
+TEST(SimplemcGrids, TwoDimensionalLinearGridConstexpr) {
+    using size_type = simplemc::nd_grid<simplemc::linear_grid, simplemc::linear_grid>::size_type;
+    using value_type = simplemc::nd_grid<simplemc::linear_grid, simplemc::linear_grid>::value_type;
+
+    constexpr simplemc::linear_grid g1 { 0.0, 10.0, 11 };
+    constexpr simplemc::linear_grid g2 { 0.0, 5.0, 6 };
+    constexpr simplemc::nd_grid grid { g1, g2 };
+
+    static_assert(grid.dim() == 2);
+    static_assert(grid.size() == 11L * 6L);
+    static_assert(grid.first() == value_type { 0.0, 0.0 });
+    static_assert(grid.last() == value_type { 10.0, 5.0 });
+    static_assert(grid.shape() == size_type { 11, 6 });
+    static_assert(grid.at(0, 0) == value_type { 0.0, 0.0 });
+    static_assert(grid.at(5, 3) == value_type { 5.0, 3.0 });
+    static_assert(grid.at(10, 5) == value_type { 10.0, 5.0 });
+    static_assert(grid.center(0, 0) == value_type { 0.5, 0.5 });
+    static_assert(grid.center(5, 3) == value_type { 5.5, 3.5 });
+    static_assert(grid.index(0.5, 0.5) == size_type { 0, 0 });
+    static_assert(grid.index(5.5, 3.5) == size_type { 5, 3 });
+    static_assert(grid.index(9.9, 4.9) == size_type { 9, 4 });
+
+    // runtime checks for volume (std::abs may not be constexpr-friendly on all compilers)
+    ASSERT_DOUBLE_EQ(grid.volume(0, 0), 1.0);
+    ASSERT_DOUBLE_EQ(grid.volume(5, 3), 1.0);
 }
 
 // Test 2-dimensional linear grid.
