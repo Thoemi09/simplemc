@@ -35,7 +35,7 @@ namespace simplemc {
  * (or \f$ [g(i+m-1), g(i)] \f$ for decreasing grids).
  */
 template <grid_1d G1>
-[[nodiscard]] auto index_subrange(const G1& grid, long m, typename G1::value_type x) {
+[[nodiscard]] constexpr auto index_subrange(const G1& grid, long m, typename G1::value_type x) {
     return integer_subrange(grid.index(x), grid.size(), m);
 }
 
@@ -98,12 +98,15 @@ template <grid_nd GN, typename... Vals>
  * [0, 0.25, 0.5, 0.75, 1]
  * ```
  *
+ * @note All @ref simplemc-grids-1d satisfy the `std::ranges::random_access_range` concept. It might 
+ * be easier to use the grid directly instead of using this view.
+ *
  * @tparam G1 simplemc::grid_1d type.
  * @param grid 1-dimensional grid \f$ g \f$.
  * @return View on the grid points.
  */
 template <grid_1d G1>
-[[nodiscard]] auto grid_view(const G1& grid) {
+[[nodiscard]] constexpr auto grid_view(const G1& grid) {
     using size_type = typename G1::size_type;
     return ranges::iota_view<size_type, size_type>(0, grid.size()) |
         ranges::views::transform([&grid](auto idx) { return grid.at(idx); });
@@ -171,7 +174,7 @@ template <grid_nd GN>
  * @return View on the bin centers.
  */
 template <grid_1d G1>
-[[nodiscard]] auto bin_center_view(const G1& grid) {
+[[nodiscard]] constexpr auto bin_center_view(const G1& grid) {
     using size_type = typename G1::size_type;
     return ranges::iota_view<size_type, size_type>(0, grid.size() - 1) |
         ranges::views::transform([&grid](auto idx) { return grid.center(idx); });
@@ -240,7 +243,7 @@ template <grid_nd GN>
  * @return View on the bin volumes.
  */
 template <grid_1d G1>
-[[nodiscard]] auto bin_volume_view(const G1& grid) {
+[[nodiscard]] constexpr auto bin_volume_view(const G1& grid) {
     using size_type = typename G1::size_type;
     return ranges::iota_view<size_type, size_type>(0, grid.size() - 1) |
         ranges::views::transform([&grid](auto idx) { return grid.volume(idx); });
