@@ -41,7 +41,7 @@ void all_gather(const communicator& comm, const T* in_values, int count, T* out_
         return;
     }
     check_mpi_call(MPI_Allgather(in_values, count, mpi_type<T>::get(), out_values, count, mpi_type<T>::get(), comm),
-        "MPI_'Allgather");
+        "MPI_Allgather");
 }
 
 /**
@@ -62,7 +62,7 @@ void all_gather_in_place(const communicator& comm, T* in_out_values, int count) 
     }
     check_mpi_call(
         MPI_Allgather(MPI_IN_PLACE, count, mpi_type<T>::get(), in_out_values, count, mpi_type<T>::get(), comm),
-        "MPI_'Allgather");
+        "MPI_Allgather");
 }
 
 /**
