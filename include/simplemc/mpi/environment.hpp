@@ -71,6 +71,28 @@ public:
     static void finalize();
 
     /**
+     * @brief Query the level of thread support provided by the MPI implementation.
+     *
+     * @details Makes a call to `MPI_Query_thread` and throws an exception if the call fails.
+     *
+     * @return The level of thread support provided. This will be one of `MPI_THREAD_SINGLE`,
+     * `MPI_THREAD_FUNNELED`, `MPI_THREAD_SERIALIZED`, or `MPI_THREAD_MULTIPLE`.
+     */
+    [[nodiscard]] static int thread_support();
+
+    /**
+     * @brief Determine if this is the main thread.
+     *
+     * @details Makes a call to `MPI_Is_thread_main` and throws an exception if the call fails.
+     *
+     * This function is useful in multi-threaded MPI programs to determine whether the calling thread
+     * is the main thread (i.e., the thread that initialized MPI).
+     *
+     * @return True if the calling thread is the main thread.
+     */
+    [[nodiscard]] static bool is_main_thread();
+
+    /**
      * @brief Constructor initializes the MPI environment.
      *
      * @details If no MPI environment has been initialized, it calls `MPI_Init` with the given
@@ -86,6 +108,30 @@ public:
      * call `MPI_Abort` instead of `MPI_Finalize` in its destructor.
      */
     environment(int& argc, char**& argv, bool abort_on_exception = true);
+
+    /**
+     * @brief Constructor initializes the MPI environment with threading support.
+     *
+     * @details If no MPI environment has been initialized, it calls `MPI_Init_thread` with the given
+     * arguments and the requested threading level.
+     *
+     * MPI supports four levels of thread support:
+     * - `MPI_THREAD_SINGLE`: Only one thread will execute.
+     * - `MPI_THREAD_FUNNELED`: The process may be multi-threaded, but only the main thread will make
+     * MPI calls.
+     * - `MPI_THREAD_SERIALIZED`: The process may be multi-threaded, and multiple threads may make MPI
+     * calls, but only one at a time.
+     * - `MPI_THREAD_MULTIPLE`: Multiple threads may call MPI, with no restrictions.
+     *
+     * It throws an exception if any MPI call fails.
+     *
+     * @param argc Number of arguments passed to `main()`.
+     * @param argv Arguments passed to `main()`.
+     * @param required_thread_level The desired level of thread support.
+     * @param abort_on_exception If the environment is destroyed due to an uncaught exception, it will
+     * call `MPI_Abort` instead of `MPI_Finalize` in its destructor.
+     */
+    environment(int& argc, char**& argv, int required_thread_level, bool abort_on_exception = true);
 
     /**
      * @brief Copy constructor is deleted.

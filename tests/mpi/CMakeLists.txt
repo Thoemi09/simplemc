@@ -8,6 +8,7 @@
 # mpi-no-abort-exception-test: Executable to test the behavior of abort_on_exception == false.
 # mpi-datatypes-test: Executable to test the mapping of MPI datatypes to C++ types.
 # mpi-collectives-test: Executable to test the supported MPI collective communication operations.
+# mpi-threading-test: Executable to test MPI threading support functions.
 
 # create executables
 add_executable(mpi-utils-test mpi_utils_test.cpp)
@@ -28,8 +29,12 @@ target_link_libraries(mpi-datatypes-test PRIVATE simplemc-test)
 add_executable(mpi-collectives-test mpi_collectives_test.cpp)
 target_link_libraries(mpi-collectives-test PRIVATE simplemc-test)
 
+add_executable(mpi-threading-test mpi_threading_test.cpp)
+target_link_libraries(mpi-threading-test PRIVATE simplemc-test)
+
 # add tests
 add_test(NAME mpi-utils-test COMMAND ./mpi-utils-test)
 add_test(NAME mpi-env-comm-test COMMAND mpirun -n 4 ./mpi-env-comm-test)
 add_test(NAME mpi-datatypes-test COMMAND ./mpi-datatypes-test)
 add_test(NAME mpi-collectives-test COMMAND mpirun -n 4 ./mpi-collectives-test)
+add_test(NAME mpi-threading-test COMMAND mpirun -n 4 ./mpi-threading-test)

@@ -34,11 +34,33 @@ void environment::finalize() {
     }
 }
 
+int environment::thread_support() {
+    int provided {};
+    check_mpi_call(MPI_Query_thread(&provided), "MPI_Query_thread");
+    return provided;
+}
+
+bool environment::is_main_thread() {
+    int flag {};
+    check_mpi_call(MPI_Is_thread_main(&flag), "MPI_Is_thread_main");
+    return flag != 0;
+}
+
 environment::environment(int& argc, char**& argv, bool abort_on_exception) :
     init_(false),
     abort_on_exception_(abort_on_exception) {
     if (!initialized()) {
         check_mpi_call(MPI_Init(&argc, &argv), "MPI_Init");
+        init_ = true;
+    }
+}
+
+environment::environment(int& argc, char**& argv, int required_thread_level, bool abort_on_exception) :
+    init_(false),
+    abort_on_exception_(abort_on_exception) {
+    if (!initialized()) {
+        int provided {};
+        check_mpi_call(MPI_Init_thread(&argc, &argv, required_thread_level, &provided), "MPI_Init_thread");
         init_ = true;
     }
 }

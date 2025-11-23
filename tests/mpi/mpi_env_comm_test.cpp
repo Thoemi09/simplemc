@@ -31,10 +31,23 @@ TEST(SimplemcMPI, DuplicateCommunicator) {
     simplemc::mpi::communicator dup_comm = comm.duplicate();
     fmt::print("Original communicator: {} of {}\n", comm.rank(), comm.size());
     fmt::print("Duplicated communicator: {} of {}\n", dup_comm.rank(), dup_comm.size());
-    int cmp_res{};
+    int cmp_res {};
     MPI_Comm_compare(comm, dup_comm, &cmp_res);
     ASSERT_NE(MPI_IDENT, cmp_res);
     dup_comm.free();
+}
+
+// Test thread support query.
+TEST(SimplemcMPI, ThreadSupport) {
+    int provided = simplemc::mpi::environment::thread_support();
+    ASSERT_EQ(provided, MPI_THREAD_SINGLE);
+}
+
+// Test is_main_thread function.
+TEST(SimplemcMPI, IsMainThread) {
+    // in this test, we're in the main thread, so this should return true
+    bool is_main = simplemc::mpi::environment::is_main_thread();
+    ASSERT_TRUE(is_main);
 }
 
 // Custom main function for MPI.
