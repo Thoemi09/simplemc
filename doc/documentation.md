@@ -30,12 +30,8 @@ for types with an overloaded `operator<<`.
 
 ## MPI library
 
-@ref simplemc-mpi is a minimal C++ wrapper around MPI C libraries that provides a small subset of
+@ref simplemc-mpi is a minimal C++ wrapper around MPI C libraries that exposes a small subset of
 the functionality defined in the MPI standard.
-
-It is not intended to be a full replacement of the C implementations.
-Instead, it tries to simplify some common tasks like initializing/finalizing MPI execution
-environments or performing non-blocking collective communications.
 
 It provides
 

@@ -23,12 +23,14 @@ namespace simplemc::mpi {
  *     ...
  *     // initialize MPI
  *     simplemc::mpi::environment env(argc, argv);
+ *     
+ *     // use MPI
  *     ...
  * }
  * @endcode
  *
- * Only very basic MPI calls are supported. For more advanced tasks, e.g. like threading support, the
- * user is advised to use the MPI C library directly.
+ * @note Instead of using simplemc::mpi::environment, the user can could also call `MPI_Init` and 
+ * `MPI_Finalize` directly.
  *
  * See @ref tut_mpi_1 and @ref tut_mpi_2 for full examples.
  */

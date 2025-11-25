@@ -35,12 +35,12 @@
  * @defgroup simplemc-utils-fileio File I/O
  * @ingroup simplemc-utils
  * @brief File I/O utilities.
- * 
+ *
  * @details
  * @include utils/doc_file_io.cpp
- * 
+ *
  * This creates a file `doc_file_io.txt` and outputs:
- * 
+ *
  * ```
  * File contents:
  * Line no. 1
@@ -56,7 +56,7 @@
  * @details **simplemc** supports two different indexing schemes:
  * - Fortran style indexing (see simplemc::column_major)
  * - C style indexing (see simplemc::row_major)
- * 
+ *
  * For a mapping between multi-dimensional indices and flat indices, see simplemc::flat_index and
  * simplemc::nd_index.
  *
@@ -100,25 +100,14 @@
  * @details **simplemc-mpi** is a minimal C++ wrapper around MPI C libraries that provides a small
  * subset of the functionality defined in the MPI standard.
  *
- * It is not intended to be a full replacement of the C implementations. Instead, it tries to simplify
- * some common tasks like initializing/finalizing MPI execution environments or performing
- * non-blocking collective communications.
+ * It follows a similar approach to <a href="https://www.boost.org/doc/libs/latest/doc/html/mpi.html">
+ * Boost.MPI</a>, but it is not intended to be a full replacement of the C implementations. Instead,
+ * it tries to simplify some common tasks like initializing/finalizing MPI execution environments or
+ * performing non-blocking collective communications.
  *
  * A small motivating example:
  *
- * @code{.cpp}
- * #include <fmt/base.h>
- * #include <simplemc/mpi.hpp>
- *
- * int main(int argc, char** argv) {
- *   // initialize MPI environment and communicator
- *   simplemc::mpi::environment env(argc, argv);
- *   simplemc::mpi::communicator comm;
- *
- *   // print message on each process
- *   fmt::println("Hello world, from {} of {} processes.", comm.rank(), comm.size());
- * }
- * @endcode
+ * @include mpi/doc_mpi_hello_world.cpp
  *
  * Output (depends on the number of processes and the order is arbitrary):
  *
@@ -183,7 +172,16 @@
  * @defgroup simplemc-mpi-commenv Communicator and environment
  * @ingroup simplemc-mpi
  * @brief Highlevel C++ wrappers around MPI communicator objects and MPI execution environments.
- * @details See @ref tut_mpi_1 for a simple `Hello world` example.
+ *
+ * @details Initializing and finalizing **MPI execution environments** as well as working with **MPI
+ * communicators** is part of every MPI program.
+ *
+ * simplemc::mpi::environment and simplemc::mpi::communicator provide a simple C++ interface to handle
+ * these tasks and objects. They are not required when using other parts of the **simplemc-mpi**
+ * library, e.g. the user could directly call `MPI_init` and `MPI_Finalize`, but they will make it
+ * easier and less error-prone.
+ *
+ * See @ref tut_mpi_1 for a simple `Hello world` example.
  */
 
 /**
@@ -444,10 +442,10 @@
  * \times \dots \times (M_N - 1) \f$ bins or hyperrectangles. Such a hyperrectangle is simply the
  * cartesian product of the 1-dimensional bins: \f$ b_{i_1, \dots, i_N} = b_{i_1} \times \dots \times
  * b_{i_N} \f$ = \f$ b_{\mathbf{i}} \f$.
- * 
- * Here, \f$ \mathbf{i} = (i_1, \dots, i_N) \in \mathrm{I} \f$ is a multi-dimensional index. Let us 
+ *
+ * Here, \f$ \mathbf{i} = (i_1, \dots, i_N) \in \mathrm{I} \f$ is a multi-dimensional index. Let us
  * also introduce the corresponding flat index \f$ i_{\mathrm{lin}} \in \{0, \dots, M - 1\} \f$, which
- * is related to \f$ \mathbf{i} \f$ via a row-major flattening scheme (see simplemc::row_major and 
+ * is related to \f$ \mathbf{i} \f$ via a row-major flattening scheme (see simplemc::row_major and
  * simplemc::flat_index).
  *
  * Users are free to combine any of the @ref simplemc-grids-1d to create an N-dimensional grid.
@@ -849,8 +847,8 @@
  * Usually, we are interested in the (co)variance of the sample mean of random vectors, i.e.
  * \f[
  *   \mathrm{Cov}[\overline{\mathbf{X}}^{(N)}, \overline{\mathbf{Y}}^{(N)}] =
- *   \frac{\mathrm{Cov}[\mathbf{X}, \mathbf{Y}]}{N} 
- *   \approx s_{\overline{\mathbf{X}}\overline{\mathbf{Y}}}^2 = \frac{s_{\mathbf{X}\mathbf{Y}}^2}{N} 
+ *   \frac{\mathrm{Cov}[\mathbf{X}, \mathbf{Y}]}{N}
+ *   \approx s_{\overline{\mathbf{X}}\overline{\mathbf{Y}}}^2 = \frac{s_{\mathbf{X}\mathbf{Y}}^2}{N}
  *   \quad \text{and} \quad \mathrm{Var}[\overline{X_i}^{(N)}] = \frac{\mathrm{Var}[X_i]}{N}
  *   \approx s_{\overline{\mathbf{X}}}^2 = \frac{s_{\mathbf{X}}^2}{N} \; .
  * \f]
@@ -892,11 +890,11 @@
  * \mathbb{R}^M \lor \mathbf{x}^{(j)} \in \mathbb{C}^M) \right\} \f$.
  *
  * The following accumulators are available:
- * - @ref simplemc-accs-accs-mean - Simplest and fastest accumulator for calculating only the sample 
+ * - @ref simplemc-accs-accs-mean - Simplest and fastest accumulator for calculating only the sample
  * mean of a random vector.
- * - @ref simplemc-accs-accs-var - In addition to the sample mean, it provides a naive (non-blocking) 
+ * - @ref simplemc-accs-accs-var - In addition to the sample mean, it provides a naive (non-blocking)
  * estimate of the variance of a random vector, i.e. the diagonal of its covariance matrix.
- * - @ref simplemc-accs-accs-covar - In addition to the sample mean, it provides a naive (non-blocking) 
+ * - @ref simplemc-accs-accs-covar - In addition to the sample mean, it provides a naive (non-blocking)
  * estimate of the full covariance matrix of a random vector.
  *
  * The variance and covariance accumulators can be further wrapped with
@@ -904,9 +902,9 @@
  * decorrelate them or
  * - simplemc::autocorr_acc to get an estimate for the autocorrelation time.
  *
- * Another type of accumulator is the @ref simplemc-accs-accs-batch. It is similar to 
- * simplemc::block_acc and simplemc::autocorr_acc in that it groups individual samples into a fixed 
- * number of batches. The main advantage of the batch accumulator is that one has access to individual 
+ * Another type of accumulator is the @ref simplemc-accs-accs-batch. It is similar to
+ * simplemc::block_acc and simplemc::autocorr_acc in that it groups individual samples into a fixed
+ * number of batches. The main advantage of the batch accumulator is that one has access to individual
  * batches, which means that they can be used for further analysis, e.g. jackknife resampling.
  *
  * All accumulators support the `standard` and the more stable `welford` algorithm when accumulating
@@ -951,9 +949,9 @@
  * @endcode
  * This is equivalent to adding a full vector \f$ \mathbf{v} \f$ to the samples, where only elements
  * \f$ v_{i_1}, \dots v_{i_n} \f$ with indices \f$ i_1, \dots, i_n \f$, etc. are possibly non-zero.
- * @note It is the user's responsibility to call simplemc::multivalue_acc::increment_count of the 
- * multi-value accumulator once after all values have been added. In addition, if the wrapped 
- * accumulator is a simplemc::block_acc or simplemc::batch_acc, the user has to call 
+ * @note It is the user's responsibility to call simplemc::multivalue_acc::increment_count of the
+ * multi-value accumulator once after all values have been added. In addition, if the wrapped
+ * accumulator is a simplemc::block_acc or simplemc::batch_acc, the user has to call
  * simplemc::block_acc::check_and_add_block or simplemc::batch_acc::check_and_advance as well.
  *
  * - If a range, `rg`, containing \f$ n \leq M \f$ values \f$ v_i, \dots, v_{i+n-1} \f$, each \f$ \in
@@ -963,7 +961,7 @@
  * acc.accumulate(rg, i);
  * @endcode
  * This is equivalent to adding a full vector \f$ \mathbf{v} \f$ to the samples, where only elements
- * \f$ v_{i}, v_{i+1}, \dots, v_{i+n-1} \f$ with indices \f$ i, i + 1, \dots, i + n - 1 \f$ are 
+ * \f$ v_{i}, v_{i+1}, \dots, v_{i+n-1} \f$ with indices \f$ i, i + 1, \dots, i + n - 1 \f$ are
  * possibly non-zero.
  *
  * - If a range, `rg`, containing \f$ n \leq M \f$ values \f$ v_{i_1}, \dots, v_{i_n} \f$, each \f$
@@ -1089,9 +1087,9 @@
  * @note It is important to distinguish between \f$ f(\mathrm{E}[\mathbf{Z}_1],
  * \mathrm{E}[\mathbf{Z}_2], \dots) \f$ and \f$ \mathrm{E}[f(\mathbf{Z}_1, \mathbf{Z}_2, \dots)] \f$.
  * They are in general not the same.
- * 
- * In the following, we assume that \f$ f : \mathbb{R}^M \to \mathbb{R} \f$ for simplicity and we use 
- * the notation from @ref simplemc-accs. Generalizations to complex and/or vector valued functions are 
+ *
+ * In the following, we assume that \f$ f : \mathbb{R}^M \to \mathbb{R} \f$ for simplicity and we use
+ * the notation from @ref simplemc-accs. Generalizations to complex and/or vector valued functions are
  * straight forward.
  *
  * It can be shown, that the approximation \f$ f(\overline{\mathbf{z}_1}^{(N)},
@@ -1136,8 +1134,8 @@
  *   \overline{f}_{\text{JK}} \; .
  * \f]
  *
- * Additionally, we can use the \f$ f_{[i]}^{(N-1)} \f$ and \f$ \overline{f}_{\text{JK}} \f$ to 
- * approximate the variance of \f$ f \f$ (similar equations hold for covariance matrices \f$ 
+ * Additionally, we can use the \f$ f_{[i]}^{(N-1)} \f$ and \f$ \overline{f}_{\text{JK}} \f$ to
+ * approximate the variance of \f$ f \f$ (similar equations hold for covariance matrices \f$
  * s_{\mathbf{f}\mathbf{f}}^2 \f$):
  * \f[
  *   \mathrm{Var}[f(\overline{\mathbf{Z}_1}, \overline{\mathbf{Z}_2}, \dots)] \approx s_{f}^2 =
