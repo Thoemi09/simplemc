@@ -11,7 +11,7 @@
 namespace simplemc::mpi {
 
 /**
- * @ingroup simplemc-mpi-commenv
+ * @ingroup simplemc-mpi-essentials
  * @brief Initialize and finalize MPI execution environments.
  *
  * @details This is a simplified version of the `boost::mpi::environment` class. It is intended to be

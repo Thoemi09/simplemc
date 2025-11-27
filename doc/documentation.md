@@ -37,9 +37,9 @@ It provides
 
 - @ref simplemc-mpi-coll to perform MPI broadcast, gather, scatter and reduce operations across
 multiple processes.
-- @ref simplemc-mpi-commenv classes as highlevel C++ wrappers around MPI communicator objects and MPI
-execution enivronments.
 - @ref simplemc-mpi-types to map supported C++ types to their corresponding MPI datatypes.
+- @ref simplemc-mpi-essentials that wrap the most important objects in MPI like communicators, 
+execution environments, etc. 
 - @ref simplemc-mpi-utils for the **simplemc-mpi** library.
 
 ## Random library

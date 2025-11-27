@@ -60,10 +60,6 @@
       </tab>
       <tab type="usergroup" url="@ref simplemc-mpi" title="simplemc-mpi">
         <tab type="user" url="@ref simplemc-mpi-coll" title="Collective communications"/>
-        <tab type="usergroup" url="@ref simplemc-mpi-commenv" title="Communicator and environment">
-          <tab type="user" url="@ref simplemc::mpi::communicator" title="mpi::communicator"/>
-          <tab type="user" url="@ref simplemc::mpi::environment" title="mpi::environment"/>
-        </tab>
         <tab type="usergroup" url="@ref simplemc-mpi-types" title="MPI datatypes">
           <tab type="user" url="@ref simplemc::mpi::mpi_compatible" title="mpi::mpi_compatible"/>
           <tab type="user" url="@ref simplemc::mpi::mpi_range" title="mpi::mpi_range"/>
@@ -107,6 +103,10 @@
           <tab type="user" url="@ref simplemc::mpi::mpi_type< unsigned long >" title="mpi::mpi_type<unsigned long>"/>
           <tab type="user" url="@ref simplemc::mpi::mpi_type< unsigned long long >" title="mpi::mpi_type<unsigned long long>"/>
           <tab type="user" url="@ref simplemc::mpi::mpi_type< unsigned short >" title="mpi::mpi_type<unsigned short>"/>
+        </tab>
+        <tab type="usergroup" url="@ref simplemc-mpi-essentials" title="MPI essentials">
+          <tab type="user" url="@ref simplemc::mpi::communicator" title="mpi::communicator"/>
+          <tab type="user" url="@ref simplemc::mpi::environment" title="mpi::environment"/>
         </tab>
         <tab type="user" url="@ref simplemc-mpi-utils" title="MPI utilities"/>
       </tab>

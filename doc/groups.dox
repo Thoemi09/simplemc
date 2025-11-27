@@ -169,22 +169,6 @@
  */
 
 /**
- * @defgroup simplemc-mpi-commenv Communicator and environment
- * @ingroup simplemc-mpi
- * @brief Highlevel C++ wrappers around MPI communicator objects and MPI execution environments.
- *
- * @details Initializing and finalizing **MPI execution environments** as well as working with **MPI
- * communicators** is part of every MPI program.
- *
- * simplemc::mpi::environment and simplemc::mpi::communicator provide a simple C++ interface to handle
- * these tasks and objects. They are not required when using other parts of the **simplemc-mpi**
- * library, e.g. the user could directly call `MPI_init` and `MPI_Finalize`, but they will make it
- * easier and less error-prone.
- *
- * See @ref tut_mpi_1 for a simple `Hello world` example.
- */
-
-/**
  * @defgroup simplemc-mpi-types MPI datatypes
  * @ingroup simplemc-mpi
  * @brief Mapping of supported C++ types to their corresponding MPI datatypes.
@@ -211,6 +195,22 @@
  * - `MPI_CXX_LONG_DOUBLE_COMPLEX` \f$ \quad \longleftrightarrow \quad \f$ `std::complex<long double>`
  *
  * See @ref tut_mpi_4 on how user-defined types can be used with the **simplemc-mpi** library.
+ */
+
+/**
+ * @defgroup simplemc-mpi-essentials MPI essentials
+ * @ingroup simplemc-mpi
+ * @brief Highlevel C++ wrappers around the most important objects in MPI.
+ *
+ * @details Initializing and finalizing **MPI execution environments** as well as working with **MPI
+ * communicators** is part of every MPI program.
+ *
+ * simplemc::mpi::environment and simplemc::mpi::communicator provide a simple C++ interface to handle
+ * these tasks and objects. They are not required when using other parts of the **simplemc-mpi**
+ * library, e.g. the user could directly call `MPI_init` and `MPI_Finalize`, but they will make it
+ * easier and less error-prone.
+ *
+ * See @ref tut_mpi_1 for a simple `Hello world` example.
  */
 
 /**

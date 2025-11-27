@@ -11,7 +11,7 @@
 namespace simplemc::mpi {
 
 /**
- * @ingroup simplemc-mpi-commenv
+ * @ingroup simplemc-mpi-essentials
  * @brief A communicator that enables communication and synchronization among a set of MPI processes.
  *
  * @details It is implemented as a very thin wrapper around the actual `MPI_Comm` object. Only the
