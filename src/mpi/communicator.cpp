@@ -4,6 +4,7 @@
  */
 
 #include <simplemc/mpi/communicator.hpp>
+#include <simplemc/mpi/group.hpp>
 #include <simplemc/mpi/utils.hpp>
 
 #include <mpi.h>
@@ -34,6 +35,14 @@ communicator communicator::duplicate() const {
     return c;
 }
 
-void communicator::free() { check_mpi_call(MPI_Comm_free(&comm_), "MPI_Comm_free"); }
+void communicator::free() {
+    check_mpi_call(MPI_Comm_free(&comm_), "MPI_Comm_free");
+}
+
+group communicator::get_group() const {
+    MPI_Group grp {};
+    check_mpi_call(MPI_Comm_group(comm_, &grp), "MPI_Comm_group");
+    return group { grp };
+}
 
 } // namespace simplemc::mpi

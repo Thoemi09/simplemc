@@ -6,6 +6,8 @@
 #ifndef SIMPLEMC_MPI_COMMUNICATOR_HPP
 #define SIMPLEMC_MPI_COMMUNICATOR_HPP
 
+#include <simplemc/mpi/group.hpp>
+
 #include <mpi.h>
 
 namespace simplemc::mpi {
@@ -19,7 +21,8 @@ namespace simplemc::mpi {
  * - `MPI_Comm_rank` - see rank(),
  * - `MPI_Comm_size` - see size(),
  * - `MPI_Barrier` - see barrier(),
- * - `MPI_Comm_dup` - see duplicate() and
+ * - `MPI_Comm_dup` - see duplicate(),
+ * - `MPI_Comm_group` - see get_group() and
  * - `MPI_Comm_free` - see free().
  *
  * Implicit conversions to and from `MPI_Comm` objects are allowed.
@@ -106,6 +109,20 @@ public:
      * Throws an exception if the call fails.
      */
     void free();
+
+    /**
+     * @brief Get the group associated with this communicator.
+     *
+     * @details It makes a call to `MPI_Comm_group` to retrieve the group associated with this
+     * communicator. See the MPI documentation for more details, e.g.
+     * <a href="https://docs.open-mpi.org/en/v5.0.x/man-openmpi/man3/MPI_Comm_group.3.html">
+     * open-mpi docs</a>.
+     *
+     * It throws an exception if the call fails.
+     *
+     * @return Group associated with this communicator.
+     */
+    [[nodiscard]] group get_group() const;
 
     /**
      * @brief Implicit conversion function to the underlying `MPI_Comm` object.

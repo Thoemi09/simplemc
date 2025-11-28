@@ -8,9 +8,10 @@ add_library(simplemc-mpi)
 add_library(simplemc::simplemc-mpi ALIAS simplemc-mpi)
 target_sources(simplemc-mpi
     PRIVATE
-        utils.cpp
+        communicator.cpp
         environment.cpp
-        communicator.cpp)
+        group.cpp
+        utils.cpp)
 target_link_libraries(simplemc-mpi
     PUBLIC
         simplemc::simplemc-utils

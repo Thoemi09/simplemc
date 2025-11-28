@@ -8,8 +8,9 @@
 
 namespace simplemc::mpi {
 
-class environment;
 class communicator;
+class environment;
+class group;
 
 } // namespace simplemc::mpi
 

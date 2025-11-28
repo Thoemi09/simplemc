@@ -10,6 +10,7 @@
 #include <simplemc/mpi/communicator.hpp>
 #include <simplemc/mpi/datatypes.hpp>
 #include <simplemc/mpi/environment.hpp>
+#include <simplemc/mpi/group.hpp>
 #include <simplemc/mpi/utils.hpp>
 
 #endif // SIMPLEMC_MPI_HPP
