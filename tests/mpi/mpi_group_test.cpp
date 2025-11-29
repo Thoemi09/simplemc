@@ -35,7 +35,7 @@ TEST(SimplemcMPIGroup, BoolConversion) {
     ASSERT_FALSE(g.empty());
 
     // group from MPI_GROUP_NULL should be invalid
-    simplemc::mpi::group null_group { MPI_GROUP_NULL, false };
+    simplemc::mpi::group null_group { MPI_GROUP_NULL, simplemc::mpi::resource_policy::attach };
     ASSERT_FALSE(static_cast<bool>(null_group));
 }
 

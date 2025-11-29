@@ -15,8 +15,8 @@ namespace simplemc::mpi {
 
 group::group() : grp_(new MPI_Group(MPI_GROUP_EMPTY), group_deleter {}) {}
 
-group::group(MPI_Group grp, bool take_ownership) {
-    if (take_ownership) {
+group::group(MPI_Group grp, resource_policy pol) {
+    if (pol == resource_policy::take_ownership) {
         grp_ = std::shared_ptr<MPI_Group> { new MPI_Group(grp), group_deleter {} };
     } else {
         grp_ = std::make_shared<MPI_Group>(grp);

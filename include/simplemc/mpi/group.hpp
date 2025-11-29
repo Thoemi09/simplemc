@@ -31,16 +31,21 @@ class communicator;
  * @details This class provides a thin C++ wrapper around `MPI_Group` objects. MPI groups are used
  * to represent ordered sets of processes and can be used to create new communicators.
  *
- * The group is managed using a `std::shared_ptr` with a custom deleter that calls `MPI_Group_free`
- * when the last reference is destroyed, providing automatic resource management similar to
- * <a href="https://www.boost.org/doc/libs/latest/doc/html/mpi.html">Boost.MPI</a>.
+ * The group is managed using a `std::shared_ptr` with a custom deleter providing automatic resource
+ * management similar to <a href="https://www.boost.org/doc/libs/latest/doc/html/mpi.html">Boost.MPI
+ * </a>. The behaviour of the deleter depends on the simplemc::mpi::resource_policy specified during
+ * construction:
+ * - `take_ownership`: The wrapper is responsible for managing the lifetime of the MPI group, i.e. it
+ * calls `MPI_Group_free` when the last reference is destroyed (unless it is `MPI_GROUP_NULL` or
+ * `MPI_GROUP_EMPTY`).
+ * - `attach`: The lifetime of the MPI group is managed somewhere else and the wrapper just uses it.
  *
  * Implicit conversions to `MPI_Group` are allowed for interoperability with MPI C functions.
  */
 class group {
 public:
     /**
-     * @brief Construct an empty group.
+     * @brief Default construct an empty group.
      *
      * @details It creates a group that wraps `MPI_GROUP_EMPTY`. This represents an empty group with
      * no processes.
@@ -48,19 +53,19 @@ public:
     group();
 
     /**
-     * @brief Construct a group from an existing `MPI_Group`.
+     * @brief Construct a group from an existing `MPI_Group` with a given
+     * simplemc::mpi::resource_policy.
      *
-     * @details If `take_ownership` is true (the default), the group takes ownership of the provided
-     * `MPI_Group` and will free it when the last reference is destroyed (unless it is
-     * `MPI_GROUP_NULL` or `MPI_GROUP_EMPTY`).
+     * @details If the resource policy is set to`take_ownership` (the default), the group takes
+     * ownership of the provided `MPI_Group` and will free it when the last reference is destroyed.
      *
-     * If `take_ownership` is false, the group wraps the provided `MPI_Group` without taking
-     * ownership, and the caller remains responsible for freeing it.
+     * If the policy is `attach`, the group simply attaches to the provided `MPI_Group` without
+     * taking ownership, and the caller remains responsible for freeing it.
      *
      * @param grp `MPI_Group` object to wrap.
-     * @param take_ownership If true, the group will free the `MPI_Group` when destroyed.
+     * @param pol simplemc::mpi::resource_policy indicating ownership semantics.
      */
-    explicit group(MPI_Group grp, bool take_ownership = true);
+    explicit group(MPI_Group grp, resource_policy pol = resource_policy::take_ownership);
 
     /**
      * @brief Determine the rank of the calling process in the group.
@@ -178,7 +183,6 @@ private:
     };
 
 private:
-    // Shared pointer to the underlying MPI_Group.
     std::shared_ptr<MPI_Group> grp_;
 };
 
