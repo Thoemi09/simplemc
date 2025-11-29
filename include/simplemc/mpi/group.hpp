@@ -102,16 +102,17 @@ public:
      *
      * @tparam R Range type whose value type is an integral type.
      * @param ranks Range of ranks to include in the new group.
+     * @param pol simplemc::mpi::resource_policy indicating ownership semantics for the new group.
      * @return New group containing only the specified ranks.
      */
     template <simplemc::ranges::input_range R>
         requires std::integral<simplemc::ranges::range_value_t<R>>
-    [[nodiscard]] group include(const R& ranks) const {
+    [[nodiscard]] group include(const R& ranks, resource_policy pol = resource_policy::take_ownership) const {
         auto ranks_vec = std::vector<int> { simplemc::ranges::begin(ranks), simplemc::ranges::end(ranks) };
         MPI_Group new_grp {};
         check_mpi_call(
             MPI_Group_incl(*grp_, static_cast<int>(ranks_vec.size()), ranks_vec.data(), &new_grp), "MPI_Group_incl");
-        return group { new_grp };
+        return group { new_grp, pol };
     }
 
     /**
@@ -124,16 +125,17 @@ public:
      *
      * @tparam R Range type whose value type is an integral type.
      * @param ranks Range of ranks to exclude from the new group.
+     * @param pol simplemc::mpi::resource_policy indicating ownership semantics for the new group.
      * @return New group excluding the specified ranks.
      */
     template <simplemc::ranges::input_range R>
         requires std::integral<simplemc::ranges::range_value_t<R>>
-    [[nodiscard]] group exclude(const R& ranks) const {
+    [[nodiscard]] group exclude(const R& ranks, resource_policy pol = resource_policy::take_ownership) const {
         auto ranks_vec = std::vector<int> { simplemc::ranges::begin(ranks), simplemc::ranges::end(ranks) };
         MPI_Group new_grp {};
         check_mpi_call(
             MPI_Group_excl(*grp_, static_cast<int>(ranks_vec.size()), ranks_vec.data(), &new_grp), "MPI_Group_excl");
-        return group { new_grp };
+        return group { new_grp, pol };
     }
 
     /**
@@ -187,6 +189,19 @@ private:
 };
 
 /**
+ * @brief Free an `MPI_Group` object.
+ *
+ * @details It makes a call to `MPI_Group_free` to free the MPI group. After calling this function,
+ * the group will be set to `MPI_GROUP_NULL`.
+ *
+ * It throws an exception if the call fails. Does nothing if the group is `MPI_GROUP_NULL` or
+ * `MPI_GROUP_EMPTY`.
+ *
+ * @param grp Reference to the `MPI_Group` to free.
+ */
+void group_free(MPI_Group& grp);
+
+/**
  * @brief Create a new group that is the union of two groups.
  *
  * @details It makes a call to `MPI_Group_union` to create a new group containing all processes that
@@ -196,9 +211,11 @@ private:
  *
  * @param g1 First group.
  * @param g2 Second group.
+ * @param pol simplemc::mpi::resource_policy indicating ownership semantics for the new group.
  * @return New simplemc::mpi::group containing the union of both groups.
  */
-[[nodiscard]] group group_union(const group& g1, const group& g2);
+[[nodiscard]] group group_union(
+    const group& g1, const group& g2, resource_policy pol = resource_policy::take_ownership);
 
 /**
  * @brief Create a new group that is the intersection of two groups.
@@ -210,9 +227,11 @@ private:
  *
  * @param g1 First group.
  * @param g2 Second group.
+ * @param pol simplemc::mpi::resource_policy indicating ownership semantics for the new group.
  * @return New simplemc::mpi::group containing the intersection of both groups.
  */
-[[nodiscard]] group group_intersection(const group& g1, const group& g2);
+[[nodiscard]] group group_intersection(
+    const group& g1, const group& g2, resource_policy pol = resource_policy::take_ownership);
 
 /**
  * @brief Create a new group that is the difference of two groups.
@@ -224,9 +243,11 @@ private:
  *
  * @param g1 First group.
  * @param g2 Second group (to subtract from from the first).
+ * @param pol simplemc::mpi::resource_policy indicating ownership semantics for the new group.
  * @return New simplemc::mpi::group containing the difference.
  */
-[[nodiscard]] group group_difference(const group& g1, const group& g2);
+[[nodiscard]] group group_difference(
+    const group& g1, const group& g2, resource_policy pol = resource_policy::take_ownership);
 
 /**
  * @brief Compare two groups.

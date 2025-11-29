@@ -74,9 +74,11 @@ public:
      *
      * It throws an exception if the call fails.
      *
+     * @param pol simplemc::mpi::resource_policy indicating ownership semantics for the new
+     * communicator.
      * @return A new communicator that is a duplicate of this one.
      */
-    [[nodiscard]] communicator duplicate() const;
+    [[nodiscard]] communicator duplicate(resource_policy pol = resource_policy::take_ownership) const;
 
     /**
      * @brief Create a new communicator from a simplemc::mpi::group.
@@ -89,9 +91,11 @@ public:
      * It throws an exception if the call fails.
      *
      * @param grp simplemc::mpi::group specifying which processes should be in the new communicator.
+     * @param pol simplemc::mpi::resource_policy indicating ownership semantics for the new
+     * communicator.
      * @return A new communicator containing the processes in the group.
      */
-    [[nodiscard]] communicator create(const group& grp) const;
+    [[nodiscard]] communicator create(const group& grp, resource_policy pol = resource_policy::take_ownership) const;
 
     /**
      * @brief Determine the rank of the calling process.
@@ -119,9 +123,10 @@ public:
      *
      * It throws an exception if the call fails.
      *
+     * @param pol simplemc::mpi::resource_policy indicating ownership semantics for the new group.
      * @return Group associated with this communicator.
      */
-    [[nodiscard]] group get_group() const;
+    [[nodiscard]] group get_group(resource_policy pol = resource_policy::take_ownership) const;
 
     /**
      * @brief Wait for all processes within the communicator to reach this barrier.
@@ -147,9 +152,12 @@ public:
      * @param color Control of subset assignment (processes with the same color are in the same
      * group).
      * @param key Control of rank assignment within the new communicator.
+     * @param pol simplemc::mpi::resource_policy indicating ownership semantics for the new
+     * communicator.
      * @return A new communicator for the calling process's subgroup.
      */
-    [[nodiscard]] communicator split(int color, int key = 0) const;
+    [[nodiscard]] communicator split(
+        int color, int key = 0, resource_policy pol = resource_policy::take_ownership) const;
 
     /**
      * @brief Implicit conversion to the underlying `MPI_Comm` object.
@@ -174,6 +182,19 @@ private:
 private:
     std::shared_ptr<MPI_Comm> comm_;
 };
+
+/**
+ * @brief Free an `MPI_Comm` object.
+ *
+ * @details It makes a call to `MPI_Comm_free` to free the MPI communicator. After calling this
+ * function, the communicator will be set to `MPI_COMM_NULL`.
+ *
+ * It throws an exception if the call fails. Does nothing if the communicator is `MPI_COMM_NULL`,
+ * `MPI_COMM_WORLD`, or `MPI_COMM_SELF`.
+ *
+ * @param comm Reference to the `MPI_Comm` to free.
+ */
+void comm_free(MPI_Comm& comm);
 
 /**
  * @brief Compare two communicators.

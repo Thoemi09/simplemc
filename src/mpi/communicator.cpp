@@ -21,16 +21,16 @@ communicator::communicator(MPI_Comm comm, resource_policy pol) {
     }
 }
 
-communicator communicator::duplicate() const {
+communicator communicator::duplicate(resource_policy pol) const {
     MPI_Comm new_comm {};
     check_mpi_call(MPI_Comm_dup(*comm_, &new_comm), "MPI_Comm_dup");
-    return communicator { new_comm };
+    return communicator { new_comm, pol };
 }
 
-communicator communicator::create(const group& grp) const {
+communicator communicator::create(const group& grp, resource_policy pol) const {
     MPI_Comm new_comm {};
     check_mpi_call(MPI_Comm_create(*comm_, grp, &new_comm), "MPI_Comm_create");
-    return communicator { new_comm };
+    return communicator { new_comm, pol };
 }
 
 int communicator::rank() const {
@@ -45,20 +45,20 @@ int communicator::size() const {
     return my_size;
 }
 
-group communicator::get_group() const {
+group communicator::get_group(resource_policy pol) const {
     MPI_Group grp {};
     check_mpi_call(MPI_Comm_group(*comm_, &grp), "MPI_Comm_group");
-    return group { grp };
+    return group { grp, pol };
 }
 
 void communicator::barrier() const {
     check_mpi_call(MPI_Barrier(*comm_), "MPI_Barrier");
 }
 
-communicator communicator::split(int color, int key) const {
+communicator communicator::split(int color, int key, resource_policy pol) const {
     MPI_Comm new_comm {};
     check_mpi_call(MPI_Comm_split(*comm_, color, key, &new_comm), "MPI_Comm_split");
-    return communicator { new_comm };
+    return communicator { new_comm, pol };
 }
 
 void communicator::comm_deleter::operator()(MPI_Comm* c) const {
@@ -67,6 +67,12 @@ void communicator::comm_deleter::operator()(MPI_Comm* c) const {
         MPI_Comm_free(c);
     }
     delete c;
+}
+
+void comm_free(MPI_Comm& comm) {
+    if (comm != MPI_COMM_NULL && comm != MPI_COMM_WORLD && comm != MPI_COMM_SELF) {
+        check_mpi_call(MPI_Comm_free(&comm), "MPI_Comm_free");
+    }
 }
 
 int comm_compare(const communicator& c1, const communicator& c2) {

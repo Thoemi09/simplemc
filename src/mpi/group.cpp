@@ -43,22 +43,28 @@ void group::group_deleter::operator()(MPI_Group* g) const {
     delete g;
 }
 
-group group_union(const group& g1, const group& g2) {
+void group_free(MPI_Group& grp) {
+    if (grp != MPI_GROUP_NULL && grp != MPI_GROUP_EMPTY) {
+        check_mpi_call(MPI_Group_free(&grp), "MPI_Group_free");
+    }
+}
+
+group group_union(const group& g1, const group& g2, resource_policy pol) {
     MPI_Group new_grp {};
     check_mpi_call(MPI_Group_union(g1, g2, &new_grp), "MPI_Group_union");
-    return group { new_grp };
+    return group { new_grp, pol };
 }
 
-group group_intersection(const group& g1, const group& g2) {
+group group_intersection(const group& g1, const group& g2, resource_policy pol) {
     MPI_Group new_grp {};
     check_mpi_call(MPI_Group_intersection(g1, g2, &new_grp), "MPI_Group_intersection");
-    return group { new_grp };
+    return group { new_grp, pol };
 }
 
-group group_difference(const group& g1, const group& g2) {
+group group_difference(const group& g1, const group& g2, resource_policy pol) {
     MPI_Group new_grp {};
     check_mpi_call(MPI_Group_difference(g1, g2, &new_grp), "MPI_Group_difference");
-    return group { new_grp };
+    return group { new_grp, pol };
 }
 
 int group_compare(const group& g1, const group& g2) {
