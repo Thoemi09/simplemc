@@ -34,7 +34,7 @@ TEST(SimplemcMPI, DuplicateCommunicator) {
     int cmp_res {};
     MPI_Comm_compare(comm, dup_comm, &cmp_res);
     ASSERT_NE(MPI_IDENT, cmp_res);
-    dup_comm.free();
+    // No need to call free() - automatic cleanup via shared_ptr
 }
 
 // Test thread support query.
