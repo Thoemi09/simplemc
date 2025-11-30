@@ -1,4 +1,3 @@
-#include <fmt/base.h>
 #include <gtest/gtest.h>
 #include <mpi.h>
 #include <simplemc/mpi.hpp>
@@ -8,35 +7,37 @@
 // Test default constructor creates an empty group.
 TEST(SimplemcMPIGroup, DefaultConstructor) {
     simplemc::mpi::group g {};
+    ASSERT_TRUE(g);
     ASSERT_TRUE(g.empty());
     ASSERT_EQ(g.size(), 0);
     ASSERT_EQ(simplemc::mpi::group_compare(g, simplemc::mpi::group {}), MPI_IDENT);
 }
 
-// Test constructing a group from a communicator.
-TEST(SimplemcMPIGroup, FromCommunicator) {
-    simplemc::mpi::communicator comm {};
-    simplemc::mpi::group g = comm.get_group();
-    ASSERT_EQ(g.size(), comm.size());
-    ASSERT_EQ(g.rank(), comm.rank());
-    fmt::print("Group from communicator: rank {} of {} processes.\n", g.rank(), g.size());
+// Test constructor with MPI_GROUP_EMPTY and attach policy.
+TEST(SimplemcMPIGroup, ConstructorWithAttachPolicy) {
+    simplemc::mpi::group g { MPI_GROUP_EMPTY, simplemc::mpi::resource_policy::attach };
+    ASSERT_TRUE(g);
+
+    // compare with default constructor which also wraps MPI_GROUP_EMPTY
+    simplemc::mpi::group default_g {};
+    ASSERT_EQ(simplemc::mpi::group_compare(g, default_g), MPI_IDENT);
 }
 
-// Test boolean conversion.
-TEST(SimplemcMPIGroup, BoolConversion) {
-    // default-constructed group wraps MPI_GROUP_EMPTY which is valid but empty
-    simplemc::mpi::group empty_group {};
-    ASSERT_TRUE(empty_group.empty());
+// Test constructor with MPI_GROUP_NULL.
+TEST(SimplemcMPIGroup, ConstructorWithGroupNull) {
+    simplemc::mpi::group null_group { MPI_GROUP_NULL };
+    ASSERT_FALSE(null_group);
+}
 
-    // group from communicator should be valid
+// Test implicit conversion to MPI_Group.
+TEST(SimplemcMPIGroup, ImplicitConversion) {
     simplemc::mpi::communicator comm {};
     auto g = comm.get_group();
-    ASSERT_TRUE(static_cast<bool>(g));
-    ASSERT_FALSE(g.empty());
 
-    // group from MPI_GROUP_NULL should be invalid
-    simplemc::mpi::group null_group { MPI_GROUP_NULL, simplemc::mpi::resource_policy::attach };
-    ASSERT_FALSE(static_cast<bool>(null_group));
+    // should be able to use group where MPI_Group is expected
+    int size {};
+    MPI_Group_size(g, &size);
+    ASSERT_EQ(size, comm.size());
 }
 
 // Test include operation.
@@ -44,9 +45,9 @@ TEST(SimplemcMPIGroup, Include) {
     simplemc::mpi::communicator comm {};
     auto g = comm.get_group();
 
-    // include only rank 0
+    // include only rank 0 and use resource_policy::attach
     auto ranks = std::vector<int> { 0 };
-    auto subgroup = g.include(ranks);
+    auto subgroup = g.include(ranks, simplemc::mpi::resource_policy::attach);
 
     ASSERT_EQ(subgroup.size(), 1);
     if (comm.rank() == 0) {
@@ -54,7 +55,10 @@ TEST(SimplemcMPIGroup, Include) {
     } else {
         ASSERT_EQ(subgroup.rank(), MPI_UNDEFINED);
     }
-    fmt::print("Rank {}: subgroup rank = {}\n", comm.rank(), subgroup.rank());
+
+    // manually free subgroup's MPI_Group
+    MPI_Group mpi_group = subgroup;
+    simplemc::mpi::group_free(mpi_group);
 
     // include no ranks should create an empty group
     auto empty_subgroup = g.include(std::vector<int> {});
@@ -67,9 +71,9 @@ TEST(SimplemcMPIGroup, Exclude) {
     simplemc::mpi::communicator comm {};
     auto g = comm.get_group();
 
-    // exclude rank 0
+    // exclude rank 0 and use resource_policy::attach
     auto ranks = std::vector<int> { 0 };
-    auto subgroup = g.exclude(ranks);
+    auto subgroup = g.exclude(ranks, simplemc::mpi::resource_policy::attach);
 
     ASSERT_EQ(subgroup.size(), comm.size() - 1);
     if (comm.rank() == 0) {
@@ -78,7 +82,10 @@ TEST(SimplemcMPIGroup, Exclude) {
         // ranks shift down after excluding rank 0
         ASSERT_EQ(subgroup.rank(), comm.rank() - 1);
     }
-    fmt::print("Rank {}: excluded subgroup rank = {}\n", comm.rank(), subgroup.rank());
+
+    // manually free subgroup's MPI_Group
+    MPI_Group mpi_group = subgroup;
+    simplemc::mpi::group_free(mpi_group);
 
     // excluding all ranks creates an empty group that compares identical to MPI_GROUP_EMPTY
     auto all_ranks = std::vector<int> {};
@@ -90,7 +97,7 @@ TEST(SimplemcMPIGroup, Exclude) {
     ASSERT_EQ(simplemc::mpi::group_compare(empty_excluded, simplemc::mpi::group {}), MPI_IDENT);
 }
 
-// Test include with even ranks.
+// Test include with even ranks and resource_policy::attach.
 TEST(SimplemcMPIGroup, IncludeEvenRanks) {
     simplemc::mpi::communicator comm {};
     auto g = comm.get_group();
@@ -100,7 +107,7 @@ TEST(SimplemcMPIGroup, IncludeEvenRanks) {
     for (int i = 0; i < comm.size(); i += 2) {
         even_ranks.push_back(i);
     }
-    auto even_group = g.include(even_ranks);
+    auto even_group = g.include(even_ranks, simplemc::mpi::resource_policy::attach);
 
     int const expected_size = (comm.size() + 1) / 2;
     ASSERT_EQ(even_group.size(), expected_size);
@@ -109,7 +116,10 @@ TEST(SimplemcMPIGroup, IncludeEvenRanks) {
     } else {
         ASSERT_EQ(even_group.rank(), MPI_UNDEFINED);
     }
-    fmt::print("Rank {}: even_group rank = {}\n", comm.rank(), even_group.rank());
+
+    // manually free even_group's MPI_Group
+    MPI_Group mpi_even_group = even_group;
+    simplemc::mpi::group_free(mpi_even_group);
 }
 
 // Test union operation.
@@ -131,9 +141,12 @@ TEST(SimplemcMPIGroup, Union) {
     auto odd_group = g.include(odd_ranks);
 
     // union should give us back all ranks
-    auto union_group = simplemc::mpi::group_union(even_group, odd_group);
+    auto union_group = simplemc::mpi::group_union(even_group, odd_group, simplemc::mpi::resource_policy::attach);
     ASSERT_EQ(union_group.size(), comm.size());
-    fmt::print("Union group size: {}\n", union_group.size());
+
+    // manually free union_group's MPI_Group
+    MPI_Group mpi_union_group = union_group;
+    simplemc::mpi::group_free(mpi_union_group);
 
     // union with itself should be identical
     auto union_self = simplemc::mpi::group_union(even_group, even_group);
@@ -164,7 +177,7 @@ TEST(SimplemcMPIGroup, Intersection) {
     auto group2 = g.include(group2_ranks);
 
     // intersection should give us ranks 1 to size/2
-    auto intersection_group = simplemc::mpi::group_intersection(group1, group2);
+    auto intersection_group = simplemc::mpi::group_intersection(group1, group2, simplemc::mpi::resource_policy::attach);
 
     // calculate expected intersection size
     int expected_size = 0;
@@ -176,7 +189,10 @@ TEST(SimplemcMPIGroup, Intersection) {
         }
     }
     ASSERT_EQ(intersection_group.size(), expected_size);
-    fmt::print("Intersection group size: {}\n", intersection_group.size());
+
+    // manually free intersection_group's MPI_Group
+    MPI_Group mpi_intersection_group = intersection_group;
+    simplemc::mpi::group_free(mpi_intersection_group);
 
     // intersection with itself should be identical
     auto intersection_self = simplemc::mpi::group_intersection(group1, group1);
@@ -200,9 +216,12 @@ TEST(SimplemcMPIGroup, Difference) {
     auto first_half_group = g.include(first_half);
 
     // difference g - first_half should give second half
-    auto diff_group = simplemc::mpi::group_difference(g, first_half_group);
+    auto diff_group = simplemc::mpi::group_difference(g, first_half_group, simplemc::mpi::resource_policy::attach);
     ASSERT_EQ(diff_group.size(), comm.size() - static_cast<int>(first_half.size()));
-    fmt::print("Difference group size: {}\n", diff_group.size());
+
+    // manually free diff_group's MPI_Group
+    MPI_Group mpi_diff_group = diff_group;
+    simplemc::mpi::group_free(mpi_diff_group);
 
     // difference with empty group should be the same as original
     auto diff_with_empty = simplemc::mpi::group_difference(g, simplemc::mpi::group {});
@@ -223,7 +242,7 @@ TEST(SimplemcMPIGroup, Compare) {
     auto result = simplemc::mpi::group_compare(g1, g2);
     ASSERT_EQ(result, MPI_IDENT);
 
-    // empty group compared with itself should also be identical
+    // empty group compared with another empty group should also be identical
     simplemc::mpi::group empty1 {};
     simplemc::mpi::group empty2 {};
     ASSERT_EQ(simplemc::mpi::group_compare(empty1, empty2), MPI_IDENT);
@@ -298,16 +317,97 @@ TEST(SimplemcMPIGroup, SharedPtrSemantics) {
     ASSERT_TRUE(g1 == g2);
 }
 
-// test implicit conversion to MPI_Group
-TEST(SimplemcMPIGroup, ImplicitConversion) {
+// Test group_free operation.
+TEST(SimplemcMPIGroup, GroupFree) {
+    simplemc::mpi::communicator comm {};
+
+    // get a group we can free
+    MPI_Group mpi_group = comm.get_group(simplemc::mpi::resource_policy::attach);
+
+    // free should not throw
+    ASSERT_NO_THROW(simplemc::mpi::group_free(mpi_group));
+
+    // after free, group should be MPI_GROUP_NULL
+    ASSERT_EQ(mpi_group, MPI_GROUP_NULL);
+}
+
+// Test group_free on MPI_GROUP_EMPTY does nothing (predefined group).
+TEST(SimplemcMPIGroup, GroupFreeGroupEmpty) {
+    MPI_Group mpi_group = MPI_GROUP_EMPTY;
+
+    // free on MPI_GROUP_EMPTY should not actually free it
+    ASSERT_NO_THROW(simplemc::mpi::group_free(mpi_group));
+
+    // MPI_GROUP_EMPTY is predefined, group_free() should have no effect
+    ASSERT_EQ(mpi_group, MPI_GROUP_EMPTY);
+}
+
+// Test group_free on included group.
+TEST(SimplemcMPIGroup, GroupFreeIncludedGroup) {
     simplemc::mpi::communicator comm {};
     auto g = comm.get_group();
 
-    // should be able to use group where MPI_Group is expected
-    MPI_Group mpi_grp = g;
-    int size {};
-    MPI_Group_size(mpi_grp, &size);
-    ASSERT_EQ(size, comm.size());
+    // manually create a new group to test free
+    MPI_Group new_group = g.include(std::vector<int> { 0 }, simplemc::mpi::resource_policy::attach);
+
+    // free should not throw
+    ASSERT_NO_THROW(simplemc::mpi::group_free(new_group));
+
+    // after free, group should be MPI_GROUP_NULL
+    ASSERT_EQ(new_group, MPI_GROUP_NULL);
+}
+
+// Test creating multiple groups and comparing them.
+TEST(SimplemcMPIGroup, MultipleOperations) {
+    simplemc::mpi::communicator comm {};
+    auto g = comm.get_group();
+
+    // create two subgroups
+    auto even_ranks = std::vector<int> {};
+    auto odd_ranks = std::vector<int> {};
+    for (int i = 0; i < comm.size(); ++i) {
+        if (i % 2 == 0) {
+            even_ranks.push_back(i);
+        } else {
+            odd_ranks.push_back(i);
+        }
+    }
+    auto even_group = g.include(even_ranks);
+    auto odd_group = g.include(odd_ranks);
+
+    // both subgroups should be unequal to original
+    ASSERT_EQ(simplemc::mpi::group_compare(g, even_group), MPI_UNEQUAL);
+    ASSERT_EQ(simplemc::mpi::group_compare(g, odd_group), MPI_UNEQUAL);
+    ASSERT_EQ(simplemc::mpi::group_compare(even_group, odd_group), MPI_UNEQUAL);
+
+    // union should give back original
+    auto union_group = simplemc::mpi::group_union(even_group, odd_group);
+    ASSERT_EQ(simplemc::mpi::group_compare(g, union_group), MPI_SIMILAR);
+}
+
+// Test chain of operations: include -> exclude -> intersection.
+TEST(SimplemcMPIGroup, ChainedOperations) {
+    simplemc::mpi::communicator comm {};
+    auto g = comm.get_group();
+
+    // include even ranks
+    auto even_ranks = std::vector<int> {};
+    for (int i = 0; i < comm.size(); i += 2) {
+        even_ranks.push_back(i);
+    }
+    auto even_group = g.include(even_ranks);
+    ASSERT_EQ(even_group.size(), (comm.size() + 1) / 2);
+
+    // exclude rank 0 from original to get all but rank 0
+    auto without_zero = g.exclude(std::vector<int> { 0 });
+    ASSERT_EQ(without_zero.size(), comm.size() - 1);
+
+    // intersection of even_group and without_zero should give even ranks except 0
+    // even ranks: 0, 2, 4, ... without rank 0: 2, 4, ...
+    // so expected_size = (number of even ranks) - 1, but only if size > 1
+    auto intersection = simplemc::mpi::group_intersection(even_group, without_zero);
+    int const expected_size = (comm.size() > 2) ? (static_cast<int>(even_ranks.size()) - 1) : 0;
+    ASSERT_EQ(intersection.size(), expected_size);
 }
 
 // Custom main function for MPI.
