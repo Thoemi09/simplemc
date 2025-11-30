@@ -8,13 +8,13 @@
 
 // Test rank and size of communicator.
 TEST(SimplemcMPI, HelloWorldWithMPIEnvironment) {
-    simplemc::mpi::communicator comm;
+    simplemc::mpi::communicator comm {};
     fmt::print("Hello world, from {} of {} processes.\n", comm.rank(), comm.size());
 }
 
 // Test throwing and catching an exception on some process.
 TEST(SimplemcMPI, ThrowException) {
-    simplemc::mpi::communicator comm;
+    simplemc::mpi::communicator comm {};
     try {
         if (comm.rank() == 0) {
             fmt::print("Throwing a simplemc::simplemc_exception on rank 0.\n");
@@ -25,16 +25,10 @@ TEST(SimplemcMPI, ThrowException) {
     }
 }
 
-// Test duplicating a communicator.
-TEST(SimplemcMPI, DuplicateCommunicator) {
-    simplemc::mpi::communicator comm;
-    simplemc::mpi::communicator dup_comm = comm.duplicate();
-    fmt::print("Original communicator: {} of {}\n", comm.rank(), comm.size());
-    fmt::print("Duplicated communicator: {} of {}\n", dup_comm.rank(), dup_comm.size());
-    int cmp_res {};
-    MPI_Comm_compare(comm, dup_comm, &cmp_res);
-    ASSERT_NE(MPI_IDENT, cmp_res);
-    // No need to call free() - automatic cleanup via shared_ptr
+// Test status of initialization and finalization.
+TEST(SimplemcMPI, MPIEnvironmentIsInitializedIsFinalized) {
+    ASSERT_TRUE(simplemc::mpi::environment::is_initialized());
+    ASSERT_FALSE(simplemc::mpi::environment::is_finalized());
 }
 
 // Test thread support query.

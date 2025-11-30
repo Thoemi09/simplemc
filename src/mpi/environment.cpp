@@ -12,7 +12,7 @@
 
 namespace simplemc::mpi {
 
-bool environment::initialized() {
+bool environment::is_initialized() {
     int ini {};
     check_mpi_call(MPI_Initialized(&ini), "MPI_Intialized");
     return ini != 0;
@@ -49,7 +49,7 @@ bool environment::is_main_thread() {
 environment::environment(int& argc, char**& argv, bool abort_on_exception) :
     init_(false),
     abort_on_exception_(abort_on_exception) {
-    if (!initialized()) {
+    if (!is_initialized()) {
         check_mpi_call(MPI_Init(&argc, &argv), "MPI_Init");
         init_ = true;
     }
@@ -58,7 +58,7 @@ environment::environment(int& argc, char**& argv, bool abort_on_exception) :
 environment::environment(int& argc, char**& argv, int required_thread_level, bool abort_on_exception) :
     init_(false),
     abort_on_exception_(abort_on_exception) {
-    if (!initialized()) {
+    if (!is_initialized()) {
         int provided {};
         check_mpi_call(MPI_Init_thread(&argc, &argv, required_thread_level, &provided), "MPI_Init_thread");
         init_ = true;

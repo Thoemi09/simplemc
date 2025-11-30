@@ -9,8 +9,8 @@
 
 // Test that thread support can be queried.
 TEST(SimplemcMPIThreading, QueryThreadSupport) {
+    simplemc::mpi::communicator comm {};
     int provided = simplemc::mpi::environment::thread_support();
-    simplemc::mpi::communicator comm;
 
     if (comm.rank() == 0) {
         fmt::print("Provided thread support level: ");
@@ -36,12 +36,13 @@ TEST(SimplemcMPIThreading, IsMainThreadInMainThread) {
 
 // Test that is_main_thread returns false in spawned threads.
 TEST(SimplemcMPIThreading, IsMainThreadInSpawnedThreads) {
+    simplemc::mpi::communicator comm {};
     int provided = simplemc::mpi::environment::thread_support();
 
     // only test with actual threading if MPI supports it
     if (provided >= MPI_THREAD_SERIALIZED) {
         const int num_threads = 4;
-        std::vector<std::thread> threads;
+        std::vector<std::thread> threads {};
         std::atomic<int> main_thread_count { 0 };
         std::atomic<int> non_main_thread_count { 0 };
 
@@ -65,12 +66,10 @@ TEST(SimplemcMPIThreading, IsMainThreadInSpawnedThreads) {
         ASSERT_EQ(main_thread_count, 0);
         ASSERT_EQ(non_main_thread_count, num_threads);
 
-        simplemc::mpi::communicator comm;
         if (comm.rank() == 0) {
             fmt::println("Spawned {} threads, all correctly identified as non-main threads", num_threads);
         }
     } else {
-        simplemc::mpi::communicator comm;
         if (comm.rank() == 0) {
             fmt::println("Skipping spawned thread test (insufficient thread support)");
         }

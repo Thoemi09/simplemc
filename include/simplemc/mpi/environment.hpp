@@ -23,13 +23,13 @@ namespace simplemc::mpi {
  *     ...
  *     // initialize MPI
  *     simplemc::mpi::environment env(argc, argv);
- *     
+ *
  *     // use MPI
  *     ...
  * }
  * @endcode
  *
- * @note Instead of using simplemc::mpi::environment, the user can could also call `MPI_Init` and 
+ * @note Instead of using simplemc::mpi::environment, the user can could also call `MPI_Init` and
  * `MPI_Finalize` directly.
  *
  * See @ref tut_mpi_1 and @ref tut_mpi_2 for full examples.
@@ -43,7 +43,7 @@ public:
      *
      * @return True if `MPI_Init` has been called.
      */
-    [[nodiscard]] static bool initialized();
+    [[nodiscard]] static bool is_initialized();
 
     /**
      * @brief Check if the MPI environment is finalized.
