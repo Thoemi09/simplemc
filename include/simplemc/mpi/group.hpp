@@ -59,8 +59,8 @@ public:
      * @details If the resource policy is set to`take_ownership` (the default), the group takes
      * ownership of the provided `MPI_Group` and will free it when the last reference is destroyed.
      *
-     * If the policy is `attach`, the group simply attaches to the provided `MPI_Group` without
-     * taking ownership, and the caller remains responsible for freeing it.
+     * If the policy is `attach`, the group simply attaches to the provided `MPI_Group` without taking 
+     * ownership, and the caller remains responsible for freeing it.
      *
      * @param grp `MPI_Group` object to wrap.
      * @param pol simplemc::mpi::resource_policy indicating ownership semantics.

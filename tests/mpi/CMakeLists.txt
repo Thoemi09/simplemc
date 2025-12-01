@@ -6,6 +6,7 @@
 # mpi-env-test: Executable to test the MPI environment wrappers.
 # mpi-group-test: Executable to test the MPI group wrapper.
 # mpi-comm-test: Executable to test the MPI communicator wrapper.
+# mpi-datatype-test: Executable to test the MPI datatype wrapper.
 # mpi-abort-exception-test: Executable to test the behavior of abort_on_exception == true.
 # mpi-no-abort-exception-test: Executable to test the behavior of abort_on_exception == false.
 # mpi-datatypes-test: Executable to test the mapping of MPI datatypes to C++ types.
@@ -24,6 +25,9 @@ target_link_libraries(mpi-group-test PRIVATE simplemc-test)
 
 add_executable(mpi-comm-test mpi_comm_test.cpp)
 target_link_libraries(mpi-comm-test PRIVATE simplemc-test)
+
+add_executable(mpi-datatype-test mpi_datatype_test.cpp)
+target_link_libraries(mpi-datatype-test PRIVATE simplemc-test)
 
 add_executable(mpi-abort-exception-test mpi_abort_exception_test.cpp)
 target_link_libraries(mpi-abort-exception-test PRIVATE simplemc-test)
@@ -45,6 +49,7 @@ add_test(NAME mpi-utils-test COMMAND ./mpi-utils-test)
 add_test(NAME mpi-env-test COMMAND mpirun -n 4 ./mpi-env-comm-test)
 add_test(NAME mpi-group-test COMMAND mpirun -n 4 ./mpi-group-test)
 add_test(NAME mpi-comm-test COMMAND mpirun -n 4 ./mpi-comm-test)
+add_test(NAME mpi-datatype-test COMMAND mpirun -n 4 ./mpi-datatype-test)
 add_test(NAME mpi-datatypes-test COMMAND ./mpi-datatypes-test)
 add_test(NAME mpi-collectives-test COMMAND mpirun -n 4 ./mpi-collectives-test)
 add_test(NAME mpi-threading-test COMMAND mpirun -n 4 ./mpi-threading-test)

@@ -13,7 +13,7 @@
 
 namespace simplemc::mpi {
 
-group::group() : grp_(new MPI_Group(MPI_GROUP_EMPTY), group_deleter {}) {}
+group::group() : grp_(new MPI_Group(MPI_GROUP_EMPTY)) {}
 
 group::group(MPI_Group grp, resource_policy pol) {
     if (pol == resource_policy::take_ownership) {
@@ -36,7 +36,7 @@ int group::size() const {
 }
 
 void group::group_deleter::operator()(MPI_Group* g) const {
-    // only free if valid and not a predefined group.
+    // only free if valid and not a predefined group
     if (!environment::is_finalized() && g && *g != MPI_GROUP_NULL && *g != MPI_GROUP_EMPTY) {
         MPI_Group_free(g);
     }

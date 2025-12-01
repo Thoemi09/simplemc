@@ -62,7 +62,7 @@ communicator communicator::split(int color, int key, resource_policy pol) const 
 }
 
 void communicator::comm_deleter::operator()(MPI_Comm* c) const {
-    // Only free if valid and not a predefined communicator.
+    // only free if valid and not a predefined communicator
     if (!environment::is_finalized() && c && *c != MPI_COMM_NULL && *c != MPI_COMM_WORLD && *c != MPI_COMM_SELF) {
         MPI_Comm_free(c);
     }

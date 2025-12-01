@@ -8,6 +8,7 @@
 
 #include <simplemc/mpi/collectives.hpp>
 #include <simplemc/mpi/communicator.hpp>
+#include <simplemc/mpi/datatype.hpp>
 #include <simplemc/mpi/datatypes.hpp>
 #include <simplemc/mpi/environment.hpp>
 #include <simplemc/mpi/group.hpp>

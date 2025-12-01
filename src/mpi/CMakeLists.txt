@@ -9,6 +9,7 @@ add_library(simplemc::simplemc-mpi ALIAS simplemc-mpi)
 target_sources(simplemc-mpi
     PRIVATE
         communicator.cpp
+        datatype.cpp
         environment.cpp
         group.cpp
         utils.cpp)
