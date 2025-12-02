@@ -46,6 +46,10 @@ bool environment::is_main_thread() {
     return flag != 0;
 }
 
+void environment::set_errhandler(MPI_Errhandler errhandler) {
+    check_mpi_call(MPI_Comm_set_errhandler(MPI_COMM_WORLD, errhandler), "MPI_Comm_set_errhandler");
+}
+
 environment::environment(int& argc, char**& argv, bool abort_on_exception) :
     init_(false),
     abort_on_exception_(abort_on_exception) {

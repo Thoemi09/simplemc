@@ -29,7 +29,7 @@ namespace simplemc::mpi {
  * }
  * @endcode
  *
- * @note Instead of using simplemc::mpi::environment, the user can could also call `MPI_Init` and
+ * @note Instead of using simplemc::mpi::environment, the user can also call `MPI_Init` and
  * `MPI_Finalize` directly.
  *
  * See @ref tut_mpi_1 and @ref tut_mpi_2 for full examples.
@@ -93,6 +93,19 @@ public:
      * @return True if the calling thread is the main thread.
      */
     [[nodiscard]] static bool is_main_thread();
+
+    /**
+     * @brief Set the error handler for `MPI_COMM_WORLD`.
+     *
+     * @details It makes a call to `MPI_Comm_set_errhandler` to set the error handler for
+     * `MPI_COMM_WORLD`. Common error handlers are:
+     * - `MPI_ERRORS_ARE_FATAL`: MPI will abort on error (default).
+     * - `MPI_ERRORS_RETURN`: MPI will return an error code instead of aborting.
+     * - `MPI_ERRORS_ABORT`: MPI will abort on error (similar to `MPI_ERRORS_ARE_FATAL`).
+     *
+     * @param errhandler The MPI error handler to set.
+     */
+    static void set_errhandler(MPI_Errhandler errhandler);
 
     /**
      * @brief Constructor initializes the MPI environment.

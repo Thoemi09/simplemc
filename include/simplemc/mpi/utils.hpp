@@ -25,6 +25,10 @@ namespace simplemc::mpi {
  * check_mpi_call(MPI_Comm_rank(MPI_COMM_WORLD, &my_rank), "MPI_Comm_rank");
  * @endcode
  *
+ * @note This only works if error handler in MPI is set to `MPI_ERRORS_RETURN`. By default, the error
+ * handler is set to `MPI_ERRORS_ARE_FATAL`, which causes the program to abort all connected MPI
+ * processes.
+ *
  * @param errcode Error code returned by the MPI routine.
  * @param mpi_routine Name of the MPI routine that returned the error code.
  */
