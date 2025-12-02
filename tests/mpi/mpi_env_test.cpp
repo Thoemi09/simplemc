@@ -27,20 +27,20 @@ TEST(SimplemcMPI, ThrowException) {
 
 // Test status of initialization and finalization.
 TEST(SimplemcMPI, MPIEnvironmentIsInitializedIsFinalized) {
-    ASSERT_TRUE(simplemc::mpi::environment::is_initialized());
-    ASSERT_FALSE(simplemc::mpi::environment::is_finalized());
+    ASSERT_TRUE(simplemc::mpi::initialized());
+    ASSERT_FALSE(simplemc::mpi::finalized());
 }
 
 // Test thread support query.
 TEST(SimplemcMPI, ThreadSupport) {
-    int provided = simplemc::mpi::environment::thread_support();
+    int provided = simplemc::mpi::thread_support();
     ASSERT_EQ(provided, MPI_THREAD_SINGLE);
 }
 
 // Test is_main_thread function.
 TEST(SimplemcMPI, IsMainThread) {
     // in this test, we're in the main thread, so this should return true
-    bool is_main = simplemc::mpi::environment::is_main_thread();
+    bool is_main = simplemc::mpi::is_main_thread();
     ASSERT_TRUE(is_main);
 }
 

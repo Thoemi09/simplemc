@@ -11,7 +11,10 @@
 namespace simplemc::mpi {
 
 /**
- * @ingroup simplemc-mpi-essentials
+ * @addtogroup simplemc-mpi-essentials
+ */
+
+/**
  * @brief Initialize and finalize MPI execution environments.
  *
  * @details This is a simplified version of the `boost::mpi::environment` class. It is intended to be
@@ -36,77 +39,6 @@ namespace simplemc::mpi {
  */
 class environment {
 public:
-    /**
-     * @brief Check if the MPI environment is initialized.
-     *
-     * @details Makes a call to `MPI_Initialized` and throws an exception if the call fails.
-     *
-     * @return True if `MPI_Init` has been called.
-     */
-    [[nodiscard]] static bool is_initialized();
-
-    /**
-     * @brief Check if the MPI environment is finalized.
-     *
-     * @details Makes a call to `MPI_Finalized` and throws an exception if the call fails.
-     *
-     * @return True if `MPI_Finalize` has been called.
-     */
-    [[nodiscard]] static bool is_finalized();
-
-    /**
-     * @brief Abort all MPI processes on `MPI_COMM_WORLD`.
-     *
-     * @details Makes a call to `MPI_Abort` and throws an exception if the call fails.
-     *
-     * @param errcode Error code that will be passed to the `MPI_Abort` function.
-     */
-    static void abort(int errcode = 0);
-
-    /**
-     * @brief Clean up all MPI processes with a call to `MPI_Finalize`.
-     *
-     * @details It first checks if MPI has already been finalized. If not, it calls `MPI_Finalize`.
-     *
-     * It throws an exception if any MPI call fails.
-     */
-    static void finalize();
-
-    /**
-     * @brief Query the level of thread support provided by the MPI implementation.
-     *
-     * @details Makes a call to `MPI_Query_thread` and throws an exception if the call fails.
-     *
-     * @return The level of thread support provided. This will be one of `MPI_THREAD_SINGLE`,
-     * `MPI_THREAD_FUNNELED`, `MPI_THREAD_SERIALIZED`, or `MPI_THREAD_MULTIPLE`.
-     */
-    [[nodiscard]] static int thread_support();
-
-    /**
-     * @brief Determine if this is the main thread.
-     *
-     * @details Makes a call to `MPI_Is_thread_main` and throws an exception if the call fails.
-     *
-     * This function is useful in multi-threaded MPI programs to determine whether the calling thread
-     * is the main thread (i.e., the thread that initialized MPI).
-     *
-     * @return True if the calling thread is the main thread.
-     */
-    [[nodiscard]] static bool is_main_thread();
-
-    /**
-     * @brief Set the error handler for `MPI_COMM_WORLD`.
-     *
-     * @details It makes a call to `MPI_Comm_set_errhandler` to set the error handler for
-     * `MPI_COMM_WORLD`. Common error handlers are:
-     * - `MPI_ERRORS_ARE_FATAL`: MPI will abort on error (default).
-     * - `MPI_ERRORS_RETURN`: MPI will return an error code instead of aborting.
-     * - `MPI_ERRORS_ABORT`: MPI will abort on error (similar to `MPI_ERRORS_ARE_FATAL`).
-     *
-     * @param errhandler The MPI error handler to set.
-     */
-    static void set_errhandler(MPI_Errhandler errhandler);
-
     /**
      * @brief Constructor initializes the MPI environment.
      *
@@ -172,6 +104,77 @@ private:
     bool init_;
     bool abort_on_exception_;
 };
+
+/**
+ * @brief Check if the MPI environment is initialized.
+ *
+ * @details Makes a call to `MPI_Initialized` and throws an exception if the call fails.
+ *
+ * @return True if `MPI_Init` has been called.
+ */
+[[nodiscard]] bool initialized();
+
+/**
+ * @brief Check if the MPI environment is finalized.
+ *
+ * @details Makes a call to `MPI_Finalized` and throws an exception if the call fails.
+ *
+ * @return True if `MPI_Finalize` has been called.
+ */
+[[nodiscard]] bool finalized();
+
+/**
+ * @brief Abort all MPI processes on `MPI_COMM_WORLD`.
+ *
+ * @details Makes a call to `MPI_Abort` and throws an exception if the call fails.
+ *
+ * @param errcode Error code that will be passed to the `MPI_Abort` function.
+ */
+void abort(int errcode = 0);
+
+/**
+ * @brief Clean up all MPI processes with a call to `MPI_Finalize`.
+ *
+ * @details It first checks if MPI has already been finalized. If not, it calls `MPI_Finalize`.
+ *
+ * It throws an exception if any MPI call fails.
+ */
+void finalize();
+
+/**
+ * @brief Query the level of thread support provided by the MPI implementation.
+ *
+ * @details Makes a call to `MPI_Query_thread` and throws an exception if the call fails.
+ *
+ * @return The level of thread support provided. This will be one of `MPI_THREAD_SINGLE`,
+ * `MPI_THREAD_FUNNELED`, `MPI_THREAD_SERIALIZED`, or `MPI_THREAD_MULTIPLE`.
+ */
+[[nodiscard]] int thread_support();
+
+/**
+ * @brief Determine if this is the main thread.
+ *
+ * @details Makes a call to `MPI_Is_thread_main` and throws an exception if the call fails.
+ *
+ * This function is useful in multi-threaded MPI programs to determine whether the calling thread
+ * is the main thread (i.e., the thread that initialized MPI).
+ *
+ * @return True if the calling thread is the main thread.
+ */
+[[nodiscard]] bool is_main_thread();
+
+/**
+ * @brief Set the error handler for `MPI_COMM_WORLD`.
+ *
+ * @details It makes a call to `MPI_Comm_set_errhandler` to set the error handler for
+ * `MPI_COMM_WORLD`. Common error handlers are:
+ * - `MPI_ERRORS_ARE_FATAL`: MPI will abort on error (default).
+ * - `MPI_ERRORS_RETURN`: MPI will return an error code instead of aborting.
+ * - `MPI_ERRORS_ABORT`: MPI will abort on error (similar to `MPI_ERRORS_ARE_FATAL`).
+ *
+ * @param errhandler The MPI error handler to set.
+ */
+void set_errhandler(MPI_Errhandler errhandler);
 
 } // namespace simplemc::mpi
 

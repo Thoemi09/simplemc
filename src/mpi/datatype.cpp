@@ -36,7 +36,7 @@ int datatype::size() const {
 
 void datatype::datatype_deleter::operator()(MPI_Datatype* dt) const {
     // only free if valid and not a predefined datatype
-    if (!environment::is_finalized() && dt && *dt != MPI_DATATYPE_NULL && !type_is_predefined(*dt)) {
+    if (!finalized() && dt && *dt != MPI_DATATYPE_NULL && !type_is_predefined(*dt)) {
         MPI_Type_free(dt);
     }
     delete dt;

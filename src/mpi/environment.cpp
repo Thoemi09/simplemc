@@ -12,48 +12,48 @@
 
 namespace simplemc::mpi {
 
-bool environment::is_initialized() {
+bool initialized() {
     int ini {};
     check_mpi_call(MPI_Initialized(&ini), "MPI_Intialized");
     return ini != 0;
 }
 
-bool environment::is_finalized() {
+bool finalized() {
     int fin {};
     check_mpi_call(MPI_Finalized(&fin), "MPI_Finalized");
     return fin != 0;
 }
 
-void environment::abort(int errcode) {
+void abort(int errcode) {
     check_mpi_call(MPI_Abort(MPI_COMM_WORLD, errcode), "MPI_Abort");
 }
 
-void environment::finalize() {
-    if (!is_finalized()) {
+void finalize() {
+    if (!finalized()) {
         check_mpi_call(MPI_Finalize(), "MPI_Finalize");
     }
 }
 
-int environment::thread_support() {
+int thread_support() {
     int provided {};
     check_mpi_call(MPI_Query_thread(&provided), "MPI_Query_thread");
     return provided;
 }
 
-bool environment::is_main_thread() {
+bool is_main_thread() {
     int flag {};
     check_mpi_call(MPI_Is_thread_main(&flag), "MPI_Is_thread_main");
     return flag != 0;
 }
 
-void environment::set_errhandler(MPI_Errhandler errhandler) {
+void set_errhandler(MPI_Errhandler errhandler) {
     check_mpi_call(MPI_Comm_set_errhandler(MPI_COMM_WORLD, errhandler), "MPI_Comm_set_errhandler");
 }
 
 environment::environment(int& argc, char**& argv, bool abort_on_exception) :
     init_(false),
     abort_on_exception_(abort_on_exception) {
-    if (!is_initialized()) {
+    if (!initialized()) {
         check_mpi_call(MPI_Init(&argc, &argv), "MPI_Init");
         init_ = true;
     }
@@ -62,7 +62,7 @@ environment::environment(int& argc, char**& argv, bool abort_on_exception) :
 environment::environment(int& argc, char**& argv, int required_thread_level, bool abort_on_exception) :
     init_(false),
     abort_on_exception_(abort_on_exception) {
-    if (!is_initialized()) {
+    if (!initialized()) {
         int provided {};
         check_mpi_call(MPI_Init_thread(&argc, &argv, required_thread_level, &provided), "MPI_Init_thread");
         init_ = true;
@@ -74,7 +74,7 @@ environment::~environment() {
     if (init_) {
         if (abort_on_exception_ && std::uncaught_exceptions()) {
             MPI_Abort(MPI_COMM_WORLD, -1);
-        } else if (!is_finalized()) {
+        } else if (!finalized()) {
             MPI_Finalize();
         }
     }

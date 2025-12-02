@@ -37,7 +37,7 @@ int group::size() const {
 
 void group::group_deleter::operator()(MPI_Group* g) const {
     // only free if valid and not a predefined group
-    if (!environment::is_finalized() && g && *g != MPI_GROUP_NULL && *g != MPI_GROUP_EMPTY) {
+    if (!finalized() && g && *g != MPI_GROUP_NULL && *g != MPI_GROUP_EMPTY) {
         MPI_Group_free(g);
     }
     delete g;
