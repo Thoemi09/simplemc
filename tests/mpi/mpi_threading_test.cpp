@@ -10,7 +10,7 @@
 // Test that thread support can be queried.
 TEST(SimplemcMPIThreading, QueryThreadSupport) {
     simplemc::mpi::communicator comm {};
-    int provided = simplemc::mpi::thread_support();
+    int provided = simplemc::mpi::query_thread();
 
     if (comm.rank() == 0) {
         fmt::print("Provided thread support level: ");
@@ -30,14 +30,14 @@ TEST(SimplemcMPIThreading, QueryThreadSupport) {
 
 // Test that is_main_thread returns true in the main thread.
 TEST(SimplemcMPIThreading, IsMainThreadInMainThread) {
-    bool is_main = simplemc::mpi::is_main_thread();
+    bool is_main = simplemc::mpi::is_thread_main();
     ASSERT_TRUE(is_main);
 }
 
 // Test that is_main_thread returns false in spawned threads.
 TEST(SimplemcMPIThreading, IsMainThreadInSpawnedThreads) {
     simplemc::mpi::communicator comm {};
-    int provided = simplemc::mpi::thread_support();
+    int provided = simplemc::mpi::query_thread();
 
     // only test with actual threading if MPI supports it
     if (provided >= MPI_THREAD_SERIALIZED) {
@@ -48,7 +48,7 @@ TEST(SimplemcMPIThreading, IsMainThreadInSpawnedThreads) {
 
         for (int i = 0; i < num_threads; ++i) {
             threads.emplace_back([&main_thread_count, &non_main_thread_count]() {
-                bool is_main = simplemc::mpi::is_main_thread();
+                bool is_main = simplemc::mpi::is_thread_main();
                 if (is_main) {
                     main_thread_count++;
                 } else {

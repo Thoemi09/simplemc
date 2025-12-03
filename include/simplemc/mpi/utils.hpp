@@ -18,16 +18,16 @@ namespace simplemc::mpi {
 /**
  * @brief Check the success of an MPI call.
  *
- * @details Throws a simplemc::simplemc_exception if the error code is `!= MPI_SUCCESS`.
+ * @details It throws a simplemc::simplemc_exception if the error code is `!= MPI_SUCCESS`.
  *
  * @code{.cpp}
  * int my_rank {};
  * check_mpi_call(MPI_Comm_rank(MPI_COMM_WORLD, &my_rank), "MPI_Comm_rank");
  * @endcode
  *
- * @note This only works if error handler in MPI is set to `MPI_ERRORS_RETURN`. By default, the error
- * handler is set to `MPI_ERRORS_ARE_FATAL`, which causes the program to abort all connected MPI
- * processes.
+ * @note This only works if the error handler in MPI is set to `MPI_ERRORS_RETURN`. By default, MPI
+ * sets it to `MPI_ERRORS_ARE_FATAL`, which causes the program to abort all connected MPI processes
+ * in case of an error (see e.g. simplemc::mpi::set_errhandler).
  *
  * @param errcode Error code returned by the MPI routine.
  * @param mpi_routine Name of the MPI routine that returned the error code.

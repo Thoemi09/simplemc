@@ -12,20 +12,53 @@
 
 namespace simplemc::mpi {
 
-bool initialized() {
+environment::environment(int& argc, char**& argv, bool abort_on_exception) :
+    init_(!initialized()),
+    abort_on_exception_(abort_on_exception) {
+    init(argc, argv);
+}
+
+environment::environment(int& argc, char**& argv, int required_thread_level, bool abort_on_exception) :
+    init_(!initialized()),
+    abort_on_exception_(abort_on_exception) {
+    init_thread(argc, argv, required_thread_level);
+}
+
+environment::~environment() {
+    if (init_ && !finalized()) {
+        if (abort_on_exception_ && std::uncaught_exceptions()) {
+            MPI_Abort(MPI_COMM_WORLD, -1);
+        } else {
+            MPI_Finalize();
+        }
+    }
+}
+
+bool initialized() noexcept {
     int ini {};
-    check_mpi_call(MPI_Initialized(&ini), "MPI_Intialized");
+    MPI_Initialized(&ini);
     return ini != 0;
 }
 
-bool finalized() {
+bool finalized() noexcept {
     int fin {};
-    check_mpi_call(MPI_Finalized(&fin), "MPI_Finalized");
+    MPI_Finalized(&fin);
     return fin != 0;
 }
 
-void abort(int errcode) {
-    check_mpi_call(MPI_Abort(MPI_COMM_WORLD, errcode), "MPI_Abort");
+void init(int& argc, char**& argv) {
+    if (!initialized()) {
+        check_mpi_call(MPI_Init(&argc, &argv), "MPI_Init");
+    }
+}
+
+int init_thread(int& argc, char**& argv, int required_thread_level) {
+    if (!initialized()) {
+        int provided {};
+        check_mpi_call(MPI_Init_thread(&argc, &argv, required_thread_level, &provided), "MPI_Init_thread");
+        return provided;
+    }
+    return query_thread();
 }
 
 void finalize() {
@@ -34,13 +67,17 @@ void finalize() {
     }
 }
 
-int thread_support() {
+void abort(int errcode) {
+    check_mpi_call(MPI_Abort(MPI_COMM_WORLD, errcode), "MPI_Abort");
+}
+
+int query_thread() {
     int provided {};
     check_mpi_call(MPI_Query_thread(&provided), "MPI_Query_thread");
     return provided;
 }
 
-bool is_main_thread() {
+bool is_thread_main() {
     int flag {};
     check_mpi_call(MPI_Is_thread_main(&flag), "MPI_Is_thread_main");
     return flag != 0;
@@ -48,36 +85,6 @@ bool is_main_thread() {
 
 void set_errhandler(MPI_Errhandler errhandler) {
     check_mpi_call(MPI_Comm_set_errhandler(MPI_COMM_WORLD, errhandler), "MPI_Comm_set_errhandler");
-}
-
-environment::environment(int& argc, char**& argv, bool abort_on_exception) :
-    init_(false),
-    abort_on_exception_(abort_on_exception) {
-    if (!initialized()) {
-        check_mpi_call(MPI_Init(&argc, &argv), "MPI_Init");
-        init_ = true;
-    }
-}
-
-environment::environment(int& argc, char**& argv, int required_thread_level, bool abort_on_exception) :
-    init_(false),
-    abort_on_exception_(abort_on_exception) {
-    if (!initialized()) {
-        int provided {};
-        check_mpi_call(MPI_Init_thread(&argc, &argv, required_thread_level, &provided), "MPI_Init_thread");
-        init_ = true;
-    }
-}
-
-environment::~environment() {
-    // should we also check the MPI calls in the destructor and potentially throw an exception?
-    if (init_) {
-        if (abort_on_exception_ && std::uncaught_exceptions()) {
-            MPI_Abort(MPI_COMM_WORLD, -1);
-        } else if (!finalized()) {
-            MPI_Finalize();
-        }
-    }
 }
 
 } // namespace simplemc::mpi

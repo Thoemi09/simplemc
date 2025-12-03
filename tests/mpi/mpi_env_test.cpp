@@ -33,15 +33,32 @@ TEST(SimplemcMPI, MPIEnvironmentIsInitializedIsFinalized) {
 
 // Test thread support query.
 TEST(SimplemcMPI, ThreadSupport) {
-    int provided = simplemc::mpi::thread_support();
+    int provided = simplemc::mpi::query_thread();
     ASSERT_EQ(provided, MPI_THREAD_SINGLE);
 }
 
 // Test is_main_thread function.
 TEST(SimplemcMPI, IsMainThread) {
     // in this test, we're in the main thread, so this should return true
-    bool is_main = simplemc::mpi::is_main_thread();
+    bool is_main = simplemc::mpi::is_thread_main();
     ASSERT_TRUE(is_main);
+}
+
+// Test creating multiple environment objects.
+TEST(SimplemcMPI, MultipleEnvironments) {
+    // MPI is already initialized by the main function's environment
+    ASSERT_TRUE(simplemc::mpi::initialized());
+
+    // creating another environment should not reinitialize/finalize MPI
+    {
+        int argc = 0;
+        char** argv = nullptr;
+        simplemc::mpi::environment env2(argc, argv);
+    }
+
+    // MPI is still initialized
+    ASSERT_TRUE(simplemc::mpi::initialized());
+    ASSERT_FALSE(simplemc::mpi::finalized());
 }
 
 // Custom main function for MPI.
