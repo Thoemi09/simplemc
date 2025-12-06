@@ -215,6 +215,17 @@
  */
 
 /**
+ * @defgroup simplemc-mpi-essentials-comms MPI communicators
+ * @ingroup simplemc-mpi-essentials
+ * @brief RAII wrapper for `MPI_comm` objects and other essential MPI functions involving 
+ * communicators.
+ *
+ * @note We recomend to use the RAII wrapper simplemc::mpi::communicator and its member functions 
+ * whenever possible. The performance overhead of managing the lifetime with a shared pointer should 
+ * be negligible compared to the MPI calls.
+ */
+
+/**
  * @defgroup simplemc-mpi-essentials-groups MPI groups
  * @ingroup simplemc-mpi-essentials
  * @brief RAII wrapper for `MPI_Group` objects and other essential MPI functions involving groups.

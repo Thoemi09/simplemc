@@ -108,7 +108,9 @@
           <tab type="usergroup" url="@ref simplemc-mpi-essentials-groups" title="MPI groups">
             <tab type="user" url="@ref simplemc::mpi::group" title="mpi::group"/>
           </tab>
-          <tab type="user" url="@ref simplemc::mpi::communicator" title="mpi::communicator"/>
+          <tab type="usergroup" url="@ref simplemc-mpi-essentials-comms" title="MPI communicators">
+            <tab type="user" url="@ref simplemc::mpi::communicator" title="mpi::communicator"/>
+          </tab>
           <tab type="user" url="@ref simplemc::mpi::environment" title="mpi::environment"/>
         </tab>
         <tab type="user" url="@ref simplemc-mpi-utils" title="MPI utilities"/>

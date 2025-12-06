@@ -123,7 +123,7 @@ TEST(SimplemcMPI, GroupSizeGroupRank) {
 }
 
 // Test shared_ptr semantics - copying should share the underlying group.
-TEST(SimplemcMPIGroup, SharedPtrSemantics) {
+TEST(SimplemcMPI, GroupSharedPtrSemantics) {
     simplemc::mpi::communicator comm {};
     auto grp1 = comm.get_group();
 

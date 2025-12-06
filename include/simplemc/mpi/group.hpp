@@ -6,6 +6,7 @@
 #ifndef SIMPLEMC_MPI_GROUP_HPP
 #define SIMPLEMC_MPI_GROUP_HPP
 
+#include <simplemc/mpi/mpi_fwd.hpp>
 #include <simplemc/mpi/utils.hpp>
 #include <simplemc/utils/ranges.hpp>
 
@@ -17,9 +18,6 @@
 #include <vector>
 
 namespace simplemc::mpi {
-
-// Forward declaration.
-class communicator;
 
 /**
  * @addtogroup simplemc-mpi-essentials-groups
@@ -143,11 +141,9 @@ void group_free(MPI_Group& grp);
 [[nodiscard]] MPI_Group group_difference(MPI_Group grp1, MPI_Group grp2);
 
 /**
- * @brief Compare two MPI groups.
+ * @brief Compare two MPI groups by calling `MPI_Group_compare`.
  *
- * @details It makes a call to `MPI_Group_compare` to compare the two groups.
- *
- * The return value is one of:
+ * @details The return value is one of:
  * - `MPI_IDENT`: Groups are identical (same members in same order).
  * - `MPI_SIMILAR`: Groups have same members but in different order.
  * - `MPI_UNEQUAL`: Groups have different members.
@@ -201,15 +197,14 @@ public:
     explicit group(MPI_Group grp, resource_policy pol = resource_policy::take_ownership);
 
     /**
-     * @brief Determine the rank of the calling process in the group by calling
-     * simplemc::mpi::group_rank.
+     * @brief Get the rank of the calling process in the group by calling simplemc::mpi::group_rank.
      *
      * @return Rank of the calling process in this group, or `MPI_UNDEFINED` if it is not a member.
      */
     [[nodiscard]] int rank() const { return group_rank(*grp_); }
 
     /**
-     * @brief Determine the size of the group by calling simplemc::mpi::group_size.
+     * @brief Get the size of the group by calling simplemc::mpi::group_size.
      *
      * @return Number of processes in the group.
      */
