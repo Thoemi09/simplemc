@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Wrapper around an `MPI_Group` object.
+ * @brief RAII wrapper for `MPI_Group` objects and other essential MPI functions involving groups.
  */
 
 #ifndef SIMPLEMC_MPI_GROUP_HPP
@@ -13,6 +13,7 @@
 
 #include <concepts>
 #include <memory>
+#include <span>
 #include <vector>
 
 namespace simplemc::mpi {
@@ -21,20 +22,152 @@ namespace simplemc::mpi {
 class communicator;
 
 /**
- * @addtogroup simplemc-mpi-essentials
+ * @addtogroup simplemc-mpi-essentials-groups
  * @{
  */
 
 /**
- * @brief A group that represents an ordered set of MPI processes.
+ * @brief Free an `MPI_Group` object.
  *
- * @details This class provides a thin C++ wrapper around `MPI_Group` objects. MPI groups are used
- * to represent ordered sets of processes and can be used to create new communicators.
+ * @details It makes a call to `MPI_Group_free` to free the group in case it is not
+ * `MPI_GROUP_NULL` or `MPI_GROUP_EMPTY`. Otherwise, it does nothing.
  *
- * The group is managed using a `std::shared_ptr` with a custom deleter providing automatic resource
- * management similar to <a href="https://www.boost.org/doc/libs/latest/doc/html/mpi.html">Boost.MPI
- * </a>. The behaviour of the deleter depends on the simplemc::mpi::resource_policy specified during
- * construction:
+ * @param grp Reference to the group to free.
+ */
+void group_free(MPI_Group& grp);
+
+/**
+ * @brief Get the size of an MPI group by calling `MPI_Group_size`.
+ *
+ * @param grp Group to query.
+ * @return Number of processes in the group.
+ */
+[[nodiscard]] int group_size(MPI_Group grp);
+
+/**
+ * @brief Get the rank of the calling process in an MPI group by calling `MPI_Group_rank`.
+ *
+ * @param grp Group to query.
+ * @return Rank of the calling process in the group, or `MPI_UNDEFINED` if it is not a member.
+ */
+[[nodiscard]] int group_rank(MPI_Group grp);
+
+/**
+ * @brief Create a new MPI group containing only the specified ranks.
+ *
+ * @details It makes a call to `MPI_Group_incl` to create a new group containing only the processes
+ * with the specified ranks from the input group.
+ *
+ * @note The caller is responsible for freeing the returned `MPI_Group` using
+ * simplemc::mpi::group_free or `MPI_Group_free()`.
+ *
+ * @param grp Input group.
+ * @param ranks Span of ranks to include in the new group.
+ * @return New group object containing only the specified ranks.
+ */
+[[nodiscard]] MPI_Group group_incl(MPI_Group grp, std::span<const int> ranks);
+
+/**
+ * @brief Create a new MPI group excluding the specified ranks.
+ *
+ * @details It makes a call to `MPI_Group_excl` to create a new group containing all processes from
+ * the input group except those with the specified ranks.
+ *
+ * @note The caller is responsible for freeing the returned `MPI_Group` using
+ * simplemc::mpi::group_free or `MPI_Group_free()`.
+ *
+ * @param grp Input group.
+ * @param ranks Span of ranks to exclude from the new group.
+ * @return New group object excluding the specified ranks.
+ */
+[[nodiscard]] MPI_Group group_excl(MPI_Group grp, std::span<const int> ranks);
+
+/**
+ * @brief Translate ranks from one MPI group to another.
+ *
+ * @details It makes a call to `MPI_Group_translate_ranks` to translate the specified ranks from
+ * the source group to the corresponding ranks in the destination group.
+ *
+ * For ranks that are not in the destination group, `MPI_UNDEFINED` is returned.
+ *
+ * @param src_grp Source group containing the ranks to translate.
+ * @param ranks Span of ranks in the source group to translate.
+ * @param dest_grp Destination group to translate to.
+ * @return Vector of translated ranks in the destination group.
+ */
+[[nodiscard]] std::vector<int> group_translate_ranks(MPI_Group src_grp, std::span<const int> ranks, MPI_Group dest_grp);
+
+/**
+ * @brief Create a new MPI group that is the union of two groups.
+ *
+ * @details It makes a call to `MPI_Group_union` to create a new group containing all processes that
+ * are in the first group or the second group (or both).
+ *
+ * @note The caller is responsible for freeing the returned `MPI_Group` using
+ * simplemc::mpi::group_free or `MPI_Group_free()`.
+ *
+ * @param grp1 First group.
+ * @param grp2 Second group.
+ * @return New group object containing the union of both groups.
+ */
+[[nodiscard]] MPI_Group group_union(MPI_Group grp1, MPI_Group grp2);
+
+/**
+ * @brief Create a new MPI group that is the intersection of two groups.
+ *
+ * @details It makes a call to `MPI_Group_intersection` to create a new group containing only
+ * processes that are in both groups.
+ *
+ * @note The caller is responsible for freeing the returned `MPI_Group` using
+ * simplemc::mpi::group_free or `MPI_Group_free()`.
+ *
+ * @param grp1 First group.
+ * @param grp2 Second group.
+ * @return New group object containing the intersection of both groups.
+ */
+[[nodiscard]] MPI_Group group_intersection(MPI_Group grp1, MPI_Group grp2);
+
+/**
+ * @brief Create a new MPI group that is the difference of two groups.
+ *
+ * @details It makes a call to `MPI_Group_difference` to create a new group containing processes
+ * that are in the first group but not in the second group.
+ *
+ * @note The caller is responsible for freeing the returned `MPI_Group` using
+ * simplemc::mpi::group_free or `MPI_Group_free()`.
+ *
+ * @param grp1 First group.
+ * @param grp2 Second group (to subtract from the first).
+ * @return New group object containing the difference.
+ */
+[[nodiscard]] MPI_Group group_difference(MPI_Group grp1, MPI_Group grp2);
+
+/**
+ * @brief Compare two MPI groups.
+ *
+ * @details It makes a call to `MPI_Group_compare` to compare the two groups.
+ *
+ * The return value is one of:
+ * - `MPI_IDENT`: Groups are identical (same members in same order).
+ * - `MPI_SIMILAR`: Groups have same members but in different order.
+ * - `MPI_UNEQUAL`: Groups have different members.
+ *
+ * @param grp1 First group.
+ * @param grp2 Second group.
+ * @return The comparison result (`MPI_IDENT`, `MPI_SIMILAR`, or `MPI_UNEQUAL`).
+ */
+[[nodiscard]] int group_compare(MPI_Group grp1, MPI_Group grp2);
+
+/**
+ * @brief RAII wrapper for `MPI_Group` objects.
+ *
+ * @details This class provides a thin C++ wrapper around `MPI_Group` objects. MPI groups represent
+ * ordered sets of processes and can be used to create new communicators.
+ *
+ * The wrapped `MPI_Group` is managed using a `std::shared_ptr` with a custom deleter providing
+ * automatic resource management similar to <a href="https://www.boost.org/doc/libs/latest/doc/html/
+ * mpi.html">Boost.MPI</a>. The behaviour of the deleter depends on the simplemc::mpi::resource_policy
+ * specified during construction:
  * - `take_ownership`: The wrapper is responsible for managing the lifetime of the MPI group, i.e. it
  * calls `MPI_Group_free` when the last reference is destroyed (unless it is `MPI_GROUP_NULL` or
  * `MPI_GROUP_EMPTY`).
@@ -50,16 +183,16 @@ public:
      * @details It creates a group that wraps `MPI_GROUP_EMPTY`. This represents an empty group with
      * no processes.
      */
-    group();
+    group() : grp_(new MPI_Group(MPI_GROUP_EMPTY)) {}
 
     /**
      * @brief Construct a group from an existing `MPI_Group` with a given
      * simplemc::mpi::resource_policy.
      *
-     * @details If the resource policy is set to`take_ownership` (the default), the group takes
+     * @details If the resource policy is set to `take_ownership` (the default), the group takes
      * ownership of the provided `MPI_Group` and will free it when the last reference is destroyed.
      *
-     * If the policy is `attach`, the group simply attaches to the provided `MPI_Group` without taking 
+     * If the policy is `attach`, the group simply attaches to the provided `MPI_Group` without taking
      * ownership, and the caller remains responsible for freeing it.
      *
      * @param grp `MPI_Group` object to wrap.
@@ -68,22 +201,19 @@ public:
     explicit group(MPI_Group grp, resource_policy pol = resource_policy::take_ownership);
 
     /**
-     * @brief Determine the rank of the calling process in the group.
-     *
-     * @details It makes a call to `MPI_Group_rank` and throws an exception if the call fails.
+     * @brief Determine the rank of the calling process in the group by calling
+     * simplemc::mpi::group_rank.
      *
      * @return Rank of the calling process in this group, or `MPI_UNDEFINED` if it is not a member.
      */
-    [[nodiscard]] int rank() const;
+    [[nodiscard]] int rank() const { return group_rank(*grp_); }
 
     /**
-     * @brief Determine the size of the group.
-     *
-     * @details It makes a call to `MPI_Group_size` and throws an exception if the call fails.
+     * @brief Determine the size of the group by calling simplemc::mpi::group_size.
      *
      * @return Number of processes in the group.
      */
-    [[nodiscard]] int size() const;
+    [[nodiscard]] int size() const { return group_size(*grp_); }
 
     /**
      * @brief Check if the group is empty.
@@ -95,10 +225,7 @@ public:
     /**
      * @brief Create a new group containing only the specified ranks.
      *
-     * @details It makes a call to `MPI_Group_incl` to create a new group containing only the
-     * processes with the specified ranks from this group.
-     *
-     * It throws an exception if the call fails.
+     * @details It calls simplemc::mpi::group_incl and wraps the result.
      *
      * @tparam R Range type whose value type is an integral type.
      * @param ranks Range of ranks to include in the new group.
@@ -109,19 +236,13 @@ public:
         requires std::integral<simplemc::ranges::range_value_t<R>>
     [[nodiscard]] group include(const R& ranks, resource_policy pol = resource_policy::take_ownership) const {
         auto ranks_vec = std::vector<int> { simplemc::ranges::begin(ranks), simplemc::ranges::end(ranks) };
-        MPI_Group new_grp {};
-        check_mpi_call(
-            MPI_Group_incl(*grp_, static_cast<int>(ranks_vec.size()), ranks_vec.data(), &new_grp), "MPI_Group_incl");
-        return group { new_grp, pol };
+        return group { group_incl(*grp_, ranks_vec), pol };
     }
 
     /**
      * @brief Create a new group excluding the specified ranks.
      *
-     * @details It makes a call to `MPI_Group_excl` to create a new group containing all processes
-     * from this group except those with the specified ranks.
-     *
-     * It throws an exception if the call fails.
+     * @details It calls simplemc::mpi::group_excl and wraps the result.
      *
      * @tparam R Range type whose value type is an integral type.
      * @param ranks Range of ranks to exclude from the new group.
@@ -132,42 +253,80 @@ public:
         requires std::integral<simplemc::ranges::range_value_t<R>>
     [[nodiscard]] group exclude(const R& ranks, resource_policy pol = resource_policy::take_ownership) const {
         auto ranks_vec = std::vector<int> { simplemc::ranges::begin(ranks), simplemc::ranges::end(ranks) };
-        MPI_Group new_grp {};
-        check_mpi_call(
-            MPI_Group_excl(*grp_, static_cast<int>(ranks_vec.size()), ranks_vec.data(), &new_grp), "MPI_Group_excl");
-        return group { new_grp, pol };
+        return group { group_excl(*grp_, ranks_vec), pol };
     }
 
     /**
      * @brief Translate ranks from this group to another group.
      *
-     * @details It makes a call to `MPI_Group_translate_ranks` to translate the specified ranks from
-     * this group to the corresponding ranks in the other group.
-     *
-     * For ranks that are not in the other group, `MPI_UNDEFINED` is returned.
-     *
-     * It throws an exception if the call fails.
+     * @details It calls simplemc::mpi::group_translate_ranks with `this` as the source group.
      *
      * @tparam R Range type whose value type is an integral type.
      * @param ranks Ranks in this group to translate.
-     * @param other The other group to translate to.
+     * @param other Destination group to translate to.
      * @return Vector of translated ranks in the other group.
      */
     template <simplemc::ranges::input_range R>
         requires std::integral<simplemc::ranges::range_value_t<R>>
     [[nodiscard]] std::vector<int> translate_ranks(const R& ranks, const group& other) const {
         auto ranks_vec = std::vector<int> { simplemc::ranges::begin(ranks), simplemc::ranges::end(ranks) };
-        auto translated = std::vector<int>(ranks_vec.size());
-        check_mpi_call(MPI_Group_translate_ranks(
-                           *grp_, static_cast<int>(ranks_vec.size()), ranks_vec.data(), other, translated.data()),
-            "MPI_Group_translate_ranks");
-        return translated;
+        return group_translate_ranks(*grp_, ranks_vec, other);
     }
+
+    /**
+     * @brief Create a new group that is the union of this group and another group.
+     *
+     * @details It calls simplemc::mpi::group_union and wraps the result.
+     *
+     * @param other Other group.
+     * @param pol simplemc::mpi::resource_policy indicating ownership semantics for the new group.
+     * @return New group containing the union of both groups.
+     */
+    [[nodiscard]] group union_with(const group& other, resource_policy pol = resource_policy::take_ownership) const {
+        return group { group_union(*grp_, other), pol };
+    }
+
+    /**
+     * @brief Create a new group that is the intersection of this group and another group.
+     *
+     * @details It calls simplemc::mpi::group_intersection and wraps the result.
+     *
+     * @param other Other group.
+     * @param pol simplemc::mpi::resource_policy indicating ownership semantics for the new group.
+     * @return New group containing the intersection of both groups.
+     */
+    [[nodiscard]] group intersect_with(
+        const group& other, resource_policy pol = resource_policy::take_ownership) const {
+        return group { group_intersection(*grp_, other), pol };
+    }
+
+    /**
+     * @brief Create a new group that is the difference of this group and another group.
+     *
+     * @details It calls simplemc::mpi::group_difference and wraps the result. The resulting group
+     * only contains processes that are in `this` group but not in `other`.
+     *
+     * @param other Group to subtract from this group.
+     * @param pol simplemc::mpi::resource_policy indicating ownership semantics for the new group.
+     * @return New group containing the difference.
+     */
+    [[nodiscard]] group difference_with(
+        const group& other, resource_policy pol = resource_policy::take_ownership) const {
+        return group { group_difference(*grp_, other), pol };
+    }
+
+    /**
+     * @brief Compare this group with another group by calling simplemc::mpi::group_compare.
+     *
+     * @param other Other group to compare with.
+     * @return The comparison result (`MPI_IDENT`, `MPI_SIMILAR`, or `MPI_UNEQUAL`).
+     */
+    [[nodiscard]] int compare(const group& other) const { return group_compare(*grp_, other); }
 
     /**
      * @brief Implicit conversion to the underlying `MPI_Group` object.
      *
-     * @details The underlying `MPI_Group` or `MPI_GROUP_NULL` if no MPI group is wrapped.
+     * @return Underlying `MPI_Group` or `MPI_GROUP_NULL` if no MPI group is wrapped.
      */
     operator MPI_Group() const { return grp_ ? *grp_ : MPI_GROUP_NULL; }
 
@@ -178,107 +337,26 @@ public:
      */
     [[nodiscard]] explicit operator bool() const { return grp_ && *grp_ != MPI_GROUP_NULL; }
 
+    /**
+     * @brief Equality comparison operator to check if two groups are identical.
+     *
+     * @details See also simplemc::mpi::group_compare.
+     *
+     * @param g1 First group.
+     * @param g2 Second group.
+     * @return True if the groups are identical (`MPI_IDENT`).
+     */
+    [[nodiscard]] friend bool operator==(const group& g1, const group& g2) { return g1.compare(g2) == MPI_IDENT; }
+
 private:
     // Custom deleter that makes a protected call to MPI_Group_free.
     struct group_deleter {
-        void operator()(MPI_Group* g) const;
+        void operator()(MPI_Group* g) const noexcept;
     };
 
 private:
     std::shared_ptr<MPI_Group> grp_;
 };
-
-/**
- * @brief Free an `MPI_Group` object.
- *
- * @details It makes a call to `MPI_Group_free` to free the MPI group. After calling this function,
- * the group will be set to `MPI_GROUP_NULL`.
- *
- * It throws an exception if the call fails. Does nothing if the group is `MPI_GROUP_NULL` or
- * `MPI_GROUP_EMPTY`.
- *
- * @param grp Reference to the `MPI_Group` to free.
- */
-void group_free(MPI_Group& grp);
-
-/**
- * @brief Create a new group that is the union of two groups.
- *
- * @details It makes a call to `MPI_Group_union` to create a new group containing all processes that
- * are in the first group or the second group (or both).
- *
- * It throws an exception if the call fails.
- *
- * @param g1 First group.
- * @param g2 Second group.
- * @param pol simplemc::mpi::resource_policy indicating ownership semantics for the new group.
- * @return New simplemc::mpi::group containing the union of both groups.
- */
-[[nodiscard]] group group_union(
-    const group& g1, const group& g2, resource_policy pol = resource_policy::take_ownership);
-
-/**
- * @brief Create a new group that is the intersection of two groups.
- *
- * @details It makes a call to `MPI_Group_intersection` to create a new group containing only
- * processes that are in both groups.
- *
- * It throws an exception if the call fails.
- *
- * @param g1 First group.
- * @param g2 Second group.
- * @param pol simplemc::mpi::resource_policy indicating ownership semantics for the new group.
- * @return New simplemc::mpi::group containing the intersection of both groups.
- */
-[[nodiscard]] group group_intersection(
-    const group& g1, const group& g2, resource_policy pol = resource_policy::take_ownership);
-
-/**
- * @brief Create a new group that is the difference of two groups.
- *
- * @details It makes a call to `MPI_Group_difference` to create a new group containing processes that
- * are in the first group but not in the second group.
- *
- * It throws an exception if the call fails.
- *
- * @param g1 First group.
- * @param g2 Second group (to subtract from from the first).
- * @param pol simplemc::mpi::resource_policy indicating ownership semantics for the new group.
- * @return New simplemc::mpi::group containing the difference.
- */
-[[nodiscard]] group group_difference(
-    const group& g1, const group& g2, resource_policy pol = resource_policy::take_ownership);
-
-/**
- * @brief Compare two groups.
- *
- * @details It makes a call to `MPI_Group_compare` to compare the two groups.
- *
- * The return value is one of:
- * - `MPI_IDENT`: Groups are identical (same members in same order).
- * - `MPI_SIMILAR`: Groups have same members but in different order.
- * - `MPI_UNEQUAL`: Groups have different members.
- *
- * It throws an exception if the call fails.
- *
- * @param g1 First group.
- * @param g2 Second group.
- * @return The comparison result (`MPI_IDENT`, `MPI_SIMILAR`, or `MPI_UNEQUAL`).
- */
-[[nodiscard]] int group_compare(const group& g1, const group& g2);
-
-/**
- * @brief Equality comparison operator to check if two groups are identical.
- *
- * @details See simplemc::mpi::group_compare for details.
- *
- * @param g1 First group.
- * @param g2 Second group.
- * @return True if the groups are identical.
- */
-[[nodiscard]] inline bool operator==(const group& g1, const group& g2) {
-    return group_compare(g1, g2) == MPI_IDENT;
-}
 
 /** @} */
 

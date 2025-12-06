@@ -200,17 +200,28 @@
 /**
  * @defgroup simplemc-mpi-essentials MPI essentials
  * @ingroup simplemc-mpi
- * @brief Highlevel C++ wrappers around the most important objects in MPI.
+ * @brief C++ interface for the most important objects and tasks in MPI.
  *
- * @details Initializing and finalizing **MPI execution environments** as well as working with **MPI
- * communicators** is part of every MPI program.
+ * @details **simplemc-mpi** provides a two-layer API:
+ * - **Free functions**: Thin wrappers around MPI C API that work with raw MPI object handles (e.g.
+ * `MPI_Comm`). These provide low-level access to MPI functionality with a modern C++ interface and
+ * feel.
+ * - **RAII classes**: Wrappers around MPI objects like `MPI_Comm` and `MPI_Group`. They help with
+ * lifetime management and clean up and it is in general recommended to work with them instead of the
+ * raw MPI objects. Internally, they delegate to the free functions for actual MPI calls.
  *
- * simplemc::mpi::environment and simplemc::mpi::communicator provide a simple C++ interface to handle
- * these tasks and objects. They are not required when using other parts of the **simplemc-mpi**
- * library, e.g. the user could directly call `MPI_init` and `MPI_Finalize`, but they will make it
- * easier and less error-prone.
+ * @note Nearly all calls to the MPI C API in **simplemc-mpi** are checked for errors using
+ * simplemc::mpi::check_mpi_call. The behavior of this check depends on the MPI error handler.
+ */
+
+/**
+ * @defgroup simplemc-mpi-essentials-groups MPI groups
+ * @ingroup simplemc-mpi-essentials
+ * @brief RAII wrapper for `MPI_Group` objects and other essential MPI functions involving groups.
  *
- * See @ref tut_mpi_1 for a simple `Hello world` example.
+ * @note We recomend to use the RAII wrapper simplemc::mpi::group and its member functions whenever
+ * possible. The performance overhead of managing the lifetime with a shared pointer should be
+ * negligible compared to the MPI calls.
  */
 
 /**
