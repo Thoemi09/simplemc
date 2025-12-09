@@ -6,7 +6,7 @@
 
 #include <exception>
 
-// Test rank and size of communicator.
+// Test simple Hello world program.
 TEST(SimplemcMPI, HelloWorldWithMPIEnvironment) {
     simplemc::mpi::communicator comm {};
     fmt::print("Hello world, from {} of {} processes.\n", comm.rank(), comm.size());
@@ -31,13 +31,13 @@ TEST(SimplemcMPI, MPIEnvironmentIsInitializedIsFinalized) {
     ASSERT_FALSE(simplemc::mpi::finalized());
 }
 
-// Test thread support query.
+// Test thread support query for non-threaded MPI.
 TEST(SimplemcMPI, ThreadSupport) {
     int provided = simplemc::mpi::query_thread();
     ASSERT_EQ(provided, MPI_THREAD_SINGLE);
 }
 
-// Test is_main_thread function.
+// Test is_main_thread function for non-threaded MPI.
 TEST(SimplemcMPI, IsMainThread) {
     // in this test, we're in the main thread, so this should return true
     bool is_main = simplemc::mpi::is_thread_main();
@@ -49,16 +49,15 @@ TEST(SimplemcMPI, MultipleEnvironments) {
     // MPI is already initialized by the main function's environment
     ASSERT_TRUE(simplemc::mpi::initialized());
 
-    // creating another environment should not reinitialize/finalize MPI
+    // creating another environment should not reinitialize MPI but finalize it
     {
         int argc = 0;
         char** argv = nullptr;
         simplemc::mpi::environment env2(argc, argv);
     }
 
-    // MPI is still initialized
-    ASSERT_TRUE(simplemc::mpi::initialized());
-    ASSERT_FALSE(simplemc::mpi::finalized());
+    // MPI has been finalized by the destructor of env2
+    ASSERT_TRUE(simplemc::mpi::finalized());
 }
 
 // Custom main function for MPI.

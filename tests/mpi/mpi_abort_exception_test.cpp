@@ -9,7 +9,7 @@ int main(int argc, char** argv) {
     try {
         simplemc::mpi::environment env { argc, argv };
         simplemc::mpi::communicator comm {};
-        int rank = comm.rank();
+        const int rank = comm.rank();
         if (rank == 0) {
             throw simplemc::simplemc_exception { "This is a test exception" };
         }

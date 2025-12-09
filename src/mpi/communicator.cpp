@@ -60,6 +60,10 @@ int comm_compare(MPI_Comm comm1, MPI_Comm comm2) {
     return result;
 }
 
+void comm_set_errhandler(MPI_Comm comm, MPI_Errhandler errhandler) {
+    check_mpi_call(MPI_Comm_set_errhandler(comm, errhandler), "MPI_Comm_set_errhandler");
+}
+
 communicator::communicator(MPI_Comm comm, resource_policy pol) {
     if (pol == resource_policy::take_ownership) {
         comm_ = std::shared_ptr<MPI_Comm> { new MPI_Comm(comm), comm_deleter {} };

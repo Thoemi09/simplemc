@@ -226,6 +226,12 @@
  */
 
 /**
+ * @defgroup simplemc-mpi-essentials-env MPI environment
+ * @ingroup simplemc-mpi-essentials
+ * @brief RAII wrapper for an MPI environment and other essential MPI functions.
+ */
+
+/**
  * @defgroup simplemc-mpi-essentials-groups MPI groups
  * @ingroup simplemc-mpi-essentials
  * @brief RAII wrapper for `MPI_Group` objects and other essential MPI functions involving groups.

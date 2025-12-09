@@ -46,7 +46,7 @@ target_link_libraries(mpi-threading-test PRIVATE simplemc-test)
 
 # add tests
 add_test(NAME mpi-utils-test COMMAND ./mpi-utils-test)
-add_test(NAME mpi-env-test COMMAND mpirun -n 4 ./mpi-env-comm-test)
+add_test(NAME mpi-env-test COMMAND mpirun -n 4 ./mpi-env-test)
 add_test(NAME mpi-group-test COMMAND mpirun -n 4 ./mpi-group-test)
 add_test(NAME mpi-comm-test COMMAND mpirun -n 4 ./mpi-comm-test)
 add_test(NAME mpi-datatype-test COMMAND mpirun -n 4 ./mpi-datatype-test)

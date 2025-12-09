@@ -27,7 +27,7 @@ namespace simplemc::mpi {
  *
  * @note This only works if the error handler in MPI is set to `MPI_ERRORS_RETURN`. By default, MPI
  * sets it to `MPI_ERRORS_ARE_FATAL`, which causes the program to abort all connected MPI processes
- * in case of an error (see e.g. simplemc::mpi::set_errhandler).
+ * in case of an error (see e.g. simplemc::mpi::comm_set_errhandler).
  *
  * @param errcode Error code returned by the MPI routine.
  * @param mpi_routine Name of the MPI routine that returned the error code.

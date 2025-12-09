@@ -122,6 +122,20 @@ void comm_free(MPI_Comm& comm);
 [[nodiscard]] int comm_compare(MPI_Comm comm1, MPI_Comm comm2);
 
 /**
+ * @brief Attach a new error handler to the given MPI communicator by calling
+ * `MPI_Comm_set_errhandler`.
+ *
+ * @details Common error handlers are:
+ * - `MPI_ERRORS_ARE_FATAL`: MPI will abort on error (default).
+ * - `MPI_ERRORS_RETURN`: MPI will return an error code instead of aborting.
+ * - `MPI_ERRORS_ABORT`: MPI will abort on error (similar to `MPI_ERRORS_ARE_FATAL`).
+ *
+ * @param comm Communicator to attach the error handler to.
+ * @param errhandler MPI error handler.
+ */
+void comm_set_errhandler(MPI_Comm comm, MPI_Errhandler errhandler);
+
+/**
  * @brief RAII wrapper for `MPI_Comm` objects.
  *
  * @details This class provides a thin C++ wrapper around `MPI_Comm` objects. MPI communicators
