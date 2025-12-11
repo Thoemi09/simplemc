@@ -206,9 +206,10 @@
  * - **Free functions**: Thin wrappers around MPI C API that work with raw MPI object handles (e.g.
  * `MPI_Comm`). These provide low-level access to MPI functionality with a modern C++ interface and
  * feel.
- * - **RAII classes**: Wrappers around MPI objects like `MPI_Comm` and `MPI_Group`. They help with
- * lifetime management and clean up and it is in general recommended to work with them instead of the
- * raw MPI objects. Internally, they delegate to the free functions for actual MPI calls.
+ * - **RAII classes**: Wrappers around MPI objects like `MPI_Comm`, `MPI_Group` or `MPI_Datatype`. 
+ * They help with lifetime management and clean up and it is in general recommended to work with them 
+ * instead of the raw MPI objects. Internally, they delegate to the free functions for actual MPI 
+ * calls.
  *
  * @note Nearly all calls to the MPI C API in **simplemc-mpi** are checked for errors using
  * simplemc::mpi::check_mpi_call. The behavior of this check depends on the MPI error handler.
@@ -223,6 +224,16 @@
  * @note We recomend to use the RAII wrapper simplemc::mpi::communicator and its member functions 
  * whenever possible. The performance overhead of managing the lifetime with a shared pointer should 
  * be negligible compared to the MPI calls.
+ */
+
+/**
+ * @defgroup simplemc-mpi-essentials-types MPI datatypes
+ * @ingroup simplemc-mpi-essentials
+ * @brief RAII wrapper for `MPI_Datatypes` objects and other essential MPI functions involving types.
+ *
+ * @note We recomend to use the RAII wrapper simplemc::mpi::datatype and its member functions whenever
+ * possible. The performance overhead of managing the lifetime with a shared pointer should be
+ * negligible compared to the MPI calls.
  */
 
 /**

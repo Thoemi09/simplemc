@@ -8,6 +8,7 @@
 #include <simplemc/mpi/group.hpp>
 #include <simplemc/mpi/utils.hpp>
 
+#include <memory>
 #include <mpi.h>
 
 namespace simplemc::mpi {
