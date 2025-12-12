@@ -8,7 +8,7 @@
 
 #include <simplemc/mpi/broadcast.hpp>
 #include <simplemc/mpi/communicator.hpp>
-#include <simplemc/mpi/datatypes.hpp>
+#include <simplemc/mpi/mpi_type.hpp>
 #include <simplemc/mpi/utils.hpp>
 #include <simplemc/utils/ranges.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>

@@ -169,35 +169,6 @@
  */
 
 /**
- * @defgroup simplemc-mpi-types MPI datatypes
- * @ingroup simplemc-mpi
- * @brief Mapping of supported C++ types to their corresponding MPI datatypes.
- *
- * @details The following mappings are supported out of the box:
- * - `MPI_CHAR` \f$ \quad \longleftrightarrow \quad \f$ `char`
- * - `MPI_BYTE` \f$ \quad \longleftrightarrow \quad \f$ `std::byte`
- * - `MPI_SHORT` \f$ \quad \longleftrightarrow \quad \f$ `short`
- * - `MPI_INT` \f$ \quad \longleftrightarrow \quad \f$ `int`
- * - `MPI_LONG` \f$ \quad \longleftrightarrow \quad \f$ `long`
- * - `MPI_LONG_LONG` \f$ \quad \longleftrightarrow \quad \f$ `long long`
- * - `MPI_SIGNED_CHAR` \f$ \quad \longleftrightarrow \quad \f$ `signed char`
- * - `MPI_UNSIGNED_CHAR` \f$ \quad \longleftrightarrow \quad \f$ `unsigned char`
- * - `MPI_UNSIGNED_SHORT` \f$ \quad \longleftrightarrow \quad \f$ `unsigned short`
- * - `MPI_UNSIGNED` \f$ \quad \longleftrightarrow \quad \f$ `unsigned int`
- * - `MPI_UNSIGNED_LONG` \f$ \quad \longleftrightarrow \quad \f$ `unsigned long`
- * - `MPI_UNSIGNED_LONG_LONG` \f$ \quad \longleftrightarrow \quad \f$ `unsigned long long`
- * - `MPI_FLOAT` \f$ \quad \longleftrightarrow \quad \f$ `float`
- * - `MPI_DOUBLE` \f$ \quad \longleftrightarrow \quad \f$ `double`
- * - `MPI_LONG_DOUBLE` \f$ \quad \longleftrightarrow \quad \f$ `long double`
- * - `MPI_CXX_BOOL` \f$ \quad \longleftrightarrow \quad \f$ `bool`
- * - `MPI_CXX_FLOAT_COMPLEX` \f$ \quad \longleftrightarrow \quad \f$ `std::complex<float>`
- * - `MPI_CXX_DOUBLE_COMPLEX` \f$ \quad \longleftrightarrow \quad \f$ `std::complex<double>`
- * - `MPI_CXX_LONG_DOUBLE_COMPLEX` \f$ \quad \longleftrightarrow \quad \f$ `std::complex<long double>`
- *
- * See @ref tut_mpi_4 on how user-defined types can be used with the **simplemc-mpi** library.
- */
-
-/**
  * @defgroup simplemc-mpi-essentials MPI essentials
  * @ingroup simplemc-mpi
  * @brief C++ interface for the most important objects and tasks in MPI.

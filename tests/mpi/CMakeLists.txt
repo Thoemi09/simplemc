@@ -9,7 +9,7 @@
 # mpi-datatype-test: Executable to test the MPI datatype wrapper.
 # mpi-abort-exception-test: Executable to test the behavior of abort_on_exception == true.
 # mpi-no-abort-exception-test: Executable to test the behavior of abort_on_exception == false.
-# mpi-datatypes-test: Executable to test the mapping of MPI datatypes to C++ types.
+# mpi-type-test: Executable to test the mapping of MPI datatypes to C++ types.
 # mpi-collectives-test: Executable to test the supported MPI collective communication operations.
 # mpi-threading-test: Executable to test MPI threading support functions.
 
@@ -35,8 +35,8 @@ target_link_libraries(mpi-abort-exception-test PRIVATE simplemc-test)
 add_executable(mpi-no-abort-exception-test mpi_no_abort_exception_test.cpp)
 target_link_libraries(mpi-no-abort-exception-test PRIVATE simplemc-test)
 
-add_executable(mpi-datatypes-test mpi_datatypes_test.cpp)
-target_link_libraries(mpi-datatypes-test PRIVATE simplemc-test)
+add_executable(mpi-type-test mpi_type_test.cpp)
+target_link_libraries(mpi-type-test PRIVATE simplemc-test)
 
 add_executable(mpi-collectives-test mpi_collectives_test.cpp)
 target_link_libraries(mpi-collectives-test PRIVATE simplemc-test)

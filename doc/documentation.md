@@ -37,8 +37,10 @@ It provides
 
 - @ref simplemc-mpi-coll to perform MPI broadcast, gather, scatter and reduce operations across
 multiple processes.
-- @ref simplemc-mpi-types to map supported C++ types to their corresponding MPI datatypes.
 - @ref simplemc-mpi-essentials that wrap the most important MPI objects and functions involving them.
+We split them up into different groups: @ref simplemc-mpi-essentials-env, 
+@ref simplemc-mpi-essentials-comms, @ref simplemc-mpi-essentials-groups and 
+@ref simplemc-mpi-essentials-types. 
 - @ref simplemc-mpi-utils for the **simplemc-mpi** library.
 
 ## Random library
