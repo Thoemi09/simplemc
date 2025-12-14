@@ -10,6 +10,7 @@
 # mpi-abort-exception-test: Executable to test the behavior of abort_on_exception == true.
 # mpi-no-abort-exception-test: Executable to test the behavior of abort_on_exception == false.
 # mpi-type-test: Executable to test the mapping of MPI datatypes to C++ types.
+# mpi-allequal-test: Executable to test the allequal function.
 # mpi-collectives-test: Executable to test the supported MPI collective communication operations.
 # mpi-threading-test: Executable to test MPI threading support functions.
 
@@ -38,6 +39,9 @@ target_link_libraries(mpi-no-abort-exception-test PRIVATE simplemc-test)
 add_executable(mpi-type-test mpi_type_test.cpp)
 target_link_libraries(mpi-type-test PRIVATE simplemc-test)
 
+add_executable(mpi-allequal-test mpi_allequal_test.cpp)
+target_link_libraries(mpi-allequal-test PRIVATE simplemc-test)
+
 add_executable(mpi-collectives-test mpi_collectives_test.cpp)
 target_link_libraries(mpi-collectives-test PRIVATE simplemc-test)
 
@@ -50,6 +54,7 @@ add_test(NAME mpi-env-test COMMAND mpirun -n 4 ./mpi-env-test)
 add_test(NAME mpi-group-test COMMAND mpirun -n 4 ./mpi-group-test)
 add_test(NAME mpi-comm-test COMMAND mpirun -n 4 ./mpi-comm-test)
 add_test(NAME mpi-datatype-test COMMAND mpirun -n 4 ./mpi-datatype-test)
-add_test(NAME mpi-datatypes-test COMMAND ./mpi-datatypes-test)
+add_test(NAME mpi-type-test COMMAND mpirun -n 4 ./mpi-type-test)
+add_test(NAME mpi-allequal-test COMMAND mpirun -n 4 ./mpi-allequal-test)
 add_test(NAME mpi-collectives-test COMMAND mpirun -n 4 ./mpi-collectives-test)
 add_test(NAME mpi-threading-test COMMAND mpirun -n 4 ./mpi-threading-test)
