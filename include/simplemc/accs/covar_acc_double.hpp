@@ -457,16 +457,14 @@ public:
      * The reduction operation depends on the simplemc::varalg algorithm used to accumulate the data.
      * See operator<<(const covar_acc&) for how it is done in the case of 2 accumulators.
      *
-     * It throws an exception, if the size of the accumulator is not equal on all processes.
+     * It asserts that the size of the accumulator is equal on all processes.
      *
      * @param comm simplemc::mpi::communicator object.
      * @param acc Covariance accumulator.
      * @return Covariance accumulator with the reduced data from all processes.
      */
     friend covar_acc mpi_collect(const mpi::communicator& comm, const covar_acc& acc) {
-        if (!all_equal(comm, acc.size())) {
-            throw simplemc_exception("covar_acc size is not equal on all processes", "mpi_collect");
-        }
+        assert(all_equal(acc.size(), comm));
         covar_acc res(acc.size());
         mpi::all_reduce(comm, acc.count_, res.count_, MPI_SUM);
         if constexpr (covar_acc::varalg() == varalg::standard) {

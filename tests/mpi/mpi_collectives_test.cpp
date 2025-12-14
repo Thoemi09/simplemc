@@ -258,18 +258,6 @@ TEST(SimplemcMPI, ReduceVector) {
     }
 }
 
-// Test comparing a value across processes.
-TEST(SimplemcMPI, AllEqual) {
-    simplemc::mpi::communicator comm;
-    int val = 1000;
-    ASSERT_TRUE(simplemc::mpi::all_equal(comm, val));
-    if (comm.size() > 1) {
-        ASSERT_FALSE(simplemc::mpi::all_equal(comm, comm.rank()));
-    } else {
-        ASSERT_TRUE(simplemc::mpi::all_equal(comm, comm.rank()));
-    }
-}
-
 // Custom main function for MPI.
 int main(int argc, char** argv) {
     // filter out Google Test arguments

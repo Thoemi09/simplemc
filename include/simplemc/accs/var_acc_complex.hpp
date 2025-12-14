@@ -26,13 +26,13 @@ namespace simplemc {
 
 /**
  * @ingroup simplemc-accs-accs-var
- * @brief Accumulator for calculating the sample mean and sample variance of a complex random vector 
+ * @brief Accumulator for calculating the sample mean and sample variance of a complex random vector
  * \f$ \mathbf{Z} = \mathbf{X} + i \mathbf{Y} \f$.
  *
  * @details The accumulator takes two template parameters:
  * - the type of the random samples (a simplemc::eigen_vector_cplx type) and
  * - the algorithm (simplemc::varalg) that should be used to accumulate the data.
- * 
+ *
  * Both of them determine how the accumulation is actually done and what is stored in the accumulator.
  * The accumulated data is stored in four vectors:
  * - a complex vector \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$ for the mean data,
@@ -40,7 +40,7 @@ namespace simplemc {
  * part \f$ \mathbf{X} \f$ of the random vector,
  * - a real vector \f$ \mathbf{c}_i^{(N)}/\mathbf{d}_i^{(N)} \f$ for the variance data of the
  * imaginary part \f$ \mathbf{Y} \f$ of the random vector and
- * - a real vector \f$ \mathbf{c}_{ri}^{(N)}/\mathbf{d}_{ri}^{(N)} \f$ for the cross-covariance data 
+ * - a real vector \f$ \mathbf{c}_{ri}^{(N)}/\mathbf{d}_{ri}^{(N)} \f$ for the cross-covariance data
  * between the real and imaginary parts of the random vector.
  *
  * See simplemc::accs::mean and simplemc::accs::diag_covariance.
@@ -318,7 +318,7 @@ public:
      *
      *   Similar expressions hold for the other accumulated (co)variance data, \f$ \mathbf{d}_i^{(N)}
      *   \f$ and \f$ \mathbf{d}_{ri}^{(N)} \f$.
-     * 
+     *
      * See also @ref simplemc-accs-accs-how.
      *
      * @param acc_other simplemc::var_acc<Z, A> to be incorporated.
@@ -415,7 +415,7 @@ public:
     [[nodiscard]] auto count() const { return count_; }
 
     /**
-     * @brief Get the accumulated data \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$ used for estimating 
+     * @brief Get the accumulated data \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$ used for estimating
      * the mean.
      *
      * @return simplemc::eigen_vector_cplx of size \f$ M \f$ containing \f$ \mathbf{m}^{(N)}/
@@ -424,7 +424,7 @@ public:
     [[nodiscard]] const cplx_vec_type& mdata() const { return mdata_; }
 
     /**
-     * @brief Get the accumulated data \f$ \mathbf{c}_r^{(N)}/\mathbf{d}_r^{(N)} \f$ used for 
+     * @brief Get the accumulated data \f$ \mathbf{c}_r^{(N)}/\mathbf{d}_r^{(N)} \f$ used for
      * estimating the variance of the real part of the random vector.
      *
      * @return simplemc::eigen_vector_dbl of size \f$ M \f$ containing \f$ \mathbf{c}_{r}^{(N)}/
@@ -434,7 +434,7 @@ public:
     [[nodiscard]] const dbl_vec_type& rdata() const { return rdata_; }
 
     /**
-     * @brief Get the accumulated data \f$ \mathbf{c}_i^{(N)}/\mathbf{d}_i^{(N)} \f$ used for 
+     * @brief Get the accumulated data \f$ \mathbf{c}_i^{(N)}/\mathbf{d}_i^{(N)} \f$ used for
      * estimating the variance of the imaginary part of the random vector.
      *
      * @return simplemc::eigen_vector_dbl of size \f$ M \f$ containing \f$ \mathbf{c}_{i}^{(N)}/
@@ -444,7 +444,7 @@ public:
     [[nodiscard]] const dbl_vec_type& idata() const { return idata_; }
 
     /**
-     * @brief Get the accumulated data \f$ \mathbf{c}_{ri}^{(N)}/\mathbf{d}_{ri}^{(N)} \f$ used for 
+     * @brief Get the accumulated data \f$ \mathbf{c}_{ri}^{(N)}/\mathbf{d}_{ri}^{(N)} \f$ used for
      * estimating the cross-covariance between the real and imaginary parts of the random vector.
      *
      * @return simplemc::eigen_vector_dbl of size \f$ M \f$ containing \f$ \mathbf{c}_{ri}^{(N)}/
@@ -571,16 +571,14 @@ public:
      * The reduction operation depends on the simplemc::varalg algorithm used to accumulate the data.
      * See operator<<(const var_acc&) for how it is done in the case of 2 accumulators.
      *
-     * It throws an exception, if the size of the  accumulator is not equal on all processes.
+     * It asserts that the size of the accumulator is equal on all processes.
      *
      * @param comm simplemc::mpi::communicator object.
      * @param acc Variance accumulator.
      * @return Variance accumulator with the reduced data from all processes.
      */
     friend var_acc mpi_collect(const mpi::communicator& comm, const var_acc& acc) {
-        if (!all_equal(comm, acc.size())) {
-            throw simplemc_exception("var_acc size is not equal on all processes", "mpi_collect");
-        }
+        assert(all_equal(acc.size(), comm));
         var_acc res(acc.size());
         mpi::all_reduce(comm, acc.count_, res.count_, MPI_SUM);
         if constexpr (var_acc::varalg() == varalg::standard) {

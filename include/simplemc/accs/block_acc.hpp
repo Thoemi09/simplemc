@@ -12,6 +12,7 @@
 #include <simplemc/utils/ranges.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
+#include <cassert>
 #include <utility>
 
 namespace simplemc {
@@ -111,7 +112,7 @@ public:
      * @brief Construct a block accumulator with a given block size \f$ B \f$ and number of elements
      * \f$ M \f$.
      *
-     * @details The wrapped accumulator is constructed with \f$ M \f$ elements. It throws a 
+     * @details The wrapped accumulator is constructed with \f$ M \f$ elements. It throws a
      * simplemc::simplemc_exception if \f$ B = 0 \f$.
      *
      * @param b Block size \f$ B \f$.
@@ -269,8 +270,8 @@ public:
     /**
      * @brief Create a multi-value accumulator (only for variance accumulators).
      *
-     * @details The user is responsible for calling simplemc::multivalue_acc::increment_count as well 
-     * as check_and_add_block() after all values have been added, otherwise the number of samples will 
+     * @details The user is responsible for calling simplemc::multivalue_acc::increment_count as well
+     * as check_and_add_block() after all values have been added, otherwise the number of samples will
      * not be correct. For example,
      * @code{.cpp}
      * auto mva = acc.make_mva();
@@ -300,7 +301,7 @@ public:
     [[nodiscard]] auto block_size() const { return blsize_; }
 
     /**
-     * @brief Get the effective number of accumulated samples \f$ N_{\mathrm{eff}} = \lfloor N / B 
+     * @brief Get the effective number of accumulated samples \f$ N_{\mathrm{eff}} = \lfloor N / B
      * \rfloor \f$, i.e. the number of accumulated blocks.
      *
      * @return Number of accumulated blocks.
@@ -353,17 +354,15 @@ public:
      * @details It simply calls `mpi_collect` for the wrapped accumulator. Accumulated data in current
      * blocks is ignored.
      *
-     * It throws a simplemc::simplemc_exception, if the block size \f$ B \f$ or if the size \f$ M \f$
-     * of the wrapped accumulator is not equal on all processes.
+     * It asserts that the block size \f$ B \f$ and the size \f$ M \f$ of the wrapped accumulator is
+     * equal on all processes.
      *
      * @param comm simplemc::mpi::communicator object.
      * @param acc Block accumulator.
      * @return Block accumulator with the reduced data from all processes.
      */
     friend block_acc mpi_collect(const mpi::communicator& comm, const block_acc& acc) {
-        if (!all_equal(comm, acc.block_size())) {
-            throw simplemc_exception("Block size is not equal on all processes", "mpi_collect");
-        }
+        assert(all_equal(acc.block_size(), comm));
         block_acc res(acc.blsize_, acc.size());
         res.acc_ = mpi_collect(comm, acc.acc_);
         return res;

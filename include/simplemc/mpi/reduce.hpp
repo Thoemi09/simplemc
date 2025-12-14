@@ -6,6 +6,7 @@
 #ifndef SIMPLEMC_MPI_REDUCE_HPP
 #define SIMPLEMC_MPI_REDUCE_HPP
 
+#include <simplemc/mpi/all_equal.hpp>
 #include <simplemc/mpi/all_reduce.hpp>
 #include <simplemc/mpi/communicator.hpp>
 #include <simplemc/mpi/mpi_type.hpp>
@@ -167,7 +168,7 @@ void reduce_in_place(const communicator& comm, T& in_out_value, MPI_Op op, int r
  */
 template <mpi_range R1, mpi_range R2>
 void reduce(const communicator& comm, R1&& in_values, R2&& out_values, MPI_Op op, int root) { // NOLINT
-    if (!all_equal(comm, ranges::size(in_values))) {
+    if (!all_equal(ranges::size(in_values), comm)) {
         throw simplemc_exception("Input range sizes are not equal across all processes", "mpi::reduce");
     }
     if (comm.rank() == root) {
@@ -206,7 +207,7 @@ void reduce(const communicator& comm, R1&& in_values, R2&& out_values, MPI_Op op
 template <mpi_range R>
 void reduce_in_place(
     const communicator& comm, R&& in_out_values, MPI_Op op, int root) { // NOLINT (ranges need not be forwarded)
-    if (!all_equal(comm, ranges::size(in_out_values))) {
+    if (!all_equal(ranges::size(in_out_values), comm)) {
         throw simplemc_exception("Range sizes are not equal across all processes", "mpi::reduce_in_place");
     }
     reduce_in_place(comm, ranges::data(in_out_values), ranges::size(in_out_values), op, root);

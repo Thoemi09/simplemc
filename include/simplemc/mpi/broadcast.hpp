@@ -6,6 +6,7 @@
 #ifndef SIMPLEMC_MPI_BROADCAST_HPP
 #define SIMPLEMC_MPI_BROADCAST_HPP
 
+#include <simplemc/mpi/all_equal.hpp>
 #include <simplemc/mpi/all_reduce.hpp>
 #include <simplemc/mpi/communicator.hpp>
 #include <simplemc/mpi/mpi_type.hpp>
@@ -98,7 +99,7 @@ void broadcast(const communicator& comm, T& value, int root) {
  */
 template <mpi_range R>
 void broadcast(const communicator& comm, R&& rg, int root) { // NOLINT
-    if (!all_equal(comm, ranges::size(rg))) {
+    if (!all_equal(ranges::size(rg), comm)) {
         throw simplemc_exception("Range sizes are not equal across all processes", "mpi::broadcast");
     }
     broadcast(comm, ranges::data(rg), ranges::size(rg), root);

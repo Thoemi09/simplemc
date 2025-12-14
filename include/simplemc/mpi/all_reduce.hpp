@@ -6,6 +6,7 @@
 #ifndef SIMPLEMC_MPI_ALL_REDUCE_HPP
 #define SIMPLEMC_MPI_ALL_REDUCE_HPP
 
+#include <simplemc/mpi/all_equal.hpp>
 #include <simplemc/mpi/communicator.hpp>
 #include <simplemc/mpi/mpi_type.hpp>
 #include <simplemc/mpi/utils.hpp>
@@ -119,27 +120,6 @@ void all_reduce_in_place(const communicator& comm, T& in_out_value, MPI_Op op) {
 }
 
 /**
- * @brief Check if a value is equal across all processes (on all processes).
- *
- * @details It makes two calls to simplemc::mpi::all_reduce(const communicator&, const T&, T&,
- * MPI_Op), one with `MPI_MIN` and the other with `MPI_MAX`, and compares their results.
- *
- * If the results are equal, the function returns true, otherwise false.
- *
- * @tparam T simplemc::mpi::mpi_compatible type.
- * @param comm simplemc::mpi::communicator object.
- * @param in_value Value to be compared.
- * @return True if the value is equal on all processes.
- */
-template <mpi_compatible T>
-[[nodiscard]] bool all_equal(const communicator& comm, const T& in_value) {
-    T min_val, max_val;
-    all_reduce(comm, in_value, min_val, MPI_MIN);
-    all_reduce(comm, in_value, max_val, MPI_MAX);
-    return min_val == max_val;
-}
-
-/**
  * @brief Reduce a range (on all processes).
  *
  * @details It calls simplemc::mpi::all_reduce.
@@ -168,7 +148,7 @@ template <mpi_compatible T>
 template <mpi_range R1, mpi_range R2>
 void all_reduce(
     const communicator& comm, R1&& in_values, R2&& out_values, MPI_Op op) { // NOLINT (ranges need not be forwarded)
-    if (!all_equal(comm, ranges::size(in_values))) {
+    if (!all_equal(ranges::size(in_values), comm)) {
         throw simplemc_exception("Input range sizes are not equal across all processes", "mpi::all_reduce");
     }
     if (ranges::size(in_values) != ranges::size(out_values)) {
@@ -203,7 +183,7 @@ void all_reduce(
 template <mpi_range R>
 void all_reduce_in_place(
     const communicator& comm, R&& in_out_values, MPI_Op op) { // NOLINT (ranges need not be forwarded)
-    if (!all_equal(comm, ranges::size(in_out_values))) {
+    if (!all_equal(ranges::size(in_out_values), comm)) {
         throw simplemc_exception("Range sizes are not equal across all processes", "mpi::all_reduce_in_place");
     }
     all_reduce_in_place(comm, ranges::data(in_out_values), ranges::size(in_out_values), op);

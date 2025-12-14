@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Accumulator for calculating the sample mean and sample covariance matrix of a complex random 
+ * @brief Accumulator for calculating the sample mean and sample covariance matrix of a complex random
  * vector.
  */
 
@@ -28,13 +28,13 @@ namespace simplemc {
 
 /**
  * @ingroup simplemc-accs-accs-covar
- * @brief Accumulator for calculating the sample mean and sample covariance matrix of a complex random 
+ * @brief Accumulator for calculating the sample mean and sample covariance matrix of a complex random
  * vector \f$ \mathbf{Z} = \mathbf{X} + i \mathbf{Y} \f$.
  *
  * @details The accumulator takes two template parameters:
  * - the type of the random samples (a simplemc::eigen_vector_cplx type) and
  * - the algorithm (simplemc::varalg) that should be used to accumulate the data.
- * 
+ *
  * Both of them determine how the accumulation is actually done and what is stored in the accumulator.
  * The accumulated data is stored in four objects:
  * - a complex vector \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$ for the mean data,
@@ -42,7 +42,7 @@ namespace simplemc {
  * part \f$ \mathbf{X} \f$ of the random vector,
  * - a real matrix \f$ \mathbf{C}_i^{(N)}/\mathbf{D}_i^{(N)} \f$ for the covariance data of the
  * imaginary part \f$ \mathbf{Y} \f$ of the random vector and
- * - a real matrix \f$ \mathbf{C}_{ri}^{(N)}/\mathbf{D}_{ri}^{(N)} \f$ for the cross-covariance data 
+ * - a real matrix \f$ \mathbf{C}_{ri}^{(N)}/\mathbf{D}_{ri}^{(N)} \f$ for the cross-covariance data
  * between the real and imaginary parts of the random vector..
  *
  * See simplemc::accs::mean and simplemc::accs::covariance.
@@ -446,7 +446,7 @@ public:
     [[nodiscard]] auto count() const { return count_; }
 
     /**
-     * @brief Get the accumulated data \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$ used for estimating 
+     * @brief Get the accumulated data \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$ used for estimating
      * the mean.
      *
      * @return simplemc::eigen_vector_cplx of size \f$ M \f$ containing \f$ \mathbf{m}^{(N)}/
@@ -455,7 +455,7 @@ public:
     [[nodiscard]] const cplx_vec_type& mdata() const { return mdata_; }
 
     /**
-     * @brief Get the accumulated data \f$ \mathbf{C}_r^{(N)}/\mathbf{D}_r^{(N)} \f$ used for 
+     * @brief Get the accumulated data \f$ \mathbf{C}_r^{(N)}/\mathbf{D}_r^{(N)} \f$ used for
      * estimating the covariance matrix of the real part of the random vector.
      *
      * @note Only the lower triangular part of the covariance matrix is valid. Use
@@ -467,7 +467,7 @@ public:
     [[nodiscard]] const dbl_mat_type& rdata() const { return rdata_; }
 
     /**
-     * @brief Get the accumulated data \f$ \mathbf{C}_i^{(N)}/\mathbf{D}_i^{(N)} \f$ used for 
+     * @brief Get the accumulated data \f$ \mathbf{C}_i^{(N)}/\mathbf{D}_i^{(N)} \f$ used for
      * estimating the covariance matrix of the imaginary part of the random vector.
      *
      * @note Only the lower triangular part of the covariance matrix is valid. Use
@@ -479,8 +479,8 @@ public:
     [[nodiscard]] const dbl_mat_type& idata() const { return idata_; }
 
     /**
-     * @brief Get the accumulated data \f$ \mathbf{C}_{ri}^{(N)}/\mathbf{D}_{ri}^{(N)} \f$ used for 
-     * estimating the cross-covariance matrix between the real and imaginary parts of the random 
+     * @brief Get the accumulated data \f$ \mathbf{C}_{ri}^{(N)}/\mathbf{D}_{ri}^{(N)} \f$ used for
+     * estimating the cross-covariance matrix between the real and imaginary parts of the random
      * vector.
      *
      * @details The real part is the row index and the imaginary part is the column index.
@@ -615,16 +615,14 @@ public:
      * The reduction operation depends on the simplemc::varalg algorithm used to accumulate the data.
      * See operator<<(const covar_acc&) for how it is done in the case of 2 accumulators.
      *
-     * It throws an exception, if the size of the accumulator is not equal on all processes.
+     * It asserts that the size of the accumulator is equal on all processes.
      *
      * @param comm simplemc::mpi::communicator object.
      * @param acc Covariance accumulator.
      * @return Covariance accumulator with the reduced data from all processes.
      */
     friend covar_acc mpi_collect(const mpi::communicator& comm, const covar_acc& acc) {
-        if (!all_equal(comm, acc.size())) {
-            throw simplemc_exception("covar_acc size is not equal on all processes", "mpi_collect");
-        }
+        assert(all_equal(acc.size(), comm));
         covar_acc res(acc.size());
         mpi::all_reduce(comm, acc.count_, res.count_, MPI_SUM);
         if constexpr (covar_acc::varalg() == varalg::standard) {

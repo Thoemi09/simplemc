@@ -6,6 +6,7 @@
 #ifndef SIMPLEMC_MPI_COLLECTIVES_HPP
 #define SIMPLEMC_MPI_COLLECTIVES_HPP
 
+#include <simplemc/mpi/all_equal.hpp>
 #include <simplemc/mpi/all_gather.hpp>
 #include <simplemc/mpi/all_reduce.hpp>
 #include <simplemc/mpi/broadcast.hpp>

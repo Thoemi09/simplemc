@@ -6,6 +6,7 @@
 #ifndef SIMPLEMC_MPI_ALL_GATHER_HPP
 #define SIMPLEMC_MPI_ALL_GATHER_HPP
 
+#include <simplemc/mpi/all_equal.hpp>
 #include <simplemc/mpi/all_reduce.hpp>
 #include <simplemc/mpi/communicator.hpp>
 #include <simplemc/mpi/mpi_type.hpp>
@@ -126,7 +127,7 @@ void all_gather(const communicator& comm, const ranges::range_value_t<R>& in_val
  */
 template <mpi_range R1, mpi_range R2>
 void all_gather(const communicator& comm, R1&& in_values, R2&& out_values) { // NOLINT
-    if (!all_equal(comm, ranges::size(in_values))) {
+    if (!all_equal(ranges::size(in_values), comm)) {
         throw simplemc_exception("Input range sizes are not equal across all processes", "mpi::all_gather");
     }
     if (comm.size() * ranges::size(in_values) != ranges::size(out_values)) {
@@ -159,7 +160,7 @@ void all_gather(const communicator& comm, R1&& in_values, R2&& out_values) { // 
  */
 template <mpi_range R>
 void all_gather_in_place(const communicator& comm, R&& in_out_values) { // NOLINT
-    if (!all_equal(comm, ranges::size(in_out_values))) {
+    if (!all_equal(ranges::size(in_out_values), comm)) {
         throw simplemc_exception("Range sizes are not equal across all processes", "mpi::all_gather_in_place");
     }
     if (ranges::size(in_out_values) % comm.size() != 0) {

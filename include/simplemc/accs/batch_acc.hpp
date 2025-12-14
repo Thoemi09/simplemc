@@ -20,6 +20,7 @@
 
 #include <algorithm>
 #include <bit>
+#include <cassert>
 #include <cstdint>
 #include <iterator>
 #include <numeric>
@@ -609,7 +610,7 @@ public:
      * If `same_count` is true, it will enforce that all gathered batches have the same number of
      * accumulated samples, i.e. it will merge batches together if necessary.
      *
-     * It throws an exception, if the size of the accumulator is not equal on all processes.
+     * It asserts that the size of the accumulator is equal on all processes.
      *
      * @param comm simplemc::mpi::communicator object.
      * @param acc Batch accumulator.
@@ -618,9 +619,7 @@ public:
      */
     friend std::vector<mean_acc_type> mpi_collect(
         const mpi::communicator& comm, const batch_acc& acc, bool same_count) {
-        if (!all_equal(comm, acc.size())) {
-            throw simplemc_exception("Accumulator size is not equal on all processes", "mpi_collect");
-        }
+        assert(all_equal(acc.size(), comm));
 
         // get full batches
         auto bs = acc.batches();
