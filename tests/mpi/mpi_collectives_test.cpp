@@ -49,7 +49,7 @@ TEST(SimplemcMPI, BroadcastSingleValues) {
     check_single_broadcast(comm, static_cast<unsigned long long>(12345678), root);
     check_single_broadcast(comm, static_cast<float>(pi), root);
     check_single_broadcast(comm, static_cast<double>(pi), root);
-    check_single_broadcast(comm, static_cast<bool>(false), root);
+    check_single_broadcast(comm, static_cast<std::complex<float>>(1if), root);
     check_single_broadcast(comm, static_cast<std::complex<double>>(1i), root);
 }
 
@@ -72,6 +72,7 @@ TEST(SimplemcMPI, BroadcastVectors) {
     check_range_broadcast(comm, std::vector<unsigned long long> { 200, 1, 20 }, root);
     check_range_broadcast(comm, std::vector<float> { pi, -pi }, root);
     check_range_broadcast(comm, std::vector<double> { pi, -pi }, root);
+    check_range_broadcast(comm, std::vector<std::complex<float>> { 1if, -2.0f + 3if, 4 }, root);
     check_range_broadcast(comm, std::vector<std::complex<double>> { 1i, -2.0 + 3i, 4 }, root);
     check_range_broadcast(comm, std::string { "Hello world!" }, root);
 }

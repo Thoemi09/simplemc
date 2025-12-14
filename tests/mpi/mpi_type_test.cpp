@@ -26,8 +26,10 @@ TEST(SimplemcMPI, ConceptsAndTraits) {
     static_assert(simplemc::mpi::mpi_compatible<unsigned long long>);
     static_assert(simplemc::mpi::mpi_compatible<float>);
     static_assert(simplemc::mpi::mpi_compatible<double>);
-    static_assert(simplemc::mpi::mpi_compatible<bool>);
+    static_assert(simplemc::mpi::mpi_compatible<std::complex<float>>);
     static_assert(simplemc::mpi::mpi_compatible<std::complex<double>>);
+    static_assert(simplemc::mpi::mpi_compatible<std::complex<long double>>);
+    static_assert(!simplemc::mpi::mpi_compatible<bool>);
     static_assert(!simplemc::mpi::mpi_compatible<std::string>);
     static_assert(!simplemc::mpi::mpi_compatible<foo>);
 

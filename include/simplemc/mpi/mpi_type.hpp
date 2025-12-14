@@ -49,14 +49,13 @@ namespace simplemc::mpi {
  *   - `float` \f$ \rightarrow \f$ `MPI_FLOAT`
  *   - `double` \f$ \rightarrow \f$ `MPI_DOUBLE`
  *   - `long double` \f$ \rightarrow \f$ `MPI_LONG_DOUBLE`
- * - Boolean type:
- *   - `bool` \f$ \rightarrow \f$ `MPI_CXX_BOOL`
- * - Complex types:
- *   - `std::complex<float>` \f$ \rightarrow \f$ `MPI_CXX_FLOAT_COMPLEX`
- *   - `std::complex<double>` \f$ \rightarrow \f$ `MPI_CXX_DOUBLE_COMPLEX`
- *   - `std::complex<long double>` \f$ \rightarrow \f$ `MPI_CXX_LONG_DOUBLE_COMPLEX`
+ * - Complex types (using C99 complex type mappings, which are layout-compatible with
+ * `std::complex<T>`):
+ *   - `std::complex<float>` \f$ \rightarrow \f$ `MPI_C_FLOAT_COMPLEX`
+ *   - `std::complex<double>` \f$ \rightarrow \f$ `MPI_C_DOUBLE_COMPLEX`
+ *   - `std::complex<long double>` \f$ \rightarrow \f$ `MPI_C_LONG_DOUBLE_COMPLEX`
  *
- * @note Users can provide specializations for their own types or for types not covered here. See 
+ * @note Users can provide specializations for their own types or for types not covered here. See
  * @ref tut_mpi_4.
  *
  * @tparam T C++ type.
@@ -96,13 +95,10 @@ MAKE_MPI_DATATYPE(float, MPI_FLOAT)
 MAKE_MPI_DATATYPE(double, MPI_DOUBLE)
 MAKE_MPI_DATATYPE(long double, MPI_LONG_DOUBLE)
 
-// Bool type.
-MAKE_MPI_DATATYPE(bool, MPI_CXX_BOOL)
-
-// Complex types.
-MAKE_MPI_DATATYPE(std::complex<float>, MPI_CXX_FLOAT_COMPLEX)
-MAKE_MPI_DATATYPE(std::complex<double>, MPI_CXX_DOUBLE_COMPLEX)
-MAKE_MPI_DATATYPE(std::complex<long double>, MPI_CXX_LONG_DOUBLE_COMPLEX)
+// Complex types (C99 complex types are layout-compatible with std::complex<T>).
+MAKE_MPI_DATATYPE(std::complex<float>, MPI_C_FLOAT_COMPLEX)
+MAKE_MPI_DATATYPE(std::complex<double>, MPI_C_DOUBLE_COMPLEX)
+MAKE_MPI_DATATYPE(std::complex<long double>, MPI_C_LONG_DOUBLE_COMPLEX)
 
 #undef MAKE_MPI_DATATYPE
 
