@@ -9,6 +9,7 @@
 namespace simplemc::mpi {
 
 class communicator;
+class datatype;
 class environment;
 class group;
 

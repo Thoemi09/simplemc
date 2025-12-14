@@ -580,26 +580,26 @@ public:
     friend var_acc mpi_collect(const mpi::communicator& comm, const var_acc& acc) {
         assert(all_equal(acc.size(), comm));
         var_acc res(acc.size());
-        mpi::all_reduce(comm, acc.count_, res.count_, MPI_SUM);
+        mpi::all_reduce(acc.count_, res.count_, MPI_SUM, comm);
         if constexpr (var_acc::varalg() == varalg::standard) {
-            mpi::all_reduce(comm, make_span(acc.mdata_), make_span(res.mdata_), MPI_SUM);
-            mpi::all_reduce(comm, make_span(acc.rdata_), make_span(res.rdata_), MPI_SUM);
-            mpi::all_reduce(comm, make_span(acc.idata_), make_span(res.idata_), MPI_SUM);
-            mpi::all_reduce(comm, make_span(acc.cdata_), make_span(res.cdata_), MPI_SUM);
+            mpi::all_reduce(make_span(acc.mdata_), make_span(res.mdata_), MPI_SUM, comm);
+            mpi::all_reduce(make_span(acc.rdata_), make_span(res.rdata_), MPI_SUM, comm);
+            mpi::all_reduce(make_span(acc.idata_), make_span(res.idata_), MPI_SUM, comm);
+            mpi::all_reduce(make_span(acc.cdata_), make_span(res.cdata_), MPI_SUM, comm);
         } else {
             const auto n1 = static_cast<double>(acc.count_);
             const auto n = static_cast<double>(res.count_);
             const cplx_vec_type tmp_mdata = acc.mdata_ * n1 / n;
-            mpi::all_reduce(comm, make_span(tmp_mdata), make_span(res.mdata_), MPI_SUM);
+            mpi::all_reduce(make_span(tmp_mdata), make_span(res.mdata_), MPI_SUM, comm);
             const dbl_vec_type tmp_rdata =
                 acc.rdata_ + n1 * (acc.mdata_ - res.mdata_).real().cwiseProduct((acc.mdata_ - res.mdata_).real());
-            mpi::all_reduce(comm, make_span(tmp_rdata), make_span(res.rdata_), MPI_SUM);
+            mpi::all_reduce(make_span(tmp_rdata), make_span(res.rdata_), MPI_SUM, comm);
             const dbl_vec_type tmp_idata =
                 acc.idata_ + n1 * (acc.mdata_ - res.mdata_).imag().cwiseProduct((acc.mdata_ - res.mdata_).imag());
-            mpi::all_reduce(comm, make_span(tmp_idata), make_span(res.idata_), MPI_SUM);
+            mpi::all_reduce(make_span(tmp_idata), make_span(res.idata_), MPI_SUM, comm);
             const dbl_vec_type tmp_cdata =
                 acc.cdata_ + n1 * (acc.mdata_ - res.mdata_).real().cwiseProduct((acc.mdata_ - res.mdata_).imag());
-            mpi::all_reduce(comm, make_span(tmp_cdata), make_span(res.cdata_), MPI_SUM);
+            mpi::all_reduce(make_span(tmp_cdata), make_span(res.cdata_), MPI_SUM, comm);
         }
         return res;
     }

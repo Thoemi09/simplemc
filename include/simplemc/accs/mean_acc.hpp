@@ -145,8 +145,8 @@ private:
 
     // Broadcast into/from the current mean accumulator. Only used in mpi_collect with batch_acc.
     void broadcast(const mpi::communicator& comm, int root) {
-        mpi::broadcast(comm, make_span(mdata_), root);
-        mpi::broadcast(comm, count_, root);
+        mpi::broadcast(make_span(mdata_), root, comm);
+        mpi::broadcast(count_, root, comm);
     }
 
 public:
@@ -387,14 +387,14 @@ public:
     friend mean_acc mpi_collect(const mpi::communicator& comm, const mean_acc& acc) {
         assert(all_equal(acc.size(), comm));
         mean_acc res(acc.size());
-        mpi::all_reduce(comm, acc.count_, res.count_, MPI_SUM);
+        mpi::all_reduce(acc.count_, res.count_, MPI_SUM, comm);
         if constexpr (mean_acc::varalg() == varalg::standard) {
-            mpi::all_reduce(comm, make_span(acc.mdata_), make_span(res.mdata_), MPI_SUM);
+            mpi::all_reduce(make_span(acc.mdata_), make_span(res.mdata_), MPI_SUM, comm);
         } else {
             const auto n1 = static_cast<double>(acc.count_);
             const auto n = static_cast<double>(res.count_);
             const vec_type tmp_mdata = acc.mdata_ * n1 / n;
-            mpi::all_reduce(comm, make_span(tmp_mdata), make_span(res.mdata_), MPI_SUM);
+            mpi::all_reduce(make_span(tmp_mdata), make_span(res.mdata_), MPI_SUM, comm);
         }
         return res;
     }

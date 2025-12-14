@@ -628,7 +628,7 @@ public:
         if (same_count) {
             // perform merges if necessary
             auto max_count = acc.batch_count();
-            mpi::all_reduce(comm, acc.batch_count(), max_count, MPI_MAX);
+            mpi::all_reduce(acc.batch_count(), max_count, MPI_MAX, comm);
             merge_batches(max_count / acc.batch_count(), bs);
 
             // if a process does not have enough samples, discard its batches

@@ -155,7 +155,7 @@ void scatter(const communicator& comm, R1&& in_values, R2&& out_values, int root
             throw simplemc_exception("Input range size is not a mulitple of the communicator size", "mpi::scatter");
         }
     }
-    broadcast(comm, chunk_size, root);
+    broadcast(chunk_size, root, comm);
     if (chunk_size != ranges::size(out_values)) {
         throw simplemc_exception("Output range size is incorrect", "mpi::scatter");
     }
@@ -198,7 +198,7 @@ void scatter_in_place(const communicator& comm, R&& in_out_values, int root) { /
             throw simplemc_exception("Range size is not a mulitple of the communicator size", "mpi::scatter_in_place");
         }
     }
-    broadcast(comm, chunk_size, root);
+    broadcast(chunk_size, root, comm);
     if (comm.rank() != root) {
         if (chunk_size != size) {
             throw simplemc_exception("Range size is incorrect", "mpi::scatter_in_place");

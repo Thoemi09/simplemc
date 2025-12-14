@@ -442,18 +442,18 @@ public:
     friend var_acc mpi_collect(const mpi::communicator& comm, const var_acc& acc) {
         assert(all_equal(acc.size(), comm));
         var_acc res(acc.size());
-        mpi::all_reduce(comm, acc.count_, res.count_, MPI_SUM);
+        mpi::all_reduce(acc.count_, res.count_, MPI_SUM, comm);
         if constexpr (var_acc::varalg() == varalg::standard) {
-            mpi::all_reduce(comm, make_span(acc.mdata_), make_span(res.mdata_), MPI_SUM);
-            mpi::all_reduce(comm, make_span(acc.cdata_), make_span(res.cdata_), MPI_SUM);
+            mpi::all_reduce(make_span(acc.mdata_), make_span(res.mdata_), MPI_SUM, comm);
+            mpi::all_reduce(make_span(acc.cdata_), make_span(res.cdata_), MPI_SUM, comm);
         } else {
             const auto n1 = static_cast<double>(acc.count_);
             const auto n = static_cast<double>(res.count_);
             const vec_type tmp_mdata = acc.mdata_ * n1 / n;
-            mpi::all_reduce(comm, make_span(tmp_mdata), make_span(res.mdata_), MPI_SUM);
+            mpi::all_reduce(make_span(tmp_mdata), make_span(res.mdata_), MPI_SUM, comm);
             const vec_type tmp_vdata =
                 acc.cdata_ + n1 * (acc.mdata_ - res.mdata_).cwiseProduct(acc.mdata_ - res.mdata_);
-            mpi::all_reduce(comm, make_span(tmp_vdata), make_span(res.cdata_), MPI_SUM);
+            mpi::all_reduce(make_span(tmp_vdata), make_span(res.cdata_), MPI_SUM, comm);
         }
         return res;
     }

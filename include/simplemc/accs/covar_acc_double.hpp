@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Accumulator for calculating the sample mean and sample covariance matrix of a real random 
+ * @brief Accumulator for calculating the sample mean and sample covariance matrix of a real random
  * vector.
  */
 
@@ -27,7 +27,7 @@ namespace simplemc {
 
 /**
  * @ingroup simplemc-accs-accs-covar
- * @brief Accumulator for calculating the sample mean and sample covariance matrix of a real random 
+ * @brief Accumulator for calculating the sample mean and sample covariance matrix of a real random
  * vector \f$ \mathbf{X} \f$.
  *
  * @details The accumulator takes two template parameters:
@@ -297,7 +297,7 @@ public:
      *     \mathbf{n}_{1}^{(N_1)} - \mathbf{n}^{(N)} \right) \left( \mathbf{n}_{1}^{(N_1)} -
      *     \mathbf{n}^{(N)} \right)^T + N_2 \left( \mathbf{n}_{2}^{(N_2)} - \mathbf{n}^{(N)} \right)
      *     \left( \mathbf{n}_{2}^{(N_2)} - \mathbf{n}^{(N)} \right)^T \f$.
-     * 
+     *
      * See also @ref simplemc-accs-accs-how.
      *
      * @param acc_other simplemc::covar_acc<X, A> to be incorporated.
@@ -377,7 +377,7 @@ public:
     [[nodiscard]] auto count() const { return count_; }
 
     /**
-     * @brief Get the accumulated data \f$ \mathbf{m}^{(N)}/ \mathbf{n}^{(N)} \f$ used for estimating 
+     * @brief Get the accumulated data \f$ \mathbf{m}^{(N)}/ \mathbf{n}^{(N)} \f$ used for estimating
      * the mean.
      *
      * @return simplemc::eigen_vector_dbl of size \f$ M \f$ containing \f$ \mathbf{m}^{(N)}/
@@ -386,7 +386,7 @@ public:
     [[nodiscard]] const vec_type& mdata() const { return mdata_; }
 
     /**
-     * @brief Get the accumulated data \f$ \mathbf{C}^{(N)}/\mathbf{D}^{(N)} \f$ used for estimating 
+     * @brief Get the accumulated data \f$ \mathbf{C}^{(N)}/\mathbf{D}^{(N)} \f$ used for estimating
      * the covariance.
      *
      * @note Only the lower triangular part of the covariance matrix is valid. Use
@@ -466,20 +466,20 @@ public:
     friend covar_acc mpi_collect(const mpi::communicator& comm, const covar_acc& acc) {
         assert(all_equal(acc.size(), comm));
         covar_acc res(acc.size());
-        mpi::all_reduce(comm, acc.count_, res.count_, MPI_SUM);
+        mpi::all_reduce(acc.count_, res.count_, MPI_SUM, comm);
         if constexpr (covar_acc::varalg() == varalg::standard) {
-            mpi::all_reduce(comm, make_span(acc.mdata_), make_span(res.mdata_), MPI_SUM);
-            mpi::all_reduce(comm, make_span(acc.cdata_), make_span(res.cdata_), MPI_SUM);
+            mpi::all_reduce(make_span(acc.mdata_), make_span(res.mdata_), MPI_SUM, comm);
+            mpi::all_reduce(make_span(acc.cdata_), make_span(res.cdata_), MPI_SUM, comm);
         } else {
             const auto n1 = static_cast<double>(acc.count_);
             const auto n = static_cast<double>(res.count_);
             const vec_type tmp_mdata = acc.mdata_ * n1 / n;
-            mpi::all_reduce(comm, make_span(tmp_mdata), make_span(res.mdata_), MPI_SUM);
+            mpi::all_reduce(make_span(tmp_mdata), make_span(res.mdata_), MPI_SUM, comm);
             // we cannot add the triangular view to the full matrix (only when we assign)
             mat_type tmp_cdata = acc.cdata_;
             tmp_cdata += (n1 * (acc.mdata_ - res.mdata_) * (acc.mdata_ - res.mdata_).transpose())
                              .template triangularView<Eigen::Lower>();
-            mpi::all_reduce(comm, make_span(tmp_cdata), make_span(res.cdata_), MPI_SUM);
+            mpi::all_reduce(make_span(tmp_cdata), make_span(res.cdata_), MPI_SUM, comm);
         }
         return res;
     }

@@ -13,7 +13,7 @@
 template <typename T>
 void check_single_broadcast(const simplemc::mpi::communicator& comm, const T& t, int root) {
     T value = (comm.rank() == root ? t : T {});
-    simplemc::mpi::broadcast(comm, value, root);
+    simplemc::mpi::broadcast(value, root, comm);
     ASSERT_EQ(value, t);
 }
 
@@ -26,7 +26,7 @@ void check_range_broadcast(const simplemc::mpi::communicator& comm, const R& rg,
     } else {
         data.resize(rg.size());
     }
-    simplemc::mpi::broadcast(comm, data, root);
+    simplemc::mpi::broadcast(data, root, comm);
     ASSERT_EQ(data, rg);
 }
 
@@ -188,12 +188,12 @@ TEST(SimplemcMPI, ReduceSingleValues) {
 
     // allreduce
     std::complex<double> res {};
-    simplemc::mpi::all_reduce(comm, value, res, MPI_SUM);
+    simplemc::mpi::all_reduce(value, res, MPI_SUM, comm);
     check_near(res, exp);
 
     // allreduce in place
     res = value;
-    simplemc::mpi::all_reduce_in_place(comm, res, MPI_SUM);
+    simplemc::mpi::all_reduce_in_place(res, MPI_SUM, comm);
     check_near(res, exp);
 
     // reduce
@@ -230,12 +230,12 @@ TEST(SimplemcMPI, ReduceVector) {
 
     // allreduce
     std::vector<std::complex<double>> res(data.size());
-    simplemc::mpi::all_reduce(comm, data, res, MPI_SUM);
+    simplemc::mpi::all_reduce(data, res, MPI_SUM, comm);
     check_range_near(res, exp);
 
     // allreduce in place
     res = data;
-    simplemc::mpi::all_reduce_in_place(comm, res, MPI_SUM);
+    simplemc::mpi::all_reduce_in_place(res, MPI_SUM, comm);
     check_range_near(res, exp);
 
     // reduce
