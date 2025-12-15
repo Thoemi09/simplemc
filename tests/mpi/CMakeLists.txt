@@ -3,8 +3,8 @@
 # The following targets are defined:
 # ---------------------------------
 # mpi-abort-exception-test: Executable to test the behavior of abort_on_exception == true.
-# mpi-allreduce-test: Executable to test the supported MPI allreduce operations.
 # mpi-allequal-test: Executable to test the allequal function.
+# mpi-allreduce-test: Executable to test the supported MPI allreduce operations.
 # mpi-broadcast-test: Executable to test the supported MPI broadcast operations.
 # mpi-collectives-test: Executable to test the supported MPI collective communication operations.
 # mpi-comm-test: Executable to test the MPI communicator wrapper.
@@ -23,8 +23,8 @@ target_link_libraries(mpi-abort-exception-test PRIVATE simplemc-test)
 add_executable(mpi-allequal-test mpi_allequal_test.cpp)
 target_link_libraries(mpi-allequal-test PRIVATE simplemc-test)
 
-# add_executable(mpi-allreduce-test mpi_allreduce_test.cpp)
-# target_link_libraries(mpi-allreduce-test PRIVATE simplemc-test)
+add_executable(mpi-allreduce-test mpi_allreduce_test.cpp)
+target_link_libraries(mpi-allreduce-test PRIVATE simplemc-test)
 
 add_executable(mpi-broadcast-test mpi_broadcast_test.cpp)
 target_link_libraries(mpi-broadcast-test PRIVATE simplemc-test)
@@ -58,7 +58,7 @@ target_link_libraries(mpi-utils-test PRIVATE simplemc-test)
 
 # add tests
 add_test(NAME mpi-allequal-test COMMAND mpirun -n 4 ./mpi-allequal-test)
-# add_test(NAME mpi-allreduce-test COMMAND mpirun -n 4 ./mpi-allreduce-test)
+add_test(NAME mpi-allreduce-test COMMAND mpirun -n 4 ./mpi-allreduce-test)
 add_test(NAME mpi-broadcast-test COMMAND mpirun -n 4 ./mpi-broadcast-test)
 add_test(NAME mpi-collectives-test COMMAND mpirun -n 4 ./mpi-collectives-test)
 add_test(NAME mpi-comm-test COMMAND mpirun -n 4 ./mpi-comm-test)
