@@ -7,7 +7,6 @@
 #define SIMPLEMC_MPI_BROADCAST_HPP
 
 #include <simplemc/mpi/all_equal.hpp>
-#include <simplemc/mpi/all_reduce.hpp>
 #include <simplemc/mpi/mpi_type.hpp>
 #include <simplemc/mpi/utils.hpp>
 #include <simplemc/utils/ranges.hpp>
@@ -26,13 +25,12 @@ namespace simplemc::mpi {
 /**
  * @brief Broadcast data (low-level).
  *
- * @details Thin wrapper around `MPI_Bcast`. Does nothing if `count <= 0`.
+ * @details Thin wrapper around `MPI_Bcast` that accepts an explicit `MPI_Datatype`, allowing users to
+ * broadcast custom or user-defined MPI datatypes. The caller is responsible for ensuring that
+ * `buffer` points to valid memory of the correct type and size.
  *
- * This overload accepts an explicit `MPI_Datatype`, allowing users to broadcast custom or
- * user-defined MPI datatypes. The caller is responsible for ensuring that `buffer` points to valid
- * memory of the correct type and size.
- *
- * It asserts that `count` and `root` is the same on all processes and that `root` is a valid rank.
+ * It asserts that `count` and `root` is the same on all processes and that `root` is a valid rank and
+ * `count` is non-negative.
  *
  * @param buf Pointer to the buffer to broadcast from (on root) or receive into (on other ranks).
  * @param count Number of elements to broadcast.
@@ -43,9 +41,7 @@ namespace simplemc::mpi {
 inline void broadcast(void* buf, int count, MPI_Datatype datatype, int root, MPI_Comm comm) {
     assert(all_equal(count, comm));
     assert(all_equal(root, comm));
-    if (count <= 0) {
-        return;
-    }
+    assert(count >= 0);
     check_mpi_call(MPI_Bcast(buf, count, datatype, root, comm), "MPI_Bcast");
 }
 
@@ -84,7 +80,7 @@ void broadcast(T& value, int root, MPI_Comm comm) {
 /**
  * @brief Broadcast a contiguous range.
  *
- * @details  It broadcasts all elements in the input range from root to all other processes by calling 
+ * @details  It broadcasts all elements in the input range from root to all other processes by calling
  * simplemc::mpi::broadcast(T*, int, int, MPI_Comm).
  *
  * @tparam R simplemc::mpi::mpi_range type.

@@ -25,13 +25,11 @@ namespace simplemc::mpi {
 /**
  * @brief All-reduce data across all processes (low-level).
  *
- * @details Thin wrapper around `MPI_Allreduce`. Does nothing if `count <= 0`.
+ * @details Thin wrapper around `MPI_Allreduce` that accepts an explicit `MPI_Datatype`, allowing
+ * users to reduce custom or user-defined MPI datatypes. The caller is responsible for ensuring that
+ * `sendbuf` and `recvbuf` point to valid memory of the correct type and size.
  *
- * This overload accepts an explicit `MPI_Datatype`, allowing users to reduce custom or user-defined
- * MPI datatypes. The caller is responsible for ensuring that `sendbuf` and `recvbuf` point to valid
- * memory of the correct type and size.
- *
- * It asserts that `count` is the same on all processes.
+ * It asserts that `count` is the same on all processes and non-negative.
  *
  * @param sendbuf Pointer to the send buffer.
  * @param recvbuf Pointer to the receive buffer.
@@ -42,22 +40,18 @@ namespace simplemc::mpi {
  */
 inline void all_reduce(const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm) {
     assert(all_equal(count, comm));
-    if (count <= 0) {
-        return;
-    }
+    assert(count >= 0);
     check_mpi_call(MPI_Allreduce(sendbuf, recvbuf, count, datatype, op, comm), "MPI_Allreduce");
 }
 
 /**
  * @brief All-reduce data in place across all processes (low-level).
  *
- * @details Thin wrapper around `MPI_Allreduce` with `MPI_IN_PLACE`. Does nothing if `count <= 0`.
+ * @details Thin wrapper around `MPI_Allreduce` with `MPI_IN_PLACE` that accepts an explicit
+ * `MPI_Datatype`, allowing users to reduce custom or user-defined MPI datatypes. The caller is
+ * responsible for ensuring that `buf` points to valid memory of the correct type and size.
  *
- * This overload accepts an explicit `MPI_Datatype`, allowing users to reduce custom or user-defined
- * MPI datatypes. The caller is responsible for ensuring that `buf` points to valid memory of the
- * correct type and size.
- *
- * It asserts that `count` is the same on all processes.
+ * It asserts that `count` is the same on all processes and non-negative.
  *
  * @param buf Pointer to the buffer (used as both send and receive).
  * @param count Number of elements to reduce.
@@ -66,10 +60,8 @@ inline void all_reduce(const void* sendbuf, void* recvbuf, int count, MPI_Dataty
  * @param comm MPI communicator.
  */
 inline void all_reduce_in_place(void* buf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm) {
+    assert(count >= 0);
     assert(all_equal(count, comm));
-    if (count <= 0) {
-        return;
-    }
     check_mpi_call(MPI_Allreduce(MPI_IN_PLACE, buf, count, datatype, op, comm), "MPI_Allreduce");
 }
 
