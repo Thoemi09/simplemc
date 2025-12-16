@@ -85,7 +85,7 @@ TEST(SimplemcMPI, GatherSingleValuesAndScatterIntoSingleValues) {
     // allgather ranks in a vector
     std::vector<int> exp(comm.size()), res(comm.size());
     std::iota(exp.begin(), exp.end(), 0);
-    simplemc::mpi::all_gather(comm, comm.rank(), res);
+    simplemc::mpi::all_gather(comm.rank(), res, comm);
     ASSERT_EQ(exp, res);
 
     // gather ranks in a vector
@@ -130,13 +130,13 @@ TEST(SimplemcMPI, GatherVectorsAndScatterIntoVectors) {
 
     // allgather
     std::vector<double> res(comm.size() * sz);
-    simplemc::mpi::all_gather(comm, data, res);
+    simplemc::mpi::all_gather(data, res, comm);
     ASSERT_EQ(exp, res);
 
     // allgather in place
     res.assign(res.size(), 0);
     assign(res.begin() + rank * sz, rank);
-    simplemc::mpi::all_gather_in_place(comm, res);
+    simplemc::mpi::all_gather_in_place(res, comm);
     ASSERT_EQ(exp, res);
 
     // gather

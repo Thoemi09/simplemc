@@ -639,7 +639,7 @@ public:
 
         // number of batches on each process
         std::vector<std::size_t> vec_sz(comm.size());
-        mpi::all_gather(comm, bs.size(), vec_sz);
+        mpi::all_gather(bs.size(), vec_sz, comm);
 
         // gather the batches
         const auto sz = std::accumulate(vec_sz.begin(), vec_sz.end(), static_cast<std::size_t>(0));
