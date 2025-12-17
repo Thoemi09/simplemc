@@ -1,3 +1,5 @@
+#include "../gtest-mpi-listener.hpp"
+
 #include <gtest/gtest.h>
 #include <mpi.h>
 #include <simplemc/mpi.hpp>
@@ -236,22 +238,28 @@ TEST(SimplemcMPI, CommBarrier) {
 }
 
 // Custom main function for MPI.
-int main(int argc, char* argv[]) {
-    int result = 0;
-
-    // Initialize GoogleTest and MPI.
+int main(int argc, char** argv) {
+    // filter out Google Test arguments
     ::testing::InitGoogleTest(&argc, argv);
-    simplemc::mpi::environment env(argc, argv);
-    simplemc::mpi::communicator comm;
 
-    // Remove the default GoogleTest listener on all ranks except 0.
+    // initialize MPI
+    MPI_Init(&argc, &argv);
+
+    // add object that will finalize MPI on exit; Google Test owns this pointer
+    ::testing::AddGlobalTestEnvironment(new GTestMPIListener::MPIEnvironment);
+
+    // get the event listener list.
     ::testing::TestEventListeners& listeners = ::testing::UnitTest::GetInstance()->listeners();
-    if (comm.rank() != 0) {
-        delete listeners.Release(listeners.default_result_printer());
-    }
 
-    // Run the tests.
-    result = RUN_ALL_TESTS();
+    // remove default listener: the default printer and the default XML printer
+    ::testing::TestEventListener* l = listeners.Release(listeners.default_result_printer());
+
+    // adds MPI listener; Google Test owns this pointer
+    listeners.Append(new GTestMPIListener::MPIWrapperPrinter(l, MPI_COMM_WORLD));
+
+    // run tests, then clean up and exit. RUN_ALL_TESTS() returns 0 if all tests
+    // pass and 1 if some test fails.
+    int result = RUN_ALL_TESTS();
 
     return result;
 }

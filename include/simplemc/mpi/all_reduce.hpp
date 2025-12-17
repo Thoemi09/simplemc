@@ -60,8 +60,8 @@ inline void all_reduce(const void* sendbuf, void* recvbuf, int count, MPI_Dataty
  * @param comm MPI communicator.
  */
 inline void all_reduce_in_place(void* buf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm) {
-    assert(count >= 0);
     assert(all_equal(count, comm));
+    assert(count >= 0);
     check_mpi_call(MPI_Allreduce(MPI_IN_PLACE, buf, count, datatype, op, comm), "MPI_Allreduce");
 }
 
@@ -139,7 +139,7 @@ void all_reduce_in_place(T& in_out_value, MPI_Op op, MPI_Comm comm) {
  * @details It reduces all elements in the input range and stores the result in the output range by
  * calling simplemc::mpi::all_reduce(const T*, T*, int, MPI_Op, MPI_Comm).
  *
- * It asserts that input and output ranges have equal size.
+ * It asserts that the output range size is at least the input range size.
  *
  * @tparam R1 simplemc::mpi::mpi_range type.
  * @tparam R2 simplemc::mpi::mpi_range type.
@@ -150,7 +150,7 @@ void all_reduce_in_place(T& in_out_value, MPI_Op op, MPI_Comm comm) {
  */
 template <mpi_range R1, mpi_range R2>
 void all_reduce(R1&& in_values, R2&& out_values, MPI_Op op, MPI_Comm comm) { // NOLINT (forwarding ref as in/out)
-    assert(ranges::size(in_values) == ranges::size(out_values));
+    assert(ranges::size(in_values) <= ranges::size(out_values));
     all_reduce(ranges::data(in_values), ranges::data(out_values), static_cast<int>(ranges::size(in_values)), op, comm);
 }
 
