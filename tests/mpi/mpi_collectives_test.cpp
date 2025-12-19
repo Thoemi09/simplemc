@@ -198,7 +198,7 @@ TEST(SimplemcMPI, ReduceSingleValues) {
 
     // reduce
     res = 0;
-    simplemc::mpi::reduce(comm, value, res, MPI_SUM, root);
+    simplemc::mpi::reduce(value, res, MPI_SUM, root, comm);
     if (rank == root) {
         check_near(res, exp);
     } else {
@@ -207,7 +207,7 @@ TEST(SimplemcMPI, ReduceSingleValues) {
 
     // reduce in place
     res = value;
-    simplemc::mpi::reduce_in_place(comm, res, MPI_SUM, root);
+    simplemc::mpi::reduce_in_place(res, MPI_SUM, root, comm);
     if (rank == root) {
         check_near(res, exp);
     } else {
@@ -240,7 +240,7 @@ TEST(SimplemcMPI, ReduceVector) {
 
     // reduce
     res.assign(2, 0.0);
-    simplemc::mpi::reduce(comm, data, res, MPI_SUM, root);
+    simplemc::mpi::reduce(data, res, MPI_SUM, root, comm);
     if (rank == root) {
         check_range_near(res, exp);
     } else {
@@ -251,7 +251,7 @@ TEST(SimplemcMPI, ReduceVector) {
 
     // reduce in place
     res = data;
-    simplemc::mpi::reduce_in_place(comm, res, MPI_SUM, root);
+    simplemc::mpi::reduce_in_place(res, MPI_SUM, root, comm);
     if (rank == root) {
         check_range_near(res, exp);
     } else {

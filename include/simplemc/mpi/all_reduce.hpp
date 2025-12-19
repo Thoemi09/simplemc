@@ -53,7 +53,7 @@ inline void all_reduce(const void* sendbuf, void* recvbuf, int count, MPI_Dataty
  *
  * It asserts that `count` is the same on all processes and non-negative.
  *
- * @param buf Pointer to the buffer (used as both send and receive).
+ * @param buf Pointer to the buffer (send and receive).
  * @param count Number of elements to reduce.
  * @param datatype MPI datatype of the elements.
  * @param op MPI reduction operation (e.g., `MPI_SUM`, `MPI_MAX`, `MPI_MIN`).
@@ -90,7 +90,7 @@ void all_reduce(const T* sendbuf, T* recvbuf, int count, MPI_Op op, MPI_Comm com
  * the C++ type `T` (see simplemc::mpi::mpi_type).
  *
  * @tparam T simplemc::mpi::mpi_compatible type.
- * @param buf Pointer to the buffer (used as both input and output).
+ * @param buf Pointer to the buffer (send and receive).
  * @param count Number of elements to reduce.
  * @param op MPI reduction operation (e.g., `MPI_SUM`, `MPI_MAX`, `MPI_MIN`).
  * @param comm MPI communicator.

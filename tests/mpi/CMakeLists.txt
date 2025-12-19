@@ -14,6 +14,7 @@
 # mpi-env-test: Executable to test the MPI environment wrappers.
 # mpi-group-test: Executable to test the MPI group wrapper.
 # mpi-no-abort-exception-test: Executable to test the behavior of abort_on_exception == false.
+# mpi-allreduce-test: Executable to test the supported MPI reduce operations.
 # mpi-threading-test: Executable to test MPI threading support functions.
 # mpi-type-test: Executable to test the mapping of MPI datatypes to C++ types.
 # mpi-utils-test: Executable to test the simplemc-mpi utility functions.
@@ -55,6 +56,9 @@ target_link_libraries(mpi-group-test PRIVATE simplemc-test)
 add_executable(mpi-no-abort-exception-test mpi_no_abort_exception_test.cpp)
 target_link_libraries(mpi-no-abort-exception-test PRIVATE simplemc-test)
 
+add_executable(mpi-reduce-test mpi_reduce_test.cpp)
+target_link_libraries(mpi-reduce-test PRIVATE simplemc-test)
+
 add_executable(mpi-threading-test mpi_threading_test.cpp)
 target_link_libraries(mpi-threading-test PRIVATE simplemc-test)
 
@@ -75,6 +79,7 @@ add_test(NAME mpi-comm-test COMMAND mpirun -n 4 ./mpi-comm-test)
 add_test(NAME mpi-datatype-test COMMAND mpirun -n 4 ./mpi-datatype-test)
 add_test(NAME mpi-env-test COMMAND mpirun -n 4 ./mpi-env-test)
 add_test(NAME mpi-group-test COMMAND mpirun -n 4 ./mpi-group-test)
+add_test(NAME mpi-reduce-test COMMAND mpirun -n 4 ./mpi-reduce-test)
 add_test(NAME mpi-threading-test COMMAND mpirun -n 4 ./mpi-threading-test)
 add_test(NAME mpi-type-test COMMAND mpirun -n 4 ./mpi-type-test)
 add_test(NAME mpi-utils-test COMMAND ./mpi-utils-test)

@@ -7,14 +7,14 @@
 #define SIMPLEMC_MPI_REDUCE_HPP
 
 #include <simplemc/mpi/all_equal.hpp>
-#include <simplemc/mpi/all_reduce.hpp>
 #include <simplemc/mpi/communicator.hpp>
 #include <simplemc/mpi/mpi_type.hpp>
 #include <simplemc/mpi/utils.hpp>
 #include <simplemc/utils/ranges.hpp>
-#include <simplemc/utils/simplemc_exception.hpp>
 
 #include <mpi.h>
+
+#include <cassert>
 
 namespace simplemc::mpi {
 
@@ -24,193 +24,165 @@ namespace simplemc::mpi {
  */
 
 /**
- * @brief Reduce a given number of values (only on root process).
+ * @brief Reduce data to the root process (low-level).
  *
- * @details It calls `MPI_Reduce` if `count > 0`, otherwise it does nothing.
+ * @details Thin wrapper around `MPI_Reduce` that accepts an explicit `MPI_Datatype`, allowing
+ * users to reduce custom or user-defined MPI datatypes. The caller is responsible for ensuring that
+ * `sendbuf` and `recvbuf` point to valid memory of the correct type and size.
  *
- * If the MPI call fails or if `root` is not a valid process ID, a simplemc::simplemc_exception is
- * thrown.
+ * It asserts that `count` is the same on all processes, non-negative, and that `root` is a valid
+ * rank.
  *
- * The MPI operation should be one of the following: `MPI_MAX`, `MPI_MIN`, `MPI_SUM`, `MPI_PROD`,
- * `MPI_LAND`, `MPI_BAND`, `MPI_LOR`, `MPI_BOR`, `MPI_LXOR`, `MPI_BXOR`.
- *
- * @tparam T simplemc::mpi::mpi_compatible type.
- * @param comm simplemc::mpi::communicator object.
- * @param in_values Pointer to the memory to be reduced.
- * @param count Number of values to be reduced.
- * @param out_values Pointer to the memory to be reduced into.
- * @param op MPI operation.
- * @param root Root process.
+ * @param sendbuf Pointer to the send buffer.
+ * @param recvbuf Pointer to the receive buffer.
+ * @param count Number of elements to reduce.
+ * @param datatype MPI datatype of the elements.
+ * @param op MPI reduction operation (e.g., `MPI_SUM`, `MPI_MAX`, `MPI_MIN`).
+ * @param root Root process rank.
+ * @param comm MPI communicator.
  */
-template <mpi_compatible T>
-void reduce(const communicator& comm, const T* in_values, int count, T* out_values, MPI_Op op, int root) {
-    if (count <= 0) {
-        return;
-    }
-    if (root < 0 || root >= comm.size()) {
-        throw simplemc_exception("Root process is out of bounds", "mpi::reduce");
-    }
-    check_mpi_call(MPI_Reduce(in_values, out_values, count, mpi_type<T>::get(), op, root, comm), "MPI_Reduce");
+inline void reduce(
+    const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm) {
+    assert(all_equal(count, comm));
+    assert(count >= 0);
+    assert(root >= 0 && root < comm_size(comm));
+    check_mpi_call(MPI_Reduce(sendbuf, recvbuf, count, datatype, op, root, comm), "MPI_Reduce");
 }
 
 /**
- * @brief Reduce a given number of values in place (only on root process).
+ * @brief Reduce data in place to the root process (low-level).
  *
- * @details Same as simplemc::mpi::reduce except that the MPI call is made with `MPI_IN_PLACE` instead
- * of a send buffer on the root process.
+ * @details Thin wrapper around `MPI_Reduce` with `MPI_IN_PLACE` that accepts an explicit
+ * `MPI_Datatype`, allowing users to reduce custom or user-defined MPI datatypes. The caller is
+ * responsible for ensuring that `buf` points to valid memory of the correct type and size.
  *
- * @tparam T simplemc::mpi::mpi_compatible type.
- * @param comm simplemc::mpi::communicator object.
- * @param in_out_values Pointer to the memory to be reduced/reduced into.
- * @param count Number of values to be reduced.
- * @param op MPI operation.
- * @param root Root process.
+ * It calls simplemc::mpi::reduce with the given arguments on all processes, except that on the root
+ * process it uses `MPI_IN_PLACE` for the send buffer.
+ *
+ * @param buf Pointer to the buffer (send on all processes and receive on root).
+ * @param count Number of elements to reduce.
+ * @param datatype MPI datatype of the elements.
+ * @param op MPI reduction operation (e.g., `MPI_SUM`, `MPI_MAX`, `MPI_MIN`).
+ * @param root Root process rank.
+ * @param comm MPI communicator.
  */
-template <mpi_compatible T>
-void reduce_in_place(const communicator& comm, T* in_out_values, int count, MPI_Op op, int root) {
-    if (count <= 0) {
-        return;
-    }
-    if (root < 0 || root >= comm.size()) {
-        throw simplemc_exception("Root process is out of bounds", "mpi::reduce_in_place");
-    }
-    if (comm.rank() == root) {
-        check_mpi_call(
-            MPI_Reduce(MPI_IN_PLACE, in_out_values, count, mpi_type<T>::get(), op, root, comm), "MPI_Reduce");
+inline void reduce_in_place(void* buf, int count, MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm) {
+    if (comm_rank(comm) == root) {
+        reduce(MPI_IN_PLACE, buf, count, datatype, op, root, comm);
     } else {
-        check_mpi_call(
-            MPI_Reduce(in_out_values, in_out_values, count, mpi_type<T>::get(), op, root, comm), "MPI_Reduce");
+        reduce(buf, buf, count, datatype, op, root, comm);
     }
 }
 
 /**
- * @brief Reduce a single value (only on root process).
+ * @brief Reduce a contiguous array of values to the root process.
  *
- * @details It calls simplemc::mpi::reduce with a count of 1.
- *
- * @code{.cpp}
- * // reduce a single value on the root processes
- * simplemc::mpi::communicator comm {};
- * int value {}, root {};
- *
- * // set value and root...
- *
- * int result {};
- * simplemc::mpi::reduce(comm, value, result, MPI_SUM, root);
- * @endcode
+ * @details It simply calls simplemc::mpi::reduce with the deduced `MPI_Datatype` from the C++ type
+ * `T` (see simplemc::mpi::mpi_type).
  *
  * @tparam T simplemc::mpi::mpi_compatible type.
- * @param comm simplemc::mpi::communicator object.
- * @param in_value Value to be reduced.
- * @param out_value Value to be reduced into.
- * @param op MPI operation.
- * @param root Root process.
+ * @param sendbuf Pointer to the send buffer.
+ * @param recvbuf Pointer to the receive buffer.
+ * @param count Number of elements to reduce.
+ * @param op MPI reduction operation (e.g., `MPI_SUM`, `MPI_MAX`, `MPI_MIN`).
+ * @param root Root process rank.
+ * @param comm MPI communicator.
  */
 template <mpi_compatible T>
-void reduce(const communicator& comm, const T& in_value, T& out_value, MPI_Op op, int root) {
-    reduce(comm, &in_value, 1, &out_value, op, root);
+void reduce(const T* sendbuf, T* recvbuf, int count, MPI_Op op, int root, MPI_Comm comm) {
+    reduce(static_cast<const void*>(sendbuf), static_cast<void*>(recvbuf), count, mpi_type<T>::get(), op, root, comm);
 }
 
 /**
- * @brief Reduce a single value in place (only on root process).
+ * @brief Reduce a contiguous array of values in place to the root process.
  *
- * @details It calls simplemc::mpi::reduce_in_place with a count of 1.
- *
- * @code{.cpp}
- * // reduce a single value on the root processes in place
- * simplemc::mpi::communicator comm {};
- * int value {}, root {};
- *
- * // set value and root...
- *
- * simplemc::mpi::reduce_in_place(comm, value, MPI_SUM, root);
- * @endcode
+ * @details It simply calls simplemc::mpi::reduce_in_place with the deduced `MPI_Datatype` from the
+ * C++ type `T` (see simplemc::mpi::mpi_type).
  *
  * @tparam T simplemc::mpi::mpi_compatible type.
- * @param comm simplemc::mpi::communicator object.
- * @param in_out_value Value to be reduced/reduced into.
- * @param op MPI operation.
- * @param root Root process.
+ * @param buf Pointer to the buffer (send on all processes and receive on root).
+ * @param count Number of elements to reduce.
+ * @param op MPI reduction operation (e.g., `MPI_SUM`, `MPI_MAX`, `MPI_MIN`).
+ * @param root Root process rank.
+ * @param comm MPI communicator.
  */
 template <mpi_compatible T>
-void reduce_in_place(const communicator& comm, T& in_out_value, MPI_Op op, int root) {
-    reduce_in_place(comm, &in_out_value, 1, op, root);
+void reduce_in_place(T* buf, int count, MPI_Op op, int root, MPI_Comm comm) {
+    reduce_in_place(static_cast<void*>(buf), count, mpi_type<T>::get(), op, root, comm);
 }
 
 /**
- * @brief Reduce a range (only on root process).
+ * @brief Reduce a single value to the root process.
  *
- * @details It calls simplemc::mpi::reduce.
+ * @details It reduces exactly one element by calling simplemc::mpi::reduce(const T*, T*, int, MPI_Op,
+ * int, MPI_Comm) with a count of 1.
  *
- * The input ranges must have the same size across all processes and the size of the output range on
- * the root process must be equal to the size of the input range, otherwise a
- * simplemc::simplemc_exception is thrown.
+ * @tparam T simplemc::mpi::mpi_compatible type.
+ * @param in_value Input value to reduce.
+ * @param out_value Output value (result of reduction, only valid on root).
+ * @param op MPI reduction operation (e.g., `MPI_SUM`, `MPI_MAX`, `MPI_MIN`).
+ * @param root Root process rank.
+ * @param comm MPI communicator.
+ */
+template <mpi_compatible T>
+void reduce(const T& in_value, T& out_value, MPI_Op op, int root, MPI_Comm comm) {
+    reduce(&in_value, &out_value, 1, op, root, comm);
+}
+
+/**
+ * @brief Reduce a single value in place to the root process.
  *
- * @code{.cpp}
- * // reduce a vector of integers on the root processes
- * simplemc::mpi::communicator comm {};
- * std::vector<int> data {};
- * int root {}
+ * @details It reduces exactly one element by calling simplemc::mpi::reduce_in_place(T*, int, MPI_Op,
+ * int, MPI_Comm) with a count of 1.
  *
- * // fill data and set root...
+ * @tparam T simplemc::mpi::mpi_compatible type.
+ * @param value Value to reduce (input on all processes, output on root).
+ * @param op MPI reduction operation (e.g., `MPI_SUM`, `MPI_MAX`, `MPI_MIN`).
+ * @param root Root process rank.
+ * @param comm MPI communicator.
+ */
+template <mpi_compatible T>
+void reduce_in_place(T& value, MPI_Op op, int root, MPI_Comm comm) {
+    reduce_in_place(&value, 1, op, root, comm);
+}
+
+/**
+ * @brief Reduce a contiguous range to the root process.
  *
- * std::vector<int> result(data.size());
- * simplemc::mpi::reduce(comm, data, result, MPI_SUM, root);
- * @endcode
+ * @details It reduces all elements in the input range and stores the result in the output range by
+ * calling simplemc::mpi::reduce(const T*, T*, int, MPI_Op, int, MPI_Comm).
  *
- * @tparam R1 Input range.
- * @tparam R2 Output range.
- * @param comm simplemc::mpi::communicator object.
- * @param in_values Range to be reduced.
- * @param out_values Range to be reduced into.
- * @param op MPI operation.
- * @param root Root process.
+ * It asserts that the output range size is at least the input range size on the root process.
+ *
+ * @tparam R1 simplemc::mpi::mpi_range type.
+ * @tparam R2 simplemc::mpi::mpi_range type.
+ * @param in_rg Input range to reduce.
+ * @param out_rg Output range (result of reduction, only valid on root).
+ * @param op MPI reduction operation (e.g., `MPI_SUM`, `MPI_MAX`, `MPI_MIN`).
+ * @param root Root process rank.
+ * @param comm MPI communicator.
  */
 template <mpi_range R1, mpi_range R2>
-void reduce(const communicator& comm, R1&& in_values, R2&& out_values, MPI_Op op, int root) { // NOLINT
-    if (!all_equal(ranges::size(in_values), comm)) {
-        throw simplemc_exception("Input range sizes are not equal across all processes", "mpi::reduce");
-    }
-    if (comm.rank() == root) {
-        if (ranges::size(in_values) != ranges::size(out_values)) {
-            throw simplemc_exception("Input and output range sizes are not equal", "mpi::reduce");
-        }
-    }
-    reduce(comm, ranges::data(in_values), ranges::size(in_values), ranges::data(out_values), op, root);
+void reduce(R1&& in_rg, R2&& out_rg, MPI_Op op, int root, MPI_Comm comm) { // NOLINT (forwarding ref as in/out)
+    assert((comm_rank(comm) != root) || (ranges::size(in_rg) <= ranges::size(out_rg)));
+    reduce(ranges::data(in_rg), ranges::data(out_rg), static_cast<int>(ranges::size(in_rg)), op, root, comm);
 }
 
 /**
- * @brief Reduce a range in place (only on root process).
+ * @brief Reduce a contiguous range in place to the root process.
  *
- * @details It calls simplemc::mpi::reduce_in_place.
+ * @details It reduces all elements in the input range in place by calling
+ * simplemc::mpi::reduce_in_place(T*, int, MPI_Op, int, MPI_Comm).
  *
- * The ranges must have the same size across all processes, otherwise a simplemc::simplemc_exception
- * is thrown.
- *
- * @code{.cpp}
- * // reduce a vector of integers on the root processes in place
- * simplemc::mpi::communicator comm {};
- * std::vector<int> data {};
- * int root {}
- *
- * // fill data and set root...
- *
- * simplemc::mpi::reduce(comm, data, MPI_SUM, root);
- * @endcode
- *
- * @tparam R Input/Output range.
- * @param comm simplemc::mpi::communicator object.
- * @param in_out_values Range to be reduced/reduced into.
- * @param op MPI operation.
- * @param root Root process.
+ * @tparam R simplemc::mpi::mpi_range type.
+ * @param rg Range to reduce (input on all processes, output on root).
+ * @param op MPI reduction operation (e.g., `MPI_SUM`, `MPI_MAX`, `MPI_MIN`).
+ * @param root Root process rank.
+ * @param comm MPI communicator.
  */
 template <mpi_range R>
-void reduce_in_place(
-    const communicator& comm, R&& in_out_values, MPI_Op op, int root) { // NOLINT (ranges need not be forwarded)
-    if (!all_equal(ranges::size(in_out_values), comm)) {
-        throw simplemc_exception("Range sizes are not equal across all processes", "mpi::reduce_in_place");
-    }
-    reduce_in_place(comm, ranges::data(in_out_values), ranges::size(in_out_values), op, root);
+void reduce_in_place(R&& rg, MPI_Op op, int root, MPI_Comm comm) { // NOLINT (forwarding ref as in/out)
+    reduce_in_place(ranges::data(rg), static_cast<int>(ranges::size(rg)), op, root, comm);
 }
 
 /** @} */
