@@ -1,0 +1,215 @@
+/**
+ * @file
+ * @brief All-gatherv communications between MPI processes.
+ */
+
+#ifndef SIMPLEMC_MPI_ALL_GATHERV_HPP
+#define SIMPLEMC_MPI_ALL_GATHERV_HPP
+
+#include <simplemc/mpi/all_equal.hpp>
+#include <simplemc/mpi/all_gather.hpp>
+#include <simplemc/mpi/communicator.hpp>
+#include <simplemc/mpi/mpi_type.hpp>
+#include <simplemc/mpi/utils.hpp>
+#include <simplemc/utils/ranges.hpp>
+
+#include <mpi.h>
+
+#include <algorithm>
+#include <cassert>
+#include <span>
+#include <vector>
+
+namespace simplemc::mpi {
+
+namespace detail {
+
+// Prepare recvcounts and displs arrays for all_gatherv(_in_place) from local count.
+inline auto prepare_gatherv_counts_displs(int local_count, MPI_Comm comm) {
+    const int size = comm_size(comm);
+
+    // gather all input sizes
+    std::vector<int> recvcounts(size);
+    all_gather(local_count, recvcounts, comm);
+
+    // compute displacements
+    std::vector<int> displs(size);
+    displs[0] = 0;
+    for (int i = 1; i < size; ++i) {
+        displs[i] = displs[i - 1] + recvcounts[i - 1];
+    }
+
+    return std::make_pair(std::move(recvcounts), std::move(displs));
+}
+
+} // namespace detail
+
+/**
+ * @addtogroup simplemc-mpi-coll
+ * @{
+ */
+
+/**
+ * @brief All-gatherv data across all processes (low-level).
+ *
+ * @details Thin wrapper around `MPI_Allgatherv` that accepts an explicit `MPI_Datatype`, allowing
+ * users to gather custom or user-defined MPI datatypes with varying counts per process. The caller
+ * is responsible for ensuring that `sendbuf` and `recvbuf` point to valid memory of the correct
+ * type and size.
+ *
+ * It asserts that `sendcount` is non-negative and equal to the receive count for the calling process,
+ * and that `recvcounts` and `displs` arrays are equal across all processes.
+ *
+ * @param sendbuf Pointer to the send buffer.
+ * @param sendcount Number of elements to send.
+ * @param sendtype MPI datatype of the send elements.
+ * @param recvbuf Pointer to the receive buffer.
+ * @param recvcounts Array of counts to receive from each process.
+ * @param displs Array of displacements in the receive buffer for each process.
+ * @param recvtype MPI datatype of the receive elements.
+ * @param comm MPI communicator.
+ */
+inline void all_gatherv(const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, const int* recvcounts,
+    const int* displs, MPI_Datatype recvtype, MPI_Comm comm) {
+    assert(all_equal(std::span(recvcounts, comm_size(comm)), comm));
+    assert(all_equal(std::span(displs, comm_size(comm)), comm));
+    assert(sendcount >= 0);
+    assert(sendcount == recvcounts[comm_rank(comm)]);
+    check_mpi_call(
+        MPI_Allgatherv(sendbuf, sendcount, sendtype, recvbuf, recvcounts, displs, recvtype, comm), "MPI_Allgatherv");
+}
+
+/**
+ * @brief All-gatherv data in place across all processes (low-level).
+ *
+ * @details Thin wrapper around `MPI_Allgatherv` with `MPI_IN_PLACE` that accepts an explicit
+ * `MPI_Datatype`, allowing users to gather custom or user-defined MPI datatypes with varying counts
+ * per process. The caller is responsible for ensuring that `buf` points to valid memory of the
+ * correct type and size.
+ *
+ * It asserts that `recvcounts` and `displs` arrays are equal across all processes and that each
+ * receive count is non-negative.
+ *
+ * @param buf Pointer to the buffer (used as both send and receive).
+ * @param recvcounts Array of counts to receive from each process.
+ * @param displs Array of displacements in the buffer for each process.
+ * @param datatype MPI datatype of the elements.
+ * @param comm MPI communicator.
+ */
+inline void all_gatherv_in_place(
+    void* buf, const int* recvcounts, const int* displs, MPI_Datatype datatype, MPI_Comm comm) {
+    assert(all_equal(std::span(recvcounts, comm_size(comm)), comm));
+    assert(all_equal(std::span(displs, comm_size(comm)), comm));
+    assert(recvcounts[comm_rank(comm)] >= 0);
+    check_mpi_call(
+        MPI_Allgatherv(MPI_IN_PLACE, 0, datatype, buf, recvcounts, displs, datatype, comm), "MPI_Allgatherv");
+}
+
+/**
+ * @brief All-gatherv a contiguous array of values across all processes.
+ *
+ * @details It simply calls simplemc::mpi::all_gatherv with the deduced `MPI_Datatype` from the C++
+ * type `T` (see simplemc::mpi::mpi_type) for both send and receive buffers. The number of elements
+ * to send is determined by the corresponding entry in the receive counts array.
+ *
+ * @note Since the MPI datatype for both send and receive buffers is the same, the send count is
+ * automatically derived from `recvcounts[rank]`.
+ *
+ * @tparam T simplemc::mpi::mpi_compatible type.
+ * @param sendbuf Pointer to the send buffer.
+ * @param recvbuf Pointer to the receive buffer.
+ * @param recvcounts Array of counts to receive from each process.
+ * @param displs Array of displacements in the receive buffer for each process.
+ * @param comm MPI communicator.
+ */
+template <mpi_compatible T>
+void all_gatherv(const T* sendbuf, T* recvbuf, const int* recvcounts, const int* displs, MPI_Comm comm) {
+    all_gatherv(static_cast<const void*>(sendbuf), recvcounts[comm_rank(comm)], mpi_type<T>::get(),
+        static_cast<void*>(recvbuf), recvcounts, displs, mpi_type<T>::get(), comm);
+}
+
+/**
+ * @brief All-gatherv a contiguous array of values in place across all processes.
+ *
+ * @details It simply calls simplemc::mpi::all_gatherv_in_place with the deduced `MPI_Datatype` from
+ * the C++ type `T` (see simplemc::mpi::mpi_type).
+ *
+ * @tparam T simplemc::mpi::mpi_compatible type.
+ * @param buf Pointer to the buffer (used as both input and output).
+ * @param recvcounts Array of counts to receive from each process.
+ * @param displs Array of displacements in the buffer for each process.
+ * @param comm MPI communicator.
+ */
+template <mpi_compatible T>
+void all_gatherv_in_place(T* buf, const int* recvcounts, const int* displs, MPI_Comm comm) {
+    all_gatherv_in_place(static_cast<void*>(buf), recvcounts, displs, mpi_type<T>::get(), comm);
+}
+
+/**
+ * @brief All-gatherv contiguous ranges across all processes.
+ *
+ * @details Automatically gathers the input range sizes from all processes, computes displacements,
+ * and performs the all-gatherv operation. Each process can contribute a different number of elements.
+ *
+ * The function first gathers all input sizes using simplemc::mpi::all_gather, then computes the
+ * displacement array, and finally calls the lower-level simplemc::mpi::all_gatherv(const T*, T*,
+ * const int*, const int*, MPI_Comm).
+ *
+ * @tparam R1 simplemc::mpi::mpi_range type.
+ * @tparam R2 simplemc::mpi::mpi_range type.
+ * @param in_values Input range to gather.
+ * @param out_values Output range (result of gather).
+ * @param comm MPI communicator.
+ */
+template <mpi_range R1, mpi_range R2>
+void all_gatherv(R1&& in_values, R2&& out_values, MPI_Comm comm) { // NOLINT (forwarding ref as in/out)
+    const int size = comm_size(comm);
+    const int local_count = static_cast<int>(ranges::size(in_values));
+
+    // gather all input sizes and compute displacements
+    auto [recvcounts, displs] = detail::prepare_gatherv_counts_displs(local_count, comm);
+
+    // compute and check total expected size
+    const int total_size = displs[size - 1] + recvcounts[size - 1];
+    assert(total_size <= static_cast<int>(ranges::size(out_values)));
+
+    all_gatherv(ranges::data(in_values), ranges::data(out_values), recvcounts.data(), displs.data(), comm);
+}
+
+/**
+ * @brief All-gatherv contiguous ranges in place across all processes.
+ *
+ * @details Automatically gathers the local count from all processes, computes displacements, and
+ * performs the in-place all-gatherv operation. Each process specifies how many elements it
+ * contributes.
+ *
+ * The function gathers all local counts using simplemc::mpi::all_gather, computes the displacement
+ * array, and calls the lower-level all_gatherv_in_place(T*, const int*, const int*, MPI_Comm).
+ *
+ * @note Each process's input elements must already be stored at their correct final position in the
+ * range before calling this function.
+ *
+ * @tparam R simplemc::mpi::mpi_range type.
+ * @param in_out_values Range to gather (input and output).
+ * @param local_count Number of elements this process contributes.
+ * @param comm MPI communicator.
+ */
+template <mpi_range R>
+void all_gatherv_in_place(R&& in_out_values, int local_count, MPI_Comm comm) { // NOLINT (forwarding ref)
+    const int size = comm_size(comm);
+
+    // gather all input sizes and compute displacements
+    auto [recvcounts, displs] = detail::prepare_gatherv_counts_displs(local_count, comm);
+
+    // compute total expected size
+    const int total_size = displs[size - 1] + recvcounts[size - 1];
+    assert(total_size <= static_cast<int>(ranges::size(in_out_values)));
+
+    all_gatherv_in_place(ranges::data(in_out_values), recvcounts.data(), displs.data(), comm);
+}
+
+/** @} */
+
+} // namespace simplemc::mpi
+
+#endif // SIMPLEMC_MPI_ALL_GATHERV_HPP

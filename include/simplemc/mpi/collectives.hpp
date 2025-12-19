@@ -8,6 +8,7 @@
 
 #include <simplemc/mpi/all_equal.hpp>
 #include <simplemc/mpi/all_gather.hpp>
+#include <simplemc/mpi/all_gatherv.hpp>
 #include <simplemc/mpi/all_reduce.hpp>
 #include <simplemc/mpi/broadcast.hpp>
 #include <simplemc/mpi/gather.hpp>
