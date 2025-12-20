@@ -159,7 +159,20 @@
 /**
  * @defgroup simplemc-mpi-coll-reduce MPI reduce
  * @ingroup simplemc-mpi-coll
- * @brief Low-level and high-level MPI reduce operations.
+ * @brief Low-level and high-level MPI (all)reduce operations.
+ * 
+ * @details In the example below, we use the high-level simplemc::mpi::reduce_in_place to reduce a
+ * `std::vector` on the root process by summing across all processes:
+ * 
+ * @include mpi/doc_coll_comm_reduce.cpp
+ * 
+ * Output (running on 4 processes):
+ * ```
+ * Rank 3: [1, 2, 3, 4, 5]
+ * Rank 0: [4, 8, 12, 16, 20]
+ * Rank 2: [1, 2, 3, 4, 5]
+ * Rank 1: [1, 2, 3, 4, 5]
+ * ```
  */
 
 /**

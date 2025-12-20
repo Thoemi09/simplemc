@@ -18,7 +18,7 @@
 namespace simplemc::mpi {
 
 /**
- * @addtogroup simplemc-mpi-coll
+ * @addtogroup simplemc-mpi-coll-reduce
  * @{
  */
 
@@ -51,7 +51,8 @@ inline void all_reduce(const void* sendbuf, void* recvbuf, int count, MPI_Dataty
  * `MPI_Datatype`, allowing users to reduce custom or user-defined MPI datatypes. The caller is
  * responsible for ensuring that `buf` points to valid memory of the correct type and size.
  *
- * It asserts that `count` is the same on all processes and non-negative.
+ * It calls simplemc::mpi::all_reduce with the given arguments, except that it uses `MPI_IN_PLACE` for
+ * the send buffer.
  *
  * @param buf Pointer to the buffer (send and receive).
  * @param count Number of elements to reduce.
@@ -60,9 +61,7 @@ inline void all_reduce(const void* sendbuf, void* recvbuf, int count, MPI_Dataty
  * @param comm MPI communicator.
  */
 inline void all_reduce_in_place(void* buf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm) {
-    assert(all_equal(count, comm));
-    assert(count >= 0);
-    check_mpi_call(MPI_Allreduce(MPI_IN_PLACE, buf, count, datatype, op, comm), "MPI_Allreduce");
+    all_reduce(MPI_IN_PLACE, buf, count, datatype, op, comm);
 }
 
 /**
@@ -124,13 +123,13 @@ void all_reduce(const T& in_value, T& out_value, MPI_Op op, MPI_Comm comm) {
  * MPI_Op, MPI_Comm) with a count of 1.
  *
  * @tparam T simplemc::mpi::mpi_compatible type.
- * @param in_out_value Value to reduce (input and output).
+ * @param value Value to reduce (input and output).
  * @param op MPI reduction operation (e.g., `MPI_SUM`, `MPI_MAX`, `MPI_MIN`).
  * @param comm MPI communicator.
  */
 template <mpi_compatible T>
-void all_reduce_in_place(T& in_out_value, MPI_Op op, MPI_Comm comm) {
-    all_reduce_in_place(&in_out_value, 1, op, comm);
+void all_reduce_in_place(T& value, MPI_Op op, MPI_Comm comm) {
+    all_reduce_in_place(&value, 1, op, comm);
 }
 
 /**
@@ -143,31 +142,31 @@ void all_reduce_in_place(T& in_out_value, MPI_Op op, MPI_Comm comm) {
  *
  * @tparam R1 simplemc::mpi::mpi_range type.
  * @tparam R2 simplemc::mpi::mpi_range type.
- * @param in_values Input range to reduce.
- * @param out_values Output range (result of reduction).
+ * @param in_rg Input range to reduce.
+ * @param out_rg Output range (result of reduction).
  * @param op MPI reduction operation (e.g., `MPI_SUM`, `MPI_MAX`, `MPI_MIN`).
  * @param comm MPI communicator.
  */
 template <mpi_range R1, mpi_range R2>
-void all_reduce(R1&& in_values, R2&& out_values, MPI_Op op, MPI_Comm comm) { // NOLINT (forwarding ref as in/out)
-    assert(ranges::size(in_values) <= ranges::size(out_values));
-    all_reduce(ranges::data(in_values), ranges::data(out_values), static_cast<int>(ranges::size(in_values)), op, comm);
+void all_reduce(R1&& in_rg, R2&& out_rg, MPI_Op op, MPI_Comm comm) { // NOLINT (forwarding ref as in/out)
+    assert(ranges::size(in_rg) <= ranges::size(out_rg));
+    all_reduce(ranges::data(in_rg), ranges::data(out_rg), static_cast<int>(ranges::size(in_rg)), op, comm);
 }
 
 /**
  * @brief All-reduce a contiguous range in place across all processes.
  *
- * @details It reduces all elements in the input range in place by calling
+ * @details It reduces all elements in the range in place by calling
  * simplemc::mpi::all_reduce_in_place(T*, int, MPI_Op, MPI_Comm).
  *
  * @tparam R simplemc::mpi::mpi_range type.
- * @param in_out_values Range to reduce (input and output).
+ * @param rg Range to reduce (input and output).
  * @param op MPI reduction operation (e.g., `MPI_SUM`, `MPI_MAX`, `MPI_MIN`).
  * @param comm MPI communicator.
  */
 template <mpi_range R>
-void all_reduce_in_place(R&& in_out_values, MPI_Op op, MPI_Comm comm) { // NOLINT (forwarding ref as in/out)
-    all_reduce_in_place(ranges::data(in_out_values), static_cast<int>(ranges::size(in_out_values)), op, comm);
+void all_reduce_in_place(R&& rg, MPI_Op op, MPI_Comm comm) { // NOLINT (forwarding ref as in/out)
+    all_reduce_in_place(ranges::data(rg), static_cast<int>(ranges::size(rg)), op, comm);
 }
 
 /** @} */
