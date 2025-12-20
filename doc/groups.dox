@@ -124,39 +124,27 @@
  * @ingroup simplemc-mpi
  * @brief Non-blocking collective communications like broadcast, scatter, gather, reduce, etc.
  *
- * @details Only very few of the non-blocking communications are supported. If other routines are
- * needed, please call the MPI C library directly.
+ * @details **simplemc-mpi** supports some (not all) of the most common collective communications. 
+ * 
+ * It provides the following API:
+ * 
+ * - Low-level routines that are very thing wrappers around the corresponding MPI C functions. They 
+ * are basically the same as their MPI counterparts and offer the same flexibility.
+ * - Higher-level, more user-friendly routines that work with simplemc::mpi::mpi_compatible and
+ * simplemc::mpi::mpi_range types. They reduce some of the complexity of the low-level routines by
+ * mapping C++ types to MPI types automatically and by inferring buffer sizes from the input ranges.
+ * However, they can not be used in all situations.
+ */
+
+/**
+ * @defgroup simplemc-mpi-coll-bcast MPI broadcast
+ * @ingroup simplemc-mpi-coll
+ * @brief Low-level and high-level MPI broadcast operations.
+ * 
+ * @details In the example below, we use the high-level simplemc::mpi::broadcast to distribute a
+ * `std::vector` from the root process to all other processes:
  *
- * No special attention is paid to the performance of these functions. For example, some of the
- * functions will make multiple MPI calls to check that sizes of buffers are consistent.
- *
- * See @ref tut_mpi_3 for examples.
- *
- * @code{.cpp}
- * #include <fmt/ranges.h>
- * #include <simplemc/mpi.hpp>
- *
- * #include <vector>
- *
- * int main(int argc, char** argv) {
- *     // initialize MPI environment and communicator
- *     simplemc::mpi::environment env(argc, argv);
- *     simplemc::mpi::communicator comm;
- *     constexpr int root = 0;
- *
- *     // create a vector and initialize it on root
- *     std::vector<int> data(5);
- *     if (comm.rank() == root) {
- *         data = { 1, 2, 3, 4, 5 };
- *     }
- *
- *     // broadcast the data from root to all other processes
- *     simplemc::mpi::broadcast(comm, data, root);
- *
- *     // print the data on all processes
- *     fmt::println("Rank {}: {}", comm.rank(), data);
- * }
- * @endcode
+ * @include mpi/doc_coll_comm_bcast.cpp
  *
  * Output (running on 4 processes):
  *
@@ -165,6 +153,41 @@
  * Rank 2: [1, 2, 3, 4, 5]
  * Rank 1: [1, 2, 3, 4, 5]
  * Rank 0: [1, 2, 3, 4, 5]
+ * ```
+ */
+
+/**
+ * @defgroup simplemc-mpi-coll-reduce MPI reduce
+ * @ingroup simplemc-mpi-coll
+ * @brief Low-level and high-level MPI reduce operations.
+ */
+
+/**
+ * @defgroup simplemc-mpi-coll-gather MPI gather
+ * @ingroup simplemc-mpi-coll
+ * @brief Low-level and high-level MPI gather operations.
+ */
+
+/**
+ * @defgroup simplemc-mpi-coll-scatter MPI scatter
+ * @ingroup simplemc-mpi-coll
+ * @brief Low-level and high-level MPI scatter operations.
+ */
+
+/**
+ * @defgroup simplemc-mpi-coll-other Other collective operations
+ * @ingroup simplemc-mpi-coll
+ * @brief Other collective operations that can be useful to users.
+ * 
+ * @details In the example below, we use simplemc::mpi::all_equal to check if a vector is the same
+ * across all processes:
+ * 
+ * @include mpi/doc_coll_comm_other.cpp
+ * 
+ * Output (running on 4 processes):
+ * ```
+ * Initial data is equal? --> true
+ * Modified data is equal? --> false
  * ```
  */
 

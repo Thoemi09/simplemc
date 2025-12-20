@@ -18,7 +18,7 @@
 namespace simplemc::mpi {
 
 /**
- * @addtogroup simplemc-mpi-coll
+ * @addtogroup simplemc-mpi-coll-bcast
  * @{
  */
 

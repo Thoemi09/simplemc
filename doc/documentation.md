@@ -35,8 +35,8 @@ the functionality defined in the MPI standard.
 
 It provides
 
-- @ref simplemc-mpi-coll to perform MPI broadcast, gather, scatter and reduce operations across
-multiple processes.
+- @ref simplemc-mpi-coll to perform @ref simplemc-mpi-coll-bcast, @ref simplemc-mpi-coll-reduce, 
+@ref simplemc-mpi-coll-gather and @ref simplemc-mpi-coll-scatter operations across multiple processes.
 - @ref simplemc-mpi-essentials that wrap the most important MPI objects and functions involving them.
 We split them up into different groups: @ref simplemc-mpi-essentials-env, 
 @ref simplemc-mpi-essentials-comms, @ref simplemc-mpi-essentials-groups and 

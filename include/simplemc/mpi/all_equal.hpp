@@ -19,7 +19,7 @@
 namespace simplemc::mpi {
 
 /**
- * @addtogroup simplemc-mpi-coll
+ * @addtogroup simplemc-mpi-coll-other
  * @{
  */
 
@@ -35,18 +35,18 @@ namespace simplemc::mpi {
  * @note This function involves two collective operations, so all processes must call it.
  *
  * @tparam T simplemc::mpi::mpi_compatible type.
- * @param in_value Value to compare across processes.
+ * @param value Value to compare across processes.
  * @param comm MPI communicator.
  * @return True if all processes have the same value, false otherwise.
  */
 template <mpi_compatible T>
-[[nodiscard]] bool all_equal(const T& in_value, MPI_Comm comm) {
+[[nodiscard]] bool all_equal(const T& value, MPI_Comm comm) {
     // broadcast the value from rank 0
-    T root_value = in_value;
+    T root_value = value;
     check_mpi_call(MPI_Bcast(&root_value, 1, mpi_type<T>::get(), 0, comm), "MPI_Bcast");
 
     // compare local value with broadcasted value
-    const int local_equal = (in_value == root_value);
+    const int local_equal = (value == root_value);
 
     // broadcast the comparison result
     int all_equal {};
