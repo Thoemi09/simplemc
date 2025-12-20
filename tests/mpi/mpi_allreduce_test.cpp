@@ -84,21 +84,56 @@ void check_range_all_reduce_in_place(const R& input, const R& expected, MPI_Op o
     }
 }
 
+// Helper function for performing repeated tests.
+template <typename T>
+void perform_single(bool in_place = false) {
+    simplemc::mpi::communicator comm {};
+    const int comm_size = simplemc::mpi::comm_size(comm);
+    const int rank = simplemc::mpi::comm_rank(comm);
+    const int sum_ranks = (comm_size * (comm_size - 1)) / 2;
+    T in = rank;
+    T exp = sum_ranks;
+    if constexpr (!std::is_arithmetic_v<T>) {
+        in.imag(-rank);
+        exp.imag(-sum_ranks);
+    }
+    if (in_place) {
+        check_single_all_reduce_in_place<T>(in, exp, MPI_SUM);
+    } else {
+        check_single_all_reduce<T>(in, exp, MPI_SUM);
+    }
+}
+
+// Helper function for performing repeated range tests.
+template <typename T>
+void perform_range(bool in_place = false) {
+    simplemc::mpi::communicator comm {};
+    const int comm_size = simplemc::mpi::comm_size(comm);
+    const int rank = simplemc::mpi::comm_rank(comm);
+    const int sum_ranks = (comm_size * (comm_size - 1)) / 2;
+    const int sz = 5;
+    std::vector<T> in, exp;
+    for (int i = 0; i < sz; ++i) {
+        in.push_back(rank * (i + 1));
+        exp.push_back(sum_ranks * (i + 1));
+        if constexpr (!std::is_arithmetic_v<T>) {
+            in.back().imag(-rank * (i + 1));
+            exp.back().imag(-sum_ranks * (i + 1));
+        }
+    }
+    if (in_place) {
+        check_range_all_reduce_in_place(in, exp, MPI_SUM);
+    } else {
+        check_range_all_reduce(in, exp, MPI_SUM);
+    }
+}
+
 TEST(SimplemcMPI, AllReduceZeroValues) {
     simplemc::mpi::communicator comm {};
     int in_value = comm.rank();
     int out_value = -1;
     simplemc::mpi::all_reduce(&in_value, &out_value, 0, MPI_INT, MPI_SUM, comm);
     ASSERT_EQ(out_value, -1);
-}
-
-// Helper function for performing repeated tests.
-template <typename T>
-void perform_single() {
-    simplemc::mpi::communicator comm {};
-    const T comm_size = simplemc::mpi::comm_size(comm);
-    const T rank = simplemc::mpi::comm_rank(comm);
-    check_single_all_reduce<T>(rank, comm_size * (comm_size - 1) / 2, MPI_SUM);
 }
 
 TEST(SimplemcMPI, AllReduceSumSingleValues) {
@@ -118,98 +153,45 @@ TEST(SimplemcMPI, AllReduceSumSingleValues) {
     perform_single<float>();
     perform_single<double>();
     perform_single<long double>();
-}
 
-// Helper function for performing repeated tests.
-template <typename T>
-void perform_single_complex() {
-    simplemc::mpi::communicator comm {};
-    const T comm_size = simplemc::mpi::comm_size(comm);
-    const T rank = simplemc::mpi::comm_rank(comm);
-    auto in = std::complex<T> { rank, -rank };
-    auto exp = std::complex<T> { (comm_size * (comm_size - 1)) / 2, -(comm_size * (comm_size - 1)) / 2 };
-    check_single_all_reduce(in, exp, MPI_SUM);
-}
-
-TEST(SimplemcMPI, AllReduceSumSingleComplexValues) {
-    perform_single_complex<float>();
-    perform_single_complex<double>();
-    perform_single_complex<long double>();
-}
-
-// Helper function for performing repeated tests.
-template <typename T>
-void perform_single_in_place() {
-    simplemc::mpi::communicator comm {};
-    const T comm_size = simplemc::mpi::comm_size(comm);
-    const T rank = simplemc::mpi::comm_rank(comm);
-    check_single_all_reduce_in_place<T>(rank, comm_size * (comm_size - 1) / 2, MPI_SUM);
+    // complex types
+    perform_single<std::complex<float>>();
+    perform_single<std::complex<double>>();
+    perform_single<std::complex<long double>>();
 }
 
 TEST(SimplemcMPI, AllReduceSumInPlaceSingleValues) {
     // signed integer types
-    perform_single_in_place<short>();
-    perform_single_in_place<int>();
-    perform_single_in_place<long>();
-    perform_single_in_place<long long>();
+    perform_single<short>(true);
+    perform_single<int>(true);
+    perform_single<long>(true);
+    perform_single<long long>(true);
 
     // unsigned integer types
-    perform_single_in_place<unsigned short>();
-    perform_single_in_place<unsigned int>();
-    perform_single_in_place<unsigned long>();
-    perform_single_in_place<unsigned long long>();
+    perform_single<unsigned short>(true);
+    perform_single<unsigned int>(true);
+    perform_single<unsigned long>(true);
+    perform_single<unsigned long long>(true);
 
     // floating point types
-    perform_single_in_place<float>();
-    perform_single_in_place<double>();
-    perform_single_in_place<long double>();
+    perform_single<float>(true);
+    perform_single<double>(true);
+    perform_single<long double>(true);
+
+    // complex types
+    perform_single<std::complex<float>>(true);
+    perform_single<std::complex<double>>(true);
+    perform_single<std::complex<long double>>(true);
 }
 
-// Helper function for performing repeated tests.
-template <typename T>
-void perform_single_in_place_complex() {
-    simplemc::mpi::communicator comm {};
-    const T comm_size = simplemc::mpi::comm_size(comm);
-    const T rank = simplemc::mpi::comm_rank(comm);
-    auto in = std::complex<T> { rank, -rank };
-    auto exp = std::complex<T> { (comm_size * (comm_size - 1)) / 2, -(comm_size * (comm_size - 1)) / 2 };
-    check_single_all_reduce_in_place(in, exp, MPI_SUM);
-}
-
-TEST(SimplemcMPI, AllReduceSumInPlaceSingleComplexValues) {
-    perform_single_in_place_complex<float>();
-    perform_single_in_place_complex<double>();
-    perform_single_in_place_complex<long double>();
-}
-
-TEST(SimplemcMPI, AllReduceMaxSingleValues) {
+TEST(SimplemcMPI, AllReduceMinMaxSingleValues) {
     simplemc::mpi::communicator comm {};
     auto const comm_size = simplemc::mpi::comm_size(comm);
     auto const rank = simplemc::mpi::comm_rank(comm);
-    auto const expected = comm_size - 1;
-    check_single_all_reduce<int>(rank, expected, MPI_MAX);
-    check_single_all_reduce<double>(static_cast<double>(rank), static_cast<double>(expected), MPI_MAX);
-}
-
-TEST(SimplemcMPI, AllReduceMinSingleValues) {
-    simplemc::mpi::communicator comm {};
-    auto const rank = simplemc::mpi::comm_rank(comm);
-    constexpr int expected = 0;
-    check_single_all_reduce<long>(rank, expected, MPI_MIN);
-    check_single_all_reduce<float>(static_cast<float>(rank), static_cast<float>(expected), MPI_MIN);
-}
-
-TEST(SimplemcMPI, AllReduceProdSingleValues) {
-    simplemc::mpi::communicator comm {};
-    auto const comm_size = simplemc::mpi::comm_size(comm);
-    auto const rank = simplemc::mpi::comm_rank(comm);
-    long long expected = 1;
-    for (int i = 1; i < comm_size; ++i) {
-        expected *= i;
-    }
-    check_single_all_reduce<long long>(rank == 0 ? 1LL : rank, expected, MPI_PROD);
-    check_single_all_reduce<long double>(
-        rank == 0 ? 1.0L : static_cast<long double>(rank), static_cast<long double>(expected), MPI_PROD);
+    check_single_all_reduce<int>(rank, comm_size - 1, MPI_MAX);
+    check_single_all_reduce<double>(static_cast<double>(rank), static_cast<double>(comm_size - 1), MPI_MAX);
+    check_single_all_reduce<int>(rank, 0, MPI_MIN);
+    check_single_all_reduce<double>(static_cast<double>(rank), 0.0, MPI_MIN);
 }
 
 TEST(SimplemcMPI, AllReduceEmptyVector) {
@@ -220,139 +202,62 @@ TEST(SimplemcMPI, AllReduceEmptyVector) {
     ASSERT_TRUE(out_data.empty());
 }
 
-// Helper function for performing repeated range tests.
-template <typename T>
-void perform_range_sum() {
-    simplemc::mpi::communicator comm {};
-    const int comm_size = simplemc::mpi::comm_size(comm);
-    const int rank = simplemc::mpi::comm_rank(comm);
-    const int sum_ranks = (comm_size * (comm_size - 1)) / 2;
-    const auto in = std::vector<T> { static_cast<T>(rank), static_cast<T>(2 * rank) };
-    const auto exp = std::vector<T> { static_cast<T>(sum_ranks), static_cast<T>(2 * sum_ranks) };
-    check_range_all_reduce(in, exp, MPI_SUM);
-}
-
 TEST(SimplemcMPI, AllReduceSumRanges) {
     // signed integer types
-    perform_range_sum<short>();
-    perform_range_sum<int>();
-    perform_range_sum<long>();
-    perform_range_sum<long long>();
+    perform_range<short>();
+    perform_range<int>();
+    perform_range<long>();
+    perform_range<long long>();
 
     // unsigned integer types
-    perform_range_sum<unsigned short>();
-    perform_range_sum<unsigned int>();
-    perform_range_sum<unsigned long>();
-    perform_range_sum<unsigned long long>();
+    perform_range<unsigned short>();
+    perform_range<unsigned int>();
+    perform_range<unsigned long>();
+    perform_range<unsigned long long>();
 
     // floating point types
-    perform_range_sum<float>();
-    perform_range_sum<double>();
-    perform_range_sum<long double>();
-}
+    perform_range<float>();
+    perform_range<double>();
+    perform_range<long double>();
 
-// Helper function for performing repeated complex range tests.
-template <typename T>
-void perform_range_sum_complex() {
-    simplemc::mpi::communicator comm {};
-    const int comm_size = simplemc::mpi::comm_size(comm);
-    const int rank = simplemc::mpi::comm_rank(comm);
-    const int sum_ranks = (comm_size * (comm_size - 1)) / 2;
-    auto in = std::vector<std::complex<T>> { { static_cast<T>(rank), static_cast<T>(2 * rank) },
-        { static_cast<T>(3 * rank), static_cast<T>(4 * rank) } };
-    auto exp = std::vector<std::complex<T>> { { static_cast<T>(sum_ranks), static_cast<T>(2 * sum_ranks) },
-        { static_cast<T>(3 * sum_ranks), static_cast<T>(4 * sum_ranks) } };
-    check_range_all_reduce(in, exp, MPI_SUM);
-}
-
-TEST(SimplemcMPI, AllReduceSumComplexRanges) {
-    perform_range_sum_complex<float>();
-    perform_range_sum_complex<double>();
-    perform_range_sum_complex<long double>();
-}
-
-// Helper function for performing repeated in-place range tests.
-template <typename T>
-void perform_range_sum_in_place() {
-    simplemc::mpi::communicator comm {};
-    const int comm_size = simplemc::mpi::comm_size(comm);
-    const int rank = simplemc::mpi::comm_rank(comm);
-    const int sum_ranks = (comm_size * (comm_size - 1)) / 2;
-    const auto in = std::vector<T> { static_cast<T>(rank), static_cast<T>(2 * rank) };
-    const auto exp = std::vector<T> { static_cast<T>(sum_ranks), static_cast<T>(2 * sum_ranks) };
-    check_range_all_reduce_in_place(in, exp, MPI_SUM);
+    // complex types
+    perform_range<std::complex<float>>();
+    perform_range<std::complex<double>>();
+    perform_range<std::complex<long double>>();
 }
 
 TEST(SimplemcMPI, AllReduceSumInPlaceRanges) {
     // signed integer types
-    perform_range_sum_in_place<short>();
-    perform_range_sum_in_place<int>();
-    perform_range_sum_in_place<long>();
-    perform_range_sum_in_place<long long>();
+    perform_range<short>(true);
+    perform_range<int>(true);
+    perform_range<long>(true);
+    perform_range<long long>(true);
 
     // unsigned integer types
-    perform_range_sum_in_place<unsigned short>();
-    perform_range_sum_in_place<unsigned int>();
-    perform_range_sum_in_place<unsigned long>();
-    perform_range_sum_in_place<unsigned long long>();
+    perform_range<unsigned short>(true);
+    perform_range<unsigned int>(true);
+    perform_range<unsigned long>(true);
+    perform_range<unsigned long long>(true);
 
     // floating point types
-    perform_range_sum_in_place<float>();
-    perform_range_sum_in_place<double>();
-    perform_range_sum_in_place<long double>();
+    perform_range<float>(true);
+    perform_range<double>(true);
+    perform_range<long double>(true);
+
+    // complex types
+    perform_range<std::complex<float>>(true);
+    perform_range<std::complex<double>>(true);
+    perform_range<std::complex<long double>>(true);
 }
 
-// Helper function for performing repeated complex in-place range tests.
-template <typename T>
-void perform_range_sum_in_place_complex() {
+TEST(SimplemcMPI, ReduceMinMaxSingleValues) {
     simplemc::mpi::communicator comm {};
-    const int comm_size = simplemc::mpi::comm_size(comm);
-    const int rank = simplemc::mpi::comm_rank(comm);
-    const int sum_ranks = (comm_size * (comm_size - 1)) / 2;
-    auto in = std::vector<std::complex<T>> { { static_cast<T>(rank), static_cast<T>(2 * rank) },
-        { static_cast<T>(3 * rank), static_cast<T>(4 * rank) } };
-    auto exp = std::vector<std::complex<T>> { { static_cast<T>(sum_ranks), static_cast<T>(2 * sum_ranks) },
-        { static_cast<T>(3 * sum_ranks), static_cast<T>(4 * sum_ranks) } };
-    check_range_all_reduce_in_place(in, exp, MPI_SUM);
-}
-
-TEST(SimplemcMPI, AllReduceSumInPlaceComplexRanges) {
-    perform_range_sum_in_place_complex<float>();
-    perform_range_sum_in_place_complex<double>();
-    perform_range_sum_in_place_complex<long double>();
-}
-
-// Helper function for performing max range tests.
-template <typename T>
-void perform_range_max() {
-    simplemc::mpi::communicator comm {};
-    const int comm_size = simplemc::mpi::comm_size(comm);
-    const int rank = simplemc::mpi::comm_rank(comm);
-    const int max_rank = comm_size - 1;
-    check_range_all_reduce(std::vector<T> { static_cast<T>(rank), static_cast<T>(2 * rank) },
-        std::vector<T> { static_cast<T>(max_rank), static_cast<T>(2 * max_rank) }, MPI_MAX);
-}
-
-TEST(SimplemcMPI, AllReduceMaxRanges) {
-    perform_range_max<int>();
-    perform_range_max<unsigned int>();
-    perform_range_max<double>();
-}
-
-// Helper function for performing min range tests.
-template <typename T>
-void perform_range_min() {
-    simplemc::mpi::communicator comm {};
-    const int rank = simplemc::mpi::comm_rank(comm);
-    constexpr int min_rank = 0;
-    check_range_all_reduce(std::vector<T> { static_cast<T>(rank), static_cast<T>(2 * rank) },
-        std::vector<T> { static_cast<T>(min_rank), static_cast<T>(2 * min_rank) }, MPI_MIN);
-}
-
-TEST(SimplemcMPI, AllReduceMinRanges) {
-    perform_range_min<int>();
-    perform_range_min<unsigned int>();
-    perform_range_min<double>();
+    auto const comm_size = simplemc::mpi::comm_size(comm);
+    auto const rank = simplemc::mpi::comm_rank(comm);
+    check_single_all_reduce<int>(rank, comm_size - 1, MPI_MAX);
+    check_single_all_reduce<double>(static_cast<double>(rank), static_cast<double>(comm_size - 1), MPI_MAX);
+    check_single_all_reduce<int>(rank, 0, MPI_MIN);
+    check_single_all_reduce<double>(static_cast<double>(rank), 0.0, MPI_MIN);
 }
 
 TEST(SimplemcMPI, AllReduceLargeArray) {
@@ -365,7 +270,7 @@ TEST(SimplemcMPI, AllReduceLargeArray) {
     auto in_arr = std::array<int, size> {};
     simplemc::ranges::fill(in_arr, rank);
 
-    // perform all-reduce with sum
+    // perform allreduce with sum
     auto out_arr = std::array<int, size> {};
     simplemc::mpi::all_reduce(in_arr, out_arr, MPI_SUM, comm);
 
@@ -373,8 +278,7 @@ TEST(SimplemcMPI, AllReduceLargeArray) {
     auto const sum_ranks = (comm_size * (comm_size - 1)) / 2;
     auto expected = std::array<int, size> {};
     simplemc::ranges::fill(expected, sum_ranks);
-
-    check_range_equal(out_arr, expected);
+    ASSERT_EQ(out_arr, expected);
 }
 
 TEST(SimplemcMPI, AllReduceWithSplitCommunicator) {

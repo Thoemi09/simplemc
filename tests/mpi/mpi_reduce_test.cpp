@@ -291,6 +291,7 @@ TEST(SimplemcMPI, ReduceLargeArray) {
     auto in_arr = std::array<int, size> {};
     simplemc::ranges::fill(in_arr, rank);
 
+    // perform reduce with sum
     auto out_arr = std::array<int, size> {};
     simplemc::mpi::reduce(in_arr, out_arr, MPI_SUM, root, comm);
 
