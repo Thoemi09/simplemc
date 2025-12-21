@@ -45,7 +45,7 @@ inline auto prepare_gatherv_counts_displs(int local_count, MPI_Comm comm) {
 } // namespace detail
 
 /**
- * @addtogroup simplemc-mpi-coll
+ * @addtogroup simplemc-mpi-coll-gather
  * @{
  */
 
@@ -90,6 +90,12 @@ inline void all_gatherv(const void* sendbuf, int sendcount, MPI_Datatype sendtyp
  * It asserts that `recvcounts` and `displs` arrays are equal across all processes and that each
  * receive count is non-negative.
  *
+ * It calls simplemc::mpi::all_gatherv with the given arguments, except that it uses `MPI_IN_PLACE`
+ * for the send buffer and the local receive count as the send count.
+ *
+ * @note The elements to be sent must already be stored at their correct final position in the buffer
+ * before calling this function.
+ *
  * @param buf Pointer to the buffer (used as both send and receive).
  * @param recvcounts Array of counts to receive from each process.
  * @param displs Array of displacements in the buffer for each process.
@@ -98,11 +104,7 @@ inline void all_gatherv(const void* sendbuf, int sendcount, MPI_Datatype sendtyp
  */
 inline void all_gatherv_in_place(
     void* buf, const int* recvcounts, const int* displs, MPI_Datatype datatype, MPI_Comm comm) {
-    assert(all_equal(std::span(recvcounts, comm_size(comm)), comm));
-    assert(all_equal(std::span(displs, comm_size(comm)), comm));
-    assert(recvcounts[comm_rank(comm)] >= 0);
-    check_mpi_call(
-        MPI_Allgatherv(MPI_IN_PLACE, 0, datatype, buf, recvcounts, displs, datatype, comm), "MPI_Allgatherv");
+    all_gatherv(MPI_IN_PLACE, recvcounts[comm_rank(comm)], datatype, buf, recvcounts, displs, datatype, comm);
 }
 
 /**
@@ -113,7 +115,7 @@ inline void all_gatherv_in_place(
  * to send is determined by the corresponding entry in the receive counts array.
  *
  * @note Since the MPI datatype for both send and receive buffers is the same, the send count is
- * automatically derived from `recvcounts[rank]`.
+ * automatically derived from the local receive count.
  *
  * @tparam T simplemc::mpi::mpi_compatible type.
  * @param sendbuf Pointer to the send buffer.
@@ -148,64 +150,68 @@ void all_gatherv_in_place(T* buf, const int* recvcounts, const int* displs, MPI_
 /**
  * @brief All-gatherv contiguous ranges across all processes.
  *
- * @details Automatically gathers the input range sizes from all processes, computes displacements,
+ * @details It automatically gathers the input range sizes from all processes, computes displacements,
  * and performs the all-gatherv operation. Each process can contribute a different number of elements.
  *
  * The function first gathers all input sizes using simplemc::mpi::all_gather, then computes the
  * displacement array, and finally calls the lower-level simplemc::mpi::all_gatherv(const T*, T*,
  * const int*, const int*, MPI_Comm).
  *
+ * It asserts that the output range size is at least the total number of elements gathered from all
+ * processes.
+ *
  * @tparam R1 simplemc::mpi::mpi_range type.
  * @tparam R2 simplemc::mpi::mpi_range type.
- * @param in_values Input range to gather.
- * @param out_values Output range (result of gather).
+ * @param in_rg Input range to gather.
+ * @param out_rg Output range (result of gather).
  * @param comm MPI communicator.
  */
 template <mpi_range R1, mpi_range R2>
-void all_gatherv(R1&& in_values, R2&& out_values, MPI_Comm comm) { // NOLINT (forwarding ref as in/out)
-    const int size = comm_size(comm);
-    const int local_count = static_cast<int>(ranges::size(in_values));
-
+void all_gatherv(R1&& in_rg, R2&& out_rg, MPI_Comm comm) { // NOLINT (ranges need not be forwarded)
     // gather all input sizes and compute displacements
-    auto [recvcounts, displs] = detail::prepare_gatherv_counts_displs(local_count, comm);
+    auto [recvcounts, displs] = detail::prepare_gatherv_counts_displs(ranges::size(in_rg), comm);
 
     // compute and check total expected size
+    const int size = comm_size(comm);
     const int total_size = displs[size - 1] + recvcounts[size - 1];
-    assert(total_size <= static_cast<int>(ranges::size(out_values)));
+    assert(total_size <= static_cast<int>(ranges::size(out_rg)));
 
-    all_gatherv(ranges::data(in_values), ranges::data(out_values), recvcounts.data(), displs.data(), comm);
+    all_gatherv(ranges::data(in_rg), ranges::data(out_rg), recvcounts.data(), displs.data(), comm);
 }
 
 /**
  * @brief All-gatherv contiguous ranges in place across all processes.
  *
- * @details Automatically gathers the local count from all processes, computes displacements, and
- * performs the in-place all-gatherv operation. Each process specifies how many elements it
- * contributes.
+ * @details It automatically gathers the local count from all processes, computes displacements, and
+ * performs the in place all-gatherv operation. Each process has to specify explicitly how many
+ * elements it contributes.
  *
  * The function gathers all local counts using simplemc::mpi::all_gather, computes the displacement
- * array, and calls the lower-level all_gatherv_in_place(T*, const int*, const int*, MPI_Comm).
+ * array, and calls the lower-level simplemc::mpi::all_gatherv_in_place(T*, const int*, const int*,
+ * MPI_Comm).
  *
- * @note Each process's input elements must already be stored at their correct final position in the
- * range before calling this function.
+ * It asserts that the range size is at least the total number of elements gathered from all
+ * processes.
+ *
+ * @note The elements to be sent must already be stored at their correct final position in the range
+ * before calling this function.
  *
  * @tparam R simplemc::mpi::mpi_range type.
- * @param in_out_values Range to gather (input and output).
+ * @param rg Range to gather (input and output).
  * @param local_count Number of elements this process contributes.
  * @param comm MPI communicator.
  */
 template <mpi_range R>
-void all_gatherv_in_place(R&& in_out_values, int local_count, MPI_Comm comm) { // NOLINT (forwarding ref)
-    const int size = comm_size(comm);
-
+void all_gatherv_in_place(R&& rg, int local_count, MPI_Comm comm) { // NOLINT (ranges need not be forwarded)
     // gather all input sizes and compute displacements
     auto [recvcounts, displs] = detail::prepare_gatherv_counts_displs(local_count, comm);
 
     // compute total expected size
+    const int size = comm_size(comm);
     const int total_size = displs[size - 1] + recvcounts[size - 1];
-    assert(total_size <= static_cast<int>(ranges::size(in_out_values)));
+    assert(total_size <= static_cast<int>(ranges::size(rg)));
 
-    all_gatherv_in_place(ranges::data(in_out_values), recvcounts.data(), displs.data(), comm);
+    all_gatherv_in_place(ranges::data(rg), recvcounts.data(), displs.data(), comm);
 }
 
 /** @} */

@@ -19,7 +19,7 @@
 namespace simplemc::mpi {
 
 /**
- * @addtogroup simplemc-mpi-coll
+ * @addtogroup simplemc-mpi-coll-gather
  * @{
  */
 
@@ -56,17 +56,19 @@ inline void all_gather(const void* sendbuf, int sendcount, MPI_Datatype sendtype
  * `MPI_Datatype`, allowing users to gather custom or user-defined MPI datatypes. The caller is
  * responsible for ensuring that `buf` points to valid memory of the correct type and size.
  *
- * It asserts that `count` is the same on all processes and non-negative.
+ * It calls simplemc::mpi::all_gather with the given arguments, except that it uses `MPI_IN_PLACE` for
+ * the send buffer.
  *
- * @param buf Pointer to the buffer (used as both send and receive).
+ * @note The elements to be sent must already be stored at their correct final position in the buffer
+ * before calling this function.
+ *
+ * @param buf Pointer to the buffer (send and receive).
  * @param count Number of elements to send/receive per process.
  * @param datatype MPI datatype of the elements.
  * @param comm MPI communicator.
  */
 inline void all_gather_in_place(void* buf, int count, MPI_Datatype datatype, MPI_Comm comm) {
-    assert(all_equal(count, comm));
-    assert(count >= 0);
-    check_mpi_call(MPI_Allgather(MPI_IN_PLACE, 0, datatype, buf, count, datatype, comm), "MPI_Allgather");
+    all_gather(MPI_IN_PLACE, count, datatype, buf, count, datatype, comm);
 }
 
 /**
@@ -97,7 +99,7 @@ void all_gather(const T* sendbuf, T* recvbuf, int count, MPI_Comm comm) {
  * the C++ type `T` (see simplemc::mpi::mpi_type).
  *
  * @tparam T simplemc::mpi::mpi_compatible type.
- * @param buf Pointer to the buffer (used as both input and output).
+ * @param buf Pointer to the buffer (send and receive).
  * @param count Number of elements to send/receive per process.
  * @param comm MPI communicator.
  */
@@ -116,13 +118,14 @@ void all_gather_in_place(T* buf, int count, MPI_Comm comm) {
  *
  * @tparam R simplemc::mpi::mpi_range type.
  * @param in_value Input value to gather.
- * @param out_values Output range (result of gather).
+ * @param out_rg Output range (result of gather).
  * @param comm MPI communicator.
  */
 template <mpi_range R>
-void all_gather(const ranges::range_value_t<R>& in_value, R&& out_values, MPI_Comm comm) { // NOLINT (forwarding ref)
-    assert(comm_size(comm) <= static_cast<int>(ranges::size(out_values)));
-    all_gather(&in_value, ranges::data(out_values), 1, comm);
+void all_gather(
+    const ranges::range_value_t<R>& in_value, R&& out_rg, MPI_Comm comm) { // NOLINT (ranges need not be forwarded)
+    assert(comm_size(comm) <= static_cast<int>(ranges::size(out_rg)));
+    all_gather(&in_value, ranges::data(out_rg), 1, comm);
 }
 
 /**
@@ -136,15 +139,15 @@ void all_gather(const ranges::range_value_t<R>& in_value, R&& out_values, MPI_Co
  *
  * @tparam R1 simplemc::mpi::mpi_range type.
  * @tparam R2 simplemc::mpi::mpi_range type.
- * @param in_values Input range to gather.
- * @param out_values Output range (result of gather).
+ * @param in_rg Input range to gather.
+ * @param out_rg Output range (result of gather).
  * @param comm MPI communicator.
  */
 template <mpi_range R1, mpi_range R2>
-void all_gather(R1&& in_values, R2&& out_values, MPI_Comm comm) { // NOLINT (forwarding ref as in/out)
-    assert(all_equal(ranges::size(in_values), comm));
-    assert(comm_size(comm) * ranges::size(in_values) <= ranges::size(out_values));
-    all_gather(ranges::data(in_values), ranges::data(out_values), static_cast<int>(ranges::size(in_values)), comm);
+void all_gather(R1&& in_rg, R2&& out_rg, MPI_Comm comm) { // NOLINT (ranges need not be forwarded)
+    assert(all_equal(ranges::size(in_rg), comm));
+    assert(comm_size(comm) * ranges::size(in_rg) <= ranges::size(out_rg));
+    all_gather(ranges::data(in_rg), ranges::data(out_rg), static_cast<int>(ranges::size(in_rg)), comm);
 }
 
 /**
@@ -152,25 +155,24 @@ void all_gather(R1&& in_values, R2&& out_values, MPI_Comm comm) { // NOLINT (for
  *
  * @details It gathers all elements in the range in place such that elements from rank 0 can be found
  * at the beginning of the range, then elements from rank 1, and so on. The function calls
- * simplemc::mpi::all_gather_in_place(T*, int, MPI_Comm) where the count is the size of the range
- * divided by the number of processes in the communicator.
+ * simplemc::mpi::all_gather_in_place(T*, int, MPI_Comm) where the count is taken as the size of the
+ * range divided by the number of processes in the communicator.
  *
  * It asserts that ranges have equal size across all processes and that the range size is a multiple
  * of the number of processes.
  *
- * @note Input elements from each process have to be stored already in the correct position in the
- * range.
+ * @note The elements to be sent must already be stored at their correct final position in the range
+ * before calling this function.
  *
  * @tparam R simplemc::mpi::mpi_range type.
- * @param in_out_values Range to gather (input and output).
+ * @param rg Range to gather (input and output).
  * @param comm MPI communicator.
  */
 template <mpi_range R>
-void all_gather_in_place(R&& in_out_values, MPI_Comm comm) { // NOLINT (forwarding ref as in/out)
-    assert(all_equal(ranges::size(in_out_values), comm));
-    assert(ranges::size(in_out_values) % comm_size(comm) == 0);
-    all_gather_in_place(
-        ranges::data(in_out_values), static_cast<int>(ranges::size(in_out_values) / comm_size(comm)), comm);
+void all_gather_in_place(R&& rg, MPI_Comm comm) { // NOLINT (ranges need not be forwarded)
+    assert(all_equal(ranges::size(rg), comm));
+    assert(ranges::size(rg) % comm_size(comm) == 0);
+    all_gather_in_place(ranges::data(rg), static_cast<int>(ranges::size(rg) / comm_size(comm)), comm);
 }
 
 /** @} */

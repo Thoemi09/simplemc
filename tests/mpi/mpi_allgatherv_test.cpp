@@ -1,7 +1,7 @@
 #include "../gtest-mpi-listener.hpp"
 #include "../test_utils.hpp"
 
-#include <fmt/format.h>
+#include <fmt/ranges.h>
 #include <simplemc/mpi.hpp>
 #include <simplemc/utils/ranges.hpp>
 
@@ -13,66 +13,89 @@
 
 // Test all-gatherv with varying counts per process.
 template <typename T>
-void check_all_gatherv(const std::vector<T>& input, const std::vector<T>& expected) {
+void check_all_gatherv(const std::vector<T>& in, const std::vector<T>& exp) {
     using namespace simplemc::mpi;
     communicator comm {};
-    std::vector<T> result(expected.size());
-    all_gatherv(input, result, comm);
-    ASSERT_EQ(result, expected);
+    auto mpi_dtype = mpi_type<T>::get();
+    auto [recvcounts, displs] = detail::prepare_gatherv_counts_displs(in.size(), comm);
+
+    // functions to test
+    auto fvec = std::vector<std::function<void(std::vector<T>&)>> {};
+    fvec.push_back([&](std::vector<T>& out) {
+        all_gatherv(in.data(), in.size(), mpi_dtype, out.data(), recvcounts.data(), displs.data(), mpi_dtype, comm);
+    });
+    fvec.push_back(
+        [&](std::vector<T>& out) { all_gatherv(in.data(), out.data(), recvcounts.data(), displs.data(), comm); });
+    fvec.push_back([&](std::vector<T>& out) { all_gatherv(in, out, comm); });
+
+    // perform collective communication and check the result
+    for (auto fun : fvec) {
+        std::vector<T> result(exp.size());
+        fun(result);
+        ASSERT_EQ(result, exp);
+    }
 }
 
 // Test all-gatherv in place with varying counts per process.
 template <typename T>
-void check_all_gatherv_in_place(const std::vector<T>& input, int local_count, const std::vector<T>& expected) {
+void check_all_gatherv_in_place(const std::vector<T>& in, int local_count, const std::vector<T>& exp) {
     using namespace simplemc::mpi;
     communicator comm {};
-    std::vector<T> data = input;
-    all_gatherv_in_place(data, local_count, comm);
-    ASSERT_EQ(data, expected);
+    auto mpi_dtype = mpi_type<T>::get();
+    auto [recvcounts, displs] = detail::prepare_gatherv_counts_displs(local_count, comm);
+
+    // functions to test
+    auto fvec = std::vector<std::function<void(std::vector<T>&)>> {};
+    fvec.push_back([&](std::vector<T>& in_out) {
+        all_gatherv_in_place(in_out.data(), recvcounts.data(), displs.data(), mpi_dtype, comm);
+    });
+    fvec.push_back(
+        [&](std::vector<T>& in_out) { all_gatherv_in_place(in_out.data(), recvcounts.data(), displs.data(), comm); });
+    fvec.push_back([&](std::vector<T>& in_out) { all_gatherv_in_place(in_out, local_count, comm); });
+
+    // perform collective communication and check the result
+    for (auto fun : fvec) {
+        std::vector<T> data = in;
+        fun(data);
+        ASSERT_EQ(data, exp);
+    }
+}
+
+// Helper function for performing repeated tests.
+template <typename T>
+void perform_varying_counts(bool in_place = false) {
+    simplemc::mpi::communicator comm {};
+    const int size = comm.size();
+    const int rank = comm.rank();
+    const int count = rank + 1;
+
+    // prepare input and expected output (each process sends (rank + 1) elements)
+    std::vector<T> exp, in;
+    for (int r = 0; r < size; ++r) {
+        for (int i = 0; i < r + 1; ++i) {
+            exp.push_back(r * 10 + i);
+            if constexpr (!std::is_arithmetic_v<T>) {
+                exp.back().imag(-r * 10 - i);
+            }
+            in.push_back((r == rank ? exp.back() : T {}));
+        }
+    }
+
+    // perform test
+    if (in_place) {
+        check_all_gatherv_in_place<T>(in, count, exp);
+    } else {
+        const int disp = (rank * (rank + 1)) / 2;
+        auto it = in.begin() + disp;
+        check_all_gatherv(std::vector<T>(it, it + count), exp);
+    }
 }
 
 TEST(SimplemcMPI, AllGathervZeroValues) {
     simplemc::mpi::communicator comm {};
-    std::vector<int> recvcounts(comm.size(), 0);
-    std::vector<int> displs(comm.size(), 0);
-    std::vector<int> in_values {};
-    std::vector<int> out_values {};
-    simplemc::mpi::all_gatherv(
-        in_values.data(), 0, MPI_INT, out_values.data(), recvcounts.data(), displs.data(), MPI_INT, comm);
-    ASSERT_TRUE(out_values.empty());
-}
-
-// Helper function for performing repeated tests with varying counts.
-template <typename T>
-void perform_varying_counts() {
-    simplemc::mpi::communicator comm {};
-    const int rank = comm.rank();
-    const int size = comm.size();
-
-    // each process sends (rank + 1) elements
-    const int send_count = rank + 1;
-    std::vector<T> in_values(send_count);
-    std::vector<int> recvcounts(size);
-    std::vector<int> displs(size);
-    std::vector<T> expected;
-    for (int r = 0; r < size; ++r) {
-        for (int i = 0; i < r + 1; ++i) {
-            if constexpr (std::is_arithmetic_v<T>) {
-                expected.push_back(static_cast<T>(r * 100 + i));
-            } else {
-                expected.push_back(
-                    T { static_cast<T::value_type>(r * 100 + i), static_cast<T::value_type>(-(r * 100 + i)) });
-            }
-            if (r == rank) {
-                in_values[i] = expected.back();
-            }
-        }
-        recvcounts[r] = r + 1;
-        displs[r] = (r > 0) ? displs[r - 1] + recvcounts[r - 1] : 0;
-    }
-
-    // test all_gatherv
-    check_all_gatherv<T>(in_values, expected);
+    std::vector<int> out_rg {};
+    simplemc::mpi::all_gatherv(std::vector<int> {}, out_rg, comm);
+    ASSERT_TRUE(out_rg.empty());
 }
 
 TEST(SimplemcMPI, AllGathervVaryingCounts) {
@@ -99,82 +122,49 @@ TEST(SimplemcMPI, AllGathervVaryingCounts) {
     perform_varying_counts<std::complex<long double>>();
 }
 
-// Helper function for performing repeated in-place tests with varying counts.
-template <typename T>
-void perform_varying_counts_in_place() {
-    simplemc::mpi::communicator comm {};
-    const int rank = comm.rank();
-    const int size = comm.size();
-
-    // each process sends (rank + 1) elements
-    std::vector<int> recvcounts(size);
-    std::vector<int> displs(size);
-    std::vector<T> expected, input;
-    for (int r = 0; r < size; ++r) {
-        for (int i = 0; i < r + 1; ++i) {
-            if constexpr (std::is_arithmetic_v<T>) {
-                expected.push_back(static_cast<T>(r * 100 + i));
-            } else {
-                expected.push_back(
-                    T { static_cast<T::value_type>(r * 100 + i), static_cast<T::value_type>(-(r * 100 + i)) });
-            }
-            input.push_back((r == rank ? expected.back() : T {}));
-        }
-        recvcounts[r] = r + 1;
-        displs[r] = (r > 0) ? displs[r - 1] + recvcounts[r - 1] : 0;
-    }
-
-    // test all_gatherv_in_place
-    check_all_gatherv_in_place<T>(input, recvcounts[rank], expected);
-}
-
 TEST(SimplemcMPI, AllGathervInPlaceVaryingCounts) {
     // signed integer types
-    perform_varying_counts_in_place<short>();
-    perform_varying_counts_in_place<int>();
-    perform_varying_counts_in_place<long>();
-    perform_varying_counts_in_place<long long>();
+    perform_varying_counts<short>(true);
+    perform_varying_counts<int>(true);
+    perform_varying_counts<long>(true);
+    perform_varying_counts<long long>(true);
 
     // unsigned integer types
-    perform_varying_counts_in_place<unsigned short>();
-    perform_varying_counts_in_place<unsigned int>();
-    perform_varying_counts_in_place<unsigned long>();
-    perform_varying_counts_in_place<unsigned long long>();
+    perform_varying_counts<unsigned short>(true);
+    perform_varying_counts<unsigned int>(true);
+    perform_varying_counts<unsigned long>(true);
+    perform_varying_counts<unsigned long long>(true);
 
     // floating point types
-    perform_varying_counts_in_place<float>();
-    perform_varying_counts_in_place<double>();
-    perform_varying_counts_in_place<long double>();
+    perform_varying_counts<float>(true);
+    perform_varying_counts<double>(true);
+    perform_varying_counts<long double>(true);
 
     // complex types
-    perform_varying_counts_in_place<std::complex<float>>();
-    perform_varying_counts_in_place<std::complex<double>>();
-    perform_varying_counts_in_place<std::complex<long double>>();
+    perform_varying_counts<std::complex<float>>(true);
+    perform_varying_counts<std::complex<double>>(true);
+    perform_varying_counts<std::complex<long double>>(true);
 }
 
 TEST(SimplemcMPI, AllGathervUniformCounts) {
     simplemc::mpi::communicator comm {};
     const int rank = comm.rank();
     const int size = comm.size();
-    const int count_per_process = 3;
+    const int count = 3;
 
     // each process sends the same number of elements
-    std::vector<int> in_values(count_per_process);
-    std::vector<int> recvcounts(size, count_per_process);
-    std::vector<int> displs(size);
-    std::vector<int> expected;
+    std::vector<int> in, exp;
     for (int r = 0; r < size; ++r) {
-        for (int i = 0; i < count_per_process; ++i) {
-            expected.push_back(r * 100 + i);
+        for (int i = 0; i < count; ++i) {
+            exp.push_back(r * 100 + i);
             if (r == rank) {
-                in_values[i] = expected.back();
+                in.push_back(exp.back());
             }
         }
-        displs[r] = r * count_per_process;
     }
 
-    // test all_gatherv
-    check_all_gatherv(in_values, expected);
+    // allgatherv and check result
+    check_all_gatherv(in, exp);
 }
 
 TEST(SimplemcMPI, AllGathervWithSplitCommunicator) {
@@ -191,26 +181,20 @@ TEST(SimplemcMPI, AllGathervWithSplitCommunicator) {
     const int size = sub_comm.size();
 
     // each process sends (rank + 1) elements
-    const int send_count = rank + 1;
-    std::vector<int> in_values(send_count);
-    std::vector<int> recvcounts(size);
-    std::vector<int> displs(size);
-    std::vector<int> expected;
+    std::vector<int> in, exp;
     for (int r = 0; r < size; ++r) {
         for (int i = 0; i < r + 1; ++i) {
-            expected.push_back(r * 100 + i);
+            exp.push_back(r * 100 + i);
             if (r == rank) {
-                in_values[i] = expected.back();
+                in.push_back(exp.back());
             }
         }
-        recvcounts[r] = r + 1;
-        displs[r] = (r > 0) ? displs[r - 1] + recvcounts[r - 1] : 0;
     }
 
-    // all-gatherv within sub-communicator
-    std::vector<int> result(expected.size());
-    simplemc::mpi::all_gatherv(in_values, result, sub_comm);
-    ASSERT_EQ(result, expected);
+    // allgatherv and check result
+    std::vector<int> result(exp.size());
+    simplemc::mpi::all_gatherv(in, result, sub_comm);
+    ASSERT_EQ(result, exp);
 }
 
 TEST(SimplemcMPI, AllGathervEmptyFromSomeProcesses) {
@@ -222,26 +206,20 @@ TEST(SimplemcMPI, AllGathervEmptyFromSomeProcesses) {
     }
 
     // only even ranks send data
-    const int send_count = (rank % 2 == 0) ? 2 : 0;
-    std::vector<double> in_values(send_count);
-    std::vector<int> recvcounts(size);
-    std::vector<int> displs(size);
-    std::vector<double> expected;
+    std::vector<double> in, exp;
     for (int r = 0; r < size; ++r) {
         if (r % 2 == 0) {
             for (int i = 0; i < 2; ++i) {
-                expected.push_back(static_cast<double>(r * 10 + i));
+                exp.push_back(static_cast<double>(r * 10 + i));
                 if (r == rank) {
-                    in_values[i] = expected.back();
+                    in.push_back(exp.back());
                 }
             }
         }
-        recvcounts[r] = (r % 2 == 0) ? 2 : 0;
-        displs[r] = (r > 0) ? displs[r - 1] + recvcounts[r - 1] : 0;
     }
 
-    // test all_gatherv
-    check_all_gatherv(in_values, expected);
+    // allgatherv and check result
+    check_all_gatherv(in, exp);
 }
 
 TEST(SimplemcMPI, AllGathervStrings) {
@@ -253,8 +231,6 @@ TEST(SimplemcMPI, AllGathervStrings) {
     }
 
     // each process sends a string with length equal to (rank + 1)
-    std::vector<int> recvcounts(size);
-    std::vector<int> displs(size);
     std::string expected {}, in_str {};
     for (int r = 0; r < size; ++r) {
         for (int i = 0; i < r + 1; ++i) {
@@ -263,11 +239,9 @@ TEST(SimplemcMPI, AllGathervStrings) {
                 in_str += fmt::format("{}", r);
             }
         }
-        recvcounts[r] = r + 1;
-        displs[r] = (r > 0) ? displs[r - 1] + recvcounts[r - 1] : 0;
     }
 
-    // test all_gatherv for strings
+    // allgatherv and check result
     std::string result(expected.size(), ' ');
     simplemc::mpi::all_gatherv(in_str, result, comm);
     ASSERT_EQ(result, expected);

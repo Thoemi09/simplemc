@@ -1,113 +1,170 @@
 #include "../gtest-mpi-listener.hpp"
 #include "../test_utils.hpp"
 
-#include <fmt/format.h>
+#include <fmt/ranges.h>
 #include <simplemc/mpi.hpp>
 #include <simplemc/utils/ranges.hpp>
 
 #include <complex>
 #include <functional>
+#include <string>
+#include <type_traits>
 #include <vector>
 
 // Test all-gathering a single value of type T.
 template <typename T>
-void check_single_all_gather(const T& input, const std::vector<T>& expected) {
+void check_single_all_gather(const T& in, const std::vector<T>& exp) {
     using namespace simplemc::mpi;
     communicator comm {};
     auto mpi_dtype = mpi_type<T>::get();
-    auto fvec = std::vector<std::function<void(const T&, std::vector<T>&)>> {};
-    fvec.push_back(
-        [&](const T& in, std::vector<T>& out) { all_gather(&in, 1, mpi_dtype, out.data(), 1, mpi_dtype, comm); });
-    fvec.push_back([&](const T& in, std::vector<T>& out) { all_gather(&in, out.data(), 1, comm); });
-    fvec.push_back([&](const T& in, std::vector<T>& out) { all_gather(in, out, comm); });
-    for (auto all_gather : fvec) {
+
+    // functions to test
+    auto fvec = std::vector<std::function<void(std::vector<T>&)>> {};
+    fvec.push_back([&](std::vector<T>& out) { all_gather(&in, 1, mpi_dtype, out.data(), 1, mpi_dtype, comm); });
+    fvec.push_back([&](std::vector<T>& out) { all_gather(&in, out.data(), 1, comm); });
+    fvec.push_back([&](std::vector<T>& out) { all_gather(in, out, comm); });
+
+    // perform collective communication and check the result
+    for (auto fun : fvec) {
         std::vector<T> result(comm.size());
-        all_gather(input, result);
-        ASSERT_EQ(result, expected);
+        fun(result);
+        ASSERT_EQ(result, exp);
     }
 }
 
 // Test all-gathering a single value in place of type T.
 template <typename T>
-void check_single_all_gather_in_place(const std::vector<T>& input, const std::vector<T>& expected) {
+void check_single_all_gather_in_place(const std::vector<T>& in, const std::vector<T>& exp) {
     using namespace simplemc::mpi;
     communicator comm {};
+
+    // functions to test
     auto fvec = std::vector<std::function<void(std::vector<T>&)>> {};
-    fvec.push_back([&](std::vector<T>& data) { all_gather_in_place(data.data(), 1, mpi_type<T>::get(), comm); });
-    fvec.push_back([&](std::vector<T>& data) { all_gather_in_place(data.data(), 1, comm); });
-    fvec.push_back([&](std::vector<T>& data) { all_gather_in_place(data, comm); });
-    for (auto all_gather_in_place : fvec) {
-        std::vector<T> data = input;
-        all_gather_in_place(data);
-        ASSERT_EQ(data, expected);
+    fvec.push_back([&](std::vector<T>& in_out) { all_gather_in_place(in_out.data(), 1, mpi_type<T>::get(), comm); });
+    fvec.push_back([&](std::vector<T>& in_out) { all_gather_in_place(in_out.data(), 1, comm); });
+    fvec.push_back([&](std::vector<T>& in_out) { all_gather_in_place(in_out, comm); });
+
+    // perform collective communication and check the result
+    for (auto fun : fvec) {
+        std::vector<T> in_out = in;
+        fun(in_out);
+        ASSERT_EQ(in_out, exp);
     }
 }
 
 // Test all-gathering a range of type R.
 template <typename R>
-void check_range_all_gather(const R& input, const R& expected) {
+void check_range_all_gather(const R& in, const R& exp) {
     using namespace simplemc::mpi;
     using value_type = simplemc::ranges::range_value_t<R>;
     communicator comm {};
-    auto const size = simplemc::ranges::size(input);
+    auto const size = simplemc::ranges::size(in);
     auto mpi_dtype = mpi_type<value_type>::get();
-    auto fvec = std::vector<std::function<void(const R&, R&)>> {};
-    fvec.push_back([&](const R& in_rg, R& out_rg) {
-        all_gather(
-            simplemc::ranges::data(in_rg), size, mpi_dtype, simplemc::ranges::data(out_rg), size, mpi_dtype, comm);
+
+    // functions to test
+    auto fvec = std::vector<std::function<void(R&)>> {};
+    fvec.push_back([&](R& out_rg) {
+        all_gather(simplemc::ranges::data(in), size, mpi_dtype, simplemc::ranges::data(out_rg), size, mpi_dtype, comm);
     });
-    fvec.push_back([&](const R& in_rg, R& out_rg) {
-        all_gather(simplemc::ranges::data(in_rg), simplemc::ranges::data(out_rg), size, comm);
-    });
-    fvec.push_back([&](const R& in_rg, R& out_rg) { all_gather(in_rg, out_rg, comm); });
-    for (auto all_gather : fvec) {
+    fvec.push_back(
+        [&](R& out_rg) { all_gather(simplemc::ranges::data(in), simplemc::ranges::data(out_rg), size, comm); });
+    fvec.push_back([&](R& out_rg) { all_gather(in, out_rg, comm); });
+
+    // perform collective communication and check the result
+    for (auto fun : fvec) {
         R result {};
-        result.resize(simplemc::ranges::size(expected));
-        all_gather(input, result);
-        ASSERT_EQ(result, expected);
+        result.resize(simplemc::ranges::size(exp));
+        fun(result);
+        ASSERT_EQ(result, exp);
     }
 }
 
 // Test all-gathering a range in place of type R.
 template <typename R>
-void check_range_all_gather_in_place(const R& input, const R& expected) {
+void check_range_all_gather_in_place(const R& in, const R& exp) {
     using namespace simplemc::mpi;
     using value_type = simplemc::ranges::range_value_t<R>;
     communicator comm {};
-    auto const total_size = simplemc::ranges::size(input);
-    auto const count_per_process = total_size / comm.size(); // Count to receive from each process
+    auto const total_size = simplemc::ranges::size(in);
+    auto const count = total_size / comm.size();
     auto mpi_dtype = mpi_type<value_type>::get();
-    auto fvec = std::vector<std::function<void(R&)>> {};
-    fvec.push_back([&](R& rg) { all_gather_in_place(simplemc::ranges::data(rg), count_per_process, mpi_dtype, comm); });
-    fvec.push_back([&](R& rg) { all_gather_in_place(simplemc::ranges::data(rg), count_per_process, comm); });
-    fvec.push_back([&](R& rg) { all_gather_in_place(rg, comm); });
-    for (auto all_gather_in_place : fvec) {
-        R data = input;
-        all_gather_in_place(data);
-        ASSERT_EQ(data, expected);
-    }
-}
 
-TEST(SimplemcMPI, AllGatherZeroValues) {
-    simplemc::mpi::communicator comm {};
-    int in_value = comm.rank();
-    std::vector<int> out_values(comm.size(), -1);
-    simplemc::mpi::all_gather(&in_value, 0, MPI_INT, out_values.data(), 0, MPI_INT, comm);
-    for (int i = 0; i < comm.size(); ++i) {
-        ASSERT_EQ(out_values[i], -1);
+    // functions to test
+    auto fvec = std::vector<std::function<void(R&)>> {};
+    fvec.push_back([&](R& rg) { all_gather_in_place(simplemc::ranges::data(rg), count, mpi_dtype, comm); });
+    fvec.push_back([&](R& rg) { all_gather_in_place(simplemc::ranges::data(rg), count, comm); });
+    fvec.push_back([&](R& rg) { all_gather_in_place(rg, comm); });
+
+    // perform collective communication and check the result
+    for (auto fun : fvec) {
+        R data = in;
+        fun(data);
+        ASSERT_EQ(data, exp);
     }
 }
 
 // Helper function for performing repeated tests.
 template <typename T>
-void perform_single() {
+void perform_single(bool in_place = false) {
     simplemc::mpi::communicator comm {};
-    const T rank = simplemc::mpi::comm_rank(comm);
-    std::vector<T> expected(comm.size());
-    for (int i = 0; i < comm.size(); ++i) {
-        expected[i] = static_cast<T>(i);
+    const int size = comm.size();
+    const int rank = comm.rank();
+
+    // prepare input and expected output
+    std::vector<T> in, exp;
+    for (int r = 0; r < size; ++r) {
+        exp.push_back(r);
+        if constexpr (!std::is_arithmetic_v<T>) {
+            exp.back().imag(-r);
+        }
+        in.push_back((r == rank ? exp.back() : T(0)));
     }
-    check_single_all_gather<T>(rank, expected);
+
+    // perform test
+    if (in_place) {
+        check_single_all_gather_in_place<T>(in, exp);
+    } else {
+        check_single_all_gather<T>(in[rank], exp);
+    }
+}
+
+// Helper function for performing repeated range tests.
+template <typename T>
+void perform_range(bool in_place = false) {
+    simplemc::mpi::communicator comm {};
+    const int size = comm.size();
+    const int rank = comm.rank();
+    const int count = 3;
+
+    // prepare input and expected output
+    std::vector<T> in, exp;
+    for (int r = 0; r < size; ++r) {
+        for (int i = 0; i < count; ++i) {
+            exp.push_back(10 * r + i);
+            if constexpr (!std::is_arithmetic_v<T>) {
+                exp.back().imag(-10 * r - i);
+            }
+            in.push_back((r == rank ? exp.back() : T(0)));
+        }
+    }
+
+    // perform test
+    if (in_place) {
+        check_range_all_gather_in_place(in, exp);
+    } else {
+        auto it = in.begin() + count * rank;
+        check_range_all_gather(std::vector<T>(it, it + count), exp);
+    }
+}
+
+TEST(SimplemcMPI, AllGatherZeroValues) {
+    simplemc::mpi::communicator comm {};
+    const int in_value = comm.rank();
+    std::vector<int> out_values(comm.size(), -1);
+    simplemc::mpi::all_gather(&in_value, out_values.data(), 0, comm);
+    for (int r = 0; r < comm.size(); ++r) {
+        ASSERT_EQ(out_values[r], -1);
+    }
 }
 
 TEST(SimplemcMPI, AllGatherSingleValues) {
@@ -127,78 +184,35 @@ TEST(SimplemcMPI, AllGatherSingleValues) {
     perform_single<float>();
     perform_single<double>();
     perform_single<long double>();
-}
 
-// Helper function for performing repeated tests.
-template <typename T>
-void perform_single_complex() {
-    simplemc::mpi::communicator comm {};
-    const T rank = simplemc::mpi::comm_rank(comm);
-    auto in = std::complex<T> { rank, -rank };
-    std::vector<std::complex<T>> expected(comm.size());
-    for (int i = 0; i < comm.size(); ++i) {
-        expected[i] = std::complex<T> { static_cast<T>(i), static_cast<T>(-i) };
-    }
-    check_single_all_gather(in, expected);
-}
-
-TEST(SimplemcMPI, AllGatherSingleComplexValues) {
-    perform_single_complex<float>();
-    perform_single_complex<double>();
-    perform_single_complex<long double>();
-}
-
-// Helper function for performing repeated tests.
-template <typename T>
-void perform_single_in_place() {
-    simplemc::mpi::communicator comm {};
-    const T rank = simplemc::mpi::comm_rank(comm);
-    std::vector<T> input(comm.size());
-    input[comm.rank()] = rank;
-    std::vector<T> expected(comm.size());
-    for (int i = 0; i < comm.size(); ++i) {
-        expected[i] = static_cast<T>(i);
-    }
-    check_single_all_gather_in_place<T>(input, expected);
+    // complex types
+    perform_single<std::complex<float>>();
+    perform_single<std::complex<double>>();
+    perform_single<std::complex<long double>>();
 }
 
 TEST(SimplemcMPI, AllGatherInPlaceSingleValues) {
     // signed integer types
-    perform_single_in_place<short>();
-    perform_single_in_place<int>();
-    perform_single_in_place<long>();
-    perform_single_in_place<long long>();
+    perform_single<short>(true);
+    perform_single<int>(true);
+    perform_single<long>(true);
+    perform_single<long long>(true);
 
     // unsigned integer types
-    perform_single_in_place<unsigned short>();
-    perform_single_in_place<unsigned int>();
-    perform_single_in_place<unsigned long>();
-    perform_single_in_place<unsigned long long>();
+    perform_single<unsigned short>(true);
+    perform_single<unsigned int>(true);
+    perform_single<unsigned long>(true);
+    perform_single<unsigned long long>(true);
 
     // floating point types
-    perform_single_in_place<float>();
-    perform_single_in_place<double>();
-    perform_single_in_place<long double>();
-}
+    perform_single<float>(true);
+    perform_single<double>(true);
+    perform_single<long double>(true);
 
-// Helper function for performing repeated tests.
-template <typename T>
-void perform_single_in_place_complex() {
-    simplemc::mpi::communicator comm {};
-    const T rank = simplemc::mpi::comm_rank(comm);
-    std::vector<std::complex<T>> input(comm.size());
-    input[comm.rank()] = std::complex<T> { rank, -rank };
-    std::vector<std::complex<T>> expected(comm.size());
-    for (int i = 0; i < comm.size(); ++i) {
-        expected[i] = std::complex<T> { static_cast<T>(i), static_cast<T>(-i) };
-    }
-    check_single_all_gather_in_place(input, expected);
-}
-
-TEST(SimplemcMPI, AllGatherInPlaceSingleComplexValues) {
-    perform_single_in_place_complex<float>();
-    perform_single_in_place_complex<double>();
-    perform_single_in_place_complex<long double>();
+    // complex types
+    perform_single<std::complex<float>>(true);
+    perform_single<std::complex<double>>(true);
+    perform_single<std::complex<long double>>(true);
 }
 
 TEST(SimplemcMPI, AllGatherEmptyVector) {
@@ -207,22 +221,6 @@ TEST(SimplemcMPI, AllGatherEmptyVector) {
     std::vector<int> out_data {};
     simplemc::mpi::all_gather(in_data, out_data, comm);
     ASSERT_TRUE(out_data.empty());
-}
-
-// Helper function for performing repeated range tests.
-template <typename T>
-void perform_range() {
-    simplemc::mpi::communicator comm {};
-    const int comm_size = simplemc::mpi::comm_size(comm);
-    const int rank = simplemc::mpi::comm_rank(comm);
-    const auto in = std::vector<T> { static_cast<T>(rank), static_cast<T>(2 * rank) };
-    std::vector<T> expected;
-    expected.reserve(2 * comm_size);
-    for (int i = 0; i < comm_size; ++i) {
-        expected.push_back(static_cast<T>(i));
-        expected.push_back(static_cast<T>(2 * i));
-    }
-    check_range_all_gather(in, expected);
 }
 
 TEST(SimplemcMPI, AllGatherRanges) {
@@ -242,92 +240,35 @@ TEST(SimplemcMPI, AllGatherRanges) {
     perform_range<float>();
     perform_range<double>();
     perform_range<long double>();
-}
 
-// Helper function for performing repeated complex range tests.
-template <typename T>
-void perform_range_complex() {
-    simplemc::mpi::communicator comm {};
-    const int comm_size = simplemc::mpi::comm_size(comm);
-    const int rank = simplemc::mpi::comm_rank(comm);
-    auto in = std::vector<std::complex<T>> { { static_cast<T>(rank), static_cast<T>(2 * rank) },
-        { static_cast<T>(3 * rank), static_cast<T>(4 * rank) } };
-    std::vector<std::complex<T>> expected;
-    expected.reserve(2 * comm_size);
-    for (int i = 0; i < comm_size; ++i) {
-        expected.push_back({ static_cast<T>(i), static_cast<T>(2 * i) });
-        expected.push_back({ static_cast<T>(3 * i), static_cast<T>(4 * i) });
-    }
-    check_range_all_gather(in, expected);
-}
-
-TEST(SimplemcMPI, AllGatherComplexRanges) {
-    perform_range_complex<float>();
-    perform_range_complex<double>();
-    perform_range_complex<long double>();
-}
-
-// Helper function for performing repeated in-place range tests.
-template <typename T>
-void perform_range_in_place() {
-    simplemc::mpi::communicator comm {};
-    const int comm_size = simplemc::mpi::comm_size(comm);
-    const int rank = simplemc::mpi::comm_rank(comm);
-    std::vector<T> input(2 * comm_size, 0);
-    std::vector<T> expected;
-    for (int i = 0; i < comm_size; ++i) {
-        expected.push_back(static_cast<T>(i));
-        expected.push_back(static_cast<T>(static_cast<T>(2) * i));
-        if (i == rank) {
-            input[2 * i] = expected[2 * i];
-            input[2 * i + 1] = expected[2 * i + 1];
-        }
-    }
-    check_range_all_gather_in_place(input, expected);
+    // complex types
+    perform_range<std::complex<float>>();
+    perform_range<std::complex<double>>();
+    perform_range<std::complex<long double>>();
 }
 
 TEST(SimplemcMPI, AllGatherInPlaceRanges) {
     // signed integer types
-    perform_range_in_place<short>();
-    perform_range_in_place<int>();
-    perform_range_in_place<long>();
-    perform_range_in_place<long long>();
+    perform_range<short>(true);
+    perform_range<int>(true);
+    perform_range<long>(true);
+    perform_range<long long>(true);
 
     // unsigned integer types
-    perform_range_in_place<unsigned short>();
-    perform_range_in_place<unsigned int>();
-    perform_range_in_place<unsigned long>();
-    perform_range_in_place<unsigned long long>();
+    perform_range<unsigned short>(true);
+    perform_range<unsigned int>(true);
+    perform_range<unsigned long>(true);
+    perform_range<unsigned long long>(true);
 
     // floating point types
-    perform_range_in_place<float>();
-    perform_range_in_place<double>();
-    perform_range_in_place<long double>();
-}
+    perform_range<float>(true);
+    perform_range<double>(true);
+    perform_range<long double>(true);
 
-// Helper function for performing repeated complex in-place range tests.
-template <typename T>
-void perform_range_in_place_complex() {
-    simplemc::mpi::communicator comm {};
-    const int comm_size = simplemc::mpi::comm_size(comm);
-    const int rank = simplemc::mpi::comm_rank(comm);
-    std::vector<std::complex<T>> input(2 * comm_size, 0);
-    std::vector<std::complex<T>> expected;
-    for (int i = 0; i < comm_size; ++i) {
-        expected.push_back({ static_cast<T>(i), static_cast<T>(static_cast<T>(2) * i) });
-        expected.push_back({ static_cast<T>(static_cast<T>(3) * i), static_cast<T>(static_cast<T>(4) * i) });
-        if (i == rank) {
-            input[2 * i] = expected[2 * i];
-            input[2 * i + 1] = expected[2 * i + 1];
-        }
-    }
-    check_range_all_gather_in_place(input, expected);
-}
-
-TEST(SimplemcMPI, AllGatherInPlaceComplexRanges) {
-    perform_range_in_place_complex<float>();
-    perform_range_in_place_complex<double>();
-    perform_range_in_place_complex<long double>();
+    // complex types
+    perform_range<std::complex<float>>(true);
+    perform_range<std::complex<double>>(true);
+    perform_range<std::complex<long double>>(true);
 }
 
 TEST(SimplemcMPI, AllGatherWithSplitCommunicator) {
@@ -343,33 +284,39 @@ TEST(SimplemcMPI, AllGatherWithSplitCommunicator) {
     const int rank = sub_comm.rank();
     const int size = sub_comm.size();
 
-    // all-gather within sub-communicator
+    // allgatherv and check result
     std::vector<int> result(size);
     simplemc::mpi::all_gather(rank, result, sub_comm);
-    for (int i = 0; i < size; ++i) {
-        ASSERT_EQ(result[i], i);
+    for (int r = 0; r < size; ++r) {
+        ASSERT_EQ(result[r], r);
     }
 
-    // test in-place version
+    // allgatherv in place and check result
     std::vector<int> in_place_data(size, 0);
     in_place_data[rank] = rank;
     simplemc::mpi::all_gather_in_place(in_place_data, sub_comm);
-    for (int i = 0; i < size; ++i) {
-        ASSERT_EQ(in_place_data[i], i);
+    for (int r = 0; r < size; ++r) {
+        ASSERT_EQ(in_place_data[r], r);
     }
 }
 
 TEST(SimplemcMPI, AllGatherStrings) {
     simplemc::mpi::communicator comm {};
-    if (comm.size() > 10) {
+    const int size = comm.size();
+    const int rank = comm.rank();
+    if (size > 10) {
         GTEST_SKIP() << "Test works only for <= 10 processes";
     }
-    const std::string rank_str = fmt::format("Rank_{}", comm.rank());
+
+    // prepare input and expected output string
+    const std::string rank_str = fmt::format("Rank_{}", rank);
     std::string expected {};
-    for (int i = 0; i < comm.size(); ++i) {
-        expected += fmt::format("Rank_{}", i);
+    for (int r = 0; r < size; ++r) {
+        expected += fmt::format("Rank_{}", r);
     }
-    std::string res(rank_str.size() * comm.size(), ' ');
+
+    // allgather and check result
+    std::string res(rank_str.size() * size, ' ');
     simplemc::mpi::all_gather(rank_str, res, comm);
     ASSERT_EQ(res, expected);
 }
