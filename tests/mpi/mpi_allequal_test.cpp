@@ -9,24 +9,28 @@
 // Test all_equal for scalars.
 TEST(SimplemcMPI, AllEqualScalars) {
     simplemc::mpi::communicator comm {};
+    const int size = comm.size();
+    const int rank = comm.rank();
     ASSERT_TRUE(simplemc::mpi::all_equal(1000, comm));
-    ASSERT_EQ(simplemc::mpi::all_equal(comm.rank(), comm), comm.size() == 1);
+    ASSERT_EQ(simplemc::mpi::all_equal(rank, comm), size == 1);
     ASSERT_TRUE(simplemc::mpi::all_equal(3.14159, comm));
-    ASSERT_EQ(simplemc::mpi::all_equal(3.14159 + comm.rank(), comm), comm.size() == 1);
+    ASSERT_EQ(simplemc::mpi::all_equal(3.14159 + rank, comm), size == 1);
     ASSERT_TRUE(simplemc::mpi::all_equal(std::complex<double>(1.0, 2.0), comm));
-    ASSERT_EQ(simplemc::mpi::all_equal(std::complex<double>(comm.rank(), 2.0), comm), comm.size() == 1);
+    ASSERT_EQ(simplemc::mpi::all_equal(std::complex<double>(rank, 2.0), comm), size == 1);
 }
 
 // Test all_equal for ranges.
 TEST(SimplemcMPI, AllEqualRanges) {
     simplemc::mpi::communicator comm {};
+    const int size = comm.size();
+    const int rank = comm.rank();
     ASSERT_TRUE(simplemc::mpi::all_equal(std::vector<char>(), comm));
     auto data = std::vector<double> { 1.0, 2.0, 3.0, 4.0 };
     ASSERT_TRUE(simplemc::mpi::all_equal(data, comm));
-    data[0] = comm.rank();
-    ASSERT_EQ(simplemc::mpi::all_equal(data, comm), comm.size() == 1);
-    auto data_2 = std::vector<int>(comm.rank() + 1, 42);
-    ASSERT_EQ(simplemc::mpi::all_equal(data_2, comm), comm.size() == 1);
+    data[0] = rank;
+    ASSERT_EQ(simplemc::mpi::all_equal(data, comm), size == 1);
+    auto data_2 = std::vector<int>(rank + 1, 42);
+    ASSERT_EQ(simplemc::mpi::all_equal(data_2, comm), size == 1);
 }
 
 // Custom main function for MPI.

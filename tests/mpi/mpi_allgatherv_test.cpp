@@ -11,7 +11,7 @@
 #include <type_traits>
 #include <vector>
 
-// Test all-gatherv with varying counts per process.
+// Test all_gatherv with varying counts per process.
 template <typename T>
 void check_all_gatherv(const std::vector<T>& in, const std::vector<T>& exp) {
     using namespace simplemc::mpi;
@@ -19,7 +19,7 @@ void check_all_gatherv(const std::vector<T>& in, const std::vector<T>& exp) {
     auto mpi_dtype = mpi_type<T>::get();
     auto [recvcounts, displs] = detail::prepare_gatherv_counts_displs(in.size(), comm);
 
-    // functions to test
+    // all_gatherv overloads to test
     auto fvec = std::vector<std::function<void(std::vector<T>&)>> {};
     fvec.push_back([&](std::vector<T>& out) {
         all_gatherv(in.data(), in.size(), mpi_dtype, out.data(), recvcounts.data(), displs.data(), mpi_dtype, comm);
@@ -28,7 +28,7 @@ void check_all_gatherv(const std::vector<T>& in, const std::vector<T>& exp) {
         [&](std::vector<T>& out) { all_gatherv(in.data(), out.data(), recvcounts.data(), displs.data(), comm); });
     fvec.push_back([&](std::vector<T>& out) { all_gatherv(in, out, comm); });
 
-    // perform collective communication and check the result
+    // perform all_gatherv and check the result
     for (auto fun : fvec) {
         std::vector<T> result(exp.size());
         fun(result);
@@ -36,7 +36,7 @@ void check_all_gatherv(const std::vector<T>& in, const std::vector<T>& exp) {
     }
 }
 
-// Test all-gatherv in place with varying counts per process.
+// Test all_gatherv_in_place with varying counts per process.
 template <typename T>
 void check_all_gatherv_in_place(const std::vector<T>& in, int local_count, const std::vector<T>& exp) {
     using namespace simplemc::mpi;
@@ -44,7 +44,7 @@ void check_all_gatherv_in_place(const std::vector<T>& in, int local_count, const
     auto mpi_dtype = mpi_type<T>::get();
     auto [recvcounts, displs] = detail::prepare_gatherv_counts_displs(local_count, comm);
 
-    // functions to test
+    // all_gatherv_in_place overloads to test
     auto fvec = std::vector<std::function<void(std::vector<T>&)>> {};
     fvec.push_back([&](std::vector<T>& in_out) {
         all_gatherv_in_place(in_out.data(), recvcounts.data(), displs.data(), mpi_dtype, comm);
@@ -53,7 +53,7 @@ void check_all_gatherv_in_place(const std::vector<T>& in, int local_count, const
         [&](std::vector<T>& in_out) { all_gatherv_in_place(in_out.data(), recvcounts.data(), displs.data(), comm); });
     fvec.push_back([&](std::vector<T>& in_out) { all_gatherv_in_place(in_out, local_count, comm); });
 
-    // perform collective communication and check the result
+    // perform all_gatherv_in_place and check the result
     for (auto fun : fvec) {
         std::vector<T> data = in;
         fun(data);
@@ -61,9 +61,9 @@ void check_all_gatherv_in_place(const std::vector<T>& in, int local_count, const
     }
 }
 
-// Helper function for performing repeated tests.
+// Helper function for performing tests with varying counts per process.
 template <typename T>
-void perform_varying_counts(bool in_place = false) {
+void perform_test(bool in_place = false) {
     simplemc::mpi::communicator comm {};
     const int size = comm.size();
     const int rank = comm.rank();
@@ -100,50 +100,50 @@ TEST(SimplemcMPI, AllGathervZeroValues) {
 
 TEST(SimplemcMPI, AllGathervVaryingCounts) {
     // signed integer types
-    perform_varying_counts<short>();
-    perform_varying_counts<int>();
-    perform_varying_counts<long>();
-    perform_varying_counts<long long>();
+    perform_test<short>();
+    perform_test<int>();
+    perform_test<long>();
+    perform_test<long long>();
 
     // unsigned integer types
-    perform_varying_counts<unsigned short>();
-    perform_varying_counts<unsigned int>();
-    perform_varying_counts<unsigned long>();
-    perform_varying_counts<unsigned long long>();
+    perform_test<unsigned short>();
+    perform_test<unsigned int>();
+    perform_test<unsigned long>();
+    perform_test<unsigned long long>();
 
     // floating point types
-    perform_varying_counts<float>();
-    perform_varying_counts<double>();
-    perform_varying_counts<long double>();
+    perform_test<float>();
+    perform_test<double>();
+    perform_test<long double>();
 
     // complex types
-    perform_varying_counts<std::complex<float>>();
-    perform_varying_counts<std::complex<double>>();
-    perform_varying_counts<std::complex<long double>>();
+    perform_test<std::complex<float>>();
+    perform_test<std::complex<double>>();
+    perform_test<std::complex<long double>>();
 }
 
 TEST(SimplemcMPI, AllGathervInPlaceVaryingCounts) {
     // signed integer types
-    perform_varying_counts<short>(true);
-    perform_varying_counts<int>(true);
-    perform_varying_counts<long>(true);
-    perform_varying_counts<long long>(true);
+    perform_test<short>(true);
+    perform_test<int>(true);
+    perform_test<long>(true);
+    perform_test<long long>(true);
 
     // unsigned integer types
-    perform_varying_counts<unsigned short>(true);
-    perform_varying_counts<unsigned int>(true);
-    perform_varying_counts<unsigned long>(true);
-    perform_varying_counts<unsigned long long>(true);
+    perform_test<unsigned short>(true);
+    perform_test<unsigned int>(true);
+    perform_test<unsigned long>(true);
+    perform_test<unsigned long long>(true);
 
     // floating point types
-    perform_varying_counts<float>(true);
-    perform_varying_counts<double>(true);
-    perform_varying_counts<long double>(true);
+    perform_test<float>(true);
+    perform_test<double>(true);
+    perform_test<long double>(true);
 
     // complex types
-    perform_varying_counts<std::complex<float>>(true);
-    perform_varying_counts<std::complex<double>>(true);
-    perform_varying_counts<std::complex<long double>>(true);
+    perform_test<std::complex<float>>(true);
+    perform_test<std::complex<double>>(true);
+    perform_test<std::complex<long double>>(true);
 }
 
 TEST(SimplemcMPI, AllGathervUniformCounts) {

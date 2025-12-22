@@ -10,9 +10,13 @@ int main(int argc, char** argv) {
         simplemc::mpi::environment env { argc, argv, false };
         simplemc::mpi::communicator comm {};
         const int rank = comm.rank();
+
+        // throw exception on rank 0
         if (rank == 0) {
             throw simplemc::simplemc_exception("This is a test exception");
         }
+
+        // on other ranks, just print a message after a delay
         std::this_thread::sleep_for(std::chrono::seconds { 3 });
         fmt::println("Hello from rank {}", rank);
     } catch (const simplemc::simplemc_exception& e) {

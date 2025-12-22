@@ -66,8 +66,8 @@ int main(int argc, char* argv[]) {
 
     // Initialize GoogleTest and MPI.
     ::testing::InitGoogleTest(&argc, argv);
-    simplemc::mpi::environment env(argc, argv);
-    simplemc::mpi::communicator comm;
+    simplemc::mpi::environment env { argc, argv };
+    simplemc::mpi::communicator comm {};
 
     // Remove the default GoogleTest listener on all ranks except 0.
     ::testing::TestEventListeners& listeners = ::testing::UnitTest::GetInstance()->listeners();

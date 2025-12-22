@@ -82,8 +82,8 @@ int main(int argc, char* argv[]) {
 
     // Initialize GoogleTest and MPI with thread support.
     ::testing::InitGoogleTest(&argc, argv);
-    simplemc::mpi::environment env(argc, argv, MPI_THREAD_MULTIPLE);
-    simplemc::mpi::communicator comm;
+    simplemc::mpi::environment env { argc, argv, MPI_THREAD_MULTIPLE };
+    simplemc::mpi::communicator comm {};
 
     // Remove the default GoogleTest listener on all ranks except 0.
     ::testing::TestEventListeners& listeners = ::testing::UnitTest::GetInstance()->listeners();

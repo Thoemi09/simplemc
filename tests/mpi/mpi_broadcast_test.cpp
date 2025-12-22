@@ -11,58 +11,67 @@
 #include <string>
 #include <vector>
 
-// Test broadcasting a single value of type T.
+// Test broadcast for a single value of type T.
 template <typename T>
-void check_single_broadcast(const T& expected) {
+void check_single_broadcast(const T& exp) {
     using namespace simplemc::mpi;
     communicator comm {};
-    auto const rank = comm_rank(comm);
+    const int rank = comm.rank();
+
+    // broadcast overloads to test
     auto fvec = std::vector<std::function<void(T&, int)>> {};
     fvec.push_back([&](T& value, int root) { broadcast(&value, 1, mpi_type<T>::get(), root, comm); });
     fvec.push_back([&](T& value, int root) { broadcast(&value, 1, root, comm); });
     fvec.push_back([&](T& value, int root) { broadcast(value, root, comm); });
-    for (int root = 0; root < comm_size(comm); ++root) {
-        for (auto bcast : fvec) {
-            T value = (rank == root) ? expected : T {};
-            bcast(value, root);
-            ASSERT_EQ(value, expected);
+
+    // perform broadcast and check the result
+    for (int r = 0; r < comm_size(comm); ++r) {
+        for (auto fun : fvec) {
+            T value = (rank == r) ? exp : T {};
+            fun(value, r);
+            ASSERT_EQ(value, exp);
         }
     }
 }
 
-// Test broadcasting a range of type R.
+// Test broadcast for a range of type R.
 template <typename R>
-void check_range_broadcast(const R& expected) {
+void check_range_broadcast(const R& exp) {
     using namespace simplemc::mpi;
     using value_type = simplemc::ranges::range_value_t<R>;
     communicator comm {};
-    auto const rank = comm_rank(comm);
-    auto const size = simplemc::ranges::size(expected);
+    const int rank = comm.rank();
+    const auto count = simplemc::ranges::size(exp);
     auto mpi_dtype = mpi_type<value_type>::get();
+
+    // broadcast overloads to test
     auto fvec = std::vector<std::function<void(R&, int)>> {};
-    fvec.push_back([&](R& rg, int root) { broadcast(simplemc::ranges::data(rg), size, mpi_dtype, root, comm); });
-    fvec.push_back([&](R& rg, int root) { broadcast(simplemc::ranges::data(rg), size, root, comm); });
+    fvec.push_back([&](R& rg, int root) { broadcast(simplemc::ranges::data(rg), count, mpi_dtype, root, comm); });
+    fvec.push_back([&](R& rg, int root) { broadcast(simplemc::ranges::data(rg), count, root, comm); });
     fvec.push_back([&](R& rg, int root) { broadcast(rg, root, comm); });
-    for (int root = 0; root < comm_size(comm); ++root) {
-        for (auto bcast : fvec) {
+
+    // perform broadcast and check the result
+    for (int r = 0; r < comm.size(); ++r) {
+        for (auto fun : fvec) {
             R data {};
-            if (rank == root) {
-                data = expected;
+            if (rank == r) {
+                data = exp;
             } else {
-                data.resize(expected.size());
+                data.resize(exp.size());
             }
-            bcast(data, root);
-            ASSERT_EQ(data, expected);
+            fun(data, r);
+            ASSERT_EQ(data, exp);
         }
     }
 }
 
 TEST(SimplemcMPI, BroadcastZeroValues) {
     simplemc::mpi::communicator comm {};
+    const int rank = comm.rank();
     const int root = 0;
-    int value = comm.rank();
+    int value = rank;
     simplemc::mpi::broadcast(&value, 0, MPI_INT, root, comm);
-    ASSERT_EQ(value, comm.rank());
+    ASSERT_EQ(value, rank);
 }
 
 TEST(SimplemcMPI, BroadCastSingleValues) {
@@ -147,9 +156,9 @@ TEST(SimplemcMPI, BroadcastRanges) {
 TEST(SimplemcMPI, BroadcastLargeArray) {
     simplemc::mpi::communicator comm {};
     const int root = 0;
-    constexpr int size = 10000;
-    auto iota = simplemc::ranges::iota_view(0, size);
-    auto arr = std::array<int, size> {};
+    constexpr int count = 10000;
+    auto iota = simplemc::ranges::iota_view(0, count);
+    auto arr = std::array<int, count> {};
     if (comm.rank() == root) {
         simplemc::ranges::copy(iota, arr.begin());
     }
