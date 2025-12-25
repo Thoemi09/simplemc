@@ -10,75 +10,82 @@
 #include <type_traits>
 #include <vector>
 
-// Test all_gather for a single value of type T.
+// Test gather for a single value of type T.
 template <typename T>
-void check_single_all_gather(const T& in, const std::vector<T>& exp) {
+void check_single_gather(const T& in, const std::vector<T>& exp, int root) {
     using namespace simplemc::mpi;
     communicator comm {};
     auto mpi_dtype = mpi_type<T>::get();
 
-    // all_gather overloads to test
+    // gather overloads to test
     auto fvec = std::vector<std::function<void(std::vector<T>&)>> {};
-    fvec.push_back([&](std::vector<T>& out) { all_gather(&in, 1, mpi_dtype, out.data(), 1, mpi_dtype, comm); });
-    fvec.push_back([&](std::vector<T>& out) { all_gather(&in, out.data(), 1, comm); });
-    fvec.push_back([&](std::vector<T>& out) { all_gather(in, out, comm); });
+    fvec.push_back([&](std::vector<T>& out) { gather(&in, 1, mpi_dtype, out.data(), 1, mpi_dtype, root, comm); });
+    fvec.push_back([&](std::vector<T>& out) { gather(&in, out.data(), 1, root, comm); });
+    fvec.push_back([&](std::vector<T>& out) { gather(in, out, root, comm); });
 
-    // perform all_gather and check the result
+    // perform gather and check the result
     for (auto fun : fvec) {
         std::vector<T> result(comm.size());
         fun(result);
-        ASSERT_EQ(result, exp);
+        if (comm.rank() == root) {
+            ASSERT_EQ(result, exp);
+        }
     }
 }
 
-// Test all_gather for a range of type R.
+// Test gather for a range of type R.
 template <typename R>
-void check_range_all_gather(const R& in, const R& exp) {
+void check_range_gather(const R& in, const R& exp, int root) {
     using namespace simplemc::mpi;
     using value_type = simplemc::ranges::range_value_t<R>;
     communicator comm {};
     auto const count = simplemc::ranges::size(in);
     auto mpi_dtype = mpi_type<value_type>::get();
 
-    // all_gather overloads to test
+    // gather overloads to test
     auto fvec = std::vector<std::function<void(R&)>> {};
     fvec.push_back([&](R& out_rg) {
-        all_gather(simplemc::ranges::data(in), count, mpi_dtype, simplemc::ranges::data(out_rg), count, mpi_dtype, comm);
+        gather(
+            simplemc::ranges::data(in), count, mpi_dtype, simplemc::ranges::data(out_rg), count, mpi_dtype, root, comm);
     });
     fvec.push_back(
-        [&](R& out_rg) { all_gather(simplemc::ranges::data(in), simplemc::ranges::data(out_rg), count, comm); });
-    fvec.push_back([&](R& out_rg) { all_gather(in, out_rg, comm); });
+        [&](R& out_rg) { gather(simplemc::ranges::data(in), simplemc::ranges::data(out_rg), count, root, comm); });
+    fvec.push_back([&](R& out_rg) { gather(in, out_rg, root, comm); });
 
-    // perform all_gather and check the result
+    // perform gather and check the result
     for (auto fun : fvec) {
         R result {};
         result.resize(simplemc::ranges::size(exp));
         fun(result);
-        ASSERT_EQ(result, exp);
+        if (comm.rank() == root) {
+            ASSERT_EQ(result, exp);
+        }
     }
 }
 
-// Test all_gather_in_place for a range of type R.
+// Test gather_in_place for a range of type R.
 template <typename R>
-void check_range_all_gather_in_place(const R& in, const R& exp) {
+void check_range_gather_in_place(const R& in, const R& exp, int root) {
     using namespace simplemc::mpi;
     using value_type = simplemc::ranges::range_value_t<R>;
     communicator comm {};
-    auto const total_count = simplemc::ranges::size(in);
+    auto const total_count = simplemc::ranges::size(exp);
     auto const count = total_count / comm.size();
     auto mpi_dtype = mpi_type<value_type>::get();
 
-    // all_gather_in_place overloads to test
+    // gather_in_place overloads to test
     auto fvec = std::vector<std::function<void(R&)>> {};
-    fvec.push_back([&](R& rg) { all_gather_in_place(simplemc::ranges::data(rg), count, mpi_dtype, comm); });
-    fvec.push_back([&](R& rg) { all_gather_in_place(simplemc::ranges::data(rg), count, comm); });
-    fvec.push_back([&](R& rg) { all_gather_in_place(rg, comm); });
+    fvec.push_back([&](R& rg) { gather_in_place(simplemc::ranges::data(rg), count, mpi_dtype, root, comm); });
+    fvec.push_back([&](R& rg) { gather_in_place(simplemc::ranges::data(rg), count, root, comm); });
+    fvec.push_back([&](R& rg) { gather_in_place(rg, root, comm); });
 
-    // perform all_gather_in_place and check the result
+    // perform gather_in_place and check the result
     for (auto fun : fvec) {
         R data = in;
         fun(data);
-        ASSERT_EQ(data, exp);
+        if (comm.rank() == root) {
+            ASSERT_EQ(data, exp);
+        }
     }
 }
 
@@ -99,8 +106,10 @@ void perform_single_value_test() {
         in.push_back((r == rank ? exp.back() : T(0)));
     }
 
-    // perform test
-    check_single_all_gather<T>(in[rank], exp);
+    // perform test for each rank as root
+    for (int r = 0; r < size; ++r) {
+        check_single_gather<T>(in[rank], exp, r);
+    }
 }
 
 // Helper function for performing tests on ranges.
@@ -111,38 +120,47 @@ void perform_range_test(bool in_place = false) {
     const int rank = comm.rank();
     const int count = 3;
 
-    // prepare input and expected output
-    std::vector<T> in, exp;
+    // prepare expected output (gathered result on root)
+    std::vector<T> exp;
     for (int r = 0; r < size; ++r) {
         for (int i = 0; i < count; ++i) {
             exp.push_back(10 * r + i);
             if constexpr (!std::is_arithmetic_v<T>) {
                 exp.back().imag(-10 * r - i);
             }
-            in.push_back((r == rank ? exp.back() : T(0)));
         }
     }
 
-    // perform test
-    if (in_place) {
-        check_range_all_gather_in_place(in, exp);
-    } else {
-        auto it = in.begin() + count * rank;
-        check_range_all_gather(std::vector<T>(it, it + count), exp);
+    // perform test for each rank as root
+    for (int r = 0; r < size; ++r) {
+        auto it = exp.begin() + rank * count;
+        if (in_place) {
+            std::vector<T> in;
+            if (rank == r) {
+                auto in = std::vector<T>(count * size, T(0));
+                std::copy(it, it + count, in.begin() + r * count);
+                check_range_gather_in_place(in, exp, r);
+            } else {
+                check_range_gather_in_place(std::vector<T>(it, it + count), exp, r);
+            }
+        } else {
+            check_range_gather(std::vector<T>(it, it + count), exp, r);
+        }
     }
 }
 
-TEST(SimplemcMPI, AllGatherZeroValues) {
+TEST(SimplemcMPI, GatherZeroValues) {
     simplemc::mpi::communicator comm {};
     const int in_value = comm.rank();
     std::vector<int> out_values(comm.size(), -1);
-    simplemc::mpi::all_gather(&in_value, out_values.data(), 0, comm);
+    constexpr int root = 0;
+    simplemc::mpi::gather(&in_value, out_values.data(), 0, root, comm);
     for (int r = 0; r < comm.size(); ++r) {
         ASSERT_EQ(out_values[r], -1);
     }
 }
 
-TEST(SimplemcMPI, AllGatherSingleValues) {
+TEST(SimplemcMPI, GatherSingleValues) {
     // signed integer types
     perform_single_value_test<short>();
     perform_single_value_test<int>();
@@ -166,15 +184,16 @@ TEST(SimplemcMPI, AllGatherSingleValues) {
     perform_single_value_test<std::complex<long double>>();
 }
 
-TEST(SimplemcMPI, AllGatherEmptyVector) {
+TEST(SimplemcMPI, GatherEmptyVector) {
     simplemc::mpi::communicator comm {};
     std::vector<int> in_data {};
     std::vector<int> out_data {};
-    simplemc::mpi::all_gather(in_data, out_data, comm);
+    constexpr int root = 0;
+    simplemc::mpi::gather(in_data, out_data, root, comm);
     ASSERT_TRUE(out_data.empty());
 }
 
-TEST(SimplemcMPI, AllGatherRanges) {
+TEST(SimplemcMPI, GatherRanges) {
     // signed integer types
     perform_range_test<short>();
     perform_range_test<int>();
@@ -198,7 +217,7 @@ TEST(SimplemcMPI, AllGatherRanges) {
     perform_range_test<std::complex<long double>>();
 }
 
-TEST(SimplemcMPI, AllGatherInPlaceRanges) {
+TEST(SimplemcMPI, GatherInPlaceRanges) {
     // signed integer types
     perform_range_test<short>(true);
     perform_range_test<int>(true);
@@ -222,7 +241,7 @@ TEST(SimplemcMPI, AllGatherInPlaceRanges) {
     perform_range_test<std::complex<long double>>(true);
 }
 
-TEST(SimplemcMPI, AllGatherWithSplitCommunicator) {
+TEST(SimplemcMPI, GatherWithSplitCommunicator) {
     simplemc::mpi::communicator comm {};
     if (comm.size() < 2) {
         GTEST_SKIP() << "Test requires at least 2 processes";
@@ -234,24 +253,19 @@ TEST(SimplemcMPI, AllGatherWithSplitCommunicator) {
 
     const int rank = sub_comm.rank();
     const int size = sub_comm.size();
+    constexpr int root = 0;
 
-    // allgatherv and check result
+    // gather and check result
     std::vector<int> result(size);
-    simplemc::mpi::all_gather(rank, result, sub_comm);
-    for (int r = 0; r < size; ++r) {
-        ASSERT_EQ(result[r], r);
-    }
-
-    // allgatherv in place and check result
-    std::vector<int> in_place_data(size, 0);
-    in_place_data[rank] = rank;
-    simplemc::mpi::all_gather_in_place(in_place_data, sub_comm);
-    for (int r = 0; r < size; ++r) {
-        ASSERT_EQ(in_place_data[r], r);
+    simplemc::mpi::gather(rank, result, root, sub_comm);
+    if (sub_comm.rank() == root) {
+        for (int r = 0; r < size; ++r) {
+            ASSERT_EQ(result[r], r);
+        }
     }
 }
 
-TEST(SimplemcMPI, AllGatherStrings) {
+TEST(SimplemcMPI, GatherStrings) {
     simplemc::mpi::communicator comm {};
     const int size = comm.size();
     const int rank = comm.rank();
@@ -266,10 +280,14 @@ TEST(SimplemcMPI, AllGatherStrings) {
         exp += fmt::format("Rank_{}", r);
     }
 
-    // allgather and check result
-    std::string res(rank_str.size() * size, ' ');
-    simplemc::mpi::all_gather(rank_str, res, comm);
-    ASSERT_EQ(res, exp);
+    // gather and check result for each root
+    for (int r = 0; r < size; ++r) {
+        std::string res(rank_str.size() * size, ' ');
+        simplemc::mpi::gather(rank_str, res, r, comm);
+        if (comm.rank() == r) {
+            ASSERT_EQ(res, exp);
+        }
+    }
 }
 
 // Custom main function for MPI.

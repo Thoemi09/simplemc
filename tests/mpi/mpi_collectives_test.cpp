@@ -90,7 +90,7 @@ TEST(SimplemcMPI, GatherSingleValuesAndScatterIntoSingleValues) {
 
     // gather ranks in a vector
     res = std::vector<int>((comm.rank() == root ? comm.size() : 0));
-    simplemc::mpi::gather(comm, comm.rank(), res, root);
+    simplemc::mpi::gather(comm.rank(), res, root, comm);
     if (comm.rank() == root) {
         ASSERT_EQ(exp, res);
     } else {
@@ -141,7 +141,7 @@ TEST(SimplemcMPI, GatherVectorsAndScatterIntoVectors) {
 
     // gather
     res = std::vector<double>((comm.rank() == root ? comm.size() * sz : 0));
-    simplemc::mpi::gather(comm, data, res, root);
+    simplemc::mpi::gather(data, res, root, comm);
     if (comm.rank() == root) {
         ASSERT_EQ(exp, res);
     } else {
@@ -157,10 +157,10 @@ TEST(SimplemcMPI, GatherVectorsAndScatterIntoVectors) {
     if (comm.rank() == root) {
         res.assign(res.size(), 0);
         assign(res.begin() + rank * sz, rank);
-        simplemc::mpi::gather_in_place(comm, res, root);
+        simplemc::mpi::gather_in_place(res, root, comm);
         ASSERT_EQ(exp, res);
     } else {
-        simplemc::mpi::gather_in_place(comm, data, root);
+        simplemc::mpi::gather_in_place(data, root, comm);
     }
 
     // scatter in place
