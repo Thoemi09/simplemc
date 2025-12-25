@@ -92,7 +92,7 @@ void abort(MPI_Comm comm = MPI_COMM_WORLD, int errcode = 0);
  *
  * @details It returns one of the following levels: `MPI_THREAD_SINGLE`, `MPI_THREAD_FUNNELED`,
  * `MPI_THREAD_SERIALIZED`, or `MPI_THREAD_MULTIPLE`.
- * 
+ *
  * See simplemc::mpi::init_thread for details on the different levels.
  *
  * @return Provided level of thread support.

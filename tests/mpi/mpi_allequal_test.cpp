@@ -11,6 +11,7 @@ TEST(SimplemcMPI, AllEqualScalars) {
     simplemc::mpi::communicator comm {};
     const int size = comm.size();
     const int rank = comm.rank();
+
     ASSERT_TRUE(simplemc::mpi::all_equal(1000, comm));
     ASSERT_EQ(simplemc::mpi::all_equal(rank, comm), size == 1);
     ASSERT_TRUE(simplemc::mpi::all_equal(3.14159, comm));
@@ -24,11 +25,19 @@ TEST(SimplemcMPI, AllEqualRanges) {
     simplemc::mpi::communicator comm {};
     const int size = comm.size();
     const int rank = comm.rank();
+
+    // empty range
     ASSERT_TRUE(simplemc::mpi::all_equal(std::vector<char>(), comm));
+
+    // equal ranges on all ranks
     auto data = std::vector<double> { 1.0, 2.0, 3.0, 4.0 };
     ASSERT_TRUE(simplemc::mpi::all_equal(data, comm));
+
+    // range is different on one rank
     data[0] = rank;
     ASSERT_EQ(simplemc::mpi::all_equal(data, comm), size == 1);
+
+    // ranges of different sizes
     auto data_2 = std::vector<int>(rank + 1, 42);
     ASSERT_EQ(simplemc::mpi::all_equal(data_2, comm), size == 1);
 }

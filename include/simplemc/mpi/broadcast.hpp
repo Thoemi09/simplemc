@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Broadcast communications between MPI processes.
+ * @brief Wrapper functions for `MPI_Bcast`.
  */
 
 #ifndef SIMPLEMC_MPI_BROADCAST_HPP
@@ -26,13 +26,13 @@ namespace simplemc::mpi {
  * @brief Broadcast data (low-level).
  *
  * @details Thin wrapper around `MPI_Bcast` that accepts an explicit `MPI_Datatype`, allowing users to
- * broadcast custom or user-defined MPI datatypes. The caller is responsible for ensuring that
- * `buffer` points to valid memory of the correct type and size.
+ * broadcast custom or user-defined MPI datatypes. The caller is responsible for ensuring that buffer
+ * points to valid memory of the correct type and size.
  *
- * It asserts that `count` and `root` is the same on all processes and that `root` is a valid rank and
- * `count` is non-negative.
+ * It asserts that count and the root rank is the same across all processes and that root rank is a
+ * valid rank and count is non-negative.
  *
- * @param buf Pointer to the buffer to broadcast from (on root) or receive into (on other ranks).
+ * @param buf Pointer to the buffer to broadcast from (on root) or into (on other ranks).
  * @param count Number of elements to broadcast.
  * @param datatype MPI datatype of the elements.
  * @param root Rank of the broadcasting process.
@@ -52,14 +52,14 @@ inline void broadcast(void* buf, int count, MPI_Datatype datatype, int root, MPI
  * `T` (see simplemc::mpi::mpi_type).
  *
  * @tparam T simplemc::mpi::mpi_compatible type.
- * @param buf Pointer to the buffer to broadcast from (on root) or receive into (on other ranks).
+ * @param buf Pointer to the buffer to broadcast from (on root) or into (on other ranks).
  * @param count Number of elements to broadcast.
  * @param root Rank of the broadcasting process.
  * @param comm MPI communicator.
  */
 template <mpi_compatible T>
 void broadcast(T* buf, int count, int root, MPI_Comm comm) {
-    broadcast(static_cast<void*>(buf), count, mpi_type<T>::get(), root, comm);
+    broadcast(buf, count, mpi_type<T>::get(), root, comm);
 }
 
 /**
@@ -68,7 +68,7 @@ void broadcast(T* buf, int count, int root, MPI_Comm comm) {
  * @details It simply calls simplemc::mpi::broadcast(T*, int, int, MPI_Comm) with a count of 1.
  *
  * @tparam T simplemc::mpi::mpi_compatible type.
- * @param value Reference to the value to broadcast from (on root) or receive into (on other ranks).
+ * @param value Reference to the value to broadcast from (on root) or into (on other ranks).
  * @param root Rank of the broadcasting process.
  * @param comm MPI communicator.
  */
@@ -84,13 +84,13 @@ void broadcast(T& value, int root, MPI_Comm comm) {
  * simplemc::mpi::broadcast(T*, int, int, MPI_Comm).
  *
  * @tparam R simplemc::mpi::mpi_range type.
- * @param rg Range to broadcast from (on root) or receive into (on other ranks).
+ * @param rg Range to broadcast from (on root) or into (on other ranks).
  * @param root Rank of the broadcasting process.
  * @param comm MPI communicator.
  */
 template <mpi_range R>
 void broadcast(R&& rg, int root, MPI_Comm comm) { // NOLINT (forwarding ref used as in/out param)
-    broadcast(ranges::data(rg), static_cast<int>(ranges::size(rg)), root, comm);
+    broadcast(ranges::data(rg), ranges::size(rg), root, comm);
 }
 
 /** @} */

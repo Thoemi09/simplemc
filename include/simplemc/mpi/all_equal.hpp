@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Check that a value or range of values is equal across all MPI processes.
+ * @brief Check that a value or range of values is equal on all MPI processes.
  */
 
 #ifndef SIMPLEMC_MPI_ALL_EQUAL_HPP
@@ -24,13 +24,13 @@ namespace simplemc::mpi {
  */
 
 /**
- * @brief Check if a value is equal across all processes.
+ * @brief Check if a value is equal on all processes.
  *
  * @details It performs the following steps:
  *
- * - `MPI_Bcast` the value from rank 0 to all other processes.
+ * - Broadcast the value from rank 0 to all other processes.
  * - Each process equality compares its local value to the broadcasted value.
- * - `MPI_Allreduce` the comparison results using `MPI_LAND`.
+ * - All-reduce the comparison results using `MPI_LAND`.
  *
  * @note This function involves two collective operations, so all processes must call it.
  *
@@ -55,14 +55,14 @@ template <mpi_compatible T>
 }
 
 /**
- * @brief Check if all elements in a range are equal across all processes.
+ * @brief Check if all elements in a range are equal on all processes.
  *
  * @details It performs the following steps:
  *
  * - Check that the ranges sizes are simplemc::mpi::all_equal.
- * - `MPI_Bcast` the range from rank 0 to all other processes.
+ * - Broadcast the range from rank 0 to all other processes.
  * - Each process equality compares its local range element-wise to the broadcasted range.
- * - `MPI_Allreduce` the comparison results using `MPI_LAND`.
+ * - All-reduce the comparison results using `MPI_LAND`.
  *
  * @note This function involves three collective operations, so all processes must call it.
  *
@@ -76,14 +76,14 @@ template <mpi_range R>
     using value_type = ranges::range_value_t<R>;
 
     // check if all processes have the same size
-    if (!all_equal(ranges::size(rg), comm)) {
+    const int size = ranges::size(rg);
+    if (!all_equal(size, comm)) {
         return false;
     }
 
     // broadcast the range from rank 0
     auto root_rg = std::vector(ranges::begin(rg), ranges::end(rg));
-    check_mpi_call(
-        MPI_Bcast(root_rg.data(), static_cast<int>(root_rg.size()), mpi_type<value_type>::get(), 0, comm), "MPI_Bcast");
+    check_mpi_call(MPI_Bcast(root_rg.data(), size, mpi_type<value_type>::get(), 0, comm), "MPI_Bcast");
 
     // compare local range with broadcasted values
     const int local_equal = std::ranges::equal(rg, root_rg) ? 1 : 0;

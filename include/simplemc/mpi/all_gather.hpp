@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief All-gather communications between MPI processes.
+ * @brief Wrapper functions for `MPI_Allgather`.
  */
 
 #ifndef SIMPLEMC_MPI_ALL_GATHER_HPP
@@ -24,13 +24,13 @@ namespace simplemc::mpi {
  */
 
 /**
- * @brief All-gather data across all processes (low-level).
+ * @brief All-gather data on all processes (low-level).
  *
  * @details Thin wrapper around `MPI_Allgather` that accepts an explicit `MPI_Datatype`, allowing
  * users to gather custom or user-defined MPI datatypes. The caller is responsible for ensuring that
- * `sendbuf` and `recvbuf` point to valid memory of the correct type and size.
+ * the send and receive buffers point to valid memory of the correct type and size.
  *
- * It asserts that `sendcount` and `recvcount` are the same on all processes and non-negative.
+ * It asserts that the send and receive counts are the same on all processes and non-negative.
  *
  * @param sendbuf Pointer to the send buffer.
  * @param sendcount Number of elements to send.
@@ -50,11 +50,11 @@ inline void all_gather(const void* sendbuf, int sendcount, MPI_Datatype sendtype
 }
 
 /**
- * @brief All-gather data in place across all processes (low-level).
+ * @brief All-gather data in place on all processes (low-level).
  *
  * @details Thin wrapper around `MPI_Allgather` with `MPI_IN_PLACE` that accepts an explicit
  * `MPI_Datatype`, allowing users to gather custom or user-defined MPI datatypes. The caller is
- * responsible for ensuring that `buf` points to valid memory of the correct type and size.
+ * responsible for ensuring that the buffer points to valid memory of the correct type and size.
  *
  * It calls simplemc::mpi::all_gather with the given arguments, except that it uses `MPI_IN_PLACE` for
  * the send buffer.
@@ -72,7 +72,7 @@ inline void all_gather_in_place(void* buf, int count, MPI_Datatype datatype, MPI
 }
 
 /**
- * @brief All-gather a contiguous array of values across all processes.
+ * @brief All-gather a contiguous array of values on all processes.
  *
  * @details It simply calls simplemc::mpi::all_gather with the deduced `MPI_Datatype` from the C++
  * type `T` (see simplemc::mpi::mpi_type) for both send and receive buffers.
@@ -88,12 +88,11 @@ inline void all_gather_in_place(void* buf, int count, MPI_Datatype datatype, MPI
  */
 template <mpi_compatible T>
 void all_gather(const T* sendbuf, T* recvbuf, int count, MPI_Comm comm) {
-    all_gather(static_cast<const void*>(sendbuf), count, mpi_type<T>::get(), static_cast<void*>(recvbuf), count,
-        mpi_type<T>::get(), comm);
+    all_gather(sendbuf, count, mpi_type<T>::get(), recvbuf, count, mpi_type<T>::get(), comm);
 }
 
 /**
- * @brief All-gather a contiguous array of values in place across all processes.
+ * @brief All-gather a contiguous array of values in place on all processes.
  *
  * @details It simply calls simplemc::mpi::all_gather_in_place with the deduced `MPI_Datatype` from
  * the C++ type `T` (see simplemc::mpi::mpi_type).
@@ -105,20 +104,20 @@ void all_gather(const T* sendbuf, T* recvbuf, int count, MPI_Comm comm) {
  */
 template <mpi_compatible T>
 void all_gather_in_place(T* buf, int count, MPI_Comm comm) {
-    all_gather_in_place(static_cast<void*>(buf), count, mpi_type<T>::get(), comm);
+    all_gather_in_place(buf, count, mpi_type<T>::get(), comm);
 }
 
 /**
- * @brief All-gather a single value across all processes.
+ * @brief All-gather a single value on all processes.
  *
- * @details It gathers exactly one element by calling simplemc::mpi::all_gather(const T*, T*, int,
- * MPI_Comm) with a count of 1.
+ * @details It gathers exactly one element from each process by calling
+ * simplemc::mpi::all_gather(const T*, T*, int, MPI_Comm) with a count of 1.
  *
  * It asserts that the output range size is at least the number of processes in the communicator.
  *
  * @tparam R simplemc::mpi::mpi_range type.
  * @param in_value Input value to gather.
- * @param out_rg Output range (result of gather).
+ * @param out_rg Output range to gather into.
  * @param comm MPI communicator.
  */
 template <mpi_range R>
@@ -129,50 +128,50 @@ void all_gather(
 }
 
 /**
- * @brief All-gather a contiguous range across all processes.
+ * @brief All-gather a contiguous range on all processes.
  *
  * @details It gathers all elements in the input range and stores the result in the output range by
  * calling simplemc::mpi::all_gather(const T*, T*, int, MPI_Comm).
  *
- * It asserts that input ranges have equal size across all processes and that the output range size
- * is at least the input range size times the number of processes.
+ * It asserts that input ranges have equal size on all processes and that the output range size is at
+ * least the input range size times the number of processes.
  *
  * @tparam R1 simplemc::mpi::mpi_range type.
  * @tparam R2 simplemc::mpi::mpi_range type.
  * @param in_rg Input range to gather.
- * @param out_rg Output range (result of gather).
+ * @param out_rg Output range to gather into.
  * @param comm MPI communicator.
  */
 template <mpi_range R1, mpi_range R2>
 void all_gather(R1&& in_rg, R2&& out_rg, MPI_Comm comm) { // NOLINT (ranges need not be forwarded)
     assert(all_equal(ranges::size(in_rg), comm));
     assert(comm_size(comm) * ranges::size(in_rg) <= ranges::size(out_rg));
-    all_gather(ranges::data(in_rg), ranges::data(out_rg), static_cast<int>(ranges::size(in_rg)), comm);
+    all_gather(ranges::data(in_rg), ranges::data(out_rg), ranges::size(in_rg), comm);
 }
 
 /**
- * @brief All-gather a contiguous range in place across all processes.
+ * @brief All-gather a contiguous range in place on all processes.
  *
  * @details It gathers all elements in the range in place such that elements from rank 0 can be found
  * at the beginning of the range, then elements from rank 1, and so on. The function calls
  * simplemc::mpi::all_gather_in_place(T*, int, MPI_Comm) where the count is taken as the size of the
  * range divided by the number of processes in the communicator.
  *
- * It asserts that ranges have equal size across all processes and that the range size is a multiple
- * of the number of processes.
+ * It asserts that ranges have equal size on all processes and that the range size is a multiple of
+ * the number of processes.
  *
  * @note The elements to be sent must already be stored at their correct final position in the range
  * before calling this function.
  *
  * @tparam R simplemc::mpi::mpi_range type.
- * @param rg Range to gather (input and output).
+ * @param rg Input/Output range to gather (into).
  * @param comm MPI communicator.
  */
 template <mpi_range R>
 void all_gather_in_place(R&& rg, MPI_Comm comm) { // NOLINT (ranges need not be forwarded)
     assert(all_equal(ranges::size(rg), comm));
     assert(ranges::size(rg) % comm_size(comm) == 0);
-    all_gather_in_place(ranges::data(rg), static_cast<int>(ranges::size(rg) / comm_size(comm)), comm);
+    all_gather_in_place(ranges::data(rg), ranges::size(rg) / comm_size(comm), comm);
 }
 
 /** @} */

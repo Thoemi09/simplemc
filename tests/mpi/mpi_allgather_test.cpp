@@ -1,7 +1,6 @@
 #include "../gtest-mpi-listener.hpp"
 #include "../test_utils.hpp"
 
-#include <fmt/ranges.h>
 #include <simplemc/mpi.hpp>
 #include <simplemc/utils/ranges.hpp>
 
@@ -32,42 +31,22 @@ void check_single_all_gather(const T& in, const std::vector<T>& exp) {
     }
 }
 
-// Test all_gather_in_place for a single value of type T.
-template <typename T>
-void check_single_all_gather_in_place(const std::vector<T>& in, const std::vector<T>& exp) {
-    using namespace simplemc::mpi;
-    communicator comm {};
-
-    // all_gather_in_place overloads to test
-    auto fvec = std::vector<std::function<void(std::vector<T>&)>> {};
-    fvec.push_back([&](std::vector<T>& in_out) { all_gather_in_place(in_out.data(), 1, mpi_type<T>::get(), comm); });
-    fvec.push_back([&](std::vector<T>& in_out) { all_gather_in_place(in_out.data(), 1, comm); });
-    fvec.push_back([&](std::vector<T>& in_out) { all_gather_in_place(in_out, comm); });
-
-    // perform all_gather_in_place and check the result
-    for (auto fun : fvec) {
-        std::vector<T> in_out = in;
-        fun(in_out);
-        ASSERT_EQ(in_out, exp);
-    }
-}
-
 // Test all_gather for a range of type R.
 template <typename R>
 void check_range_all_gather(const R& in, const R& exp) {
     using namespace simplemc::mpi;
     using value_type = simplemc::ranges::range_value_t<R>;
     communicator comm {};
-    auto const size = simplemc::ranges::size(in);
+    auto const count = simplemc::ranges::size(in);
     auto mpi_dtype = mpi_type<value_type>::get();
 
     // all_gather overloads to test
     auto fvec = std::vector<std::function<void(R&)>> {};
     fvec.push_back([&](R& out_rg) {
-        all_gather(simplemc::ranges::data(in), size, mpi_dtype, simplemc::ranges::data(out_rg), size, mpi_dtype, comm);
+        all_gather(simplemc::ranges::data(in), count, mpi_dtype, simplemc::ranges::data(out_rg), count, mpi_dtype, comm);
     });
     fvec.push_back(
-        [&](R& out_rg) { all_gather(simplemc::ranges::data(in), simplemc::ranges::data(out_rg), size, comm); });
+        [&](R& out_rg) { all_gather(simplemc::ranges::data(in), simplemc::ranges::data(out_rg), count, comm); });
     fvec.push_back([&](R& out_rg) { all_gather(in, out_rg, comm); });
 
     // perform all_gather and check the result
@@ -85,8 +64,8 @@ void check_range_all_gather_in_place(const R& in, const R& exp) {
     using namespace simplemc::mpi;
     using value_type = simplemc::ranges::range_value_t<R>;
     communicator comm {};
-    auto const total_size = simplemc::ranges::size(in);
-    auto const count = total_size / comm.size();
+    auto const total_count = simplemc::ranges::size(in);
+    auto const count = total_count / comm.size();
     auto mpi_dtype = mpi_type<value_type>::get();
 
     // all_gather_in_place overloads to test
@@ -105,7 +84,7 @@ void check_range_all_gather_in_place(const R& in, const R& exp) {
 
 // Helper function for performing tests on single values.
 template <typename T>
-void perform_single_value_test(bool in_place = false) {
+void perform_single_value_test() {
     simplemc::mpi::communicator comm {};
     const int size = comm.size();
     const int rank = comm.rank();
@@ -121,11 +100,7 @@ void perform_single_value_test(bool in_place = false) {
     }
 
     // perform test
-    if (in_place) {
-        check_single_all_gather_in_place<T>(in, exp);
-    } else {
-        check_single_all_gather<T>(in[rank], exp);
-    }
+    check_single_all_gather<T>(in[rank], exp);
 }
 
 // Helper function for performing tests on ranges.
@@ -189,30 +164,6 @@ TEST(SimplemcMPI, AllGatherSingleValues) {
     perform_single_value_test<std::complex<float>>();
     perform_single_value_test<std::complex<double>>();
     perform_single_value_test<std::complex<long double>>();
-}
-
-TEST(SimplemcMPI, AllGatherInPlaceSingleValues) {
-    // signed integer types
-    perform_single_value_test<short>(true);
-    perform_single_value_test<int>(true);
-    perform_single_value_test<long>(true);
-    perform_single_value_test<long long>(true);
-
-    // unsigned integer types
-    perform_single_value_test<unsigned short>(true);
-    perform_single_value_test<unsigned int>(true);
-    perform_single_value_test<unsigned long>(true);
-    perform_single_value_test<unsigned long long>(true);
-
-    // floating point types
-    perform_single_value_test<float>(true);
-    perform_single_value_test<double>(true);
-    perform_single_value_test<long double>(true);
-
-    // complex types
-    perform_single_value_test<std::complex<float>>(true);
-    perform_single_value_test<std::complex<double>>(true);
-    perform_single_value_test<std::complex<long double>>(true);
 }
 
 TEST(SimplemcMPI, AllGatherEmptyVector) {
