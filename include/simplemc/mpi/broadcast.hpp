@@ -6,14 +6,11 @@
 #ifndef SIMPLEMC_MPI_BROADCAST_HPP
 #define SIMPLEMC_MPI_BROADCAST_HPP
 
-#include <simplemc/mpi/all_equal.hpp>
 #include <simplemc/mpi/mpi_type.hpp>
 #include <simplemc/mpi/utils.hpp>
 #include <simplemc/utils/ranges.hpp>
 
 #include <mpi.h>
-
-#include <cassert>
 
 namespace simplemc::mpi {
 
@@ -25,12 +22,8 @@ namespace simplemc::mpi {
 /**
  * @brief Broadcast data (low-level).
  *
- * @details Thin wrapper around `MPI_Bcast` that accepts an explicit `MPI_Datatype`, allowing users to
- * broadcast custom or user-defined MPI datatypes. The caller is responsible for ensuring that buffer
- * points to valid memory of the correct type and size.
- *
- * It asserts that count and the root rank is the same across all processes and that root rank is a
- * valid rank and count is non-negative.
+ * @details Thin wrapper around `MPI_Bcast`. See the official MPI documentation for more details, e.g.
+ * <a href="https://docs.open-mpi.org/en/main/man-openmpi/man3/MPI_Bcast.3.html">Open MPI manual</a>.
  *
  * @param buf Pointer to the buffer to broadcast from (on root) or into (on other ranks).
  * @param count Number of elements to broadcast.
@@ -39,9 +32,6 @@ namespace simplemc::mpi {
  * @param comm MPI communicator.
  */
 inline void broadcast(void* buf, int count, MPI_Datatype datatype, int root, MPI_Comm comm) {
-    assert(all_equal(count, comm));
-    assert(all_equal(root, comm));
-    assert(count >= 0);
     check_mpi_call(MPI_Bcast(buf, count, datatype, root, comm), "MPI_Bcast");
 }
 
@@ -80,8 +70,9 @@ void broadcast(T& value, int root, MPI_Comm comm) {
 /**
  * @brief Broadcast a contiguous range.
  *
- * @details  It broadcasts all elements in the input range from root to all other processes by calling
- * simplemc::mpi::broadcast(T*, int, int, MPI_Comm).
+ * @details It broadcasts all elements in the input range from root to all other processes by calling
+ * simplemc::mpi::broadcast(T*, int, int, MPI_Comm). The range size is used as the count of elements
+ * to broadcast.
  *
  * @tparam R simplemc::mpi::mpi_range type.
  * @param rg Range to broadcast from (on root) or into (on other ranks).

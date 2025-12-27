@@ -6,14 +6,11 @@
 #ifndef SIMPLEMC_MPI_ALL_REDUCE_HPP
 #define SIMPLEMC_MPI_ALL_REDUCE_HPP
 
-#include <simplemc/mpi/all_equal.hpp>
 #include <simplemc/mpi/mpi_type.hpp>
 #include <simplemc/mpi/utils.hpp>
 #include <simplemc/utils/ranges.hpp>
 
 #include <mpi.h>
-
-#include <cassert>
 
 namespace simplemc::mpi {
 
@@ -25,11 +22,9 @@ namespace simplemc::mpi {
 /**
  * @brief All-reduce data on all processes (low-level).
  *
- * @details Thin wrapper around `MPI_Allreduce` that accepts an explicit `MPI_Datatype`, allowing
- * users to reduce custom or user-defined MPI datatypes. The caller is responsible for ensuring that
- * send and receive buffers point to valid memory of the correct type and size.
- *
- * It asserts that the count is the same across all processes and non-negative.
+ * @details Thin wrapper around `MPI_Allreduce`. See the official MPI documentation for more details,
+ * e.g. <a href="https://docs.open-mpi.org/en/main/man-openmpi/man3/MPI_Allreduce.3.html">Open MPI
+ * manual</a>.
  *
  * @param sendbuf Pointer to the send buffer.
  * @param recvbuf Pointer to the receive buffer.
@@ -39,20 +34,15 @@ namespace simplemc::mpi {
  * @param comm MPI communicator.
  */
 inline void all_reduce(const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm) {
-    assert(all_equal(count, comm));
-    assert(count >= 0);
     check_mpi_call(MPI_Allreduce(sendbuf, recvbuf, count, datatype, op, comm), "MPI_Allreduce");
 }
 
 /**
  * @brief All-reduce data in place on all processes (low-level).
  *
- * @details Thin wrapper around `MPI_Allreduce` with `MPI_IN_PLACE` that accepts an explicit
- * `MPI_Datatype`, allowing users to reduce custom or user-defined MPI datatypes. The caller is
- * responsible for ensuring that the buffer points to valid memory of the correct type and size.
- *
- * It calls simplemc::mpi::all_reduce with the given arguments, except that it uses `MPI_IN_PLACE` for
- * the send buffer.
+ * @details Thin wrapper around `MPI_Allreduce` with `MPI_IN_PLACE`. It calls
+ * simplemc::mpi::all_reduce with the given arguments, except that it uses `MPI_IN_PLACE` for the send
+ * buffer.
  *
  * @param buf Pointer to the buffer (send and receive).
  * @param count Number of elements to reduce.
@@ -136,9 +126,8 @@ void all_reduce_in_place(T& value, MPI_Op op, MPI_Comm comm) {
  * @brief All-reduce a contiguous range on all processes.
  *
  * @details It reduces all elements in the input range and stores the result in the output range by
- * calling simplemc::mpi::all_reduce(const T*, T*, int, MPI_Op, MPI_Comm).
- *
- * It asserts that the output range size is at least the input range size.
+ * calling simplemc::mpi::all_reduce(const T*, T*, int, MPI_Op, MPI_Comm). The input range size is
+ * used as the count of elements to reduce.
  *
  * @tparam R1 simplemc::mpi::mpi_range type.
  * @tparam R2 simplemc::mpi::mpi_range type.
@@ -149,7 +138,6 @@ void all_reduce_in_place(T& value, MPI_Op op, MPI_Comm comm) {
  */
 template <mpi_range R1, mpi_range R2>
 void all_reduce(R1&& in_rg, R2&& out_rg, MPI_Op op, MPI_Comm comm) { // NOLINT (forwarding ref as in/out)
-    assert(ranges::size(in_rg) <= ranges::size(out_rg));
     all_reduce(ranges::data(in_rg), ranges::data(out_rg), ranges::size(in_rg), op, comm);
 }
 
@@ -157,7 +145,8 @@ void all_reduce(R1&& in_rg, R2&& out_rg, MPI_Op op, MPI_Comm comm) { // NOLINT (
  * @brief All-reduce a contiguous range in place on all processes.
  *
  * @details It reduces all elements in the range in place by calling
- * simplemc::mpi::all_reduce_in_place(T*, int, MPI_Op, MPI_Comm).
+ * simplemc::mpi::all_reduce_in_place(T*, int, MPI_Op, MPI_Comm). The range size is used as the count
+ * of elements to reduce.
  *
  * @tparam R simplemc::mpi::mpi_range type.
  * @param rg Input/Output range to reduce (into).
