@@ -41,14 +41,10 @@ template <typename T>
 void check_all_gatherv_in_place(const std::vector<T>& in, int local_count, const std::vector<T>& exp) {
     using namespace simplemc::mpi;
     communicator comm {};
-    auto mpi_dtype = mpi_type<T>::get();
     auto [recvcounts, displs] = detail::prepare_gatherv_counts_displs(local_count, comm);
 
     // all_gatherv_in_place overloads to test
     auto fvec = std::vector<std::function<void(std::vector<T>&)>> {};
-    fvec.push_back([&](std::vector<T>& in_out) {
-        all_gatherv_in_place(in_out.data(), recvcounts.data(), displs.data(), mpi_dtype, comm);
-    });
     fvec.push_back(
         [&](std::vector<T>& in_out) { all_gatherv_in_place(in_out.data(), recvcounts.data(), displs.data(), comm); });
     fvec.push_back([&](std::vector<T>& in_out) { all_gatherv_in_place(in_out, local_count, comm); });

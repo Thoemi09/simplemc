@@ -41,32 +41,10 @@ inline void reduce(
 }
 
 /**
- * @brief Reduce data in place on the root process (low-level).
- *
- * @details Thin wrapper around `MPI_Reduce` with `MPI_IN_PLACE`. It calls simplemc::mpi::reduce with
- * the given arguments on all processes, except that on the root process it uses `MPI_IN_PLACE` for
- * the send buffer.
- *
- * @param buf Pointer to the buffer (send on all processes and receive on root).
- * @param count Number of elements to reduce.
- * @param datatype MPI datatype of the elements.
- * @param op MPI reduction operation (e.g., `MPI_SUM`, `MPI_MAX`, `MPI_MIN`).
- * @param root Root process rank.
- * @param comm MPI communicator.
- */
-inline void reduce_in_place(void* buf, int count, MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm) {
-    if (comm_rank(comm) == root) {
-        reduce(MPI_IN_PLACE, buf, count, datatype, op, root, comm);
-    } else {
-        reduce(buf, buf, count, datatype, op, root, comm);
-    }
-}
-
-/**
  * @brief Reduce a contiguous array of values on the root process.
  *
- * @details It simply calls simplemc::mpi::reduce with the deduced `MPI_Datatype` from the C++ type
- * `T` (see simplemc::mpi::mpi_type).
+ * @details It calls simplemc::mpi::reduce with the deduced `MPI_Datatype` from the C++ type `T` (see
+ * simplemc::mpi::mpi_type).
  *
  * @tparam T simplemc::mpi::mpi_compatible type.
  * @param sendbuf Pointer to the send buffer.
@@ -84,8 +62,8 @@ void reduce(const T* sendbuf, T* recvbuf, int count, MPI_Op op, int root, MPI_Co
 /**
  * @brief Reduce a contiguous array of values in place on the root process.
  *
- * @details It simply calls simplemc::mpi::reduce_in_place with the deduced `MPI_Datatype` from the
- * C++ type `T` (see simplemc::mpi::mpi_type).
+ * @details It calls simplemc::mpi::reduce with the deduced `MPI_Datatype` from the C++ type `T` (see
+ * simplemc::mpi::mpi_type). On the root process, `MPI_IN_PLACE` is used as the send buffer.
  *
  * @tparam T simplemc::mpi::mpi_compatible type.
  * @param buf Pointer to the buffer (send on all processes and receive on root).
@@ -96,7 +74,11 @@ void reduce(const T* sendbuf, T* recvbuf, int count, MPI_Op op, int root, MPI_Co
  */
 template <mpi_compatible T>
 void reduce_in_place(T* buf, int count, MPI_Op op, int root, MPI_Comm comm) {
-    reduce_in_place(buf, count, mpi_type<T>::get(), op, root, comm);
+    if (comm_rank(comm) == root) {
+        reduce(MPI_IN_PLACE, buf, count, mpi_type<T>::get(), op, root, comm);
+    } else {
+        reduce(buf, buf, count, mpi_type<T>::get(), op, root, comm);
+    }
 }
 
 /**
@@ -138,8 +120,9 @@ void reduce_in_place(T& value, MPI_Op op, int root, MPI_Comm comm) {
  * @brief Reduce a contiguous range on the root process.
  *
  * @details It reduces all elements in the input range and stores the result in the output range by
- * calling simplemc::mpi::reduce(const T*, T*, int, MPI_Op, int, MPI_Comm). The input range size is
- * used as the count of elements to reduce.
+ * calling simplemc::mpi::reduce(const T*, T*, int, MPI_Op, int, MPI_Comm).
+ *
+ * The input range size is used as the count of elements to reduce.
  *
  * @tparam R1 simplemc::mpi::mpi_range type.
  * @tparam R2 simplemc::mpi::mpi_range type.
@@ -157,9 +140,10 @@ void reduce(R1&& in_rg, R2&& out_rg, MPI_Op op, int root, MPI_Comm comm) { // NO
 /**
  * @brief Reduce a contiguous range in place on the root process.
  *
- * @details It reduces all elements in the input range in place by calling
- * simplemc::mpi::reduce_in_place(T*, int, MPI_Op, int, MPI_Comm). The range size is used as the count
- * of elements to reduce.
+ * @details It reduces all elements in the range in place by calling simplemc::mpi::reduce_in_place(
+ * T*, int, MPI_Op, int, MPI_Comm).
+ *
+ * The range size is used as the count of elements to reduce.
  *
  * @tparam R simplemc::mpi::mpi_range type.
  * @param rg Range to reduce (input on all processes, output on root).

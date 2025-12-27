@@ -41,7 +41,6 @@ void check_single_reduce_in_place(const T& in, const T& exp, MPI_Op op) {
 
     // reduce_in_place overloads to test
     auto fvec = std::vector<std::function<void(T&, int)>> {};
-    fvec.push_back([&](T& value, int root) { reduce_in_place(&value, 1, mpi_type<T>::get(), op, root, comm); });
     fvec.push_back([&](T& value, int root) { reduce_in_place(&value, 1, op, root, comm); });
     fvec.push_back([&](T& value, int root) { reduce_in_place(value, op, root, comm); });
 
@@ -93,15 +92,11 @@ void check_range_reduce(const R& in, const R& exp, MPI_Op op) {
 template <typename R>
 void check_range_reduce_in_place(const R& in, const R& exp, MPI_Op op) {
     using namespace simplemc::mpi;
-    using value_type = simplemc::ranges::range_value_t<R>;
     communicator comm {};
     auto const count = static_cast<int>(simplemc::ranges::size(in));
-    auto mpi_dtype = mpi_type<value_type>::get();
 
     // reduce_in_place overloads to test
     auto fvec = std::vector<std::function<void(R&, int)>> {};
-    fvec.push_back(
-        [&](R& rg, int root) { reduce_in_place(simplemc::ranges::data(rg), count, mpi_dtype, op, root, comm); });
     fvec.push_back([&](R& rg, int root) { reduce_in_place(simplemc::ranges::data(rg), count, op, root, comm); });
     fvec.push_back([&](R& rg, int root) { reduce_in_place(rg, op, root, comm); });
 

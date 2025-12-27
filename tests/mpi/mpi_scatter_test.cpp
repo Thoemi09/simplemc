@@ -64,7 +64,6 @@ void check_range_scatter(const R& in, const R& exp, int root) {
 template <typename R>
 void check_range_scatter_in_place(const R& in, const R& exp, int root) {
     using namespace simplemc::mpi;
-    using value_type = simplemc::ranges::range_value_t<R>;
     communicator comm {};
 
     // determine count per process (root has full data, non-root has per-process portion)
@@ -72,11 +71,9 @@ void check_range_scatter_in_place(const R& in, const R& exp, int root) {
     if (comm.rank() == root) {
         count /= comm.size();
     }
-    auto mpi_dtype = mpi_type<value_type>::get();
 
     // scatter_in_place overloads to test
     auto fvec = std::vector<std::function<void(R&)>> {};
-    fvec.push_back([&](R& rg) { scatter_in_place(simplemc::ranges::data(rg), count, mpi_dtype, root, comm); });
     fvec.push_back([&](R& rg) { scatter_in_place(simplemc::ranges::data(rg), count, root, comm); });
     fvec.push_back([&](R& rg) { scatter_in_place(rg, root, comm); });
 

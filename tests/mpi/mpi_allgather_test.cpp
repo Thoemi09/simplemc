@@ -43,7 +43,8 @@ void check_range_all_gather(const R& in, const R& exp) {
     // all_gather overloads to test
     auto fvec = std::vector<std::function<void(R&)>> {};
     fvec.push_back([&](R& out_rg) {
-        all_gather(simplemc::ranges::data(in), count, mpi_dtype, simplemc::ranges::data(out_rg), count, mpi_dtype, comm);
+        all_gather(
+            simplemc::ranges::data(in), count, mpi_dtype, simplemc::ranges::data(out_rg), count, mpi_dtype, comm);
     });
     fvec.push_back(
         [&](R& out_rg) { all_gather(simplemc::ranges::data(in), simplemc::ranges::data(out_rg), count, comm); });
@@ -62,15 +63,12 @@ void check_range_all_gather(const R& in, const R& exp) {
 template <typename R>
 void check_range_all_gather_in_place(const R& in, const R& exp) {
     using namespace simplemc::mpi;
-    using value_type = simplemc::ranges::range_value_t<R>;
     communicator comm {};
     auto const total_count = simplemc::ranges::size(in);
     auto const count = total_count / comm.size();
-    auto mpi_dtype = mpi_type<value_type>::get();
 
     // all_gather_in_place overloads to test
     auto fvec = std::vector<std::function<void(R&)>> {};
-    fvec.push_back([&](R& rg) { all_gather_in_place(simplemc::ranges::data(rg), count, mpi_dtype, comm); });
     fvec.push_back([&](R& rg) { all_gather_in_place(simplemc::ranges::data(rg), count, comm); });
     fvec.push_back([&](R& rg) { all_gather_in_place(rg, comm); });
 

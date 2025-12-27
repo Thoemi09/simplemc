@@ -38,8 +38,8 @@ inline void broadcast(void* buf, int count, MPI_Datatype datatype, int root, MPI
 /**
  * @brief Broadcast a contiguous array of values.
  *
- * @details It simply calls simplemc::mpi::broadcast with the deduced `MPI_Datatype` from the C++ type
- * `T` (see simplemc::mpi::mpi_type).
+ * @details It calls simplemc::mpi::broadcast with the deduced `MPI_Datatype` from the C++ type `T`
+ * (see simplemc::mpi::mpi_type).
  *
  * @tparam T simplemc::mpi::mpi_compatible type.
  * @param buf Pointer to the buffer to broadcast from (on root) or into (on other ranks).
@@ -55,7 +55,7 @@ void broadcast(T* buf, int count, int root, MPI_Comm comm) {
 /**
  * @brief Broadcast a single value.
  *
- * @details It simply calls simplemc::mpi::broadcast(T*, int, int, MPI_Comm) with a count of 1.
+ * @details It calls simplemc::mpi::broadcast(T*, int, int, MPI_Comm) with a count of 1.
  *
  * @tparam T simplemc::mpi::mpi_compatible type.
  * @param value Reference to the value to broadcast from (on root) or into (on other ranks).
@@ -71,8 +71,9 @@ void broadcast(T& value, int root, MPI_Comm comm) {
  * @brief Broadcast a contiguous range.
  *
  * @details It broadcasts all elements in the input range from root to all other processes by calling
- * simplemc::mpi::broadcast(T*, int, int, MPI_Comm). The range size is used as the count of elements
- * to broadcast.
+ * simplemc::mpi::broadcast(T*, int, int, MPI_Comm).
+ *
+ * The range size is used as the count of elements to broadcast.
  *
  * @tparam R simplemc::mpi::mpi_range type.
  * @param rg Range to broadcast from (on root) or into (on other ranks).

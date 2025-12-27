@@ -42,37 +42,12 @@ inline void gather(const void* sendbuf, int sendcount, MPI_Datatype sendtype, vo
 }
 
 /**
- * @brief Gather data in place on the root process (low-level).
- *
- * @details Thin wrapper around `MPI_Gather` with `MPI_IN_PLACE`. It calls simplemc::mpi::gather with
- * the given arguments on all processes, except that on the root process it uses `MPI_IN_PLACE` for
- * the send buffer.
- *
- * @note On root, the elements to be sent must already be stored at their correct final position in
- * the buffer before calling this function.
- *
- * @param buf Pointer to the buffer (send on all processes and receive on root).
- * @param count Number of elements to send/receive per process.
- * @param datatype MPI datatype of the elements.
- * @param root Root process rank.
- * @param comm MPI communicator.
- */
-inline void gather_in_place(void* buf, int count, MPI_Datatype datatype, int root, MPI_Comm comm) {
-    if (comm_rank(comm) == root) {
-        gather(MPI_IN_PLACE, count, datatype, buf, count, datatype, root, comm);
-    } else {
-        gather(buf, count, datatype, buf, count, datatype, root, comm);
-    }
-}
-
-/**
  * @brief Gather a contiguous array of values on the root process.
  *
- * @details It simply calls simplemc::mpi::gather with the deduced `MPI_Datatype` from the C++ type
- * `T` for both send and receive buffers (see simplemc::mpi::mpi_type).
+ * @details It calls simplemc::mpi::gather with the deduced `MPI_Datatype` from the C++ type `T` (see
+ * simplemc::mpi::mpi_type).
  *
- * @note Since the MPI datatype for both send and receive buffers is the same, the number of elements
- * sent and received per process must also be the same.
+ * The given count is used for both send and receive counts.
  *
  * @tparam T simplemc::mpi::mpi_compatible type.
  * @param sendbuf Pointer to the send buffer.
@@ -89,8 +64,13 @@ void gather(const T* sendbuf, T* recvbuf, int count, int root, MPI_Comm comm) {
 /**
  * @brief Gather a contiguous array of values in place on the root process.
  *
- * @details It simply calls simplemc::mpi::gather_in_place with the deduced `MPI_Datatype` from the
- * C++ type `T` (see simplemc::mpi::mpi_type).
+ * @details It calls simplemc::mpi::gather with the deduced `MPI_Datatype` from the C++ type `T` (see
+ * simplemc::mpi::mpi_type). On the root process, `MPI_IN_PLACE` is used as the send buffer.
+ *
+ * The given count is used for both send and receive counts.
+ *
+ * @note On the root process, the elements to be sent must already be stored at their correct final
+ * position in the buffer before calling this function.
  *
  * @tparam T simplemc::mpi::mpi_compatible type.
  * @param buf Pointer to the buffer (send on all processes and receive on root).
@@ -100,7 +80,11 @@ void gather(const T* sendbuf, T* recvbuf, int count, int root, MPI_Comm comm) {
  */
 template <mpi_compatible T>
 void gather_in_place(T* buf, int count, int root, MPI_Comm comm) {
-    gather_in_place(buf, count, mpi_type<T>::get(), root, comm);
+    if (comm_rank(comm) == root) {
+        gather(MPI_IN_PLACE, count, mpi_type<T>::get(), buf, count, mpi_type<T>::get(), root, comm);
+    } else {
+        gather(buf, count, mpi_type<T>::get(), buf, count, mpi_type<T>::get(), root, comm);
+    }
 }
 
 /**
@@ -124,8 +108,9 @@ void gather(const ranges::range_value_t<R>& in_value, R&& out_rg, int root, MPI_
  * @brief Gather a contiguous range on the root process.
  *
  * @details It gathers all elements in the input range and stores the result in the output range by
- * calling simplemc::mpi::gather(const T*, T*, int, int, MPI_Comm). The input range size is used as
- * the count of elements to send/receive per process.
+ * calling simplemc::mpi::gather(const T*, T*, int, int, MPI_Comm).
+ *
+ * The input range size is used as the count of elements to send/receive per process.
  *
  * @tparam R1 simplemc::mpi::mpi_range type.
  * @tparam R2 simplemc::mpi::mpi_range type.
@@ -144,12 +129,10 @@ void gather(R1&& in_rg, R2&& out_rg, int root, MPI_Comm comm) { // NOLINT (range
  *
  * @details It gathers all elements in the range in place on the root process such that elements from
  * rank 0 can be found at the beginning of the range, then elements from rank 1, and so on. The
- * function calls simplemc::mpi::gather_in_place(T*, int, int, MPI_Comm) where the count of elements
- * to send/receive per process is taken as the size of the range (on root, it is divided by the number
- * of processes in the communicator).
+ * function calls simplemc::mpi::gather_in_place(T*, int, int, MPI_Comm).
  *
- * @note On root, the elements to be sent must already be stored at their correct final position in
- * the range before calling this function.
+ * The number of elements to receive per process is taken as the size of the range (on root, it is
+ * divided by the number of processes in the communicator).
  *
  * @tparam R simplemc::mpi::mpi_range type.
  * @param rg Range to gather (input on all processes, output on root).

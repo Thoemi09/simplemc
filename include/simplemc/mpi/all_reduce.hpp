@@ -38,27 +38,10 @@ inline void all_reduce(const void* sendbuf, void* recvbuf, int count, MPI_Dataty
 }
 
 /**
- * @brief All-reduce data in place on all processes (low-level).
- *
- * @details Thin wrapper around `MPI_Allreduce` with `MPI_IN_PLACE`. It calls
- * simplemc::mpi::all_reduce with the given arguments, except that it uses `MPI_IN_PLACE` for the send
- * buffer.
- *
- * @param buf Pointer to the buffer (send and receive).
- * @param count Number of elements to reduce.
- * @param datatype MPI datatype of the elements.
- * @param op MPI reduction operation (e.g., `MPI_SUM`, `MPI_MAX`, `MPI_MIN`).
- * @param comm MPI communicator.
- */
-inline void all_reduce_in_place(void* buf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm) {
-    all_reduce(MPI_IN_PLACE, buf, count, datatype, op, comm);
-}
-
-/**
  * @brief All-reduce a contiguous array of values on all processes.
  *
- * @details It simply calls simplemc::mpi::all_reduce with the deduced `MPI_Datatype` from the C++
- * type `T` (see simplemc::mpi::mpi_type).
+ * @details It calls simplemc::mpi::all_reduce with the deduced `MPI_Datatype` from the C++ type `T`
+ * (see simplemc::mpi::mpi_type).
  *
  * @tparam T simplemc::mpi::mpi_compatible type.
  * @param sendbuf Pointer to the send buffer.
@@ -75,8 +58,8 @@ void all_reduce(const T* sendbuf, T* recvbuf, int count, MPI_Op op, MPI_Comm com
 /**
  * @brief All-reduce a contiguous array of values in place on all processes.
  *
- * @details It simply calls simplemc::mpi::all_reduce_in_place with the deduced `MPI_Datatype` from
- * the C++ type `T` (see simplemc::mpi::mpi_type).
+ * @details It calls simplemc::mpi::all_reduce with the deduced `MPI_Datatype` from the C++ type `T`
+ * (see simplemc::mpi::mpi_type). `MPI_IN_PLACE` is used as the send buffer.
  *
  * @tparam T simplemc::mpi::mpi_compatible type.
  * @param buf Pointer to the buffer (send and receive).
@@ -86,7 +69,7 @@ void all_reduce(const T* sendbuf, T* recvbuf, int count, MPI_Op op, MPI_Comm com
  */
 template <mpi_compatible T>
 void all_reduce_in_place(T* buf, int count, MPI_Op op, MPI_Comm comm) {
-    all_reduce_in_place(buf, count, mpi_type<T>::get(), op, comm);
+    all_reduce(MPI_IN_PLACE, buf, count, mpi_type<T>::get(), op, comm);
 }
 
 /**
@@ -126,8 +109,9 @@ void all_reduce_in_place(T& value, MPI_Op op, MPI_Comm comm) {
  * @brief All-reduce a contiguous range on all processes.
  *
  * @details It reduces all elements in the input range and stores the result in the output range by
- * calling simplemc::mpi::all_reduce(const T*, T*, int, MPI_Op, MPI_Comm). The input range size is
- * used as the count of elements to reduce.
+ * calling simplemc::mpi::all_reduce(const T*, T*, int, MPI_Op, MPI_Comm).
+ *
+ * The input range size is used as the count of elements to reduce.
  *
  * @tparam R1 simplemc::mpi::mpi_range type.
  * @tparam R2 simplemc::mpi::mpi_range type.
@@ -145,8 +129,9 @@ void all_reduce(R1&& in_rg, R2&& out_rg, MPI_Op op, MPI_Comm comm) { // NOLINT (
  * @brief All-reduce a contiguous range in place on all processes.
  *
  * @details It reduces all elements in the range in place by calling
- * simplemc::mpi::all_reduce_in_place(T*, int, MPI_Op, MPI_Comm). The range size is used as the count
- * of elements to reduce.
+ * simplemc::mpi::all_reduce_in_place(T*, int, MPI_Op, MPI_Comm).
+ *
+ * The range size is used as the count of elements to reduce.
  *
  * @tparam R simplemc::mpi::mpi_range type.
  * @param rg Input/Output range to reduce (into).

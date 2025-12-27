@@ -42,34 +42,12 @@ inline void scatter(const void* sendbuf, int sendcount, MPI_Datatype sendtype, v
 }
 
 /**
- * @brief Scatter data in place from the root process (low-level).
- *
- * @details Thin wrapper around `MPI_Scatter` with `MPI_IN_PLACE`. It calls simplemc::mpi::scatter
- * with the given arguments on all processes, except that on the root process it uses `MPI_IN_PLACE`
- * for the receive buffer.
- *
- * @param buf Pointer to the buffer (send on root and receive on all processes).
- * @param count Number of elements to send/receive per process.
- * @param datatype MPI datatype of the elements.
- * @param root Root process rank.
- * @param comm MPI communicator.
- */
-inline void scatter_in_place(void* buf, int count, MPI_Datatype datatype, int root, MPI_Comm comm) {
-    if (comm_rank(comm) == root) {
-        scatter(buf, count, datatype, MPI_IN_PLACE, count, datatype, root, comm);
-    } else {
-        scatter(buf, count, datatype, buf, count, datatype, root, comm);
-    }
-}
-
-/**
  * @brief Scatter a contiguous array of values from the root process.
  *
- * @details It simply calls simplemc::mpi::scatter with the deduced `MPI_Datatype` from the C++ type
- * `T` for both send and receive buffers (see simplemc::mpi::mpi_type).
+ * @details It calls simplemc::mpi::scatter with the deduced `MPI_Datatype` from the C++ type `T` (see
+ * simplemc::mpi::mpi_type).
  *
- * @note Since the MPI datatype for both send and receive buffers is the same, the number of elements
- * sent and received per process must also be the same.
+ * The given count is used for both send and receive counts.
  *
  * @tparam T simplemc::mpi::mpi_compatible type.
  * @param sendbuf Pointer to the send buffer.
@@ -86,8 +64,10 @@ void scatter(const T* sendbuf, T* recvbuf, int count, int root, MPI_Comm comm) {
 /**
  * @brief Scatter a contiguous array of values in place from the root process.
  *
- * @details It simply calls simplemc::mpi::scatter_in_place with the deduced `MPI_Datatype` from the
- * C++ type `T` (see simplemc::mpi::mpi_type).
+ * @details It calls simplemc::mpi::scatter with the deduced `MPI_Datatype` from the C++ type `T` (see
+ * simplemc::mpi::mpi_type). On the root process, `MPI_IN_PLACE` is used as the receive buffer.
+ *
+ * The given count is used for both send and receive counts.
  *
  * @tparam T simplemc::mpi::mpi_compatible type.
  * @param buf Pointer to the buffer (send on root and receive on all processes).
@@ -97,7 +77,11 @@ void scatter(const T* sendbuf, T* recvbuf, int count, int root, MPI_Comm comm) {
  */
 template <mpi_compatible T>
 void scatter_in_place(T* buf, int count, int root, MPI_Comm comm) {
-    scatter_in_place(buf, count, mpi_type<T>::get(), root, comm);
+    if (comm_rank(comm) == root) {
+        scatter(buf, count, mpi_type<T>::get(), MPI_IN_PLACE, count, mpi_type<T>::get(), root, comm);
+    } else {
+        scatter(buf, count, mpi_type<T>::get(), buf, count, mpi_type<T>::get(), root, comm);
+    }
 }
 
 /**
@@ -121,9 +105,10 @@ void scatter(R&& in_rg, ranges::range_value_t<R>& out_value, int root, MPI_Comm 
  * @brief Scatter a range (from the root process) into a range.
  *
  * @details It scatters all elements from the input range on the root process and stores the result in
- * the output range by calling simplemc::mpi::scatter(const T*, T*, int, int, MPI_Comm). The input
- * range on the root process is divided evenly among all processes in the communicator. The output
- * range size is used as the count of elements to receive per process.
+ * the output range by calling simplemc::mpi::scatter(const T*, T*, int, int, MPI_Comm).
+ *
+ * The input range on the root process is divided evenly among all processes in the communicator. The
+ * output range size is used as the count of elements to receive per process.
  *
  * @tparam R1 simplemc::mpi::mpi_range type.
  * @tparam R2 simplemc::mpi::mpi_range type.
@@ -141,10 +126,11 @@ void scatter(R1&& in_rg, R2&& out_rg, int root, MPI_Comm comm) { // NOLINT (rang
  * @brief Scatter a range (from the root process) into a range in place.
  *
  * @details It scatters all elements from the range on the root process in place by calling
- * simplemc::mpi::scatter_in_place(T*, int, int, MPI_Comm). The range on the root process is divided
- * evenly among all processes in the communicator. The root process uses the range size divided by the
- * communicator size as the count of elements to send per process, while all other processes use the
- * full range size as the count of elements to receive.
+ * simplemc::mpi::scatter_in_place(T*, int, int, MPI_Comm).
+ *
+ * The range on the root process is divided evenly among all processes in the communicator. The root
+ * process uses the range size divided by the communicator size as the count of elements to send per
+ * process, while all other processes use the full range size as the count of elements to receive.
  *
  * @tparam R simplemc::mpi::mpi_range type.
  * @param rg Range to scatter (output on all processes, input on root).

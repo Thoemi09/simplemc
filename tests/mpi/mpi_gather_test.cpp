@@ -67,15 +67,12 @@ void check_range_gather(const R& in, const R& exp, int root) {
 template <typename R>
 void check_range_gather_in_place(const R& in, const R& exp, int root) {
     using namespace simplemc::mpi;
-    using value_type = simplemc::ranges::range_value_t<R>;
     communicator comm {};
     auto const total_count = simplemc::ranges::size(exp);
     auto const count = total_count / comm.size();
-    auto mpi_dtype = mpi_type<value_type>::get();
 
     // gather_in_place overloads to test
     auto fvec = std::vector<std::function<void(R&)>> {};
-    fvec.push_back([&](R& rg) { gather_in_place(simplemc::ranges::data(rg), count, mpi_dtype, root, comm); });
     fvec.push_back([&](R& rg) { gather_in_place(simplemc::ranges::data(rg), count, root, comm); });
     fvec.push_back([&](R& rg) { gather_in_place(rg, root, comm); });
 
