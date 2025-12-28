@@ -10,24 +10,25 @@
 #include <type_traits>
 #include <vector>
 
-// Test all_gatherv with varying counts per process.
+// Test scatterv with varying counts per process.
 template <typename T>
-void check_all_gatherv(const std::vector<T>& in, const std::vector<T>& exp) {
+void check_scatterv(const std::vector<T>& in, const std::vector<T>& exp, int root) {
     using namespace simplemc::mpi;
     communicator comm {};
     auto mpi_dtype = mpi_type<T>::get();
-    auto [recvcounts, displs] = detail::prepare_gatherv_counts_displs(in.size(), comm);
+    auto [sendcounts, displs] = detail::prepare_scatterv_counts_displs(exp.size(), root, comm);
 
-    // all_gatherv overloads to test
+    // scatterv overloads to test
     auto fvec = std::vector<std::function<void(std::vector<T>&)>> {};
     fvec.push_back([&](std::vector<T>& out) {
-        all_gatherv(in.data(), in.size(), mpi_dtype, out.data(), recvcounts.data(), displs.data(), mpi_dtype, comm);
+        scatterv(in.data(), sendcounts.data(), displs.data(), mpi_dtype, out.data(), out.size(), mpi_dtype, root, comm);
     });
-    fvec.push_back(
-        [&](std::vector<T>& out) { all_gatherv(in.data(), out.data(), recvcounts.data(), displs.data(), comm); });
-    fvec.push_back([&](std::vector<T>& out) { all_gatherv(in, out, comm); });
+    fvec.push_back([&](std::vector<T>& out) {
+        scatterv(in.data(), sendcounts.data(), displs.data(), out.data(), out.size(), root, comm);
+    });
+    fvec.push_back([&](std::vector<T>& out) { scatterv(in, out, root, comm); });
 
-    // perform all_gatherv and check the result
+    // perform scatterv and check the result
     for (auto fun : fvec) {
         std::vector<T> result(exp.size());
         fun(result);
@@ -35,20 +36,21 @@ void check_all_gatherv(const std::vector<T>& in, const std::vector<T>& exp) {
     }
 }
 
-// Test all_gatherv_in_place with varying counts per process.
+// Test scatterv_in_place with varying counts per process.
 template <typename T>
-void check_all_gatherv_in_place(const std::vector<T>& in, int local_count, const std::vector<T>& exp) {
+void check_scatterv_in_place(const std::vector<T>& in, int local_count, const std::vector<T>& exp, int root) {
     using namespace simplemc::mpi;
     communicator comm {};
-    auto [recvcounts, displs] = detail::prepare_gatherv_counts_displs(local_count, comm);
+    auto [sendcounts, displs] = detail::prepare_scatterv_counts_displs(local_count, root, comm);
 
-    // all_gatherv_in_place overloads to test
+    // scatterv_in_place overloads to test
     auto fvec = std::vector<std::function<void(std::vector<T>&)>> {};
-    fvec.push_back(
-        [&](std::vector<T>& in_out) { all_gatherv_in_place(in_out.data(), recvcounts.data(), displs.data(), comm); });
-    fvec.push_back([&](std::vector<T>& in_out) { all_gatherv_in_place(in_out, local_count, comm); });
+    fvec.push_back([&](std::vector<T>& in_out) {
+        scatterv_in_place(in_out.data(), sendcounts.data(), displs.data(), local_count, root, comm);
+    });
+    fvec.push_back([&](std::vector<T>& in_out) { scatterv_in_place(in_out, local_count, root, comm); });
 
-    // perform all_gatherv_in_place and check the result
+    // perform scatterv_in_place and check the result
     for (auto fun : fvec) {
         std::vector<T> data = in;
         fun(data);
@@ -64,36 +66,45 @@ void perform_test(bool in_place = false) {
     const int rank = comm.rank();
     const int count = rank + 1;
 
-    // prepare input and expected output (each process sends (rank + 1) elements)
-    std::vector<T> exp, in;
+    // prepare input (on root) and expected output (each process receives (rank + 1) elements)
+    std::vector<T> in_root;
     for (int r = 0; r < size; ++r) {
         for (int i = 0; i < r + 1; ++i) {
-            exp.push_back(r * 10 + i);
+            in_root.push_back(r * 10 + i);
             if constexpr (!std::is_arithmetic_v<T>) {
-                exp.back().imag(-r * 10 - i);
+                in_root.back().imag(-r * 10 - i);
             }
-            in.push_back((r == rank ? exp.back() : T {}));
         }
     }
 
-    // perform test
-    if (in_place) {
-        check_all_gatherv_in_place<T>(in, count, exp);
-    } else {
-        const int disp = (rank * (rank + 1)) / 2;
-        auto it = in.begin() + disp;
-        check_all_gatherv(std::vector<T>(it, it + count), exp);
+    // expected output for this rank
+    const int disp = (rank * (rank + 1)) / 2;
+    auto it = in_root.begin() + disp;
+    std::vector<T> exp(it, it + count);
+
+    // perform test for each rank as root
+    for (int r = 0; r < size; ++r) {
+        if (in_place) {
+            if (rank == r) {
+                check_scatterv_in_place<T>(in_root, count, in_root, r);
+            } else {
+                check_scatterv_in_place<T>(std::vector<T>(count, T {}), count, exp, r);
+            }
+        } else {
+            check_scatterv(in_root, exp, r);
+        }
     }
 }
 
-TEST(SimplemcMPI, AllGathervZeroValues) {
+TEST(SimplemcMPI, ScattervZeroValues) {
     simplemc::mpi::communicator comm {};
     std::vector<int> out_rg {};
-    simplemc::mpi::all_gatherv(std::vector<int> {}, out_rg, comm);
+    constexpr int root = 0;
+    simplemc::mpi::scatterv(std::vector<int> {}, out_rg, root, comm);
     ASSERT_TRUE(out_rg.empty());
 }
 
-TEST(SimplemcMPI, AllGathervVaryingCounts) {
+TEST(SimplemcMPI, ScattervVaryingCounts) {
     // signed integer types
     perform_test<short>();
     perform_test<int>();
@@ -117,7 +128,7 @@ TEST(SimplemcMPI, AllGathervVaryingCounts) {
     perform_test<std::complex<long double>>();
 }
 
-TEST(SimplemcMPI, AllGathervInPlaceVaryingCounts) {
+TEST(SimplemcMPI, ScattervInPlaceVaryingCounts) {
     // signed integer types
     perform_test<short>(true);
     perform_test<int>(true);
@@ -141,28 +152,33 @@ TEST(SimplemcMPI, AllGathervInPlaceVaryingCounts) {
     perform_test<std::complex<long double>>(true);
 }
 
-TEST(SimplemcMPI, AllGathervUniformCounts) {
+TEST(SimplemcMPI, ScattervUniformCounts) {
     simplemc::mpi::communicator comm {};
     const int rank = comm.rank();
     const int size = comm.size();
     const int count = 3;
 
-    // each process sends the same number of elements
-    std::vector<int> in, exp;
+    // prepare input data (on root) - will be scattered
+    std::vector<int> in_root;
     for (int r = 0; r < size; ++r) {
         for (int i = 0; i < count; ++i) {
-            exp.push_back(r * 100 + i);
-            if (r == rank) {
-                in.push_back(exp.back());
-            }
+            in_root.push_back(r * 100 + i);
         }
     }
 
-    // allgatherv and check result
-    check_all_gatherv(in, exp);
+    // expected output for this rank
+    auto it = in_root.begin() + static_cast<long>(rank) * count;
+    std::vector<int> exp(it, it + count);
+
+    // scatterv and check result for each root
+    for (int r = 0; r < size; ++r) {
+        std::vector<int> result(count);
+        simplemc::mpi::scatterv(in_root, result, r, comm);
+        ASSERT_EQ(result, exp);
+    }
 }
 
-TEST(SimplemcMPI, AllGathervWithSplitCommunicator) {
+TEST(SimplemcMPI, ScattervWithSplitCommunicator) {
     simplemc::mpi::communicator comm {};
     if (comm.size() < 2) {
         GTEST_SKIP() << "Test requires at least 2 processes";
@@ -174,25 +190,26 @@ TEST(SimplemcMPI, AllGathervWithSplitCommunicator) {
 
     const int rank = sub_comm.rank();
     const int size = sub_comm.size();
+    constexpr int root = 0;
 
-    // each process sends (rank + 1) elements
-    std::vector<int> in, exp;
+    // each process receives (rank + 1) elements
+    std::vector<int> in_root, exp;
     for (int r = 0; r < size; ++r) {
         for (int i = 0; i < r + 1; ++i) {
-            exp.push_back(r * 100 + i);
+            in_root.push_back(r * 100 + i);
             if (r == rank) {
-                in.push_back(exp.back());
+                exp.push_back(in_root.back());
             }
         }
     }
 
-    // allgatherv and check result
+    // scatterv and check result
     std::vector<int> result(exp.size());
-    simplemc::mpi::all_gatherv(in, result, sub_comm);
+    simplemc::mpi::scatterv(in_root, result, root, sub_comm);
     ASSERT_EQ(result, exp);
 }
 
-TEST(SimplemcMPI, AllGathervEmptyFromSomeProcesses) {
+TEST(SimplemcMPI, ScattervEmptyToSomeProcesses) {
     simplemc::mpi::communicator comm {};
     const int rank = comm.rank();
     const int size = comm.size();
@@ -200,24 +217,28 @@ TEST(SimplemcMPI, AllGathervEmptyFromSomeProcesses) {
         GTEST_SKIP() << "Test requires at least 2 processes";
     }
 
-    // only even ranks send data
-    std::vector<double> in, exp;
+    constexpr int root = 0;
+
+    // only even ranks receive data
+    std::vector<double> in_root, exp;
     for (int r = 0; r < size; ++r) {
         if (r % 2 == 0) {
             for (int i = 0; i < 2; ++i) {
-                exp.push_back(static_cast<double>(r * 10 + i));
+                in_root.push_back(static_cast<double>(r * 10 + i));
                 if (r == rank) {
-                    in.push_back(exp.back());
+                    exp.push_back(in_root.back());
                 }
             }
         }
     }
 
-    // allgatherv and check result
-    check_all_gatherv(in, exp);
+    // scatterv and check result
+    std::vector<double> result(exp.size());
+    simplemc::mpi::scatterv(in_root, result, root, comm);
+    ASSERT_EQ(result, exp);
 }
 
-TEST(SimplemcMPI, AllGathervStrings) {
+TEST(SimplemcMPI, ScattervStrings) {
     simplemc::mpi::communicator comm {};
     const int rank = comm.rank();
     const int size = comm.size();
@@ -225,21 +246,21 @@ TEST(SimplemcMPI, AllGathervStrings) {
         GTEST_SKIP() << "Test works only for <= 10 processes";
     }
 
-    // each process sends a string with length equal to (rank + 1)
-    std::string expected {}, in_str {};
+    // each process receives a string with length equal to (rank + 1)
+    std::string in_str {};
     for (int r = 0; r < size; ++r) {
         for (int i = 0; i < r + 1; ++i) {
-            expected += fmt::format("{}", r);
-            if (r == rank) {
-                in_str += fmt::format("{}", r);
-            }
+            in_str += fmt::format("{}", r);
         }
     }
+    std::string expected(rank + 1, static_cast<char>('0' + rank));
 
-    // allgatherv and check result
-    std::string result(expected.size(), ' ');
-    simplemc::mpi::all_gatherv(in_str, result, comm);
-    ASSERT_EQ(result, expected);
+    // scatterv and check result for each root
+    for (int r = 0; r < size; ++r) {
+        std::string result(rank + 1, ' ');
+        simplemc::mpi::scatterv(in_str, result, r, comm);
+        ASSERT_EQ(result, expected);
+    }
 }
 
 // Custom main function for MPI.

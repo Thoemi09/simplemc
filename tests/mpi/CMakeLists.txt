@@ -18,6 +18,7 @@
 # mpi-no-abort-exception-test: Executable to test the behavior of abort_on_exception == false.
 # mpi-reduce-test: Executable to test the supported MPI reduce operations.
 # mpi-scatter-test: Executable to test the supported MPI scatter operations.
+# mpi-scatterv-test: Executable to test the supported MPI scatterv operations.
 # mpi-threading-test: Executable to test MPI threading support functions.
 # mpi-type-test: Executable to test the mapping of MPI datatypes to C++ types.
 # mpi-utils-test: Executable to test the simplemc-mpi utility functions.
@@ -71,6 +72,9 @@ target_link_libraries(mpi-reduce-test PRIVATE simplemc-test)
 add_executable(mpi-scatter-test mpi_scatter_test.cpp)
 target_link_libraries(mpi-scatter-test PRIVATE simplemc-test)
 
+add_executable(mpi-scatterv-test mpi_scatterv_test.cpp)
+target_link_libraries(mpi-scatterv-test PRIVATE simplemc-test)
+
 add_executable(mpi-threading-test mpi_threading_test.cpp)
 target_link_libraries(mpi-threading-test PRIVATE simplemc-test)
 
@@ -95,6 +99,7 @@ add_test(NAME mpi-gatherv-test COMMAND mpirun -n 4 ./mpi-gatherv-test)
 add_test(NAME mpi-group-test COMMAND mpirun -n 4 ./mpi-group-test)
 add_test(NAME mpi-reduce-test COMMAND mpirun -n 4 ./mpi-reduce-test)
 add_test(NAME mpi-scatter-test COMMAND mpirun -n 4 ./mpi-scatter-test)
+add_test(NAME mpi-scatterv-test COMMAND mpirun -n 4 ./mpi-scatterv-test)
 add_test(NAME mpi-threading-test COMMAND mpirun -n 4 ./mpi-threading-test)
 add_test(NAME mpi-type-test COMMAND mpirun -n 4 ./mpi-type-test)
 add_test(NAME mpi-utils-test COMMAND ./mpi-utils-test)

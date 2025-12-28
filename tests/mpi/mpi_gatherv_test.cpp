@@ -1,7 +1,6 @@
 #include "../gtest-mpi-listener.hpp"
 #include "../test_utils.hpp"
 
-#include <fmt/ranges.h>
 #include <simplemc/mpi.hpp>
 #include <simplemc/utils/ranges.hpp>
 
