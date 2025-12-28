@@ -12,6 +12,7 @@
 #include <simplemc/mpi/all_reduce.hpp>
 #include <simplemc/mpi/broadcast.hpp>
 #include <simplemc/mpi/gather.hpp>
+#include <simplemc/mpi/gatherv.hpp>
 #include <simplemc/mpi/reduce.hpp>
 #include <simplemc/mpi/scatter.hpp>
 

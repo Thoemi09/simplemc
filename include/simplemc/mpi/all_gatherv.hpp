@@ -115,7 +115,7 @@ void all_gatherv_in_place(T* buf, const int* recvcounts, const int* displs, MPI_
 /**
  * @brief All-gatherv contiguous ranges on all processes.
  *
- * @details It first gathers all input sizes using simplemc::mpi::all_gather, then computes the
+ * @details It first gathers all input range sizes using simplemc::mpi::all_gather, then computes the
  * displacement array, and finally calls the lower-level simplemc::mpi::all_gatherv(const T*, T*,
  * const int*, const int*, MPI_Comm).
  *

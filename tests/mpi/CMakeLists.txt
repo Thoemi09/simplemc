@@ -13,6 +13,7 @@
 # mpi-datatype-test: Executable to test the MPI datatype wrapper.
 # mpi-env-test: Executable to test the MPI environment wrappers.
 # mpi-gather-test: Executable to test the supported MPI gather operations.
+# mpi-gatherv-test: Executable to test the supported MPI gatherv operations.
 # mpi-group-test: Executable to test the MPI group wrapper.
 # mpi-no-abort-exception-test: Executable to test the behavior of abort_on_exception == false.
 # mpi-reduce-test: Executable to test the supported MPI reduce operations.
@@ -55,6 +56,9 @@ target_link_libraries(mpi-env-test PRIVATE simplemc-test)
 add_executable(mpi-gather-test mpi_gather_test.cpp)
 target_link_libraries(mpi-gather-test PRIVATE simplemc-test)
 
+add_executable(mpi-gatherv-test mpi_gatherv_test.cpp)
+target_link_libraries(mpi-gatherv-test PRIVATE simplemc-test)
+
 add_executable(mpi-group-test mpi_group_test.cpp)
 target_link_libraries(mpi-group-test PRIVATE simplemc-test)
 
@@ -87,6 +91,7 @@ add_test(NAME mpi-comm-test COMMAND mpirun -n 4 ./mpi-comm-test)
 add_test(NAME mpi-datatype-test COMMAND mpirun -n 4 ./mpi-datatype-test)
 add_test(NAME mpi-env-test COMMAND mpirun -n 4 ./mpi-env-test)
 add_test(NAME mpi-gather-test COMMAND mpirun -n 4 ./mpi-gather-test)
+add_test(NAME mpi-gatherv-test COMMAND mpirun -n 4 ./mpi-gatherv-test)
 add_test(NAME mpi-group-test COMMAND mpirun -n 4 ./mpi-group-test)
 add_test(NAME mpi-reduce-test COMMAND mpirun -n 4 ./mpi-reduce-test)
 add_test(NAME mpi-scatter-test COMMAND mpirun -n 4 ./mpi-scatter-test)
