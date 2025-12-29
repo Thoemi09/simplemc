@@ -21,7 +21,7 @@
       <tab type="user" url="@ref tut_utils_2" title="Utilities Tutorial 2: Multi-dimensional indexing"/>
       <tab type="user" url="@ref tut_utils_3" title="Utilities Tutorial 3: Printing data with fmt"/>
       <tab type="user" url="@ref tut_mpi_1" title="MPI Tutorial 1: Hello world!"/>
-      <tab type="user" url="@ref tut_mpi_2" title="MPI Tutorial 2: Exception handling"/>
+      <tab type="user" url="@ref tut_mpi_2" title="MPI Tutorial 2: Error handling"/>
       <tab type="user" url="@ref tut_mpi_3" title="MPI Tutorial 3: Collective communication"/>
       <tab type="user" url="@ref tut_mpi_4" title="MPI Tutorial 4: Custom MPI datatype"/>
       <tab type="user" url="@ref tut_random_1" title="Random Tutorial 1: Generating random samples"/>

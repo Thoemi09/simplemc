@@ -8,7 +8,7 @@
 | @ref tut_utils_2 | Convert multi-dimensional to flat indices using simplemc::flat_index |
 | @ref tut_utils_3 | Formatted output with **fmt** |
 | @ref tut_mpi_1 | Introduction to simplemc::mpi::environment and simplemc::mpi::communicator |
-| @ref tut_mpi_2 | Effect of the `abort_on_exception` flag on the simplemc::mpi::environment |
+| @ref tut_mpi_2 | How to handle errors in MPI programs |
 | @ref tut_mpi_3 | How to use various @ref simplemc-mpi-coll |
 | @ref tut_mpi_4 | Make your custom type compatible with @ref simplemc-mpi |
 | @ref tut_random_1 | Approximating PDFs with histograms from @ref simplemc-random-samples |
