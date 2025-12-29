@@ -12,6 +12,7 @@
 # tut_mpi_2_4: Error handling: Catch exceptions locally.
 # tut_mpi_2_5: Error handling: Abort on exception set to true.
 # tut_mpi_2_6: Error handling: Abort on exception set to false.
+# tut_mpi_3: Common collective MPI operations.
 # tut_grids_1: Various 1-dimensional grids.
 # tut_grids_2: N-dimensional grids.
 
@@ -44,6 +45,9 @@ target_link_libraries(tut_mpi_2_5 PRIVATE simplemc::simplemc)
 
 add_executable(tut_mpi_2_6 tut_mpi_2_6.cpp)
 target_link_libraries(tut_mpi_2_6 PRIVATE simplemc::simplemc)
+
+add_executable(tut_mpi_3 tut_mpi_3.cpp)
+target_link_libraries(tut_mpi_3 PRIVATE simplemc::simplemc)
 
 add_executable(tut_grids_1 tut_grids_1.cpp)
 target_link_libraries(tut_grids_1 PRIVATE simplemc::simplemc)
