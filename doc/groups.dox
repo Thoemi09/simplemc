@@ -134,6 +134,9 @@
  * simplemc::mpi::mpi_range types. They reduce some of the complexity of the low-level routines by
  * mapping C++ types to MPI types automatically and by inferring buffer sizes from the input ranges.
  * However, they can not be used in all situations.
+ * 
+ * @note Nearly all calls to the MPI C API in **simplemc-mpi** are checked for errors using
+ * simplemc::mpi::check_mpi_call. The behavior of this check depends on the MPI error handler.
  */
 
 /**

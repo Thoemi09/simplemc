@@ -23,8 +23,8 @@ construct an MPI communicator object:
 
 ```cpp
 // initialize the MPI environment and the communicator
-simplemc::mpi::environment env(argc, argv);
-simplemc::mpi::communicator comm;
+simplemc::mpi::environment env { argc, argv };
+simplemc::mpi::communicator comm {};
 ```
 
 Just like the environment in [Boost MPI](https://www.boost.org/doc/libs/1_85_0/doc/html/mpi.html),
@@ -33,8 +33,9 @@ it goes out of scope.
 There is usually no need for the user to do these basic operations manually.
 
 The simplemc::mpi::communicator object is by default a wrapper around `MPI_COMM_WORLD`.
-If a different MPI communicator should be wrapped, the user has to create it using the MPI C library
-directly and can then pass it to the constructor of simplemc::mpi::communicator.
+In order to wrap a different MPI communicator, the user can simply pass the `MPI_Comm` object to the 
+constructor of simplemc::mpi::communicator.
+We will show in a later tutorial how this works in practice.
 
 Now, let us check with how many process we started the program:
 
@@ -75,21 +76,4 @@ Note that the output is arbitrary and changes from run to run.
 
 @section tut_mpi_1_code Full code
 
-```cpp
-#include <fmt/base.h>
-#include <simplemc/mpi.hpp>
-
-int main(int argc, char** argv) {
-    // initialize the MPI environment and the communicator
-    simplemc::mpi::environment env(argc, argv);
-    simplemc::mpi::communicator comm;
-
-    // print the number of processes on process 0
-    if (comm.rank() == 0) {
-        fmt::println("Number of processes: {}", comm.size());
-    }
-
-    // print message on each process
-    fmt::println("Hello world, from process {} out of {} processes.", comm.rank(), comm.size());
-}
-```
+@include tutorials/tut_mpi_1.cpp
