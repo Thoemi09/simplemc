@@ -2,7 +2,7 @@
 
 [TOC]
 
-In this tutorial, we show how to make your custom types compatible with the **simplemc-mpi** library.
+In this tutorial, we show how to create custom MPI types with the **simplemc-mpi** library.
 
 @section tut_mpi_4_details Step-by-step guide
 
@@ -14,104 +14,110 @@ The following code snippets are all part of the same `main` function:
 #include <simplemc/mpi.hpp>
 
 #include <array>
-#include <type_traits>
 
-// code snippets go here
+// custom type definition goes here
 
 int main(int argc, char** argv) {
     // initialize MPI environment and communicator
-    simplemc::mpi::environment env(argc, argv);
-    simplemc::mpi::communicator comm;
+    simplemc::mpi::environment env { argc, argv };
+    simplemc::mpi::communicator comm {};
+    const int root = 0;
 
     // code snippets go here
 }
 ```
 
-Let us first define the custom type we want to make MPI compatible:
+@subsection tut_mpi_4_cpp_type Custom C++ type
+
+Let us first define the custom C++ type:
 
 ```cpp
 // Custom struct.
 struct foo {
-    int n;
-    double x;
+    int n { 0 };
+    double x { 0.0 };
 };
 ```
 
-It is a simple struct called `foo` with two members, an integer and a double.
+It is a simple struct called `foo` with two members, an integer `n` and a double `x`.
 
-In principle, everytime we want to communicate a `foo` object across processes, we could simply make
-two MPI calls, one for the integer `n` and one for the double `x`. This can become tedious and quite
-ineffective if we have a large range of `foo` objects.
-
-Instead, we will show how to register a new MPI dataype and make it compatible with the
-**simplemc-mpi** library.
-
-To do this, we have to provide a template specialization for the simplemc::mpi::mpi_type struct that
-maps a C++ type to its MPI datatype:
-
-```cpp
-// Specialize the simplemc::mpi::mpi_type for foo.
-template <>
-struct simplemc::mpi::mpi_type<foo> {
-    static MPI_Datatype get() {
-        // block lengths
-        std::array<int, 2> block_lengths { 1, 1 };
-
-        // displacements
-        foo dummy {};
-        std::array<MPI_Aint, 2> displ {};
-        MPI_Aint base { 0 };
-        MPI_Get_address(&dummy, &base);
-        MPI_Get_address(&dummy.n, &displ[0]);
-        MPI_Get_address(&dummy.x, &displ[1]);
-        displ[0] = MPI_Aint_diff(displ[0], base);
-        displ[1] = MPI_Aint_diff(displ[1], base);
-
-        // MPI types
-        std::array<MPI_Datatype, 2> types { MPI_INT, MPI_DOUBLE };
-
-        // create a new MPI datatype for foo
-        MPI_Datatype foo_type {};
-        MPI_Type_create_struct(2, block_lengths.data(), displ.data(), types.data(), &foo_type);
-        MPI_Type_commit(&foo_type);
-        return foo_type;
-    }
-};
-```
-
-Here, we create and commit a new MPI datatype, which is then returned by the static `get()` function.
-For more information on user-defined MPI types, we refer the interested reader to
-[this link](https://rookiehpc.org/mpi/docs/mpi_type_create_struct/index.html).
-
-Before the custom type can be send and received across processes, we also have to specialize the type
-trait simplemc::mpi::is_mpi_datatype:
-
-```cpp
-// Specialize simplemc::mpi::is_mpi_datatype for foo.
-template <>
-struct simplemc::mpi::is_mpi_datatype<foo> : std::true_type {};
-```
-
-Once this is done, `foo` objects can be passed to various @ref simplemc-mpi-coll.
-
-In the following, the process with rank 0 initializes an object and calls simplemc::mpi::broadcast to
-send it to all other processes.
+We can create a foo object on all processes and initialize it on the root process:
 
 ```cpp
 // create a foo object on all processes and initialize it on process 0
 foo f {};
-if (comm.rank() == 0) {
+if (comm.rank() == root) {
     f = foo { .n = 42, .x = 3.14 };
 }
 
-// broadcast the foo object from process 0 to all other processes
-simplemc::mpi::broadcast(comm, f, 0);
+// print the foo object before broadcasting
+fmt::println("Rank {}: foo.n = {}, foo.x = {}", comm.rank(), f.n, f.x);
 ```
 
-To confirm that everything worked as expected, we print the results:
+Output:
+
+```
+Rank 2: foo.n = 0, foo.x = 0
+Rank 1: foo.n = 0, foo.x = 0
+Rank 3: foo.n = 0, foo.x = 0
+Rank 0: foo.n = 42, foo.x = 3.14
+```
+
+Now suppose that we want to broadcast the `foo` object from the root process to all other processes.
+
+In principle, we could simply make two MPI calls, one for the integer `n` and one for the double `x`. 
+This can become tedious and quite ineffective if we have a large range of `foo` objects or if we have
+to use other MPI collective operations.
+
+Instead, we will show how to create and use a new MPI dataype with the **simplemc-mpi** library.
+
+@subsection tut_mpi_4_mpi_type Custom MPI datatype
+
+Creating MPI datatypes for custom C++ types requires a little bit of information about the memory 
+layout of the C++ type:
 
 ```cpp
-// print the foo object on all processes
+// block lengths, displacements and MPI types for each member of foo
+using simplemc::mpi::get_displacement;
+std::array<int, 2> block_lengths { 1, 1 };
+std::array<MPI_Aint, 2> displs { get_displacement(f.n, f), get_displacement(f.x, f) };
+std::array<MPI_Datatype, 2> types { MPI_INT, MPI_DOUBLE };
+```
+
+Here, we define three arrays:
+- `block_lengths`: The number of elements for each member of the struct. `foo` has 1 integer and 1
+double member.
+- `displs`: The displacements (in bytes) of each member from the start of the struct. We use the
+simplemc::mpi::get_displacement utility function to compute these displacements.
+- `types`: The MPI datatypes corresponding to each member of the struct. Again, there is one `MPI_INT` 
+and one `MPI_DOUBLE`.
+
+Once we have this information, we can create the MPI datatype:
+
+```cpp
+// create the MPI datatype for foo
+auto foo_type = simplemc::mpi::datatype { block_lengths, displs, types };
+```
+
+simplemc::mpi::datatype is a RAII wrapper around `MPI_Datatype` that handles the creation and
+destruction of the MPI datatype.
+
+Under the hood, it calls simplemc::mpi::type_create_struct and simplemc::mpi::type_commit in its
+constructor, and simplemc::mpi::type_free in its destructor.
+
+@subsection tut_mpi_4_coll Collective communication with custom MPI datatype
+
+Now that we have an MPI datatype for `foo`, we can use the type in collective communication 
+operations.
+
+For example, let's broadcast our previously constructed `foo` object from the root to all other 
+processes:
+
+```cpp
+// broadcast the foo object
+simplemc::mpi::broadcast(&f, 1, foo_type, root, comm);
+
+// print the foo object after broadcasting
 fmt::println("Rank {}: foo.n = {}, foo.x = {}", comm.rank(), f.n, f.x);
 ```
 
@@ -119,74 +125,30 @@ Output:
 
 ```
 Rank 0: foo.n = 42, foo.x = 3.14
-Rank 3: foo.n = 42, foo.x = 3.14
-Rank 1: foo.n = 42, foo.x = 3.14
 Rank 2: foo.n = 42, foo.x = 3.14
+Rank 1: foo.n = 42, foo.x = 3.14
+Rank 3: foo.n = 42, foo.x = 3.14
 ```
+
+Here, we have to use the most general form of simplemc::mpi::broadcast that simply forwards the 
+arguments to `MPI_Bcast`.
+The reason for this is that all higher-level overloads of simplemc::mpi::broadcast (as well as other
+collective operations) only work for simplemc::mpi::mpi_compatible and simplemc::mpi::mpi_range types.
+
+> **Note:** The user is allowed to make their C++ types simplemc::mpi::mpi_compatible by providing a 
+> template specialization of simplemc::mpi::mpi_type. We do not show the details here, but it may
+> look something like this:
+> ```cpp
+> template <>
+> struct simplemc::mpi::mpi_type<foo> {
+>     static MPI_Datatype get() {
+>         static MPI_Datatype foo_type = make_foo_type();
+>         return foo_type;;
+>     }
+> };
+> ```
+> Here, `make_foo_type` is a function that creates, commits and returns the MPI datatype for `foo`.
 
 @section tut_mpi_4_code Full code
 
-```cpp
-#include <fmt/base.h>
-#include <mpi.h>
-#include <simplemc/mpi.hpp>
-
-#include <array>
-#include <type_traits>
-
-// Custom struct.
-struct foo {
-    int n;
-    double x;
-};
-
-// Specialize the simplemc::mpi::mpi_type for foo.
-template <>
-struct simplemc::mpi::mpi_type<foo> {
-    static MPI_Datatype get() {
-        // block lengths
-        std::array<int, 2> block_lengths { 1, 1 };
-
-        // displacements
-        foo dummy {};
-        std::array<MPI_Aint, 2> displ {};
-        MPI_Aint base { 0 };
-        MPI_Get_address(&dummy, &base);
-        MPI_Get_address(&dummy.n, &displ[0]);
-        MPI_Get_address(&dummy.x, &displ[1]);
-        displ[0] = MPI_Aint_diff(displ[0], base);
-        displ[1] = MPI_Aint_diff(displ[1], base);
-
-        // MPI types
-        std::array<MPI_Datatype, 2> types { MPI_INT, MPI_DOUBLE };
-
-        // create a new MPI datatype for foo
-        MPI_Datatype foo_type {};
-        MPI_Type_create_struct(2, block_lengths.data(), displ.data(), types.data(), &foo_type);
-        MPI_Type_commit(&foo_type);
-        return foo_type;
-    }
-};
-
-// Specialize simplemc::mpi::is_mpi_datatype for foo.
-template <>
-struct simplemc::mpi::is_mpi_datatype<foo> : std::true_type {};
-
-int main(int argc, char** argv) {
-    // initialize MPI environment and communicator
-    simplemc::mpi::environment env(argc, argv);
-    simplemc::mpi::communicator comm;
-
-    // create a foo object on all processes and initialize it on process 0
-    foo f {};
-    if (comm.rank() == 0) {
-        f = foo { .n = 42, .x = 3.14 };
-    }
-
-    // broadcast the foo object from process 0 to all other processes
-    simplemc::mpi::broadcast(comm, f, 0);
-
-    // print the foo object on all processes
-    fmt::println("Rank {}: foo.n = {}, foo.x = {}", comm.rank(), f.n, f.x);
-}
-```
+@include tutorials/tut_mpi_4.cpp
