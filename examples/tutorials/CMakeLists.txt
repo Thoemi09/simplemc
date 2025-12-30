@@ -14,6 +14,7 @@
 # tut_mpi_2_6: Error handling: Abort on exception set to false.
 # tut_mpi_3: Common collective MPI operations.
 # tut_mpi_4: Custom datatypes with simplemc-mpi.
+# tut_mpi_5: Groups and communicators with simplemc-mpi.
 # tut_grids_1: Various 1-dimensional grids.
 # tut_grids_2: N-dimensional grids.
 
@@ -52,6 +53,9 @@ target_link_libraries(tut_mpi_3 PRIVATE simplemc::simplemc)
 
 add_executable(tut_mpi_4 tut_mpi_4.cpp)
 target_link_libraries(tut_mpi_4 PRIVATE simplemc::simplemc)
+
+add_executable(tut_mpi_5 tut_mpi_5.cpp)
+target_link_libraries(tut_mpi_5 PRIVATE simplemc::simplemc)
 
 add_executable(tut_grids_1 tut_grids_1.cpp)
 target_link_libraries(tut_grids_1 PRIVATE simplemc::simplemc)

@@ -24,6 +24,7 @@
       <tab type="user" url="@ref tut_mpi_2" title="MPI Tutorial 2: Error handling"/>
       <tab type="user" url="@ref tut_mpi_3" title="MPI Tutorial 3: Collective communication"/>
       <tab type="user" url="@ref tut_mpi_4" title="MPI Tutorial 4: Custom MPI datatype"/>
+      <tab type="user" url="@ref tut_mpi_5" title="MPI Tutorial 5: Groups and communicators"/>
       <tab type="user" url="@ref tut_random_1" title="Random Tutorial 1: Generating random samples"/>
       <tab type="user" url="@ref tut_grids_1" title="Grids Tutorial 1: Introducing various 1-dimensional grids"/>
       <tab type="user" url="@ref tut_grids_2" title="Grids Tutorial 2: Introducing N-dimensional grids"/>

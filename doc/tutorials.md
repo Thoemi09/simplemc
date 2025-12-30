@@ -11,6 +11,7 @@
 | @ref tut_mpi_2 | How to handle errors in MPI programs |
 | @ref tut_mpi_3 | How to use various @ref simplemc-mpi-coll |
 | @ref tut_mpi_4 | Make your custom type compatible with @ref simplemc-mpi |
+| @ref tut_mpi_5 | Working with MPI groups and communicators |
 | @ref tut_random_1 | Approximating PDFs with histograms from @ref simplemc-random-samples |
 | @ref tut_grids_1 | Showcase the different @ref simplemc-grids-1d |
 | @ref tut_grids_2 | Showcase @ref simplemc-grids-nd |
