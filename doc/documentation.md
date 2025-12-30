@@ -37,10 +37,10 @@ It provides
 
 - @ref simplemc-mpi-coll to perform @ref simplemc-mpi-coll-bcast, @ref simplemc-mpi-coll-reduce, 
 @ref simplemc-mpi-coll-gather and @ref simplemc-mpi-coll-scatter operations across multiple processes.
-- @ref simplemc-mpi-essentials that wrap the most important MPI objects and functions involving them:
-@ref simplemc-mpi-essentials-env, @ref simplemc-mpi-essentials-comms, 
+- @ref simplemc-mpi-essentials that wrap the most important MPI objects and functions. They are 
+further grouped into @ref simplemc-mpi-essentials-env, @ref simplemc-mpi-essentials-comms, 
 @ref simplemc-mpi-essentials-groups and @ref simplemc-mpi-essentials-types. 
-- @ref simplemc-mpi-utils for the **simplemc-mpi** library.
+- @ref simplemc-mpi-utils that contain some helper functions. 
 
 ## Random library
 

@@ -65,15 +65,15 @@ Rank 0: foo.n = 42, foo.x = 3.14
 
 Now suppose that we want to broadcast the `foo` object from the root process to all other processes.
 
-In principle, we could simply make two MPI calls, one for the integer `n` and one for the double `x`. 
+In principle, we could simply make two MPI calls, one for the integer `n` and one for the double `x`.
 This can become tedious and quite ineffective if we have a large range of `foo` objects or if we have
 to use other MPI collective operations.
 
-Instead, we will show how to create and use a new MPI dataype with the **simplemc-mpi** library.
+Instead, we will show how to create and use a new MPI datatype with the **simplemc-mpi** library.
 
 @subsection tut_mpi_4_mpi_type Custom MPI datatype
 
-Creating MPI datatypes for custom C++ types requires a little bit of information about the memory 
+Creating MPI datatypes for custom C++ types requires a little bit of information about the memory
 layout of the C++ type:
 
 ```cpp
@@ -89,7 +89,7 @@ Here, we define three arrays:
 double member.
 - `displs`: The displacements (in bytes) of each member from the start of the struct. We use the
 simplemc::mpi::get_displacement utility function to compute these displacements.
-- `types`: The MPI datatypes corresponding to each member of the struct. Again, there is one `MPI_INT` 
+- `types`: The MPI datatypes corresponding to each member of the struct. Again, there is one `MPI_INT`
 and one `MPI_DOUBLE`.
 
 Once we have this information, we can create the MPI datatype:
@@ -107,10 +107,10 @@ constructor, and simplemc::mpi::type_free in its destructor.
 
 @subsection tut_mpi_4_coll Collective communication with custom MPI datatype
 
-Now that we have an MPI datatype for `foo`, we can use the type in collective communication 
+Now that we have an MPI datatype for `foo`, we can use the type in collective communication
 operations.
 
-For example, let's broadcast our previously constructed `foo` object from the root to all other 
+For example, let's broadcast our previously constructed `foo` object from the root to all other
 processes:
 
 ```cpp
@@ -130,12 +130,12 @@ Rank 1: foo.n = 42, foo.x = 3.14
 Rank 3: foo.n = 42, foo.x = 3.14
 ```
 
-Here, we have to use the most general form of simplemc::mpi::broadcast that simply forwards the 
+Here, we have to use the most general form of simplemc::mpi::broadcast that simply forwards the
 arguments to `MPI_Bcast`.
 The reason for this is that all higher-level overloads of simplemc::mpi::broadcast (as well as other
 collective operations) only work for simplemc::mpi::mpi_compatible and simplemc::mpi::mpi_range types.
 
-> **Note:** The user is allowed to make their C++ types simplemc::mpi::mpi_compatible by providing a 
+> **Note:** The user is allowed to make their C++ types simplemc::mpi::mpi_compatible by providing a
 > template specialization of simplemc::mpi::mpi_type. We do not show the details here, but it may
 > look something like this:
 > ```cpp

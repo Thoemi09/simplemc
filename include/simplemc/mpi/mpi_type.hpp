@@ -104,7 +104,7 @@ MAKE_MPI_DATATYPE(std::complex<long double>, MPI_C_LONG_DOUBLE_COMPLEX)
 
 /**
  * @brief A concept that checks if a C++ type has a corresponding MPI datatype and can therefore be
- * used in @ref simplemc-mpi-coll.
+ * used in higher-level @ref simplemc-mpi-coll.
  *
  * @tparam T C++ type.
  */
@@ -114,7 +114,7 @@ concept mpi_compatible = requires {
 };
 
 /**
- * @brief A concept that checks if a range type can be used in @ref simplemc-mpi-coll.
+ * @brief A concept that checks if a range type can be used in higher-level @ref simplemc-mpi-coll.
  *
  * @details The range has to be contiguous and sized and the value type has to be
  * simplemc::mpi::mpi_compatible.

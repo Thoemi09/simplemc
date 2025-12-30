@@ -50,12 +50,12 @@ Output:
 ```
 
 The program aborts as soon as the error is encountered.
-We can see from the error message that the error occured in `MPI_Bcast` and that the cause was an
+We can see from the error message that the error occurred in `MPI_Bcast` and that the cause was an
 *invalid root* rank.
 
 @subsection tut_mpi_2_ret Return error codes/Throw exceptions
 
-We can change the default behvaiour by setting the error handler manually.
+We can change the default behaviour by setting the error handler manually.
 
 In the following example, we set the error handler of `MPI_COMM_WORLD` to `MPI_ERRORS_RETURN` which
 causes MPI functions to return error codes instead of aborting the program:
@@ -163,8 +163,8 @@ Caught exception: simplemc exception in MPI_Bcast: MPI error code: 8
 ```
 
 In this case, the program finishes without any error messages from MPI.
-The environment object still gets destroyed due to stack unwinding and it still sees an uncaught 
-exception in its destructor but since we constructed the environment with 
+The environment object still gets destroyed due to stack unwinding and it still sees an uncaught
+exception in its destructor but since we constructed the environment with
 `abort_on_exception = false`, it simply calls `MPI_Finalize`.
 After the MPI environment has been destroyed, the catch block is executed as expected.
 
@@ -173,7 +173,7 @@ After the MPI environment has been destroyed, the catch block is executed as exp
 We have demonstrated different ways of handling errors in MPI programs using **simplemc-mpi**.
 However, there is no one-fits-all solution and the right choice depends on the specific use case.
 
-In general, we would recommend to stick to the default behaviour of aborting the program on errors 
+In general, we would recommend to stick to the default behaviour of aborting the program on errors
 unless one has a good reason not to do so.
-Handling errors in an MPI program is difficult and can become its own source of bugs and issues if not 
+Handling errors in an MPI program is difficult and can become its own source of bugs and issues if not
 done carefully.

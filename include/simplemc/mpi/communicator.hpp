@@ -153,6 +153,8 @@ void comm_set_errhandler(MPI_Comm comm, MPI_Errhandler errhandler);
  * uses it.
  *
  * Implicit conversions to `MPI_Comm` are allowed for interoperability with MPI C functions.
+ * 
+ * See @ref tut_mpi_5 for examples.
  */
 class communicator {
 public:

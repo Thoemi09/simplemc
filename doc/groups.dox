@@ -124,26 +124,29 @@
  * @ingroup simplemc-mpi
  * @brief Non-blocking collective communications like broadcast, scatter, gather, reduce, etc.
  *
- * @details **simplemc-mpi** supports some (not all) of the most common collective communications. 
- * 
+ * @details **simplemc-mpi** supports some (not all) of the most common collective communications.
+ *
  * It provides the following API:
- * 
- * - Low-level routines that are very thing wrappers around the corresponding MPI C functions. They 
+ *
+ * - Low-level routines that are very thin wrappers around the corresponding MPI C functions. They
  * are basically the same as their MPI counterparts and offer the same flexibility.
  * - Higher-level, more user-friendly routines that work with simplemc::mpi::mpi_compatible and
  * simplemc::mpi::mpi_range types. They reduce some of the complexity of the low-level routines by
  * mapping C++ types to MPI types automatically and by inferring buffer sizes from the input ranges.
  * However, they can not be used in all situations.
- * 
+ *
+ * See @ref tut_mpi_3 for some examples.
+ *
  * @note Nearly all calls to the MPI C API in **simplemc-mpi** are checked for errors using
- * simplemc::mpi::check_mpi_call. The behavior of this check depends on the MPI error handler.
+ * simplemc::mpi::check_mpi_call. The behavior of this check depends on the MPI error handler. See
+ * @ref tut_mpi_2 for more details.
  */
 
 /**
  * @defgroup simplemc-mpi-coll-bcast MPI broadcast
  * @ingroup simplemc-mpi-coll
  * @brief Low-level and high-level MPI broadcast operations.
- * 
+ *
  * @details In the example below, we use the high-level simplemc::mpi::broadcast to distribute a
  * `std::vector` from the root process to all other processes:
  *
@@ -163,13 +166,14 @@
  * @defgroup simplemc-mpi-coll-reduce MPI reduce
  * @ingroup simplemc-mpi-coll
  * @brief Low-level and high-level MPI (all)reduce operations.
- * 
+ *
  * @details In the example below, we use the high-level simplemc::mpi::reduce_in_place to reduce a
  * `std::vector` on the root process by summing across all processes:
- * 
+ *
  * @include mpi/doc_coll_comm_reduce.cpp
- * 
+ *
  * Output (running on 4 processes):
+ *
  * ```
  * Rank 3: [1, 2, 3, 4, 5]
  * Rank 0: [4, 8, 12, 16, 20]
@@ -181,26 +185,52 @@
 /**
  * @defgroup simplemc-mpi-coll-gather MPI gather
  * @ingroup simplemc-mpi-coll
- * @brief Low-level and high-level MPI gather operations.
+ * @brief Low-level and high-level MPI (all)gather(v) operations.
+ *
+ * @details In the example below, we use the high-level simplemc::mpi::gatherv to gather `std::vector`
+ * objects from all processes on the root process:
+ *
+ * @include mpi/doc_coll_comm_gather.cpp
+ *
+ * Output (running on 4 processes):
+ *
+ * ```
+ * Gathered data: [0, 10, 11, 20, 21, 22, 30, 31, 32, 33]
+ * ```
  */
 
 /**
  * @defgroup simplemc-mpi-coll-scatter MPI scatter
  * @ingroup simplemc-mpi-coll
- * @brief Low-level and high-level MPI scatter operations.
+ * @brief Low-level and high-level MPI scatter(v) operations.
+ *
+ * @details In the example below, we use the high-level simplemc::mpi::scatter to scatter a
+ * `std::vector` object from the root process to all other processes:
+ *
+ * @include mpi/doc_coll_comm_scatter.cpp
+ *
+ * Output (running on 4 processes):
+ *
+ * ```
+ * Rank 2: [7, 8, 9]
+ * Rank 3: [10, 11, 12]
+ * Rank 0: [1, 2, 3]
+ * Rank 1: [4, 5, 6]
+ * ```
  */
 
 /**
  * @defgroup simplemc-mpi-coll-other Other collective operations
  * @ingroup simplemc-mpi-coll
  * @brief Other collective operations that can be useful to users.
- * 
+ *
  * @details In the example below, we use simplemc::mpi::all_equal to check if a vector is the same
  * across all processes:
- * 
+ *
  * @include mpi/doc_coll_comm_other.cpp
- * 
+ *
  * Output (running on 4 processes):
+ *
  * ```
  * Initial data is equal? --> true
  * Modified data is equal? --> false
@@ -216,23 +246,24 @@
  * - **Free functions**: Thin wrappers around MPI C API that work with raw MPI object handles (e.g.
  * `MPI_Comm`). These provide low-level access to MPI functionality with a modern C++ interface and
  * feel.
- * - **RAII classes**: Wrappers around MPI objects like `MPI_Comm`, `MPI_Group` or `MPI_Datatype`. 
- * They help with lifetime management and clean up and it is in general recommended to work with them 
- * instead of the raw MPI objects. Internally, they delegate to the free functions for actual MPI 
+ * - **RAII classes**: Wrappers around MPI objects like `MPI_Comm`, `MPI_Group` or `MPI_Datatype`.
+ * They help with lifetime management and clean up and it is in general recommended to work with them
+ * instead of the raw MPI objects. Internally, they delegate to the free functions for actual MPI
  * calls.
  *
  * @note Nearly all calls to the MPI C API in **simplemc-mpi** are checked for errors using
- * simplemc::mpi::check_mpi_call. The behavior of this check depends on the MPI error handler.
+ * simplemc::mpi::check_mpi_call. The behavior of this check depends on the MPI error handler. See
+ * @ref tut_mpi_2 for more details.
  */
 
 /**
  * @defgroup simplemc-mpi-essentials-comms MPI communicators
  * @ingroup simplemc-mpi-essentials
- * @brief RAII wrapper for `MPI_comm` objects and other essential MPI functions involving 
+ * @brief RAII wrapper for `MPI_comm` objects and other essential MPI functions involving
  * communicators.
  *
- * @note We recomend to use the RAII wrapper simplemc::mpi::communicator and its member functions 
- * whenever possible. The performance overhead of managing the lifetime with a shared pointer should 
+ * @note We recommend to use the RAII wrapper simplemc::mpi::communicator and its member functions
+ * whenever possible. The performance overhead of managing the lifetime with a shared pointer should
  * be negligible compared to the MPI calls.
  */
 
@@ -241,7 +272,7 @@
  * @ingroup simplemc-mpi-essentials
  * @brief RAII wrapper for `MPI_Datatypes` objects and other essential MPI functions involving types.
  *
- * @note We recomend to use the RAII wrapper simplemc::mpi::datatype and its member functions whenever
+ * @note We recommend to use the RAII wrapper simplemc::mpi::datatype and its member functions whenever
  * possible. The performance overhead of managing the lifetime with a shared pointer should be
  * negligible compared to the MPI calls.
  */
@@ -250,6 +281,29 @@
  * @defgroup simplemc-mpi-essentials-env MPI environment
  * @ingroup simplemc-mpi-essentials
  * @brief RAII wrapper for an MPI environment and other essential MPI functions.
+ *
+ * @details We use the term *MPI environment* to refer to the overall MPI execution context that is
+ * initialized with `MPI_Init` and finalized with `MPI_Finalize`, e.g.
+ *
+ * @code{.cpp}
+ * #include <simplemc/mpi.hpp>
+ *
+ * int main(int argc, char** argv) {
+ *
+ *     // ... non-MPI context ...
+ *
+ *     // start of the MPI environment
+ *     simplemc::mpi::init(argc, argv);
+ *
+ *     // ... MPI context ...
+ *
+ *     // end of the MPI environment
+ *     simplemc::mpi::finalize();
+ *
+ *     // ... non-MPI context ...
+ *
+ * }
+ * @endcode
  */
 
 /**
@@ -257,7 +311,7 @@
  * @ingroup simplemc-mpi-essentials
  * @brief RAII wrapper for `MPI_Group` objects and other essential MPI functions involving groups.
  *
- * @note We recomend to use the RAII wrapper simplemc::mpi::group and its member functions whenever
+ * @note We recommend to use the RAII wrapper simplemc::mpi::group and its member functions whenever
  * possible. The performance overhead of managing the lifetime with a shared pointer should be
  * negligible compared to the MPI calls.
  */

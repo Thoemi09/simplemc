@@ -211,7 +211,7 @@ The simplemc::mpi::group::intersect_with method creates a group with processes t
 groups. For example, we can take the intersection of the even and odd groups:
 
 ```cpp
-// intersection: common processes in even and odd group (indentical to MPI_GROUP_EMPTY)
+// intersection: common processes in even and odd group (identical to MPI_GROUP_EMPTY)
 auto intersect_grp = even_grp.intersect_with(odd_grp);
 print_group_info(rank, intersect_grp);
 if (rank == 0) {

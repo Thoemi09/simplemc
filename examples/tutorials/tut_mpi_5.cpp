@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
         fmt::println("Difference group vs odd group: {}", print_comparison(diff_grp, odd_grp));
     }
 
-    // intersection: common processes in even and odd group (indentical to MPI_GROUP_EMPTY)
+    // intersection: common processes in even and odd group (identical to MPI_GROUP_EMPTY)
     auto intersect_grp = even_grp.intersect_with(odd_grp);
     print_group_info(rank, intersect_grp);
     if (rank == 0) {

@@ -170,6 +170,8 @@ void group_free(MPI_Group& grp);
  * - `attach`: The lifetime of the MPI group is managed somewhere else and the wrapper just uses it.
  *
  * Implicit conversions to `MPI_Group` are allowed for interoperability with MPI C functions.
+ * 
+ * See @ref tut_mpi_5 for examples.
  */
 class group {
 public:

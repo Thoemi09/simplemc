@@ -16,7 +16,7 @@ namespace simplemc::mpi {
  */
 
 /**
- * @brief Check if the MPI environment has been initialized by calling `MPI_Initalized`.
+ * @brief Check if the MPI environment has been initialized by calling `MPI_Initialized`.
  *
  * @return True if `MPI_Init` has been called.
  */
@@ -36,12 +36,12 @@ namespace simplemc::mpi {
  * the given arguments.
  *
  * @note The caller is also responsible for finalizing the MPI environment by calling
- * simplemc::mpi::finalize or `MPI_Finalzize()`.
+ * simplemc::mpi::finalize or `MPI_Finalize()`.
  *
  * @param argc Number of arguments passed to `main()`.
  * @param argv Arguments passed to `main()`.
  */
-void init(int& argc, char**& argv);
+void init(int& argc, char**& argv);;
 
 /**
  * @brief Initialize the MPI environment by calling `MPI_Init`.
@@ -60,7 +60,7 @@ void init(int& argc, char**& argv);
  * - `MPI_THREAD_MULTIPLE`: Multiple threads may call MPI, with no restrictions.
  *
  * @note The caller is also responsible for finalizing the MPI environment by calling
- * simplemc::mpi::finalize or `MPI_Finalzize()`.
+ * simplemc::mpi::finalize or `MPI_Finalize()`.
  *
  * @param argc Number of arguments passed to `main()`.
  * @param argv Arguments passed to `main()`.
@@ -111,8 +111,10 @@ void abort(MPI_Comm comm = MPI_COMM_WORLD, int errcode = 0);
  * @brief RAII wrapper for an MPI environment.
  *
  * @details This class provides a thin, non-copyable C++ wrapper that manages the initialization and
- * finalization of MPI. It is intended to be used in the `main()` function of a program, where it
- * calls `MPI_Init` on construction and `MPI_Finalize` on destruction:
+ * finalization of MPI.
+ *
+ * It is intended to be used in the `main()` function of a program, where it calls `MPI_Init` on
+ * construction and `MPI_Finalize` on destruction:
  *
  * @code{.cpp}
  * int main(int argc, char** argv) {
@@ -132,7 +134,7 @@ public:
      *
      * @details It calls simplemc::mpi::init with the given arguments.
      *
-     * See @ref tut_mpi_2 for an example on how `abort_on_exception` can be used.
+     * See @ref tut_mpi_2 for more information on the flag `abort_on_exception`.
      *
      * @param argc Number of arguments passed to `main()`.
      * @param argv Arguments passed to `main()`.
@@ -147,7 +149,7 @@ public:
      * @details It calls simplemc::mpi::init_thread with the given arguments and requested thread
      * level.
      *
-     * See @ref tut_mpi_2 for an example on how `abort_on_exception` can be used.
+     * See @ref tut_mpi_2 for more information on the flag `abort_on_exception`.
      *
      * @param argc Number of arguments passed to `main()`.
      * @param argv Arguments passed to `main()`.

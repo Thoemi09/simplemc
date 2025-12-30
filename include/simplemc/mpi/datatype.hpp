@@ -189,7 +189,7 @@ void type_commit(MPI_Datatype& dt);
  *
  * Implicit conversions to `MPI_Datatype` are allowed for interoperability with MPI C functions.
  *
- * @note Derived MPI datatypes are committed automatically in the constructors.
+ * See @ref tut_mpi_4 for an example.
  */
 class datatype {
 public:

@@ -28,12 +28,12 @@ simplemc::mpi::communicator comm {};
 ```
 
 Just like the environment in [Boost MPI](https://www.boost.org/doc/libs/1_85_0/doc/html/mpi.html),
-simplemc::mpi::environment automatically initializes MPI in its constructor and finializes it when
+simplemc::mpi::environment automatically initializes MPI in its constructor and finalizes it when
 it goes out of scope.
 There is usually no need for the user to do these basic operations manually.
 
 The simplemc::mpi::communicator object is by default a wrapper around `MPI_COMM_WORLD`.
-In order to wrap a different MPI communicator, the user can simply pass the `MPI_Comm` object to the 
+In order to wrap a different MPI communicator, the user can simply pass the `MPI_Comm` object to the
 constructor of simplemc::mpi::communicator.
 We will show in a later tutorial how this works in practice.
 
@@ -71,7 +71,7 @@ Hello world, from process 1 out of 4 processes.
 Hello world, from process 2 out of 4 processes.
 ```
 
-Since we are running on process, we get 4 messages.
+Since we are running on 4 processes, we get 4 messages.
 Note that the output is arbitrary and changes from run to run.
 
 @section tut_mpi_1_code Full code
