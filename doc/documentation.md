@@ -53,7 +53,7 @@ It provides
 [RandomNumberEngine](https://en.cppreference.com/w/cpp/named_req/RandomNumberEngine).
 - Some @ref simplemc-random-dists that satisy the C++ named requirements
 [RandomNumberDistribution](https://en.cppreference.com/w/cpp/named_req/RandomNumberDistribution).
-- @ref simplemc-random-samples from often used probability density functions.
+- Functions to draw @ref simplemc-random-samples from often used probability density functions.
 
 ## Grid library
 

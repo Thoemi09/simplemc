@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Include all relevant header files from simpelmc-random.
+ * @brief Include all relevant header files from simplemc-random.
  */
 
 #ifndef SIMPLEMC_RANDOM_HPP

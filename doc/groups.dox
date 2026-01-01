@@ -325,7 +325,21 @@
 /**
  * @defgroup simplemc-random simplemc-random
  * @brief Tools for generating random numbers and sampling various probability distributions.
- * @details See @ref tut_random_1 for a demonstration of the provided tools.
+ * 
+ * @details **simplemc-random** provides 
+ * - fast random number generators (RNGs), 
+ * - a few probability distributions, 
+ * - functions to draw random samples from more advanced but very common distributions and 
+ * - some other utilities. 
+ * 
+ * See @ref tut_random_1 for a demonstration of the provided tools.
+ * 
+ * @note We want to emphasize that the @ref simplemc-random-rngs and @ref simplemc-random-dists have
+ * been tested w.r.t. to their functionality but not their statistical quality. They are quite fast
+ * and easy to use but we would recommend to fall back to more established libraries like the
+ * <a href="https://en.cppreference.com/w/cpp/numeric/random.html">C++ standard library</a> or
+ * <a href="https://github.com/boostorg/random">Boost.Random</a> for serious calculations that require
+ * high quality and well tested random numbers.
  */
 
 /**
