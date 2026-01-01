@@ -10,8 +10,6 @@
 
 namespace simplemc {
 
-/// @cond
-
 // Distributions.
 template <integer_only T>
 class discrete_alias_distribution;
@@ -28,8 +26,6 @@ enum class xoshiro256_type;
 
 template <xoshiro256_type>
 class xoshiro256;
-
-/// @endcond
 
 } // namespace simplemc
 
