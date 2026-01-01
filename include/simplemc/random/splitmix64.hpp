@@ -17,7 +17,11 @@
 namespace simplemc {
 
 /**
- * @ingroup simplemc-random-rngs
+ * @addtogroup simplemc-random-rngs
+ * @{
+ */
+
+/**
  * @brief Fast random number generator for 64-bit unsigned integer values.
  *
  * @details Based on the <a href="http://prng.di.unimi.it/splitmix64.c">C implementation</a> by
@@ -27,23 +31,10 @@ namespace simplemc {
  * RandomNumberEngine">RandomNumberEngine</a> and can be useful for seeding more sophisticated
  * engines.
  *
- * The internal state is a 64 bits, a single `std::uint64_t`.
+ * The internal state is 64 bits, a single `std::uint64_t`. The period of the generator is \f$ 2^{64}
+ * \f$.
  *
- * @code{.cpp}
- * #include <fmt/base.h>
- * #include <simplemc/random.hpp>
- *
- * int main() {
- *     // initialize splitmix64 RNG
- *     simplemc::splitmix64 rng{};
- *
- *     // print 5 random numbers
- *     fmt::println("Random numbers in the interval [{}, {}]:", rng.min(), rng.max());
- *     for (int i = 0; i < 5; ++i) {
- *         fmt::println("{}", rng());
- *     }
- * }
- * @endcode
+ * @include random/doc_splitmix64.cpp
  *
  * Output:
  *
@@ -76,28 +67,28 @@ public:
     /**
      * @brief Lower bound of generated random numbers.
      *
-     * @returns Zero.
+     * @return Zero.
      */
-    [[nodiscard]] static constexpr result_type min() { return 0; }
+    [[nodiscard]] static constexpr result_type min() noexcept { return 0; }
 
     /**
      * @brief Upper bound of generated random numbers.
      *
-     * @returns `std::numeric_limits<std::uint64_t>::%max()`.
+     * @return `std::numeric_limits<std::uint64_t>::%max()`.
      */
-    [[nodiscard]] static constexpr result_type max() { return std::numeric_limits<result_type>::max(); }
+    [[nodiscard]] static constexpr result_type max() noexcept { return std::numeric_limits<result_type>::max(); }
 
     /**
-     * @brief Construct an RNG from a single `std::uint64_t` seed.
+     * @brief Construct a %splitmix64 RNG from a single `std::uint64_t` seed.
      *
      * @details It simply sets the internal state to the given seed.
      *
      * @param s 64-bit unsigned integer seed.
      */
-    explicit splitmix64(std::uint64_t s = default_seed) : state_(s) {}
+    explicit constexpr splitmix64(std::uint64_t s = default_seed) noexcept : state_(s) {}
 
     /**
-     * @brief Construct an RNG from a seed sequence.
+     * @brief Construct a %splitmix64 RNG from a seed sequence.
      *
      * @details It forwards the given seed sequence to seed(SeedSeq&) to set the internal state.
      *
@@ -115,7 +106,7 @@ public:
      *
      * @param s 64-bit unsigned integer.
      */
-    void seed(std::uint64_t s = default_seed) { state_ = s; }
+    constexpr void seed(std::uint64_t s = default_seed) noexcept { state_ = s; }
 
     /**
      * @brief Set the internal state using the given seed sequence.
@@ -132,23 +123,22 @@ public:
         // hack to fill 64-bits with two 32-bit numbers
         std::array<std::uint32_t, 2> seeds {};
         seq.generate(seeds.begin(), seeds.end());
-        state_ = static_cast<std::uint64_t>(seeds[0]) << 32;
-        state_ += seeds[1];
+        state_ = (static_cast<std::uint64_t>(seeds[0]) << 32) | seeds[1];
     }
 
     /**
      * @brief Get the current internal state.
      *
-     * @return `std::uint64_t` representing the internal state.
+     * @return 64-bit integer representing the internal state.
      */
-    [[nodiscard]] std::uint64_t internal_state() const { return state_; }
+    [[nodiscard]] constexpr state_type internal_state() const noexcept { return state_; }
 
     /**
      * @brief Generate a random number and advance the internal state.
      *
      * @return Random 64-bit unsigned integer.
      */
-    result_type operator()() {
+    constexpr result_type operator()() noexcept {
         result_type z = (state_ += 0x9e3779b97f4a7c15);
         z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;
         z = (z ^ (z >> 27)) * 0x94d049bb133111eb;
@@ -156,40 +146,32 @@ public:
     }
 
     /**
-     * @brief Advance the internal state as if the operator()() has been called `z` times.
+     * @brief Advance the internal state as if operator()() has been called `z` times.
+     *
+     * @details For splitmix64, this is equivalent to advancing the state by `z * 0x9e3779b97f4a7c15`.
+     *
+     * This is done in \f$ \mathcal{O}(1) \f$ time.
      *
      * @param z Number of steps to jump ahead.
      */
-    void discard(std::uintmax_t z) {
-        for (std::uintmax_t i = 0; i < z; i++) {
-            this->operator()();
-        }
-    }
+    constexpr void discard(std::uintmax_t z) noexcept { state_ += z * 0x9e3779b97f4a7c15; }
 
     /**
-     * @brief Compare two simplemc::splitmix64 objects for equality.
+     * @brief Equality comparison operator compares the internal states of two simplemc::splitmix64
+     * objects.
      *
      * @param lhs Left hand side RNG.
      * @param rhs Right hand side RNG.
      * @return True if their internal states are equal.
      */
-    [[nodiscard]] friend bool operator==(const splitmix64& lhs, const splitmix64& rhs) {
+    [[nodiscard]] friend constexpr bool operator==(const splitmix64& lhs, const splitmix64& rhs) noexcept {
         return lhs.state_ == rhs.state_;
     }
 
     /**
-     * @brief Compare two simplemc::splitmix64 objects for inequality.
-     *
-     * @param lhs Left hand side RNG.
-     * @param rhs Right hand side RNG.
-     * @return True if their internal states are distinct.
-     */
-    [[nodiscard]] friend bool operator!=(const splitmix64& lhs, const splitmix64& rhs) { return !(lhs == rhs); }
-
-    /**
      * @brief Write a textual representation of a simplemc::splitmix64 object to `std::ostream`.
      *
-     * @details Throws an exception, if writing to `std::ostream` fails.
+     * @details It throws a simplemc::simplemc_exception if writing to `std::ostream` fails.
      *
      * @param os `std::ostream` to write to.
      * @param eng RNG to be written.
@@ -205,7 +187,7 @@ public:
     /**
      * @brief Read a textual representation of a simplemc::splitmix64 object from `std::istream`.
      *
-     * @details Throws an exception, if reading from `std::istream` fails.
+     * @details It throws a simplemc::simplemc_exception if reading from `std::istream` fails.
      *
      * @param is `std::istream` to read from.
      * @param eng RNG to read into.
@@ -224,6 +206,8 @@ public:
 private:
     std::uint64_t state_ { default_seed };
 };
+
+/** @} */
 
 } // namespace simplemc
 
