@@ -15,12 +15,19 @@
 namespace simplemc {
 
 /**
- * @ingroup simplemc-random-rngs
- * @brief Seed a RNG with a `std::seeq_seq` depending on its MPI rank.
+ * @addtogroup simplemc-random-rngs
+ * @{
+ */
+
+/**
+ * @brief Seed a RNG with a `std::seed_seq` depending on its MPI rank.
  *
  * @details The rank of the calling process is used to construct a simplemc::splitmix64 RNG, which in
  * turn is used to initialize a `std::seed_seq` object. The seed sequence is then passed to the RNG
  * object to seed it.
+ *
+ * It is intended to be used in MPI applications where each process is supposed to have an independent
+ * RNG:
  *
  * @code{.cpp}
  * #include <simplemc/mpi.hpp>
@@ -54,6 +61,8 @@ void seed_rng(RNG& rng, int rank = 0, std::size_t num = 4) {
     std::seed_seq seq(ints.begin(), ints.end());
     rng.seed(seq);
 }
+
+/** @} */
 
 } // namespace simplemc
 
