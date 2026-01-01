@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Include all relevant header files from simpelmc-utils.
+ * @brief Include all relevant header files from simplemc-utils.
  */
 
 #ifndef SIMPLEMC_UTILS_HPP
