@@ -4,5 +4,6 @@
 
 add_subdirectory(utils)
 add_subdirectory(mpi)
+add_subdirectory(random)
 add_subdirectory(grids)
 add_subdirectory(tutorials)
