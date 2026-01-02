@@ -49,11 +49,10 @@ distributions.
 
 It provides
 
-- @ref simplemc-random-rngs for fast random number generation that satisfy the C++ named requirements
-[RandomNumberEngine](https://en.cppreference.com/w/cpp/named_req/RandomNumberEngine).
-- Some @ref simplemc-random-dists that satisy the C++ named requirements
-[RandomNumberDistribution](https://en.cppreference.com/w/cpp/named_req/RandomNumberDistribution).
-- Functions to draw @ref simplemc-random-samples from often used probability density functions.
+- @ref simplemc-random-rngs (RNGs) for fast random number generation that satisfy the C++ named 
+requirements [RandomNumberEngine](https://en.cppreference.com/w/cpp/named_req/RandomNumberEngine).
+- Functions that draw @ref simplemc-random-samples from often used probability distributions and that
+evaluate their corresponding probability density functions (PDFs).
 
 ## Grid library
 

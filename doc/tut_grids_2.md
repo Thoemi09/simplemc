@@ -147,9 +147,9 @@ At last, we want to check how to find the bin \f$ b_{i_1, i_2} \f$ such that a g
 
 ```cpp
 // find the bin b_i to which a value x belongs
-simplemc::xoshiro256pp rng {};
-simplemc::uniform_real_distribution dist1 { grid_2d.first()[0], grid_2d.last()[0] };
-simplemc::uniform_real_distribution dist2 { grid_2d.first()[1], grid_2d.last()[1] };
+std::mt19937 rng {};
+std::uniform_real_distribution dist1 { grid_2d.first()[0], grid_2d.last()[0] };
+std::uniform_real_distribution dist2 { grid_2d.first()[1], grid_2d.last()[1] };
 fmt::println("Find the bin:");
 for (int i = 0; i < 10; ++i) {
     const auto x = std::array<double, 2> { dist1(rng), dist2(rng) };

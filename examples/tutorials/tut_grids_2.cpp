@@ -1,8 +1,8 @@
 #include <fmt/ranges.h>
 #include <simplemc/grids.hpp>
-#include <simplemc/random.hpp>
 #include <simplemc/utils/ranges.hpp>
 
+#include <random>
 #include <array>
 
 // Print a view in matrix form with the given shape.
@@ -39,9 +39,9 @@ int main() {
     fmt::println("Bin volumes: {}\n", simplemc::bin_volume_view(grid_2d));
 
     // find the bin b_i to which a value x belongs
-    simplemc::xoshiro256pp rng {};
-    simplemc::uniform_real_distribution dist1 { grid_2d.first()[0], grid_2d.last()[0] };
-    simplemc::uniform_real_distribution dist2 { grid_2d.first()[1], grid_2d.last()[1] };
+    std::mt19937 rng {};
+    std::uniform_real_distribution dist1 { grid_2d.first()[0], grid_2d.last()[0] };
+    std::uniform_real_distribution dist2 { grid_2d.first()[1], grid_2d.last()[1] };
     fmt::println("Find the bin:");
     for (int i = 0; i < 10; ++i) {
         const auto x = std::array<double, 2> { dist1(rng), dist2(rng) };

@@ -327,65 +327,17 @@
  * @brief Tools for generating random numbers and sampling various probability distributions.
  * 
  * @details **simplemc-random** provides 
- * - fast random number generators (RNGs), 
- * - a few probability distributions, 
- * - functions to draw random samples from more advanced but very common distributions and 
- * - some other utilities. 
+ * - fast @ref simplemc-random-rngs (RNGs) and 
+ * - @ref simplemc-random-samples from common probability distributions.
  * 
  * See @ref tut_random_1 for a demonstration of the provided tools.
  * 
- * @note We want to emphasize that the @ref simplemc-random-rngs and @ref simplemc-random-dists have
- * been tested w.r.t. to their functionality but not their statistical quality. They are quite fast
- * and easy to use but we would recommend to fall back to more established libraries like the
+ * @note We want to emphasize that the @ref simplemc-random-rngs have been tested w.r.t. to their 
+ * functionality but not their statistical quality. They are quite fast and easy to use but we would 
+ * recommend to fall back to more established libraries like the 
  * <a href="https://en.cppreference.com/w/cpp/numeric/random.html">C++ standard library</a> or
  * <a href="https://github.com/boostorg/random">Boost.Random</a> for serious calculations that require
  * high quality and well tested random numbers.
- */
-
-/**
- * @defgroup simplemc-random-dists Probability distributions
- * @ingroup simplemc-random
- * @brief Probability distributions that satisfy the C++ named requirements:
- * <a href="https://en.cppreference.com/w/cpp/named_req/RandomNumberDistribution">
- * RandomNumberDistribution</a>.
- *
- * @details The following distributions are provided:
- * - simplemc::uniform_real_distribution: Uniform distribution on an interval `[a, b)`.
- * - simplemc::discrete_distribution: Discrete distribution that uses a linear search to generate a
- * random sample.
- * - simplemc::discrete_alias_distribution: Discrete distribution that uses the Walker-Alias
- * algorithm to generate a random sample.
- *
- * All distributions can be used with the @ref simplemc-random-rngs from **simplemc** or with any
- * other RNG that generates 64-bit unsigned integers:
- *
- * @code{.cpp}
- * #include <fmt/base.h>
- * #include <simplemc/random.hpp>
- *
- * #include <random>
- *
- * int main() {
- *     // construct RNG from stdlib
- *     std::mt19937_64 rng;
- *
- *     // print 5 random samples from a discrete distribution on [0, 1] with equal probabilities
- *     simplemc::discrete_alias_distribution<long> dist({1, 1});
- *     for (int i = 0; i < 5; ++i) {
- *         fmt::println("{}", dist(rng));
- *     }
- * }
- * @endcode
- *
- * Output:
- *
- * ```
- * 0
- * 0
- * 0
- * 1
- * 0
- * ```
  */
 
 /**
@@ -404,8 +356,7 @@
  *   - simplemc::xoshiro256pp: General-purpose RNG.
  *   - simplemc::xoshiro256ss: General-purpose RNG.
  *
- * All RNGs can be used with the @ref simplemc-random-dists from **simplemc** or with the ones from
- * the C++ standard library:
+ * All RNGs can be used with the probability distributions from the C++ standard library:
  *
  * @include random/doc_rngs.cpp
  *

@@ -10,20 +10,8 @@
 
 namespace simplemc {
 
-// Distributions.
-template <integer_only T>
-class discrete_alias_distribution;
-
-template <integer_only T>
-class discrete_distribution;
-
-class uniform_real_distribution;
-
-// RNGs.
 class splitmix64;
-
 enum class xoshiro256_type;
-
 template <xoshiro256_type>
 class xoshiro256;
 

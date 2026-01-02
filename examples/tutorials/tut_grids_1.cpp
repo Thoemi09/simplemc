@@ -1,8 +1,8 @@
 #include <fmt/ranges.h>
 #include <simplemc/grids.hpp>
-#include <simplemc/random.hpp>
 #include <simplemc/utils/ranges.hpp>
 
+#include <random>
 #include <string_view>
 #include <vector>
 
@@ -17,8 +17,8 @@ void test_grid(const auto& grid, std::string_view name) {
     fmt::println("Bin volumes: {::.4g}\n", simplemc::bin_volume_view(grid));
 
     // find the bin b_i to which a value x belongs
-    simplemc::xoshiro256pp rng {};
-    simplemc::uniform_real_distribution dist { grid.first(), grid.last() };
+    std::mt19937 rng {};
+    std::uniform_real_distribution dist { grid.first(), grid.last() };
     fmt::println("Find the bin:");
     for (int i = 0; i < 10; ++i) {
         const auto x = dist(rng);

@@ -89,14 +89,6 @@
         <tab type="user" url="@ref simplemc-mpi-utils" title="MPI utilities"/>
       </tab>
       <tab type="usergroup" url="@ref simplemc-random" title="simplemc-random">
-        <tab type="usergroup" url="@ref simplemc-random-dists" title="Probability distributions">
-          <tab type="user" url="@ref simplemc::discrete_alias_distribution" title="discrete_alias_distribution"/>
-          <tab type="user" url="@ref simplemc::discrete_alias_distribution::param_type" title="discrete_alias_distribution::param_type"/>
-          <tab type="user" url="@ref simplemc::discrete_distribution" title="discrete_distribution"/>
-          <tab type="user" url="@ref simplemc::discrete_distribution::param_type" title="discrete_distribution::param_type"/>
-          <tab type="user" url="@ref simplemc::uniform_real_distribution" title="uniform_real_distribution"/>
-          <tab type="user" url="@ref simplemc::uniform_real_distribution::param_type" title="uniform_real_distribution::param_type"/>
-        </tab>
         <tab type="usergroup" url="@ref simplemc-random-rngs" title="Random number generators">
           <tab type="user" url="@ref simplemc::splitmix64" title="splitmix64"/>
           <tab type="user" url="@ref simplemc::xoshiro256" title="xoshiro256"/>
