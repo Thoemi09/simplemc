@@ -97,7 +97,7 @@ struct histogram {
         }
     }
 
-    // Check that the histogram is uniform within some tolerance.
+    // Check that the histogram is close to a reference function within a tolerance.
     [[nodiscard]] bool check(auto f, double tol) const {
         const auto norm = static_cast<double>(nsamples) * step;
         for (int i = 0; i < nbins; ++i) {

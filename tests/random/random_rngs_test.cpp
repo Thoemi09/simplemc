@@ -17,6 +17,8 @@ void test_rng() {
     T rng_seq { seq };
     ASSERT_EQ(rng_def, rng_seed);
     ASSERT_NE(rng_def, rng_seq);
+    ASSERT_EQ(rng_def.internal_state(), rng_seed.internal_state());
+    ASSERT_NE(rng_def.internal_state(), rng_seq.internal_state());
 
     // discard
     const auto n = 1000000;
@@ -38,6 +40,10 @@ void test_rng() {
     ss << rng_def;
     ss >> rng_seq;
     ASSERT_EQ(rng_def, rng_seq);
+
+    // min/max
+    ASSERT_EQ(T::min(), 0ULL);
+    ASSERT_EQ(T::max(), std::numeric_limits<std::uint64_t>::max());
 }
 
 // Test the splitmix64 RNG.
@@ -45,11 +51,44 @@ TEST(SimplemcRandom, Splitmix64) {
     test_rng<simplemc::splitmix64>();
 }
 
+// Test the splitmix64 constexpr RNG.
+TEST(SimplemcRandom, Splitmix64Constexpr) {
+    constexpr simplemc::splitmix64 rng { 42 };
+    constexpr auto state = rng.internal_state();
+    static_assert(state == 42);
+}
+
 // Test xoshiro256 RNGs.
 TEST(SimplemcRandom, Xoshiro256) {
     test_rng<simplemc::xoshiro256p>();
     test_rng<simplemc::xoshiro256pp>();
     test_rng<simplemc::xoshiro256ss>();
+}
+
+// Test xoshiro256 constexpr RNG.
+TEST(SimplemcRandom, Xoshiro256Constexpr) {
+    constexpr simplemc::xoshiro256ss rng_constexpr { 1, 2, 3, 4 };
+    constexpr auto cstate = rng_constexpr.internal_state();
+    static_assert(cstate[0] == 1);
+    static_assert(cstate[1] == 2);
+    static_assert(cstate[2] == 3);
+    static_assert(cstate[3] == 4);
+}
+
+// Test xoshiro256 specific methods.
+TEST(SimplemcRandom, Xoshiro256Specific) {
+    // test four-value constructor
+    simplemc::xoshiro256ss rng1 { 1, 2, 3, 4 };
+    const auto& state = rng1.internal_state();
+    ASSERT_EQ(state[0], 1ULL);
+    ASSERT_EQ(state[1], 2ULL);
+    ASSERT_EQ(state[2], 3ULL);
+    ASSERT_EQ(state[3], 4ULL);
+
+    // test four-value seed
+    simplemc::xoshiro256ss rng2 {};
+    rng2.seed(1, 2, 3, 4);
+    ASSERT_EQ(rng1, rng2);
 }
 
 // Test xoshiro256's jump method.
