@@ -386,35 +386,17 @@
  * - The *pdf* functions take the required parameters of the distribution and possibly a random sample
  * \f$ x \f$ from the distribution and return the value of the pdf at the given \f$ x \f$.
  *
- * @code{.cpp}
- * #include <fmt/base.h>
- * #include <simplemc/random.hpp>
- *
- * int main() {
- *     // construct a xoshiro256p RNG and a uniform distribution on [0, 1)
- *     simplemc::xoshiro256p rng;
- *     simplemc::uniform_real_distribution dist;
- *
- *     // generate 5 random samples from an exponential distribution \lambda e^{-\lambda x}
- *     // and print the corresponding values of the pdf
- *     const double lambda = 2.5;
- *     fmt::println("{:^10}{:^10}", "x", "f(x)");
- *     for (int i = 0; i < 5; ++i) {
- *         const auto x = simplemc::exponential_sample(dist(rng), lambda);
- *         fmt::println("{:^10.4f}{:^10.4f}", x, simplemc::exponential_pdf(x, lambda));
- *     }
- * }
- * @endcode
+ * @include random/doc_samples.cpp
  *
  * Output:
  *
  * ```
- *    x        f(x)
- *  1.7846    0.0289
- *  0.1024    1.9354
- *  1.1706    0.1340
- *  0.3143    1.1394
- *  0.5384    0.6506
+ *    x        f(x)   
+ *  0.7996    0.3387  
+ *  0.0721    2.0875  
+ *  0.0127    2.4222  
+ *  0.6038    0.5526  
+ *  0.4708    0.7704
  * ```
  */
 
