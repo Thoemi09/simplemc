@@ -108,21 +108,21 @@ public:
      *
      * @return `std::chrono::time_point<clock_type>` representing the starting time point.
      */
-    [[nodiscard]] auto start_time() const { return start_; }
+    [[nodiscard]] auto start_time() const noexcept { return start_; }
 
     /**
      * @brief Get stopping time point.
      *
      * @return `std::chrono::time_point<clock_type>` representing the stopping time point.
      */
-    [[nodiscard]] auto stop_time() const { return stop_; }
+    [[nodiscard]] auto stop_time() const noexcept { return stop_; }
 
     /**
      * @brief Get interim time point.
      *
      * @return `std::chrono::time_point<clock_type>` representing the interim time point.
      */
-    [[nodiscard]] auto interim_time() const { return interim_; }
+    [[nodiscard]] auto interim_time() const noexcept { return interim_; }
 
     /**
      * @brief Set starting time point by calling now().
@@ -151,12 +151,12 @@ public:
      * @brief Get elapsed time between starting the timer and the current time.
      *
      * @details This is a convenience method that returns the time difference between the start and
-     * the current time points. It is equivalent to calling 
-     * 
+     * the current time points. It is equivalent to calling
+     *
      * @code
      * time_passed(t.start_time(), t.now(), to_duration)
      * @endcode
-     * 
+     *
      * where `t` is an instance of `simplemc::timer`.
      *
      * @tparam D Duration type of result (default: simplemc::duration::sec).

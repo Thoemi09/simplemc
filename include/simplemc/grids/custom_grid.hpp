@@ -98,7 +98,7 @@ public:
      * @param idx Index \f$ i \f$ of the grid point.
      * @return Grid point \f$ g(i) \f$.
      */
-    [[nodiscard]] constexpr value_type at(size_type idx) const noexcept {
+    [[nodiscard]] constexpr value_type at(size_type idx) const {
         assert(idx >= 0 && idx < size_);
         return x_[idx];
     }
@@ -110,7 +110,7 @@ public:
      * @param value Some value \f$ x \in [a, b] \f$.
      * @return Index \f$ i = \tilde{g}^{-1}(x) \f$ of the bin \f$ b_i \f$ such that \f$ x \in b_i \f$.
      */
-    [[nodiscard]] constexpr size_type index(value_type value) const noexcept {
+    [[nodiscard]] constexpr size_type index(value_type value) const {
         assert((first_ <= value && value <= last_) || (first_ >= value && value >= last_));
         if (first_ < last_) {
             return std::distance(x_.cbegin(), --std::ranges::upper_bound(x_, value));

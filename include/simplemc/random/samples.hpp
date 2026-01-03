@@ -34,7 +34,7 @@ namespace simplemc {
  * @param b Upper limit \f$ b \f$ of the interval.
  * @return Uniform random sample from \f$ [a, b) \f$.
  */
-[[nodiscard]] constexpr double uniform_sample(double r, double a, double b) noexcept {
+[[nodiscard]] constexpr double uniform_sample(double r, double a, double b) {
     assert(b > a);
     return a + r * (b - a);
 }
@@ -54,7 +54,7 @@ namespace simplemc {
  * @param b Upper limit \f$ b \f$ of the interval.
  * @return Value of the PDF.
  */
-[[nodiscard]] constexpr double uniform_pdf(double a, double b) noexcept {
+[[nodiscard]] constexpr double uniform_pdf(double a, double b) {
     assert(b > a);
     return 1.0 / (b - a);
 }
@@ -75,7 +75,7 @@ namespace simplemc {
  * @param a Lower limit \f$ a \f$ of the interval.
  * @return Exponential random sample from \f$ [a, \infty) \f$.
  */
-[[nodiscard]] constexpr double exponential_sample(double r, double lambda, double a = 0) noexcept {
+[[nodiscard]] constexpr double exponential_sample(double r, double lambda, double a = 0) {
     assert(lambda > 0);
     return a - std::log(r) / lambda;
 }
@@ -96,7 +96,7 @@ namespace simplemc {
  * @param a Lower limit \f$ a \f$ of the interval.
  * @return Value of the PDF at the given input variable \f$ x \f$.
  */
-[[nodiscard]] constexpr double exponential_pdf(double x, double lambda, double a = 0) noexcept {
+[[nodiscard]] constexpr double exponential_pdf(double x, double lambda, double a = 0) {
     assert(lambda > 0);
     return lambda * std::exp(-lambda * (x - a));
 }
@@ -119,7 +119,7 @@ namespace simplemc {
  * @param b Upper limit \f$ b \f$ of the interval.
  * @return Exponential random sample from \f$ [a, b) \f$.
  */
-[[nodiscard]] constexpr double exponential_sample(double r, double lambda, double a, double b) noexcept {
+[[nodiscard]] constexpr double exponential_sample(double r, double lambda, double a, double b) {
     assert(lambda != 0.0);
     assert(b > a);
     return a - std::log(1.0 - r * (1.0 - std::exp(-lambda * (b - a)))) / lambda;
@@ -142,7 +142,7 @@ namespace simplemc {
  * @param b Upper limit \f$ b \f$ of the interval.
  * @return Value of the PDF at the given input variable \f$ x \f$.
  */
-[[nodiscard]] constexpr double exponential_pdf(double x, double lambda, double a, double b) noexcept {
+[[nodiscard]] constexpr double exponential_pdf(double x, double lambda, double a, double b) {
     assert(lambda != 0.0);
     assert(b > a);
     return lambda / (1.0 - std::exp(-lambda * (b - a))) * std::exp(-lambda * (x - a));
@@ -165,7 +165,7 @@ namespace simplemc {
  * @param b Upper limit \f$ b \f$ of the interval.
  * @return Exponential random sample from \f$ [a, b) \f$.
  */
-[[nodiscard]] constexpr double safe_exponential_sample(double r, double lambda, double a, double b) noexcept {
+[[nodiscard]] constexpr double safe_exponential_sample(double r, double lambda, double a, double b) {
     if (lambda > 0) {
         return exponential_sample(r, lambda, a, b);
     } else if (lambda < 0) {
@@ -200,7 +200,7 @@ namespace simplemc {
  * @param b Upper limit \f$ b \f$ of the interval.
  * @return Value of the PDF at the given input variable \f$ x \f$.
  */
-[[nodiscard]] constexpr double safe_exponential_pdf(double x, double lambda, double a, double b) noexcept {
+[[nodiscard]] constexpr double safe_exponential_pdf(double x, double lambda, double a, double b) {
     if (lambda > 0) {
         return exponential_pdf(x, lambda, a, b);
     } else if (lambda < 0) {
@@ -245,7 +245,7 @@ template <typename RNG>
  * @param sigma Standard deviation parameter \f$ \sigma \f$ of the distribution.
  * @return Value of the PDF at the given input variable \f$ x \f$.
  */
-[[nodiscard]] constexpr double normal_pdf(double x, double mu, double sigma) noexcept {
+[[nodiscard]] constexpr double normal_pdf(double x, double mu, double sigma) {
     assert(sigma > 0);
     using namespace std::numbers;
     const double tmp = (x - mu) / sigma;
@@ -268,7 +268,7 @@ template <typename RNG>
  * @param gamma Scale parameter \f$ \gamma \f$.
  * @return Cauchy random sample.
  */
-[[nodiscard]] constexpr double cauchy_sample(double r, double x0, double gamma) noexcept {
+[[nodiscard]] constexpr double cauchy_sample(double r, double x0, double gamma) {
     assert(gamma > 0);
     using std::numbers::pi;
     return x0 + gamma * std::tan(pi * (r - 0.5));
@@ -290,7 +290,7 @@ template <typename RNG>
  * @param gamma Scale parameter \f$ \gamma \f$.
  * @return Value of the PDF at the given input variable \f$ x \f$.
  */
-[[nodiscard]] constexpr double cauchy_pdf(double x, double x0, double gamma) noexcept {
+[[nodiscard]] constexpr double cauchy_pdf(double x, double x0, double gamma) {
     assert(gamma > 0);
     using std::numbers::pi;
     return 1.0 / (pi * gamma * (1.0 + std::pow((x - x0) / gamma, 2)));
@@ -334,7 +334,7 @@ template <typename T, typename RNG>
  * @return Probability for choosing any integer in the set \f$ \{ a, a+1, \dots, b \} \f$.
  */
 template <typename T>
-[[nodiscard]] constexpr double uniform_int_pdf(T a, T b) noexcept {
+[[nodiscard]] constexpr double uniform_int_pdf(T a, T b) {
     assert(b >= a);
     return 1.0 / (b - a + 1);
 }
@@ -380,7 +380,7 @@ template <typename T, typename RNG>
  * @return Probability for choosing any integer in the set \f$ D \f$.
  */
 template <typename T>
-[[nodiscard]] constexpr double exclusive_uniform_int_pdf(T a, T b) noexcept {
+[[nodiscard]] constexpr double exclusive_uniform_int_pdf(T a, T b) {
     assert(b > a);
     return 1.0 / (b - a);
 }

@@ -94,7 +94,7 @@ public:
      * @param idx Index \f$ i \f$ of the grid point.
      * @return Grid point \f$ g(i) \f$.
      */
-    [[nodiscard]] constexpr value_type at(size_type idx) const noexcept {
+    [[nodiscard]] constexpr value_type at(size_type idx) const {
         assert(idx >= 0 && idx < size_);
         return first_ + step_ * static_cast<double>(idx);
     }
@@ -109,7 +109,7 @@ public:
      * @param value Some value \f$ x \in [a, b] \f$.
      * @return Index \f$ i = \tilde{g}^{-1}(x) \f$ of the bin \f$ b_i \f$ such that \f$ x \in b_i \f$.
      */
-    [[nodiscard]] constexpr size_type index(value_type value) const noexcept {
+    [[nodiscard]] constexpr size_type index(value_type value) const {
         assert((first_ <= value && value <= last_) || (first_ >= value && value >= last_));
         return static_cast<size_type>((value - first_) / step_);
     }
@@ -120,7 +120,7 @@ public:
      * @param idx Bin index \f$ i \f$.
      * @return Volume (size) of the bin \f$ b_i \f$.
      */
-    [[nodiscard]] constexpr value_type volume([[maybe_unused]] size_type idx) const noexcept {
+    [[nodiscard]] constexpr value_type volume([[maybe_unused]] size_type idx) const {
         assert(idx >= 0 && idx + 1 < size_);
         return std::abs(step_);
     }
@@ -131,7 +131,7 @@ public:
      * @param idx Bin index \f$ i \f$.
      * @return Center of the bin \f$ b_i \f$.
      */
-    [[nodiscard]] constexpr value_type center(size_type idx) const noexcept {
+    [[nodiscard]] constexpr value_type center(size_type idx) const {
         assert(idx >= 0 && idx + 1 < size_);
         return at(idx) + step_ / 2.;
     }

@@ -106,7 +106,7 @@ concept nd_order = is_any_of<T, column_major, row_major>;
  * @return Number of elements in the array.
  */
 template <std::integral T>
-[[nodiscard]] constexpr auto size_from_shape(const std::vector<T>& shape) noexcept {
+[[nodiscard]] constexpr auto size_from_shape(const std::vector<T>& shape) {
     assert(!shape.empty());
     return std::accumulate(shape.begin(), shape.end(), T { 1 }, std::multiplies {});
 }
@@ -129,7 +129,7 @@ template <std::integral T>
  */
 template <std::integral T, std::size_t N>
     requires(N != 0)
-[[nodiscard]] constexpr auto size_from_shape(const std::array<T, N>& shape) noexcept {
+[[nodiscard]] constexpr auto size_from_shape(const std::array<T, N>& shape) {
     return std::accumulate(shape.begin(), shape.end(), T { 1 }, std::multiplies<T> {});
 }
 
@@ -195,7 +195,7 @@ template <std::integral T, nd_order Order = column_major>
 template <std::integral T, std::size_t N, nd_order Order = column_major>
     requires(N != 0)
 [[nodiscard]] constexpr auto nd_index(
-    std::integral auto flat_idx, const std::array<T, N>& shape, [[maybe_unused]] Order order = Order {}) noexcept {
+    std::integral auto flat_idx, const std::array<T, N>& shape, [[maybe_unused]] Order order = Order {}) {
     assert(flat_idx >= 0 && flat_idx < size_from_shape(shape));
     auto idxs = std::array<T, N> {};
     auto fac = size_from_shape(shape);
@@ -275,7 +275,7 @@ template <std::integral T1, std::integral T2, nd_order Order = column_major>
 template <std::integral T1, std::integral T2, std::size_t N, nd_order Order = column_major>
     requires(N != 0)
 [[nodiscard]] constexpr auto flat_index(
-    const std::array<T1, N>& idxs, const std::array<T2, N>& shape, [[maybe_unused]] Order order = Order {}) noexcept {
+    const std::array<T1, N>& idxs, const std::array<T2, N>& shape, [[maybe_unused]] Order order = Order {}) {
     if constexpr (std::same_as<Order, column_major>) {
         auto flat_idx = idxs.back();
         for (std::size_t i = 2; i <= N; ++i) {
@@ -308,7 +308,7 @@ template <std::integral T1, std::integral T2, std::size_t N, nd_order Order = co
  * @return Index `j` such that `l` lies in the middle of `(j, j+1, ..., j+m-1)`.
  */
 template <std::integral T>
-[[nodiscard]] inline constexpr auto integer_subrange(T l, T n, T m) noexcept {
+[[nodiscard]] inline constexpr auto integer_subrange(T l, T n, T m) {
     assert(l >= 0 && l < n);
     assert(m > 0 && m <= n);
     return std::clamp(static_cast<T>(m % 2 == 0 ? l + 1 - m / 2 : l - m / 2), T { 0 }, n - m);
