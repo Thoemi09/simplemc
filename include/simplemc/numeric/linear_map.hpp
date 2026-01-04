@@ -6,6 +6,8 @@
 #ifndef SIMPLEMC_NUMERIC_LINEAR_MAP_HPP
 #define SIMPLEMC_NUMERIC_LINEAR_MAP_HPP
 
+#include <simplemc/utils/simplemc_exception.hpp>
+
 #include <cassert>
 #include <array>
 #include <utility>
@@ -13,7 +15,11 @@
 namespace simplemc {
 
 /**
- * @ingroup simplemc-numeric-utils
+ * @addtogroup simplemc-numeric-utils
+ * @{
+ */
+
+/**
  * @brief Map a domain \f$ [a, b] \f$ to the range \f$ [c, d] \f$ (and vice versa) via a linear
  * function \f$ y : [a, b] \in \mathbb{R} \to [c, d] \in \mathbb{R} \f$.
  *
@@ -41,23 +47,53 @@ public:
     /**
      * @brief Default constructor leaves the map uninitialized.
      */
-    linear_map() = default;
+    constexpr linear_map() noexcept = default;
 
     /**
      * @brief Construct the linear map \f$ y : [a, b] \to [c, d] \f$.
      *
-     * @param dom `std::array<double, 2>` containing the domain \f$ [a, b] \f$.
-     * @param rg `std::array<double, 2>` containing the range \f$ [c, d] \f$.
+     * @param dom Domain \f$ [a, b] \f$ as an interval_type.
+     * @param rg Range \f$ [c, d] \f$ as an interval_type.
      */
     linear_map(const interval_type& dom, const interval_type& rg) { set(dom, rg); }
 
     /**
      * @brief Set the domain and the range of the linear map.
      *
-     * @param dom `std::array<double, 2>` containing the domain \f$ [a, b] \f$.
-     * @param rg `std::array<double, 2>` containing the range \f$ [c, d] \f$.
+     * @details It throws a simplemc::simplemc_exception if the domain, range or the resulting map is
+     * illdefined.
+     *
+     * @param dom Domain \f$ [a, b] \f$ as an interval_type.
+     * @param rg Range \f$ [c, d] \f$ as an interval_type.
      */
-    void set(const interval_type& dom, const interval_type& rg);
+    constexpr void set(const interval_type& dom, const interval_type& rg) {
+        constexpr auto inf = std::numeric_limits<double>::infinity();
+        constexpr auto minus_inf = -inf;
+        double a = dom[0];
+        double b = dom[1];
+        double c = rg[0];
+        double d = rg[1];
+        if (a >= b || c >= d) {
+            throw simplemc_exception("Wrong intervals in linear map", "linear_map::set");
+        }
+        if (a > minus_inf && b < inf && c > minus_inf && d < inf) {
+            alpha_ = (c - d) / (a - b);
+            beta_ = c - a * alpha_;
+        } else if (a == minus_inf && b != inf && c == minus_inf && d != inf) {
+            alpha_ = 1.0;
+            beta_ = d - b;
+        } else if (a != minus_inf && b == inf && c != minus_inf && d == inf) {
+            alpha_ = 1.0;
+            beta_ = c - a;
+        } else if (a == minus_inf && b == inf && c == minus_inf && d == inf) {
+            alpha_ = 1.0;
+            beta_ = 0.0;
+        } else {
+            throw simplemc_exception("Wrong intervals in linear map", "linear_map::set");
+        }
+        domain_ = dom;
+        range_ = rg;
+    }
 
     /**
      * @brief Map a value \f$ x \f$ from the domain \f$ [a, b] \f$ to the range \f$ [c, d] \f$.
@@ -65,7 +101,7 @@ public:
      * @param x Input value \f$ x \in [a, b] \f$.
      * @return Mapped value \f$ y(x) \in [c, d] \f$.
      */
-    [[nodiscard]] double map(double x) const {
+    [[nodiscard]] constexpr double map(double x) const {
         assert(x >= domain_[0] && x <= domain_[1]);
         return alpha_ * x + beta_;
     }
@@ -77,7 +113,7 @@ public:
      * @param x Input value \f$ x \in [c, d] \f$.
      * @return Mapped value \f$ y^{-1}(x) \in [a, b] \f$.
      */
-    [[nodiscard]] double inverse_map(double x) const {
+    [[nodiscard]] constexpr double inverse_map(double x) const {
         assert(x >= range_[0] && x <= range_[1]);
         return (x - beta_) / alpha_;
     }
@@ -85,23 +121,23 @@ public:
     /**
      * @brief Get the domain of the linear map.
      *
-     * @return `std::array<double, 2>` containing the domain \f$ [a, b] \f$.
+     * @return Domain \f$ [a, b] \f$ as an interval_type.
      */
-    [[nodiscard]] auto domain() const { return domain_; }
+    [[nodiscard]] constexpr auto domain() const noexcept { return domain_; }
 
     /**
      * @brief Get the range of the linear map.
      *
-     * @return `std::array<double, 2>`containing the domain \f$ [c, d] \f$.
+     * @return Range \f$ [c, d] \f$ as an interval_type.
      */
-    [[nodiscard]] auto range() const { return range_; }
+    [[nodiscard]] constexpr auto range() const noexcept { return range_; }
 
     /**
      * @brief Get the linear function parameters.
      *
      * @return `std::pair` containing the parameters \f$ \alpha \f$ and \f$ \beta \f$.
      */
-    [[nodiscard]] auto params() const { return std::make_pair(alpha_, beta_); }
+    [[nodiscard]] constexpr auto params() const noexcept { return std::make_pair(alpha_, beta_); }
 
 private:
     interval_type domain_ { 0.0, 1.0 };
@@ -109,6 +145,8 @@ private:
     double alpha_ { 1.0 };
     double beta_ { 0.0 };
 };
+
+/** @} */
 
 } // namespace simplemc
 
