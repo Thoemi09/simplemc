@@ -142,3 +142,47 @@ TEST(SimplemcNumeric, ObliqueLattice) {
     ASSERT_EQ(std::string("oblique_2d"), lattice_tag_to_string(p.tag));
     ASSERT_EQ(lattice_tag::oblique_2d, string_to_lattice_tag("oblique_2d"));
 }
+
+// Test exceptions for invalid 2D lattice parameters.
+TEST(SimplemcNumeric, Invalid2DLatticeParameters) {
+    // invalid lattice constants
+    ASSERT_THROW((void)make_square_lattice(0), simplemc_exception);
+    ASSERT_THROW((void)make_square_lattice(-1), simplemc_exception);
+    ASSERT_THROW((void)make_rectangular_lattice(0, 1), simplemc_exception);
+    ASSERT_THROW((void)make_rectangular_lattice(1, 0), simplemc_exception);
+
+    // invalid angle
+    ASSERT_THROW((void)make_oblique_lattice(1, 1, 0), simplemc_exception);
+    ASSERT_THROW((void)make_oblique_lattice(1, 1, -1), simplemc_exception);
+    ASSERT_THROW((void)make_oblique_lattice(1, 1, pi + 0.1), simplemc_exception);
+}
+
+// Test check_basis_vectors with linearly dependent 2D vectors.
+TEST(SimplemcNumeric, CheckBasisVectors2D) {
+    matrix_type mat;
+    mat << 1.0, 2.0, 1.0, 2.0;
+    ASSERT_THROW(check_basis_vectors(mat), simplemc_exception);
+}
+
+// Test calculate_cell_volume 2D.
+TEST(SimplemcNumeric, CalculateCellVolume2D) {
+    matrix_type mat;
+    mat << 2.0, 0.0, 0.0, 3.0;
+    ASSERT_DOUBLE_EQ(6.0, calculate_cell_volume(mat));
+}
+
+// Test calculate_cell_vertices 2D.
+TEST(SimplemcNumeric, CalculateCellVertices2D) {
+    matrix_type mat;
+    mat << 2.0, 0.0, 0.0, 3.0;
+    const auto vertices = calculate_cell_vertices(mat);
+    // vertices: (0,0), (2,0), (2,3), (0,3)
+    ASSERT_DOUBLE_EQ(0.0, vertices(0, 0));
+    ASSERT_DOUBLE_EQ(0.0, vertices(1, 0));
+    ASSERT_DOUBLE_EQ(2.0, vertices(0, 1));
+    ASSERT_DOUBLE_EQ(0.0, vertices(1, 1));
+    ASSERT_DOUBLE_EQ(2.0, vertices(0, 2));
+    ASSERT_DOUBLE_EQ(3.0, vertices(1, 2));
+    ASSERT_DOUBLE_EQ(0.0, vertices(0, 3));
+    ASSERT_DOUBLE_EQ(3.0, vertices(1, 3));
+}

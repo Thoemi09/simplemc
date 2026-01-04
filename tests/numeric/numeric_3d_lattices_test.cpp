@@ -372,8 +372,57 @@ TEST(SimplemcNumeric, TriclinicLattice) {
     ASSERT_NEAR(exp_real_vol, lat.real_cell_volume(), tol);
     double exp_rec_vol = 7.326602738000903;
     ASSERT_NEAR(exp_rec_vol, lat.reciprocal_cell_volume(), tol);
-    ASSERT_EQ(std::string("triclinic_3d"), lattice_tag_to_string(p.tag));
 
     // lattice parameters and tag
+    ASSERT_EQ(std::string("triclinic_3d"), lattice_tag_to_string(p.tag));
     ASSERT_EQ(lattice_tag::triclinic_3d, string_to_lattice_tag("triclinic_3d"));
+}
+
+// Test exceptions for invalid 3D lattice parameters.
+TEST(SimplemcNumeric, Invalid3DLatticeParameters) {
+    // invalid lattice constants
+    ASSERT_THROW((void)make_cubic_lattice(0), simplemc_exception);
+    ASSERT_THROW((void)make_cubic_lattice(-1), simplemc_exception);
+    ASSERT_THROW((void)make_orthorhombic_lattice(0, 1, 1), simplemc_exception);
+    ASSERT_THROW((void)make_orthorhombic_lattice(1, 0, 1), simplemc_exception);
+    ASSERT_THROW((void)make_orthorhombic_lattice(1, 1, 0), simplemc_exception);
+
+    // invalid angles
+    ASSERT_THROW((void)make_triclinic_lattice(1, 1, 1, 0, 1, 1), simplemc_exception);
+    ASSERT_THROW((void)make_triclinic_lattice(1, 1, 1, 1, 0, 1), simplemc_exception);
+    ASSERT_THROW((void)make_triclinic_lattice(1, 1, 1, 1, 1, 0), simplemc_exception);
+    ASSERT_THROW((void)make_triclinic_lattice(1, 1, 1, pi + 0.1, 1, 1), simplemc_exception);
+}
+
+// Test check_basis_vectors with linearly dependent 3D vectors.
+TEST(SimplemcNumeric, CheckBasisVectors3D) {
+    matrix_type mat;
+    mat << 1.0, 2.0, 3.0, 1.0, 2.0, 3.0, 1.0, 2.0, 3.0;
+    ASSERT_THROW(check_basis_vectors(mat), simplemc_exception);
+}
+
+// Test calculate_cell_volume 3D.
+TEST(SimplemcNumeric, CalculateCellVolume3D) {
+    matrix_type mat;
+    mat << 2.0, 0.0, 0.0, 0.0, 3.0, 0.0, 0.0, 0.0, 4.0;
+    ASSERT_DOUBLE_EQ(24.0, calculate_cell_volume(mat));
+}
+
+// Test calculate_cell_vertices 3D.
+TEST(SimplemcNumeric, CalculateCellVertices3D) {
+    matrix_type mat;
+    mat << 2.0, 0.0, 0.0, 0.0, 3.0, 0.0, 0.0, 0.0, 4.0;
+    const auto vertices = calculate_cell_vertices(mat);
+    // vertex 0: (0,0,0)
+    ASSERT_DOUBLE_EQ(0.0, vertices(0, 0));
+    ASSERT_DOUBLE_EQ(0.0, vertices(1, 0));
+    ASSERT_DOUBLE_EQ(0.0, vertices(2, 0));
+    // vertex 1: (2,0,0)
+    ASSERT_DOUBLE_EQ(2.0, vertices(0, 1));
+    ASSERT_DOUBLE_EQ(0.0, vertices(1, 1));
+    ASSERT_DOUBLE_EQ(0.0, vertices(2, 1));
+    // vertex 6: (2,3,4)
+    ASSERT_DOUBLE_EQ(2.0, vertices(0, 6));
+    ASSERT_DOUBLE_EQ(3.0, vertices(1, 6));
+    ASSERT_DOUBLE_EQ(4.0, vertices(2, 6));
 }
