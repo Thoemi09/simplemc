@@ -208,17 +208,20 @@ template <int N>
     requires(N == 1 || N == 2 || N == 3)
 [[nodiscard]] auto calculate_cell_vertices(const Eigen::Matrix<double, N, N>& C) {
     if constexpr (N == 1) {
-        auto res = Eigen::Matrix<double, 1, 2>::Zero();
+        using mat_t = Eigen::Matrix<double, 1, 2>;
+        mat_t res = mat_t::Zero();
         res(0, 1) = C(0, 0);
         return res;
     } else if constexpr (N == 2) {
-        auto res = Eigen::Matrix<double, 2, 4>::Zero();
+        using mat_t = Eigen::Matrix<double, 2, 4>;
+        mat_t res = mat_t::Zero();
         res.col(1) = C.col(0);
         res.col(2) = C.col(0) + C.col(1);
         res.col(3) = C.col(1);
         return res;
     } else {
-        auto res = Eigen::Matrix<double, 3, 8>::Zero();
+        using mat_t = Eigen::Matrix<double, 3, 8>;
+        mat_t res = mat_t::Zero();
         res.col(1) = C.col(0);
         res.col(2) = C.col(0) + C.col(1);
         res.col(3) = C.col(1);
