@@ -63,17 +63,48 @@ TEST(SimplemcNumeric, MakeNans) {
 
 // Test some utilty functions.
 TEST(SimplemcNumeric, UtilityFunctions) {
-    // abs_diff and rel_diff
+    // abs_diff and rel_diff for arithmetic types
     ASSERT_DOUBLE_EQ(simplemc::abs_diff(1e-5, 1e-5), 0);
     ASSERT_DOUBLE_EQ(simplemc::rel_diff(1e-5, 1e-5), 0);
     ASSERT_DOUBLE_EQ(simplemc::abs_diff(1e-5, 2e-5), 1e-5);
     ASSERT_DOUBLE_EQ(simplemc::rel_diff(1e-5, 2e-5), 1);
 
-    // isfinite
+    // abs_diff and rel_diff for complex types
+    std::complex<double> z1 { 1.0, 2.0 };
+    std::complex<double> z2 { 1.0, 2.0 };
+    ASSERT_DOUBLE_EQ(simplemc::abs_diff(z1, z2), 0);
+    ASSERT_DOUBLE_EQ(simplemc::rel_diff(z1, z2), 0);
+    std::complex<double> z3 { 2.0, 2.0 };
+    ASSERT_DOUBLE_EQ(simplemc::abs_diff(z1, z3), 1.0);
+    ASSERT_TRUE(simplemc::rel_diff(z1, z3) > 0);
+
+    // rel_diff with zero values (edge case)
+    ASSERT_TRUE(simplemc::rel_diff(0.0, 1e-10) > 0);
+    ASSERT_TRUE(simplemc::rel_diff(1e-10, 0.0) > 0);
+    std::complex<double> z_zero { 0.0, 0.0 };
+    std::complex<double> z_small { 1e-10, 0.0 };
+    ASSERT_TRUE(simplemc::rel_diff(z_zero, z_small) > 0);
+    ASSERT_TRUE(simplemc::rel_diff(z_small, z_zero) > 0);
+
+    // isfinite for arithmetic types
     ASSERT_TRUE(simplemc::isfinite(1.0 / 1.0));
     ASSERT_FALSE(simplemc::isfinite(1.0 / 0.0));
-    std::complex<double> c1 { 1.0, std::log(-1) };
-    ASSERT_FALSE(simplemc::isfinite(c1));
+    ASSERT_TRUE(simplemc::isfinite(42));
+    ASSERT_TRUE(simplemc::isfinite(-3.14f));
+
+    // isfinite for complex types
+    constexpr auto inf = std::numeric_limits<double>::infinity();
+    constexpr auto nan = std::numeric_limits<double>::quiet_NaN();
+    std::complex<double> c_finite { 1.0, 2.0 };
+    std::complex<double> c_nan_imag { 1.0, nan };
+    std::complex<double> c_nan_real { nan, 2.0 };
+    std::complex<double> c_inf_imag { 1.0, inf };
+    std::complex<double> c_inf_real { inf, 2.0 };
+    ASSERT_TRUE(simplemc::isfinite(c_finite));
+    ASSERT_FALSE(simplemc::isfinite(c_nan_imag));
+    ASSERT_FALSE(simplemc::isfinite(c_nan_real));
+    ASSERT_FALSE(simplemc::isfinite(c_inf_imag));
+    ASSERT_FALSE(simplemc::isfinite(c_inf_real));
 }
 
 // Test map_to_interval and map_to_interval_lb functions.
@@ -177,23 +208,47 @@ TEST(SimplemcNumeric, EigenFunctions) {
     mat(5, 5) = inf;
     ASSERT_FALSE(simplemc::isfinite(mat));
 
-    // abs_diff and rel_diff
+    // abs_diff and rel_diff for vectors
     Eigen::Vector3d v1 { 1.0, 2.0, 3.0 };
     Eigen::Vector3d v2 { 1.0, 2.0, 3.0 + 1e-5 };
     check_near(simplemc::abs_diff(v1, v2), 1e-5);
     ASSERT_TRUE(simplemc::rel_diff(v1, v2) < 1e-5);
+
+    // abs_diff and rel_diff for matrices
+    Eigen::Matrix2d m1 = Eigen::Matrix2d::Identity();
+    Eigen::Matrix2d m2 = Eigen::Matrix2d::Identity();
+    ASSERT_DOUBLE_EQ(simplemc::abs_diff(m1, m2), 0.0);
+    ASSERT_DOUBLE_EQ(simplemc::rel_diff(m1, m2), 0.0);
+    m2(0, 0) = 1.0 + 1e-6;
+    ASSERT_TRUE(simplemc::abs_diff(m1, m2) > 0);
+    ASSERT_TRUE(simplemc::rel_diff(m1, m2) > 0);
+
+    // rel_diff with zero norm (edge case)
+    Eigen::Vector2d v_zero = Eigen::Vector2d::Zero();
+    Eigen::Vector2d v_small { 1e-10, 0.0 };
+    ASSERT_TRUE(simplemc::rel_diff(v_zero, v_small) > 0);
+    ASSERT_TRUE(simplemc::rel_diff(v_small, v_zero) > 0);
 }
 
 // Test conversion between cartesian and polar coordinates.
 TEST(SimplemcNumeric, PolarCartesianConversion) {
-    Eigen::Vector3d v3_c { 1.0, 0.0, 0.0 };
-    Eigen::Vector3d v3_p { 1.0, std::numbers::pi / 2, 0.0 };
-    check_range_near(simplemc::cartesian_to_polar(v3_c), v3_p);
-    check_range_near(simplemc::polar_to_cartesian(v3_p), v3_c);
+    // 1D (identity transformation)
+    Eigen::Matrix<double, 1, 1> v1_c { 3.14 };
+    Eigen::Matrix<double, 1, 1> v1_p { 3.14 };
+    check_range_near(simplemc::cartesian_to_polar(v1_c), v1_p);
+    check_range_near(simplemc::polar_to_cartesian(v1_p), v1_c);
+
+    // 2D
     Eigen::Vector2d v2_p { std::numbers::sqrt2, std::numbers::pi / 4 };
     Eigen::Vector2d v2_c { 1.0, 1.0 };
     check_range_near(simplemc::polar_to_cartesian(v2_p), v2_c);
     check_range_near(simplemc::cartesian_to_polar(v2_c), v2_p);
+
+    // 3D
+    Eigen::Vector3d v3_c { 1.0, 0.0, 0.0 };
+    Eigen::Vector3d v3_p { 1.0, std::numbers::pi / 2, 0.0 };
+    check_range_near(simplemc::cartesian_to_polar(v3_c), v3_p);
+    check_range_near(simplemc::polar_to_cartesian(v3_p), v3_c);
 }
 
 // Test the angle between two vectors.
@@ -261,4 +316,51 @@ TEST(SimplemcNumeric, LinearMap) {
     check_map(lm { { -1, inf }, { 0, inf } }, { -1, inf }, { 0, inf });
     check_map(lm { { minus_inf, 1 }, { minus_inf, 80 } }, { minus_inf, 1 }, { minus_inf, 80 });
     check_map(lm { { minus_inf, inf }, { minus_inf, inf } }, { minus_inf, inf }, { minus_inf, inf });
+}
+
+// Test linear map getters.
+TEST(SimplemcNumeric, LinearMapGetters) {
+    simplemc::linear_map map { { -1.0, 1.0 }, { 0.0, 80.0 } };
+
+    // domain() getter
+    auto dom = map.domain();
+    ASSERT_DOUBLE_EQ(dom[0], -1.0);
+    ASSERT_DOUBLE_EQ(dom[1], 1.0);
+
+    // range() getter
+    auto rg = map.range();
+    ASSERT_DOUBLE_EQ(rg[0], 0.0);
+    ASSERT_DOUBLE_EQ(rg[1], 80.0);
+
+    // params() getter
+    auto [alpha, beta] = map.params();
+    ASSERT_DOUBLE_EQ(alpha, 40.0);
+    ASSERT_DOUBLE_EQ(beta, 40.0);
+
+    // verify mapping is consistent with params
+    ASSERT_DOUBLE_EQ(map.map(0.0), alpha * 0.0 + beta);
+    ASSERT_DOUBLE_EQ(map.map(0.5), alpha * 0.5 + beta);
+}
+
+// Test linear map set() method and exceptions.
+TEST(SimplemcNumeric, LinearMapSetAndExceptions) {
+    // set() method
+    simplemc::linear_map map {};
+    map.set({ 0.0, 10.0 }, { 0.0, 100.0 });
+    ASSERT_DOUBLE_EQ(map.map(5.0), 50.0);
+    ASSERT_DOUBLE_EQ(map.inverse_map(50.0), 5.0);
+
+    // exception for invalid domain (a >= b)
+    ASSERT_THROW(simplemc::linear_map({ 1.0, 1.0 }, { 0.0, 10.0 }), simplemc::simplemc_exception);
+    ASSERT_THROW(simplemc::linear_map({ 2.0, 1.0 }, { 0.0, 10.0 }), simplemc::simplemc_exception);
+
+    // exception for invalid range (c >= d)
+    ASSERT_THROW(simplemc::linear_map({ 0.0, 1.0 }, { 10.0, 10.0 }), simplemc::simplemc_exception);
+    ASSERT_THROW(simplemc::linear_map({ 0.0, 1.0 }, { 20.0, 10.0 }), simplemc::simplemc_exception);
+
+    // exception for incompatible infinite intervals
+    constexpr auto inf = std::numeric_limits<double>::infinity();
+    ASSERT_THROW(simplemc::linear_map({ -inf, inf }, { 0.0, 1.0 }), simplemc::simplemc_exception);
+    ASSERT_THROW(simplemc::linear_map({ 0.0, 1.0 }, { -inf, inf }), simplemc::simplemc_exception);
+    ASSERT_THROW(simplemc::linear_map({ -inf, 1.0 }, { 0.0, inf }), simplemc::simplemc_exception);
 }

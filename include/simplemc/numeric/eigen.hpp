@@ -351,14 +351,14 @@ template <eigen_vector_dbl V1, eigen_vector_dbl V2>
  * \epsilon \f$, where \f$ \epsilon \f$ is some threshold.
  *
  * @tparam D Derived Eigen type.
- * @param m Matrix \f$ \mathbf{M} \f$ to be checked.
+ * @param M Matrix \f$ \mathbf{M} \f$ to be checked.
  * @param eps Threshold \f$ \epsilon \f$.
  * @return True, if the matrix is considered to be singular.
  */
 template <typename D>
-[[nodiscard]] bool is_matrix_singular(const Eigen::MatrixBase<D>& m, double eps = 1e-14) {
-    assert(m.rows() == m.cols());
-    return std::abs(m.determinant()) <= eps;
+[[nodiscard]] bool is_matrix_singular(const Eigen::MatrixBase<D>& M, double eps = 1e-14) {
+    assert(M.rows() == M.cols());
+    return std::abs(M.determinant()) <= eps;
 }
 
 /** @} */
