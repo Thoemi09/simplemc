@@ -29,6 +29,8 @@ Here, we have already defined a lambda function that we will use in the followin
 In fact, this lambda could print any object as long as it has an overloaded `operator<<` for
 `std::ostream`.
 
+@subsection tut_numeric_1_bl Bravais lattices
+
 @ref simplemc-numeric-lattices in N-dimensions are fully defined by \f$ N \f$ linearly independent
 basis vectors \f$ \{ \mathbf{a}_1, \dots, \mathbf{a}_N \} \f$.
 Since it is convenient to work with matrices, we will usually put those basis vectors into the columns
@@ -62,6 +64,8 @@ In 3D, there are 14 different Bravais lattices (see @ref simplemc-numeric-lattic
 
 **simplemc** provides factory functions for each of those lattices and it is recommended to use them
 whenever possible
+
+@subsection tut_numeric_1_fcc Face-centered cubic (FCC) lattice
 
 The first lattice that we create is a face-centered cubic or an FCC lattice.
 Since the FCC lattice belongs to the cubic crystall system, it is defined by the single parameter
@@ -117,10 +121,10 @@ To get the basis vectors of the primitive unit cell of the FCC lattice, we can u
 simplemc::bravais_lattice::real_lattice_vectors function:
 
 ```cpp
-// get and print the basis vectors of the primitive cell
-auto fcc_basis = fcc.real_lattice_vectors();
-fmt::println("FCC basis vectors:");
-print_matrix(fcc_basis);
+  // get and print the basis vectors of the primitive cell
+  auto A = fcc.real_lattice_vectors();
+  fmt::println("FCC basis vectors:");
+  print_matrix(A);
 ```
 
 Output:
@@ -143,8 +147,8 @@ comparing them to the lattice parameters printed above:
 
 ```cpp
 // lengths and angles of primitive basis vectors
-fmt::println("|| a_1 || = {:.6g}", fcc_basis.col(0).norm());
-fmt::println("gamma_1 = <(b_1, c_1) = {:.6g}\n", simplemc::angle(fcc_basis.col(0), fcc_basis.col(1)));
+fmt::println("|| a_1 || = {:.6g}", A.col(0).norm());
+fmt::println("gamma_1 = <(b_1, c_1) = {:.6g}\n", simplemc::angle(A.col(0), A.col(1)));
 ```
 
 Output:
@@ -164,9 +168,9 @@ simplemc::bravais_lattice::reciprocal_lattice_vectors:
 
 ```cpp
 // get and print the basis vectors in reciprocal space
-auto fcc_basis_rec = fcc.reciprocal_lattice_vectors();
+auto B = fcc.reciprocal_lattice_vectors();
 fmt::println("FCC reciprocal basis vectors:");
-print_matrix(fcc_basis_rec);
+print_matrix(B);
 ```
 
 Output:
@@ -182,9 +186,9 @@ To check that the basis vectors are correct, let's calculate \f$ \mathbf{B}^T \m
 
 ```cpp
 // check that the condition B^T A = 2\pi I is satisfied
-auto bt_a = fcc_basis_rec.transpose() * fcc_basis;
+auto BT_A = B.transpose() * A;
 fmt::println("B^T A =");
-print_matrix(bt_a);
+print_matrix(BT_A);
 ```
 
 Output:
@@ -198,18 +202,20 @@ B^T A =
 
 As expected, this is equal to \f$ 2 \pi \mathbf{I} \f$.
 
+@subsection tut_numeric_1_bcc Body-centered cubic (BCC) lattice
+
 The reciprocal lattice of an FCC lattice is actually a body-centered cubic (BCC) lattice.
 To check this fact, we create a BCC lattice with the lattice constant of the conventional unit cell
 set to \f$ a = 2 |B_{ij}| \f$ for any \f$ i,j \f$ and print its primitive basis vectors:
 
 ```cpp
 // create a BCC lattice with the help of the reciprocal FCC lattice
-auto [bcc, bcc_params] = simplemc::make_bcc_lattice(2 * std::abs(fcc_basis_rec(0, 0)));
+auto [bcc, bcc_params] = simplemc::make_bcc_lattice(2 * std::abs(B(0, 0)));
 
 // get and print the BCC basis vectors of the primitive cell
-auto bcc_basis = bcc.real_lattice_vectors();
+auto A_bcc = bcc.real_lattice_vectors();
 fmt::println("BCC basis vectors:");
-print_matrix(bcc_basis);
+print_matrix(A_bcc);
 ```
 
 Output:
@@ -230,9 +236,9 @@ FCC lattice:
 
 ```cpp
 // get and print the BCC basis vectors in reciprocal space
-auto bcc_basis_rec = bcc.reciprocal_lattice_vectors();
-fmt::println("BCC reciprocal basis vectors");
-print_matrix(bcc_basis_rec);
+auto B_bcc = bcc.reciprocal_lattice_vectors();
+fmt::println("BCC reciprocal basis vectors:");
+print_matrix(B_bcc);
 ```
 
 Output:
@@ -249,60 +255,4 @@ the FCC lattice.
 
 @section tut_numeric_1_code Full code
 
-```cpp
-#include <Eigen/Dense>
-#include <fmt/base.h>
-#include <simplemc/numeric.hpp>
-#include <simplemc/utils.hpp>
-
-#include <cmath>
-
-int main() {
-    // print an Eigen::Matrix using fmt
-    auto print_matrix = [](const auto& mat) { fmt::println("{}\n", simplemc::to_string(mat)); };
-
-    // create an FCC lattice with the lattice constant a = 1.5
-    auto [fcc, fcc_params] = simplemc::make_fcc_lattice(1.5);
-
-    // print the lattice parameters of the conventional FCC unit cell
-    fmt::println("{} lattice parameters:", simplemc::lattice_tag_to_string(fcc_params.tag));
-    fmt::println("  a = {:.4g}", fcc_params.a);
-    fmt::println("  b = {:.4g}", fcc_params.b);
-    fmt::println("  c = {:.4g}", fcc_params.c);
-    fmt::println("  alpha = {:.4g}", fcc_params.alpha);
-    fmt::println("  beta = {:.4g}", fcc_params.beta);
-    fmt::println("  gamma = {:.4g}\n", fcc_params.gamma);
-
-    // get and print the basis vectors of the primitive cell
-    auto fcc_basis = fcc.real_lattice_vectors();
-    fmt::println("FCC basis vectors:");
-    print_matrix(fcc_basis);
-
-    // lengths and angles of primitive basis vectors
-    fmt::println("|| a_1 || = {:.6g}", fcc_basis.col(0).norm());
-    fmt::println("gamma_1 = <(b_1, c_1) = {:.6g}\n", simplemc::angle(fcc_basis.col(0), fcc_basis.col(1)));
-
-    // get and print the basis vectors in reciprocal space
-    auto fcc_basis_rec = fcc.reciprocal_lattice_vectors();
-    fmt::println("FCC reciprocal basis vectors:");
-    print_matrix(fcc_basis_rec);
-
-    // check that the condition B^T A = 2\pi I is satisfied
-    auto bt_a = fcc_basis_rec.transpose() * fcc_basis;
-    fmt::println("B^T A =");
-    print_matrix(bt_a);
-
-    // create a BCC lattice with the help of the reciprocal FCC lattice
-    auto [bcc, bcc_params] = simplemc::make_bcc_lattice(2 * std::abs(fcc_basis_rec(0, 0)));
-
-    // get and print the BCC basis vectors of the primitive cell
-    auto bcc_basis = bcc.real_lattice_vectors();
-    fmt::println("BCC basis vectors:");
-    print_matrix(bcc_basis);
-
-    // get and print the BCC basis vectors in reciprocal space
-    auto bcc_basis_rec = bcc.reciprocal_lattice_vectors();
-    fmt::println("BCC reciprocal basis vectors:");
-    print_matrix(bcc_basis_rec);
-}
-```
+@include tutorials/tut_numeric_1.cpp

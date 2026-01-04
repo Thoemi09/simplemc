@@ -18,6 +18,7 @@
 # tut_random_1: Generating random samples with simplemc-random.
 # tut_grids_1: Various 1-dimensional grids.
 # tut_grids_2: N-dimensional grids.
+# tut_numeric_1: Bravais lattices.
 
 add_executable(tut_utils_1 tut_utils_1.cpp)
 target_link_libraries(tut_utils_1 PRIVATE simplemc::simplemc)
@@ -66,3 +67,6 @@ target_link_libraries(tut_grids_1 PRIVATE simplemc::simplemc)
 
 add_executable(tut_grids_2 tut_grids_2.cpp)
 target_link_libraries(tut_grids_2 PRIVATE simplemc::simplemc)
+
+add_executable(tut_numeric_1 tut_numeric_1.cpp)
+target_link_libraries(tut_numeric_1 PRIVATE simplemc::simplemc)
