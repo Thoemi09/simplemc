@@ -120,6 +120,8 @@ void check_2d_lattice_parameters(const lattice_parameters& p);
  */
 [[nodiscard]] std::pair<bravais_lattice<2>, lattice_parameters> make_oblique_lattice(double a, double b, double gamma);
 
+/** @} */
+
 } // namespace simplemc
 
 #endif // SIMPLEMC_NUMERIC_BRAVAIS_LATTICE_2D_HPP

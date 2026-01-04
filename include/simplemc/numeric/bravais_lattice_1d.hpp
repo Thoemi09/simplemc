@@ -38,6 +38,8 @@ void check_1d_lattice_parameters(const lattice_parameters& p);
  */
 [[nodiscard]] std::pair<bravais_lattice<1>, lattice_parameters> make_linear_lattice(double a);
 
+/** @} */
+
 } // namespace simplemc
 
 #endif // SIMPLEMC_NUMERIC_BRAVAIS_LATTICE_1D_HPP

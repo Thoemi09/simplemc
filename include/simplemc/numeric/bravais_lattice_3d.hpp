@@ -376,6 +376,8 @@ void check_3d_lattice_parameters(const lattice_parameters& p);
 [[nodiscard]] std::pair<bravais_lattice<3>, lattice_parameters> make_triclinic_lattice(
     double a, double b, double c, double alpha, double beta, double gamma);
 
+/** @} */
+
 } // namespace simplemc
 
 #endif // SIMPLEMC_NUMERIC_BRAVAIS_LATTICE_3D_HPP

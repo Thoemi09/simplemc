@@ -12,6 +12,7 @@
 #include <cmath>
 #include <numbers>
 #include <string>
+#include <string_view>
 
 namespace simplemc {
 
@@ -88,10 +89,10 @@ enum class lattice_tag {
 /**
  * @brief Convert a string to a lattice tag.
  *
- * @param str `std::string` object.
+ * @param str `std::string_view` object.
  * @return simplemc::lattice_tag corresponding to the given string.
  */
-[[nodiscard]] lattice_tag string_to_lattice_tag(const std::string& str);
+[[nodiscard]] lattice_tag string_to_lattice_tag(std::string_view str);
 
 /**
  * @brief Parameters that specify the conventional unit cell of a Bravais lattice.
@@ -137,14 +138,14 @@ struct lattice_parameters {
  * vectors in its columns and \f$ \epsilon \f$ is some threshold.
  *
  * @tparam N Number of dimensions.
- * @param mat Matrix \f$ \mathbf{A} \f$ with the basis vectors in its columns.
+ * @param A Matrix \f$ \mathbf{A} \f$ with the basis vectors in its columns.
  * @param eps Threshold \f$ \epsilon \f$.
  */
 template <int N>
     requires(N == 1 || N == 2 || N == 3)
-void check_basis_vectors(const Eigen::Matrix<double, N, N>& mat, double eps = 1e-14) {
-    if (is_matrix_singular(mat, eps)) {
-        throw simplemc::simplemc_exception("Basis vectors are linearly dependent", "check_basis_vectors");
+void check_basis_vectors(const Eigen::Matrix<double, N, N>& A, double eps = 1e-14) {
+    if (is_matrix_singular(A, eps)) {
+        throw simplemc_exception("Basis vectors are linearly dependent");
     }
 }
 
@@ -156,13 +157,13 @@ void check_basis_vectors(const Eigen::Matrix<double, N, N>& mat, double eps = 1e
  * |\det(\mathbf{C})| \f$.
  *
  * @tparam N Number of dimensions.
- * @param mat Matrix \f$ \mathbf{C} \f$ with the vectors in its columns.
+ * @param C Matrix \f$ \mathbf{C} \f$ with the vectors in its columns.
  * @return Volume spanned by the given vectors.
  */
 template <int N>
     requires(N == 1 || N == 2 || N == 3)
-[[nodiscard]] double calculate_cell_volume(const Eigen::Matrix<double, N, N>& mat) {
-    return std::abs(mat.determinant());
+[[nodiscard]] double calculate_cell_volume(const Eigen::Matrix<double, N, N>& C) {
+    return std::abs(C.determinant());
 }
 
 /**
@@ -176,14 +177,14 @@ template <int N>
  * \right)^T \f$.
  *
  * @tparam N Number of dimensions.
- * @param mat Matrix \f$ \mathbf{A} \f$ with the real space basis vectors in its columns.
+ * @param A Matrix \f$ \mathbf{A} \f$ with the real space basis vectors in its columns.
  * @return Matrix \f$ \mathbf{B} \f$ with the reciprocal basis vectors in its columns.
  */
 template <int N>
     requires(N == 1 || N == 2 || N == 3)
-[[nodiscard]] auto calculate_reciprocal_lattice(const Eigen::Matrix<double, N, N>& mat) {
+[[nodiscard]] auto calculate_reciprocal_lattice(const Eigen::Matrix<double, N, N>& A) {
     using std::numbers::pi;
-    return mat.transpose().fullPivLu().inverse() * 2.0 * pi;
+    return A.transpose().fullPivLu().inverse() * 2.0 * pi;
 }
 
 /**
@@ -200,31 +201,31 @@ template <int N>
  * \mathbf{c}_3, \; \mathbf{c}_2 + \mathbf{c}_3 \right) \f$ in 3D.
  *
  * @tparam N Number of dimensions.
- * @param mat Matrix \f$ \mathbf{C} \f$ with the vectors in its columns.
+ * @param C Matrix \f$ \mathbf{C} \f$ with the vectors in its columns.
  * @return Matrix \f$ \mathbf{V} \f$ with the corresponding vertices in its columns.
  */
 template <int N>
     requires(N == 1 || N == 2 || N == 3)
-[[nodiscard]] auto calculate_cell_vertices(const Eigen::Matrix<double, N, N>& mat) {
+[[nodiscard]] auto calculate_cell_vertices(const Eigen::Matrix<double, N, N>& C) {
     if constexpr (N == 1) {
         auto res = Eigen::Matrix<double, 1, 2>::Zero();
-        res(0, 1) = mat(0, 0);
+        res(0, 1) = C(0, 0);
         return res;
     } else if constexpr (N == 2) {
         auto res = Eigen::Matrix<double, 2, 4>::Zero();
-        res.col(1) = mat.col(0);
-        res.col(2) = mat.col(0) + mat.col(1);
-        res.col(3) = mat.col(1);
+        res.col(1) = C.col(0);
+        res.col(2) = C.col(0) + C.col(1);
+        res.col(3) = C.col(1);
         return res;
     } else {
         auto res = Eigen::Matrix<double, 3, 8>::Zero();
-        res.col(1) = mat.col(0);
-        res.col(2) = mat.col(0) + mat.col(1);
-        res.col(3) = mat.col(1);
-        res.col(4) = mat.col(2);
-        res.col(5) = mat.col(2) + mat.col(0);
-        res.col(6) = mat.col(2) + mat.col(0) + mat.col(1);
-        res.col(7) = mat.col(2) + mat.col(1);
+        res.col(1) = C.col(0);
+        res.col(2) = C.col(0) + C.col(1);
+        res.col(3) = C.col(1);
+        res.col(4) = C.col(2);
+        res.col(5) = C.col(2) + C.col(0);
+        res.col(6) = C.col(2) + C.col(0) + C.col(1);
+        res.col(7) = C.col(2) + C.col(1);
         return res;
     }
 }
@@ -266,7 +267,7 @@ public:
      *
      * @return Number of dimensions.
      */
-    [[nodiscard]] static constexpr int dim() { return N; };
+    [[nodiscard]] static constexpr int dim() noexcept { return N; };
 
     /**
      * @brief Default constructor leaves the Bravais lattice unspecified and uninitialized.
@@ -278,25 +279,25 @@ public:
      *
      * @details It simply forwards the basis vector to reset().
      *
-     * @param mat Matrix \f$ \mathbf{A} = \big(\mathbf{a}_1 \cdots \mathbf{a}_N \big) \f$ with the
-     * real space basis vectors in its columns.
+     * @param A Matrix \f$ \mathbf{A} = \big(\mathbf{a}_1 \cdots \mathbf{a}_N \big) \f$ with the real
+     * space basis vectors in its columns.
      */
-    bravais_lattice(const matrix_type& mat) { reset(mat); }
+    bravais_lattice(const matrix_type& A) { reset(A); }
 
     /**
      * @brief Reset the Bravais lattice using the given basis vectors.
      *
      * @details The basis vectors are first checked with simplemc::check_basis_vectors.
      *
-     * @param mat Matrix \f$ \mathbf{A} = \big(\mathbf{a}_1 \cdots \mathbf{a}_N \big) \f$ with the
-     * real space basis vectors in its columns.
+     * @param A Matrix \f$ \mathbf{A} = \big(\mathbf{a}_1 \cdots \mathbf{a}_N \big) \f$ with the real
+     * space basis vectors in its columns.
      */
-    void reset(const matrix_type& mat) {
-        check_basis_vectors(mat);
-        real_lat_ = mat;
-        rec_lat_ = calculate_reciprocal_lattice(real_lat_);
-        real_vol_ = calculate_cell_volume(real_lat_);
-        rec_vol_ = calculate_cell_volume(rec_lat_);
+    void reset(const matrix_type& A) {
+        check_basis_vectors(A);
+        A_ = A;
+        B_ = calculate_reciprocal_lattice(A_);
+        volA_ = calculate_cell_volume(A_);
+        volB_ = calculate_cell_volume(B_);
     }
 
     /**
@@ -305,14 +306,14 @@ public:
      * @return Matrix \f$ \mathbf{A} = \big(\mathbf{a}_1 \cdots \mathbf{a}_N \big) \f$ with the real
      * space basis vectors in its columns.
      */
-    [[nodiscard]] const matrix_type& real_lattice_vectors() const { return real_lat_; }
+    [[nodiscard]] const matrix_type& real_lattice_vectors() const noexcept { return A_; }
 
     /**
      * @brief Get the unit cell volume spanned by the real space lattice vectors.
      *
      * @return Unit cell volume in real space, i.e. \f$ |\det(\mathbf{A})| \f$.
      */
-    [[nodiscard]] double real_cell_volume() const { return real_vol_; }
+    [[nodiscard]] double real_cell_volume() const noexcept { return volA_; }
 
     /**
      * @brief Get the reciprocal space lattice vectors.
@@ -320,20 +321,20 @@ public:
      * @return Matrix \f$ \mathbf{B} = \big(\mathbf{b}_1 \cdots \mathbf{b}_N \big) \f$ with the
      * reciprocal basis vectors in its columns.
      */
-    [[nodiscard]] const matrix_type& reciprocal_lattice_vectors() const { return rec_lat_; }
+    [[nodiscard]] const matrix_type& reciprocal_lattice_vectors() const noexcept { return B_; }
 
     /**
      * @brief Get the unit cell volume spanned by the reciprocal space lattice vectors.
      *
      * @return Unit cell volume in reciprocal space, i.e. \f$ |\det(\mathbf{B})| \f$.
      */
-    [[nodiscard]] double reciprocal_cell_volume() const { return rec_vol_; }
+    [[nodiscard]] double reciprocal_cell_volume() const noexcept { return volB_; }
 
 private:
-    matrix_type real_lat_;
-    matrix_type rec_lat_;
-    double real_vol_ { 0.0 };
-    double rec_vol_ { 0.0 };
+    matrix_type A_;
+    matrix_type B_;
+    double volA_ { 0.0 };
+    double volB_ { 0.0 };
 };
 
 /** @} */

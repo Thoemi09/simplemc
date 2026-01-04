@@ -15,7 +15,7 @@ namespace detail {
 
 void check_1d_lattice_parameters(const lattice_parameters& p) {
     if (p.a <= 0.0) {
-        throw simplemc_exception("a <= 0", "detail::check_1d_lattice_parameters");
+        throw simplemc_exception("a <= 0");
     }
 }
 
@@ -23,11 +23,16 @@ void check_1d_lattice_parameters(const lattice_parameters& p) {
 
 std::pair<bravais_lattice<1>, lattice_parameters> make_linear_lattice(double a) {
     using enum simplemc::lattice_tag;
+
+    // prepare lattice parameters
     lattice_parameters p { .a = a, .tag = linear_1d };
     detail::check_1d_lattice_parameters(p);
-    bravais_lattice<1>::matrix_type mat;
-    mat << a;
-    return { mat, p };
+
+    // prepare basis vectors
+    bravais_lattice<1>::matrix_type A;
+    A << a;
+
+    return { A, p };
 }
 
 } // namespace simplemc
