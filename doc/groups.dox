@@ -325,16 +325,16 @@
 /**
  * @defgroup simplemc-random simplemc-random
  * @brief Tools for generating random numbers and sampling various probability distributions.
- * 
- * @details **simplemc-random** provides 
- * - fast @ref simplemc-random-rngs (RNGs) and 
+ *
+ * @details **simplemc-random** provides
+ * - fast @ref simplemc-random-rngs (RNGs) and
  * - @ref simplemc-random-samples from common probability distributions.
- * 
+ *
  * See @ref tut_random_1 for a demonstration of the provided tools.
- * 
- * @note We want to emphasize that the @ref simplemc-random-rngs have been tested w.r.t. to their 
- * functionality but not their statistical quality. They are quite fast and easy to use but we would 
- * recommend to fall back to more established libraries like the 
+ *
+ * @note We want to emphasize that the @ref simplemc-random-rngs have been tested w.r.t. to their
+ * functionality but not their statistical quality. They are quite fast and easy to use but we would
+ * recommend to fall back to more established libraries like the
  * <a href="https://en.cppreference.com/w/cpp/numeric/random.html">C++ standard library</a> or
  * <a href="https://github.com/boostorg/random">Boost.Random</a> for serious calculations that require
  * high quality and well tested random numbers.
@@ -391,11 +391,11 @@
  * Output:
  *
  * ```
- *    x        f(x)   
- *  0.7996    0.3387  
- *  0.0721    2.0875  
- *  0.0127    2.4222  
- *  0.6038    0.5526  
+ *    x        f(x)
+ *  0.7996    0.3387
+ *  0.0721    2.0875
+ *  0.0127    2.4222
+ *  0.6038    0.5526
  *  0.4708    0.7704
  * ```
  */
@@ -543,28 +543,7 @@
  *
  * See simplemc::lattice_tag for an overview of the supported Bravais lattices.
  *
- * @code
- * #include <fmt/base.h>
- * #include <simplemc/numeric.hpp>
- * #include <simplemc/utils.hpp>
- *
- * int main() {
- *     // create an FCC lattice with a lattic constant of 1.5
- *     auto [fcc, lattice_params] = simplemc::make_fcc_lattice(1.5);
- *
- *     // print the lattice vectors of the primitive cell
- *     fmt::println("Lattice vectors:\n{}\n", simplemc::to_string(fcc.real_lattice_vectors()));
- *
- *     // print the volume of the primitive cell
- *     fmt::println("Volume: {}\n", fcc.real_cell_volume());
- *
- *     // print the reciprocal lattice vectors
- *     fmt::println("Reciprocal lattice vectors:\n{}\n", simplemc::to_string(fcc.reciprocal_lattice_vectors()));
- *
- *     // print the volume of the reciprocal cell
- *     fmt::println("Reciprocal volume: {}", fcc.reciprocal_cell_volume());
- * }
- * @endcode
+ * @include numeric/doc_lattices.cpp
  *
  * Output:
  *
