@@ -333,14 +333,14 @@ template <typename D1, typename D2>
  *   \rVert \lVert \mathbf{v} \rVert} \; .
  * \f]
  *
- * @tparam V1 simplemc::eigen_vector_dbl type.
- * @tparam V2 simplemc::eigen_vector_dbl type.
+ * @tparam D1 Derived Eigen type.
+ * @tparam D2 Dervied Eigen type.
  * @param u Vector \f$ \mathbf{u} \f$.
  * @param v Vector \f$ \mathbf{v} \f$.
  * @return Angle \f$ \Theta \f$ between the two vectors.
  */
-template <eigen_vector_dbl V1, eigen_vector_dbl V2>
-[[nodiscard]] double angle(const V1& u, const V2& v) {
+template <typename D1, typename D2>
+[[nodiscard]] double angle(const Eigen::MatrixBase<D1>& u, const Eigen::MatrixBase<D2>& v) {
     return std::acos(u.dot(v) / u.norm() / v.norm());
 }
 
