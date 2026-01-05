@@ -12,7 +12,6 @@ target_sources(simplemc-numeric
         bravais_lattice_1d.cpp
         bravais_lattice_2d.cpp
         bravais_lattice_3d.cpp
-        chebyshev_polynomial.cpp
         laguerre_polynomial.cpp
         hermite_polynomial.cpp)
 target_link_libraries(simplemc-numeric
