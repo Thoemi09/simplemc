@@ -11,8 +11,7 @@ target_sources(simplemc-numeric
         bravais_lattice.cpp
         bravais_lattice_1d.cpp
         bravais_lattice_2d.cpp
-        bravais_lattice_3d.cpp
-        laguerre_polynomial.cpp)
+        bravais_lattice_3d.cpp)
 target_link_libraries(simplemc-numeric
     PUBLIC
         simplemc::simplemc-grids
