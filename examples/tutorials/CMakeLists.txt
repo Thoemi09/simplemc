@@ -19,6 +19,7 @@
 # tut_grids_1: Various 1-dimensional grids.
 # tut_grids_2: N-dimensional grids.
 # tut_numeric_1: Bravais lattices.
+# tut_numeric_2: Using orthogonal polynomials.
 
 add_executable(tut_utils_1 tut_utils_1.cpp)
 target_link_libraries(tut_utils_1 PRIVATE simplemc::simplemc)
@@ -70,3 +71,6 @@ target_link_libraries(tut_grids_2 PRIVATE simplemc::simplemc)
 
 add_executable(tut_numeric_1 tut_numeric_1.cpp)
 target_link_libraries(tut_numeric_1 PRIVATE simplemc::simplemc)
+
+add_executable(tut_numeric_2 tut_numeric_2.cpp)
+target_link_libraries(tut_numeric_2 PRIVATE simplemc::simplemc)

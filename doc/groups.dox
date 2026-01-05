@@ -746,6 +746,8 @@
  * \f]
  * where \f$ f_l \f$ is a Fourier coefficient and \f$ p_l(x) \f$ is the l<sup>th</sup> order
  * polynomial.
+ * 
+ * See @ref tut_numeric_2 for an example how to use the provided orthogonal polynomials in practice.
  */
 
 /**

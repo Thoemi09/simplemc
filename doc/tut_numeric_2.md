@@ -33,7 +33,8 @@ functions \f$ \{ p_l(x) \} \f$:
 \f]
 Here, \f$ f_l \f$ are the Fourier coefficients.
 
-**simplemc** provides some common basis functions in @ref simplemc-numeric-poly "Orthogonal polynomials":
+**simplemc** provides some common basis functions in 
+@ref simplemc-numeric-poly "Orthogonal polynomials":
 - simplemc::legendre_polynomial: Legendre polynomials \f$ P_l(x) \f$,
 - simplemc::chebyshev_polynomial_first: Chebyshev polynomials of the first kind \f$ T_l(x) \f$,
 - simplemc::chebyshev_polynomial_second: Chebyshev polynomials of the second kind \f$ U_l(x) \f$,
@@ -103,7 +104,7 @@ Then we construct the linear map \f$ y : [-1, 1] \to [2, 5] \f$:
 
 ```cpp
 // linear map y : [-1, 1] -> [2, 5]
-auto y_x = simplemc::linear_map(simplemc::legendre_polynomial::domain(), domain_f);
+auto y_x = simplemc::linear_map { simplemc::legendre_polynomial::domain(), domain_f };
 ```
 
 Furthermore, to perform the integral specified above, we need a function that evaluates Legendre
@@ -117,7 +118,7 @@ simplemc::legendre_polynomial (it is good enough for our simple tutorial):
 ```cpp
 // emulate the std::legendre function
 auto legendre = [](int l, double x) {
-    auto p_l = simplemc::legendre_polynomial(x);
+    auto p_l = simplemc::legendre_polynomial { x };
     for (int i = 0; i < l; ++i) {
         p_l.next();
     }
@@ -160,7 +161,7 @@ f_l P_l(x(y)) \f$ for a given \f$ y \in [2, 5] \f$ argument and up to a given ma
 ```cpp
 // lambda to sum the truncated Fourier series S_n(y) = \sum_{l=0}^{n} f_l p_l(x(y))
 auto fourier_sum = [&coeffs, &y_x](int n, double y) {
-    auto p_l = simplemc::legendre_polynomial(y_x.inverse_map(y));
+    auto p_l = simplemc::legendre_polynomial { y_x.inverse_map(y) };
     double sum = 0.0;
     for (int l = 0; l <= n; ++l) {
         sum += coeffs[l] * p_l.next();
@@ -179,7 +180,7 @@ simplemc::linear_grid test_grid { domain_f[0], domain_f[1], 11 };
 
 // test the function approximation f(y) \approx S_n(y) for n = 3, 5, 7, 10
 fmt::println("{:<10}{:<20}{:<20}{:<20}{:<20}{:<20}", "y", "S_3(y)", "S_5(y)", "S_7(y)", "S_10(y)", "f(y)");
-for (auto y : simplemc::grid_view(test_grid)) {
+for (auto y : test_grid) {
     fmt::println("{:<10.1f}{:<20.8g}{:<20.8g}{:<20.8g}{:<20.8g}{:<20.8g}", y, fourier_sum(3, y), fourier_sum(5, y),
         fourier_sum(7, y), fourier_sum(10, y), f(y));
 }
@@ -194,17 +195,17 @@ Then we loop over the grid points and output the results for \f$ S_3(y_i) \f$, \
 Output:
 
 ```
-y         S_3(y)              S_5(y)              S_7(y)              S_10(y)             f(y)
-2.0       5.876862            7.3540199           7.3886481           7.3890533           7.3890561
-2.3       10.284328           9.988444            9.9741964           9.9741816           9.9741825
-2.6       14.135096           13.458356           13.463643           13.463739           13.463738
-2.9       18.44093            18.162749           18.174256           18.174145           18.174145
-3.2       24.213596           24.534395           24.532557           24.53253            24.53253
-3.5       32.464859           33.12755            33.115331           33.115453           33.115452
-3.8       44.206485           44.705656           44.701192           44.701184           44.701184
-4.1       60.450237           60.329036           60.340413           60.340287           60.340288
-4.4       82.207881           81.442605           81.450777           81.45087            81.450869
-4.7       110.49118           109.96356           109.94717           109.94717           109.94717
+y         S_3(y)              S_5(y)              S_7(y)              S_10(y)             f(y)                
+2.0       5.876862            7.3540199           7.3886481           7.3890533           7.3890561           
+2.3       10.284328           9.988444            9.9741964           9.9741816           9.9741825           
+2.6       14.135096           13.458356           13.463643           13.463739           13.463738           
+2.9       18.44093            18.162749           18.174256           18.174145           18.174145           
+3.2       24.213596           24.534395           24.532557           24.53253            24.53253            
+3.5       32.464859           33.12755            33.115331           33.115453           33.115452           
+3.8       44.206485           44.705656           44.701192           44.701184           44.701184           
+4.1       60.450237           60.329036           60.340413           60.340287           60.340288           
+4.4       82.207881           81.442605           81.450777           81.45087            81.450869           
+4.7       110.49118           109.96356           109.94717           109.94717           109.94717           
 5.0       146.31191           148.3691            148.41267           148.41316           148.41316
 ```
 
@@ -212,69 +213,4 @@ As expected, the approximation gets better the more Fourier coefficients we incl
 
 @section tut_numeric_2_code Full code
 
-```cpp
-#include <fmt/base.h>
-#include <simplemc/grids.hpp>
-#include <simplemc/numeric.hpp>
-
-#include <array>
-#include <cmath>
-#include <vector>
-
-int main() {
-    // define the function f(y) = e^y
-    auto f = [](double y) { return std::exp(y); };
-
-    // define the domain [c, d] = [2, 5]
-    constexpr auto domain_f = std::array<double, 2> { 2.0, 5.0 };
-
-    // linear map y : [-1, 1] -> [2, 5]
-    auto y_x = simplemc::linear_map(simplemc::legendre_polynomial::domain(), domain_f);
-
-    // emulate the std::legendre function
-    auto legendre = [](int l, double x) {
-        auto p_l = simplemc::legendre_polynomial(x);
-        for (int i = 0; i < l; ++i) {
-            p_l.next();
-        }
-        return p_l.current();
-    };
-
-    // calculate 10 Fourier coefficients
-    std::vector<double> coeffs(10);
-    for (int k = 0; k < static_cast<int>(coeffs.size()); ++k) {
-        // define the integrand g_k(y) = f(y) p_k(x(y)) w(x(y))
-        auto g = [&](double y) {
-            const auto x_y = y_x.inverse_map(y);
-            return f(y) * legendre(k, x_y) * simplemc::legendre_polynomial::weight(x_y);
-        };
-
-        // perform the integral I_k = \int_2^5 g_k(y) dy
-        auto [i_k, err, n] = simplemc::simpson_quadrature(g, domain_f[0], domain_f[1]);
-
-        // get the coefficient f_k = I_k / (N_k \alpha)
-        coeffs[k] = i_k / simplemc::legendre_polynomial::norm(k) / y_x.params().first;
-    }
-
-    // lambda to sum the truncated Fourier series S_n(y) = \sum_{l=0}^{n} f_l p_l(x(y))
-    auto fourier_sum = [&coeffs, &y_x](int n, double y) {
-        auto p_l = simplemc::legendre_polynomial(y_x.inverse_map(y));
-        double sum = 0.0;
-        for (int l = 0; l <= n; ++l) {
-            sum += coeffs[l] * p_l.next();
-        }
-        return sum;
-    };
-
-    // create the grid at which we want to test our function approximation
-    simplemc::linear_grid test_grid { domain_f[0], domain_f[1], 11 };
-
-    // test the function approximation f(y) \approx S_n(y) for n = 3, 5, 7, 10
-    fmt::println("{:<10}{:<20}{:<20}{:<20}{:<20}{:<20}", "y", "S_3(y)", "S_5(y)", "S_7(y)", "S_10(y)", "f(y)");
-    for (auto y : simplemc::grid_view(test_grid)) {
-        fmt::println("{:<10.1f}{:<20.8g}{:<20.8g}{:<20.8g}{:<20.8g}{:<20.8g}", y, fourier_sum(3, y), fourier_sum(5, y),
-            fourier_sum(7, y), fourier_sum(10, y), f(y));
-    }
-    fmt::println("");
-}
-```
+@include tut_numeric_2.cpp
