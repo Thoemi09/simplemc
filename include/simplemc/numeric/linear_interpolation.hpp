@@ -26,7 +26,7 @@ namespace detail {
 
 // Linear interpolation given the ratio xd = (x - x0) / (x1 - x0) and the function values f0 = f(x0)
 // and f1 = f(x1).
-inline double interp_linear_1d(double xd, double f0, double f1) {
+[[nodiscard]] constexpr double interp_linear_1d(double xd, double f0, double f1) noexcept {
     return f0 * (1 - xd) + f1 * xd;
 }
 
@@ -63,39 +63,7 @@ inline double interp_linear_1d(double xd, double f0, double f1) {
  * @note The function values are not owned by the interpolation class. Only a `std::span` to the
  * original data is stored.
  *
- * @code{.cpp}
- * #include <fmt/base.h>
- * #include <simplemc/grids.hpp>
- * #include <simplemc/numeric/linear_interpolation.hpp>
- * #include <simplemc/utils/ranges.hpp>
- *
- * #include <vector>
- *
- * int main() {
- *     // define the function f(x) = x^2 that we want to interpolate
- *     auto f = [](double x) { return x * x; };
- *
- *     // create a linear interpolation grid of size 50 on [0, 2]
- *     simplemc::linear_grid interp_grid { 0, 2, 50 };
- *
- *     // obtain the function values at the grid points
- *     auto fview = simplemc::ranges::transform_view(simplemc::grid_view(interp_grid), [&f](double x) { return f(x); });
- *     auto fvals = std::vector<double>(fview.begin(), fview.end());
- *
- *     // create the interpolation object for f(x) on the interpolation grid
- *     auto interp = simplemc::linear_interpolation { interp_grid, fvals };
- *
- *     // create the grid at which we want to test our interpolation
- *     simplemc::linear_grid test_grid { 0, 2, 11 };
- *
- *     // test the interpolation of the function f(x)
- *     fmt::println("{:<10}{:<20}{:<20}", "x", "interp(x)", "f(x)");
- *     for (auto x : simplemc::grid_view(test_grid)) {
- *         fmt::println("{:<10.1f}{:<20.8g}{:<20.8g}", x, interp(x), f(x));
- *     }
- *     fmt::println("");
- * }
- * @endcode
+ * @include numeric/doc_linear_interpolation_1d.cpp
  *
  * Output:
  *
@@ -129,7 +97,7 @@ public:
      *
      * @return Number of dimensions, \f$ N = 1 \f$.
      */
-    static constexpr std::size_t dim() { return 1; }
+    [[nodiscard]] static constexpr std::size_t dim() noexcept { return 1; }
 
     /**
      * @brief Construct a linear interpolation object on a given grid \f$ g \f$ with the given
@@ -144,10 +112,9 @@ public:
      * @param g 1-dimensional grid \f$ g \f$.
      * @param fvals Function values \f$ f_i \f$.
      */
-    linear_interpolation(grid_type g, const std::span<double>& fvals) : grid_(std::move(g)), fvals_(fvals) {
+    constexpr linear_interpolation(grid_type g, const std::span<double>& fvals) : grid_(std::move(g)), fvals_(fvals) {
         if (grid_.size() != static_cast<long>(fvals_.size())) {
-            throw simplemc_exception(
-                "Number of grid points not equal to number of y values.", "linear_interpolation::linear_interplation");
+            throw simplemc_exception("Number of grid points not equal to number of y values");
         }
     }
 
@@ -166,7 +133,7 @@ public:
      * @param x Point \f$ x \in \mathrm{D} \f$ at which to interpolate.
      * @return Interpolated value \f$ h(x) \f$.
      */
-    [[nodiscard]] double operator()(double x) const {
+    [[nodiscard]] constexpr double operator()(double x) const {
         const auto idx = index_subrange(grid_, 2, x);
         const auto xd = (x - grid_.at(idx)) / (grid_.at(idx + 1) - grid_.at(idx));
         return detail::interp_linear_1d(xd, fvals_[idx], fvals_[idx + 1]);
@@ -177,14 +144,14 @@ public:
      *
      * @return 1-dimensional grid \f$ g \f$.
      */
-    [[nodiscard]] const auto& grid() const { return grid_; }
+    [[nodiscard]] constexpr const auto& grid() const noexcept { return grid_; }
 
     /**
      * @brief Get the function values \f$ f_i = f(g(i)) \f$.
      *
      * @return `std::span` containing the function values \f$ f_i \f$ at the grid points \f$ g(i) \f$.
      */
-    [[nodiscard]] const auto& function_values() const { return fvals_; }
+    [[nodiscard]] constexpr const auto& function_values() const noexcept { return fvals_; }
 
 private:
     grid_type grid_;
@@ -229,42 +196,7 @@ private:
  * @note The function values are not owned by the interpolation class. Only a `std::span` to the
  * original data is stored.
  *
- * @code{.cpp}
- * #include <fmt/ranges.h>
- * #include <simplemc/grids.hpp>
- * #include <simplemc/numeric/linear_interpolation.hpp>
- * #include <simplemc/utils/nd_indexing.hpp>
- * #include <simplemc/utils/ranges.hpp>
- *
- * #include <vector>
- *
- * int main() {
- *     // define the function f(x, y) = x^2 + y^2 that we want to interpolate
- *     auto f = [](double x, double y) { return x * x + y * y; };
- *
- *     // create a linear 2D interpolation grid of size 50 x 50 on [0, 2] x [0, 2]
- *     simplemc::linear_grid grid_1d { 0, 2, 50 };
- *     simplemc::nd_grid interp_grid { grid_1d, grid_1d };
- *
- *     // obtain the function values at the grid points (in row-major order)
- *     auto fview = simplemc::ranges::transform_view(
- *         simplemc::grid_view(interp_grid), [&f](const auto& x) { return f(x[0], x[1]); });
- *     auto fvals = std::vector<double>(fview.begin(), fview.end());
- *
- *     // create the interpolation object for f(x, y) on the interpolation grid
- *     auto interp = simplemc::linear_interpolation_nd { interp_grid, fvals, simplemc::row_major {} };
- *
- *     // create the grid at which we want to test our interpolation
- *     grid_1d.reset(0, 2, 11);
- *     simplemc::nd_grid test_grid { grid_1d, grid_1d };
- *
- *     // test the interpolation of the function f(x, y)
- *     fmt::println("{:<15}{:<20}{:<20}", "(x, y)", "interp(x, y)", "f(x, y)");
- *     for (auto [x, y] : simplemc::grid_view(test_grid)) {
- *         fmt::print("{:<15}{:<20.8g}{:<20.8g}\n", fmt::format("({:.1g},{:.1g})", x, y), f(x, y), interp(x, y));
- *     }
- * }
- * @endcode
+ * @include numeric/doc_linear_interpolation_nd.cpp
  *
  * Output:
  *
@@ -275,9 +207,9 @@ private:
  * (0,0.4)        0.16026656          0.16
  * (0,0.6)        0.36034985          0.36
  * //             //                  //
- * (2,1)          5.9603499           5.96
- * (2,2)          6.5602666           6.56
- * (2,2)          7.2401499           7.24
+ * (2,1.4)        5.9603499           5.96
+ * (2,1.6)        6.5602666           6.56
+ * (2,1.8)        7.2401499           7.24
  * (2,2)          8                   8
  * ```
  *
@@ -297,7 +229,7 @@ public:
      *
      * @return Number of dimensions, \f$ N \f$.
      */
-    static constexpr std::size_t dim() { return grid_type::dim(); }
+    [[nodiscard]] static constexpr std::size_t dim() noexcept { return grid_type::dim(); }
 
     /**
      * @brief Construct a linear interpolation object on a given grid \f$ g \f$ with the given
@@ -314,12 +246,12 @@ public:
      * @param order Storage order of the multi-dimensional array containing the function values (used
      * only for type deduction).
      */
-    linear_interpolation_nd(grid_type g, const std::span<double>& fvals, [[maybe_unused]] Order order = Order {}) :
+    constexpr linear_interpolation_nd(
+        grid_type g, const std::span<double>& fvals, [[maybe_unused]] Order order = Order {}) :
         grid_(std::move(g)),
         fvals_(fvals) {
         if (grid_.size() != static_cast<long>(fvals_.size())) {
-            throw simplemc_exception("Number of grid points not equal to number of y values.",
-                "linear_interpolation_nd::linear_interplation_nd");
+            throw simplemc_exception("Number of grid points not equal to number of y values");
         }
     }
 
@@ -335,7 +267,7 @@ public:
      * @param x Point \f$ \mathbf{x} \in \mathrm{D} \f$ at which to interpolate.
      * @return Interpolated value \f$ h(\mathbf{x}) \f$.
      */
-    [[nodiscard]] double operator()(const grid_type::value_type& x) const {
+    [[nodiscard]] constexpr double operator()(const grid_type::value_type& x) const {
         const auto idxs = index_subrange(grid_, 2, x);
         const auto xds = distance_ratios(idxs, x, std::make_index_sequence<dim()>());
         return interp_linear_nd<dim() - 1>(idxs, xds);
@@ -356,7 +288,7 @@ public:
      * @return Interpolated value \f$ h(\mathbf{x}) \f$.
      */
     template <typename... Vals>
-    [[nodiscard]] double operator()(Vals... xs) const {
+    [[nodiscard]] constexpr double operator()(Vals... xs) const {
         return this->operator()(typename grid_type::value_type { xs... });
     }
 
@@ -366,7 +298,7 @@ public:
      *
      * @return N-dimensional grid \f$ g \f$.
      */
-    [[nodiscard]] const auto& grid() const { return grid_; }
+    [[nodiscard]] constexpr const auto& grid() const noexcept { return grid_; }
 
     /**
      * @brief Get the function values \f$ f_{i_1, \cdots, i_N} = f(g(i_1, \dots, i_N)) \f$.
@@ -374,7 +306,7 @@ public:
      * @return `std::span` containing the function values \f$ f_{i_1, \cdots, i_N} \f$ at the grid
      * points \f$ g(i_1, \dots, i_N) \f$.
      */
-    [[nodiscard]] const auto& function_values() const { return fvals_; }
+    [[nodiscard]] constexpr const auto& function_values() const noexcept { return fvals_; }
 
 private:
     // Linear interpolation given the index array of the bin at the lower left corner of the volume in
@@ -383,7 +315,7 @@ private:
     //
     // This function is called recursively, with N being the current dimension.
     template <int N>
-    inline double interp_linear_nd(
+    [[nodiscard]] constexpr double interp_linear_nd(
         const typename grid_type::size_type& idx_arr, const typename grid_type::value_type& xd_arr) const {
         static_assert(N >= 0 && N < grid_type::dim(), "Invalid template parameter in interp_linear_nd.");
         auto idx_p1_arr = idx_arr;
@@ -405,8 +337,8 @@ private:
     // index array of the bin at the lower left corner of the volume in which to interpolate and the
     // point x.
     template <std::size_t... Is>
-    inline auto distance_ratios(const typename grid_type::size_type& idx_arr, const typename grid_type::value_type& x,
-        std::index_sequence<Is...>) const {
+    [[nodiscard]] constexpr auto distance_ratios(const typename grid_type::size_type& idx_arr,
+        const typename grid_type::value_type& x, std::index_sequence<Is...>) const {
         return typename grid_type::value_type { (x[Is] - std::get<Is>(grid_.grids()).at(idx_arr[Is])) /
             (std::get<Is>(grid_.grids()).at(idx_arr[Is] + 1) - std::get<Is>(grid_.grids()).at(idx_arr[Is]))... };
     }
