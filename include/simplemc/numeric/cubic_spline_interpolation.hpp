@@ -111,39 +111,7 @@ template <typename Grid>
  * @note The function values are not owned by the interpolation class. Only a `std::span` to the
  * original data is stored.
  *
- * @code{.cpp}
- * #include <fmt/base.h>
- * #include <simplemc/grids.hpp>
- * #include <simplemc/numeric/cubic_spline_interpolation.hpp>
- * #include <simplemc/utils/ranges.hpp>
- *
- * #include <vector>
- *
- * int main() {
- *     // define the function f(x) = x^4 that we want to interpolate
- *     auto f = [](double x) { return x * x * x * x; };
- *
- *     // create a linear interpolation grid of size 25 on [0, 2]
- *     simplemc::linear_grid interp_grid { 0, 2, 25 };
- *
- *     // obtain the function values at the grid points
- *     auto fview = simplemc::ranges::transform_view(simplemc::grid_view(interp_grid), [&f](double x) { return f(x); });
- *     auto fvals = std::vector<double>(fview.begin(), fview.end());
- *
- *     // create the interpolation object for f(x) on the interpolation grid
- *     auto interp = simplemc::cubic_spline_interpolation { interp_grid, fvals };
- *
- *     // create the grid at which we want to test our interpolation
- *     simplemc::linear_grid test_grid { 0, 2, 11 };
- *
- *     // test the interpolation of the function f(x)
- *     fmt::println("{:<10}{:<20}{:<20}", "x", "interp(x)", "f(x)");
- *     for (auto x : simplemc::grid_view(test_grid)) {
- *         fmt::println("{:<10.1f}{:<20.8g}{:<20.8g}", x, interp(x), f(x));
- *     }
- *     fmt::println("");
- * }
- * @endcode
+ * @include numeric/doc_cubic_splines.cpp
  *
  * Output:
  *
@@ -177,7 +145,7 @@ public:
      *
      * @return Number of dimensions, \f$ N = 1 \f$.
      */
-    static constexpr std::size_t dim() { return 1; }
+    [[nodiscard]] static constexpr std::size_t dim() noexcept { return 1; }
 
     /**
      * @brief Construct a cubic spline interpolation object on a given grid \f$ g \f$ with the given
@@ -204,8 +172,7 @@ public:
         fvals_(fvals),
         gamma_(Eigen::VectorXd::Zero(grid_.size())) {
         if (grid_.size() != static_cast<grid_type::size_type>(fvals_.size())) {
-            throw simplemc_exception("Number of grid points not equal to number of y values.",
-                "cubic_spline_interpolation::cubic_spline_interpolation");
+            throw simplemc_exception("Number of grid points not equal to number of y values");
         }
         const auto np = grid_.size();
         auto mat = detail::cubic_spline_matrix(grid_);
@@ -248,8 +215,7 @@ public:
         fvals_(fvals),
         gamma_(Eigen::VectorXd::Zero(grid_.size())) {
         if (grid_.size() != static_cast<grid_type::size_type>(fvals_.size())) {
-            throw simplemc_exception("Number of grid points not equal to number of y values.",
-                "cubic_spline_interpolation::cubic_spline_interpolation");
+            throw simplemc_exception("Number of grid points not equal to number of y values");
         }
         const auto np = grid_.size();
         auto mat = detail::cubic_spline_matrix(grid_);
@@ -294,16 +260,13 @@ public:
         fvals_(fvals),
         gamma_(Eigen::VectorXd::Zero(grid_.size())) {
         if (grid_.size() != static_cast<grid_type::size_type>(fvals_.size())) {
-            throw simplemc_exception("Number of grid points not equal to number of y values.",
-                "cubic_spline_interpolation::cubic_spline_interpolation");
+            throw simplemc_exception("Number of grid points not equal to number of y values");
         }
         if (a_mat.rows() != a_mat.cols() || grid_.size() != a_mat.rows()) {
-            throw simplemc_exception("Size of provided spline matrix not correct.",
-                "cubic_spline_interpolation::cubic_spline_interpolation");
+            throw simplemc_exception("Size of provided spline matrix not correct");
         }
         if (grid_.size() != b_vec.size()) {
-            throw simplemc_exception("Size of provided spline vector not correct.",
-                "cubic_spline_interpolation::cubic_spline_interpolation");
+            throw simplemc_exception("Size of provided spline vector not correct");
         }
         set_gamma(a_mat, b_vec);
     }
@@ -343,14 +306,14 @@ public:
      *
      * @return 1-dimensional grid \f$ g \f$.
      */
-    [[nodiscard]] const auto& grid() const { return grid_; }
+    [[nodiscard]] const auto& grid() const noexcept { return grid_; }
 
     /**
      * @brief Get the function values \f$ f_i = f(g(i)) \f$.
      *
      * @return `std::span` containing the function values \f$ f_i \f$ at the grid points \f$ g(i) \f$.
      */
-    [[nodiscard]] const auto& function_values() const { return fvals_; }
+    [[nodiscard]] const auto& function_values() const noexcept { return fvals_; }
 
 private:
     // Set second derivatives by solving the linear system A * \gamma = b, where A is the spline
