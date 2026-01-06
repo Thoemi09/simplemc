@@ -18,6 +18,116 @@ static_assert(simplemc::orthogonal_polynomial<simplemc::chebyshev_polynomial_sec
 static_assert(simplemc::orthogonal_polynomial<simplemc::laguerre_polynomial>);
 static_assert(simplemc::orthogonal_polynomial<simplemc::hermite_polynomial>);
 
+// Test default constructor for all polynomial types.
+TEST(SimplemcNumeric, OrthogonalPolynomialsDefaultConstructor) {
+    simplemc::legendre_polynomial pl;
+    ASSERT_EQ(pl.x(), 0.0);
+    ASSERT_EQ(pl.order(), 0);
+    ASSERT_EQ(pl.current(), 1.0);
+
+    simplemc::chebyshev_polynomial_first tl;
+    ASSERT_EQ(tl.x(), 0.0);
+    ASSERT_EQ(tl.order(), 0);
+    ASSERT_EQ(tl.current(), 1.0);
+
+    simplemc::chebyshev_polynomial_second ul;
+    ASSERT_EQ(ul.x(), 0.0);
+    ASSERT_EQ(ul.order(), 0);
+    ASSERT_EQ(ul.current(), 1.0);
+
+    simplemc::laguerre_polynomial ll;
+    ASSERT_EQ(ll.x(), 0.0);
+    ASSERT_EQ(ll.order(), 0);
+    ASSERT_EQ(ll.current(), 1.0);
+
+    simplemc::hermite_polynomial hl;
+    ASSERT_EQ(hl.x(), 0.0);
+    ASSERT_EQ(hl.order(), 0);
+    ASSERT_EQ(hl.current(), 1.0);
+}
+
+// Test that Legendre polynomial throws for x outside [-1, 1].
+TEST(SimplemcNumeric, LegendrePolynomialOutOfDomainException) {
+    EXPECT_THROW(simplemc::legendre_polynomial(1.1), simplemc::simplemc_exception);
+    EXPECT_THROW(simplemc::legendre_polynomial(-1.1), simplemc::simplemc_exception);
+    EXPECT_THROW(simplemc::legendre_polynomial(2.0), simplemc::simplemc_exception);
+    EXPECT_THROW(simplemc::legendre_polynomial(-2.0), simplemc::simplemc_exception);
+
+    // valid boundary values should not throw
+    EXPECT_NO_THROW(simplemc::legendre_polynomial(1.0));
+    EXPECT_NO_THROW(simplemc::legendre_polynomial(-1.0));
+    EXPECT_NO_THROW(simplemc::legendre_polynomial(0.0));
+}
+
+// Test that Chebyshev polynomials throw for x outside [-1, 1].
+TEST(SimplemcNumeric, ChebyshevPolynomialOutOfDomainException) {
+    EXPECT_THROW(simplemc::chebyshev_polynomial_first(1.1), simplemc::simplemc_exception);
+    EXPECT_THROW(simplemc::chebyshev_polynomial_first(-1.1), simplemc::simplemc_exception);
+    EXPECT_THROW(simplemc::chebyshev_polynomial_second(1.1), simplemc::simplemc_exception);
+    EXPECT_THROW(simplemc::chebyshev_polynomial_second(-1.1), simplemc::simplemc_exception);
+
+    // valid boundary values should not throw
+    EXPECT_NO_THROW(simplemc::chebyshev_polynomial_first(1.0));
+    EXPECT_NO_THROW(simplemc::chebyshev_polynomial_first(-1.0));
+    EXPECT_NO_THROW(simplemc::chebyshev_polynomial_second(1.0));
+    EXPECT_NO_THROW(simplemc::chebyshev_polynomial_second(-1.0));
+}
+
+// Test that Laguerre polynomial throws for x < 0.
+TEST(SimplemcNumeric, LaguerrePolynomialOutOfDomainException) {
+    EXPECT_THROW(simplemc::laguerre_polynomial(-0.1), simplemc::simplemc_exception);
+    EXPECT_THROW(simplemc::laguerre_polynomial(-1.0), simplemc::simplemc_exception);
+
+    // valid boundary values should not throw
+    EXPECT_NO_THROW(simplemc::laguerre_polynomial(0.0));
+    EXPECT_NO_THROW(simplemc::laguerre_polynomial(100.0));
+}
+
+// Test Legendre polynomials at x = 0.
+TEST(SimplemcNumeric, LegendrePolynomialsAtZero) {
+    const int max_order = 10;
+    const double tol = 1e-10;
+    simplemc::legendre_polynomial pl(0.0);
+    ASSERT_EQ(pl.x(), 0.0);
+
+    // P_l(0) = 0 for odd l, P_l(0) = (-1)^(l/2) * (l-1)!! / l!! for even l
+    // P_0(0) = 1, P_1(0) = 0, P_2(0) = -1/2, P_3(0) = 0, P_4(0) = 3/8, ...
+    std::vector<double> exp_pl { 1, 0, -0.5, 0, 0.375, 0, -0.3125, 0, 0.2734375, 0 };
+    // P'_l(0) = 0 for even l.
+    std::vector<double> exp_dpl { 0, 1, 0, -1.5, 0, 1.875, 0, -2.1875, 0, 2.4609375 };
+
+    for (int i = 0; i < max_order; ++i) {
+        ASSERT_NEAR(exp_pl[i], pl.current(), tol);
+        ASSERT_NEAR(exp_dpl[i], pl.current_derivative(), tol);
+        pl.next();
+    }
+}
+
+// Test Chebyshev polynomials at x = 0.
+TEST(SimplemcNumeric, ChebyshevPolynomialsAtZero) {
+    const int max_order = 10;
+    const double tol = 1e-10;
+    simplemc::chebyshev_polynomial_first tl(0.0);
+    simplemc::chebyshev_polynomial_second ul(0.0);
+    ASSERT_EQ(tl.x(), 0.0);
+    ASSERT_EQ(ul.x(), 0.0);
+
+    // T_l(0) = cos(l * pi/2): 1, 0, -1, 0, 1, 0, -1, ...
+    // U_l(0) = sin((l+1) * pi/2) / sin(pi/2) = sin((l+1) * pi/2): 1, 0, -1, 0, 1, 0, -1, ...
+    std::vector<double> exp_tl { 1, 0, -1, 0, 1, 0, -1, 0, 1, 0 };
+    std::vector<double> exp_ul { 1, 0, -1, 0, 1, 0, -1, 0, 1, 0 };
+    // T'_l(0) = 0 for even l, l * (-1)^((l-1)/2) for odd l
+    std::vector<double> exp_dtl { 0, 1, 0, -3, 0, 5, 0, -7, 0, 9 };
+
+    for (int i = 0; i < max_order; ++i) {
+        ASSERT_NEAR(exp_tl[i], tl.current(), tol);
+        ASSERT_NEAR(exp_ul[i], ul.current(), tol);
+        ASSERT_NEAR(exp_dtl[i], tl.current_derivative(), tol);
+        tl.next();
+        ul.next();
+    }
+}
+
 // Compare Legendre polynomials with values from boost.
 TEST(SimplemcNumeric, LegendrePolynomialsVsBoost) {
     const int max_order = 10;
@@ -156,6 +266,39 @@ TEST(SimplemcNumeric, ChebyshevPolynomialsRelationships) {
     }
 }
 
+// Test Chebyshev second kind derivatives against exact values.
+TEST(SimplemcNumeric, ChebyshevSecondDerivatives) {
+    const int max_order = 6;
+    const double tol = 1e-10;
+    std::vector<double> x_vec { -0.9, -0.5, 0.0, 0.5, 0.9 };
+
+    // U'_l(x) = ((l + 1) T_{l+1}(x) - x U_l(x)) / (x^2 - 1) for l >= 1
+    // For l = 0: U'_0(x) = 0
+    for (auto x : x_vec) {
+        simplemc::chebyshev_polynomial_first tl(x);
+        simplemc::chebyshev_polynomial_second ul(x);
+
+        // initial state: l = 0, current_derivative() = U'_0(x) = 0
+        ASSERT_NEAR(0.0, ul.current_derivative(), tol) << "U'_0(x) should be 0";
+
+        for (int i = 0; i < max_order; ++i) {
+            // advance both polynomials
+            tl.next();
+            ul.next();
+
+            // now ul is at order i + 1.
+            // prev_derivative() = U'_i(x), current_derivative() = U'_{i+1}(x)
+
+            // U'_l(x) = ((l + 1) T_{l+1}(x) - x U_l(x)) / (x^2 - 1)
+            // for l = i: U'_i(x) = ((i + 1) T_{i+1}(x) - x U_i(x)) / (x^2 - 1)
+            // tl.current() = T_{i+1}(x), ul.prev() = U_i(x)
+            const int l = i;
+            const double expected = ((l + 1) * tl.current() - x * ul.prev()) / (x * x - 1);
+            ASSERT_NEAR(expected, ul.prev_derivative(), tol) << "Failed at l=" << l << ", x=" << x;
+        }
+    }
+}
+
 // Compare Laguerre polynomials with values from boost.
 TEST(SimplemcNumeric, LaguerrePolynomialsVsBoost) {
     const int max_order = 10;
@@ -228,7 +371,7 @@ TEST(SimplemcNumeric, HermitePolynomialsFunctionValues) {
 // Compare Hermite polynomials with exact polynomials.
 TEST(SimplemcNumeric, HermitePolynomialsVsExact) {
     const double tol = 1e-10;
-    std::vector<double> x_vec { -15, -10, - 5, -1, -0.5, 0, 0.5, 1, 5, 10, 15 };
+    std::vector<double> x_vec { -15, -10, -5, -1, -0.5, 0, 0.5, 1, 5, 10, 15 };
     std::vector<std::function<double(double)>> exp_hl, exp_dhl;
     exp_hl.emplace_back([]([[maybe_unused]] double x) { return 1; });
     exp_hl.emplace_back([](double x) { return 2 * x; });
@@ -251,6 +394,182 @@ TEST(SimplemcNumeric, HermitePolynomialsVsExact) {
             ASSERT_NEAR(exp_hl[i](x), hl.next(), tol);
             ASSERT_NEAR(exp_hl[i](x), hl.prev(), tol);
             ASSERT_NEAR(exp_dhl[i](x), hl.prev_derivative(), tol);
+        }
+    }
+}
+
+// Test Hermite polynomials at x = 0.
+TEST(SimplemcNumeric, HermitePolynomialsAtZero) {
+    const int max_order = 10;
+    const double tol = 1e-10;
+    simplemc::hermite_polynomial hl(0.0);
+    ASSERT_EQ(hl.x(), 0.0);
+
+    // H_l(0) = 0 for odd l, H_l(0) = (-1)^(l/2) * l! / (l/2)! for even l
+    // H_0(0) = 1, H_1(0) = 0, H_2(0) = -2, H_3(0) = 0, H_4(0) = 12, ...
+    std::vector<double> exp_hl { 1, 0, -2, 0, 12, 0, -120, 0, 1680, 0 };
+    // H'_l(0) = 2l * H_{l-1}(0) = 0 for even l (since H_{odd}(0) = 0)
+    std::vector<double> exp_dhl { 0, 2, 0, -12, 0, 120, 0, -1680, 0, 30240 };
+
+    for (int i = 0; i < max_order; ++i) {
+        ASSERT_NEAR(exp_hl[i], hl.current(), tol);
+        ASSERT_NEAR(exp_dhl[i], hl.current_derivative(), tol);
+        hl.next();
+    }
+}
+
+// Test that static member functions are constexpr and return correct values.
+TEST(SimplemcNumeric, OrthogonalPolynomialsConstexprStaticFunctions) {
+    // Legendre
+    static_assert(simplemc::legendre_polynomial::domain() == std::array<double, 2> { -1.0, 1.0 });
+    static_assert(simplemc::legendre_polynomial::norm(0) == 2.0);
+    static_assert(simplemc::legendre_polynomial::norm(1) == 2.0 / 3.0);
+    static_assert(simplemc::legendre_polynomial::weight(0.5) == 1.0);
+
+    // Chebyshev first kind
+    static_assert(simplemc::chebyshev_polynomial_first::domain() == std::array<double, 2> { -1.0, 1.0 });
+    static_assert(simplemc::chebyshev_polynomial_first::norm(0) == std::numbers::pi);
+    static_assert(simplemc::chebyshev_polynomial_first::norm(1) == std::numbers::pi / 2.0);
+    static_assert(simplemc::chebyshev_polynomial_first::norm(5) == std::numbers::pi / 2.0);
+
+    // Chebyshev second kind
+    static_assert(simplemc::chebyshev_polynomial_second::domain() == std::array<double, 2> { -1.0, 1.0 });
+    static_assert(simplemc::chebyshev_polynomial_second::norm(0) == std::numbers::pi / 2.0);
+    static_assert(simplemc::chebyshev_polynomial_second::norm(5) == std::numbers::pi / 2.0);
+
+    // Laguerre
+    constexpr auto laguerre_domain = simplemc::laguerre_polynomial::domain();
+    static_assert(laguerre_domain[0] == 0.0);
+    static_assert(laguerre_domain[1] == std::numeric_limits<double>::infinity());
+    static_assert(simplemc::laguerre_polynomial::norm(0) == 1.0);
+    static_assert(simplemc::laguerre_polynomial::norm(10) == 1.0);
+
+    // Hermite
+    constexpr auto hermite_domain = simplemc::hermite_polynomial::domain();
+    static_assert(hermite_domain[0] == -std::numeric_limits<double>::infinity());
+    static_assert(hermite_domain[1] == std::numeric_limits<double>::infinity());
+}
+
+// Test that current(), prev(), and next() are consistent with each other.
+TEST(SimplemcNumeric, OrthogonalPolynomialsRecurrenceConsistency) {
+    const double x = 0.3;
+    const double tol = 1e-14;
+    const int max_order = 15;
+
+    // Legendre
+    {
+        simplemc::legendre_polynomial pl(x);
+        double prev_current = pl.current();
+        for (int i = 0; i < max_order; ++i) {
+            const double returned = pl.next();
+            ASSERT_NEAR(returned, prev_current, tol);
+            ASSERT_NEAR(pl.prev(), prev_current, tol);
+            prev_current = pl.current();
+        }
+    }
+
+    // Chebyshev first kind
+    {
+        simplemc::chebyshev_polynomial_first tl(x);
+        double prev_current = tl.current();
+        for (int i = 0; i < max_order; ++i) {
+            const double returned = tl.next();
+            ASSERT_NEAR(returned, prev_current, tol);
+            ASSERT_NEAR(tl.prev(), prev_current, tol);
+            prev_current = tl.current();
+        }
+    }
+
+    // Chebyshev second kind
+    {
+        simplemc::chebyshev_polynomial_second ul(x);
+        double prev_current = ul.current();
+        for (int i = 0; i < max_order; ++i) {
+            const double returned = ul.next();
+            ASSERT_NEAR(returned, prev_current, tol);
+            ASSERT_NEAR(ul.prev(), prev_current, tol);
+            prev_current = ul.current();
+        }
+    }
+
+    // Laguerre
+    {
+        simplemc::laguerre_polynomial ll(x);
+        double prev_current = ll.current();
+        for (int i = 0; i < max_order; ++i) {
+            const double returned = ll.next();
+            ASSERT_NEAR(returned, prev_current, tol);
+            ASSERT_NEAR(ll.prev(), prev_current, tol);
+            prev_current = ll.current();
+        }
+    }
+
+    // Hermite
+    {
+        simplemc::hermite_polynomial hl(x);
+        double prev_current = hl.current();
+        for (int i = 0; i < max_order; ++i) {
+            const double returned = hl.next();
+            ASSERT_NEAR(returned, prev_current, tol);
+            ASSERT_NEAR(hl.prev(), prev_current, tol);
+            prev_current = hl.current();
+        }
+    }
+}
+
+// Test derivative consistency: current_derivative() before next() equals prev_derivative() after.
+TEST(SimplemcNumeric, OrthogonalPolynomialsDerivativeConsistency) {
+    const double x = 0.7;
+    const double tol = 1e-14;
+    const int max_order = 15;
+
+    // Legendre
+    {
+        simplemc::legendre_polynomial pl(x);
+        for (int i = 0; i < max_order; ++i) {
+            const double deriv_before = pl.current_derivative();
+            pl.next();
+            ASSERT_NEAR(deriv_before, pl.prev_derivative(), tol);
+        }
+    }
+
+    // Chebyshev first kind
+    {
+        simplemc::chebyshev_polynomial_first tl(x);
+        for (int i = 0; i < max_order; ++i) {
+            const double deriv_before = tl.current_derivative();
+            tl.next();
+            ASSERT_NEAR(deriv_before, tl.prev_derivative(), tol);
+        }
+    }
+
+    // Chebyshev second kind
+    {
+        simplemc::chebyshev_polynomial_second ul(x);
+        for (int i = 0; i < max_order; ++i) {
+            const double deriv_before = ul.current_derivative();
+            ul.next();
+            ASSERT_NEAR(deriv_before, ul.prev_derivative(), tol);
+        }
+    }
+
+    // Laguerre
+    {
+        simplemc::laguerre_polynomial ll(x);
+        for (int i = 0; i < max_order; ++i) {
+            const double deriv_before = ll.current_derivative();
+            ll.next();
+            ASSERT_NEAR(deriv_before, ll.prev_derivative(), tol);
+        }
+    }
+
+    // Hermite
+    {
+        simplemc::hermite_polynomial hl(x);
+        for (int i = 0; i < max_order; ++i) {
+            const double deriv_before = hl.current_derivative();
+            hl.next();
+            ASSERT_NEAR(deriv_before, hl.prev_derivative(), tol);
         }
     }
 }
