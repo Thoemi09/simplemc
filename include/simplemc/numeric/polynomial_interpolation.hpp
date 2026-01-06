@@ -29,7 +29,7 @@ namespace detail {
 // Perform Neville's algorithm given the function values at the grid points, the distances between
 // x and the grid points and the number of grid points used, i.e. the degree of polynomial + 1.
 // See https://en.wikipedia.org/wiki/Neville%27s_algorithm.
-inline double neville(std::vector<double>& fvec, const std::vector<double>& xvec, std::size_t npoints) {
+[[nodiscard]] inline double neville(std::vector<double>& fvec, const std::vector<double>& xvec, std::size_t npoints) {
     assert(fvec.size() == npoints);
     assert(xvec.size() == npoints);
     for (std::size_t i = 1; i < npoints; ++i) {
@@ -78,39 +78,7 @@ inline double neville(std::vector<double>& fvec, const std::vector<double>& xvec
  * @note The function values are not owned by the interpolation class. Only a `std::span` to the
  * original data is stored.
  *
- * @code{.cpp}
- * #include <fmt/base.h>
- * #include <simplemc/grids.hpp>
- * #include <simplemc/numeric/polynomial_interpolation.hpp>
- * #include <simplemc/utils/ranges.hpp>
- *
- * #include <vector>
- *
- * int main() {
- *     // define the function f(x) = x^3 that we want to interpolate
- *     auto f = [](double x) { return x * x * x; };
- *
- *     // create a linear interpolation grid of size 50 on [0, 2]
- *     simplemc::linear_grid interp_grid { 0, 2, 50 };
- *
- *     // obtain the function values at the grid points
- *     auto fview = simplemc::ranges::transform_view(simplemc::grid_view(interp_grid), [&f](double x) { return f(x); });
- *     auto fvals = std::vector<double>(fview.begin(), fview.end());
- *
- *     // create the interpolation object for f(x) on the interpolation grid
- *     auto interp = simplemc::polynomial_interpolation { interp_grid, fvals, 2 };
- *
- *     // create the grid at which we want to test our interpolation
- *     simplemc::linear_grid test_grid { 0, 2, 11 };
- *
- *     // test the interpolation of the function f(x)
- *     fmt::println("{:<10}{:<20}{:<20}", "x", "interp(x)", "f(x)");
- *     for (auto x : simplemc::grid_view(test_grid)) {
- *         fmt::println("{:<10.1f}{:<20.8g}{:<20.8g}", x, interp(x), f(x));
- *     }
- *     fmt::println("");
- * }
- * @endcode
+ * @include numeric/doc_polynomial_interpolation_1d.cpp
  *
  * Output:
  *
@@ -144,7 +112,7 @@ public:
      *
      * @return Number of dimensions, \f$ N = 1 \f$.
      */
-    static constexpr std::size_t dim() { return 1; }
+    [[nodiscard]] static constexpr std::size_t dim() noexcept { return 1; }
 
     /**
      * @brief Construct a polynomial interpolation object of degree \f$ m \f$ on a given grid \f$ g
@@ -169,12 +137,10 @@ public:
         fvec_(npoints_, 0.0),
         xvec_(npoints_, 0.0) {
         if (grid_.size() != static_cast<long>(fvals_.size())) {
-            throw simplemc_exception("Number of grid points not equal to number of y values.",
-                "polynomial_interpolation::polynomial_interpolation");
+            throw simplemc_exception("Number of grid points not equal to number of y values");
         }
         if (grid_.size() < static_cast<long>(npoints_)) {
-            throw simplemc_exception(
-                "Degree of interpolating polynomial is too high", "polynomial_interpolation::polynomial_interpolation");
+            throw simplemc_exception("Degree of interpolating polynomial is too high");
         }
     }
 
@@ -208,21 +174,21 @@ public:
      *
      * @return 1-dimensional grid \f$ g \f$.
      */
-    [[nodiscard]] const auto& grid() const { return grid_; }
+    [[nodiscard]] const auto& grid() const noexcept { return grid_; }
 
     /**
      * @brief Get the function values \f$ f_i = f(g(i)) \f$.
      *
      * @return `std::span` containing the function values \f$ f_i \f$ at the grid points \f$ g(i) \f$.
      */
-    [[nodiscard]] const auto& function_values() const { return fvals_; }
+    [[nodiscard]] const auto& function_values() const noexcept { return fvals_; }
 
     /**
      * @brief Get the degree \f$ m \f$ of the polynomial.
      *
      * @return Degree of the interpolating polynomials \f$ h_i(x) \f$.
      */
-    [[nodiscard]] auto degree() const { return npoints_ - 1; }
+    [[nodiscard]] auto degree() const noexcept { return npoints_ - 1; }
 
 private:
     grid_type grid_;
@@ -253,42 +219,7 @@ private:
  * @note The function values are not owned by the interpolation class. Only a `std::span` to the
  * original data is stored.
  *
- * @code{.cpp}
- * #include <fmt/ranges.h>
- * #include <simplemc/grids.hpp>
- * #include <simplemc/numeric/polynomial_interpolation.hpp>
- * #include <simplemc/utils/nd_indexing.hpp>
- * #include <simplemc/utils/ranges.hpp>
- *
- * #include <vector>
- *
- * int main() {
- *     // define the function f(x, y) = x^2 + y^3 that we want to interpolate
- *     auto f = [](double x, double y) { return x * x + y * y * y; };
- *
- *     // create a linear 2D interpolation grid of size 50 x 50 on [0, 2] x [0, 2]
- *     simplemc::linear_grid grid_1d { 0, 2, 50 };
- *     simplemc::nd_grid interp_grid { grid_1d, grid_1d };
- *
- *     // obtain the function values at the grid points (in row-major order)
- *     auto fview = simplemc::ranges::transform_view(
- *         simplemc::grid_view(interp_grid), [&f](const auto& x) { return f(x[0], x[1]); });
- *     auto fvals = std::vector<double>(fview.begin(), fview.end());
- *
- *     // create the interpolation object for f(x, y) on the interpolation grid
- *     auto interp = simplemc::polynomial_interpolation_nd { interp_grid, fvals, 2, simplemc::row_major {} };
- *
- *     // create the grid at which we want to test our interpolation
- *     grid_1d.reset(0, 2, 11);
- *     simplemc::nd_grid test_grid { grid_1d, grid_1d };
- *
- *     // test the interpolation of the function f(x, y)
- *     fmt::println("{:<15}{:<20}{:<20}", "(x, y)", "interp(x, y)", "f(x, y)");
- *     for (auto [x, y] : simplemc::grid_view(test_grid)) {
- *         fmt::print("{:<15}{:<20.8g}{:<20.8g}\n", fmt::format("({:.1g},{:.1g})", x, y), interp(x, y), f(x, y));
- *     }
- * }
- * @endcode
+ * @include numeric/doc_polynomial_interpolation_nd.cpp
  *
  * Output:
  *
@@ -299,9 +230,9 @@ private:
  * (0,0.4)        0.064019584         0.064
  * (0,0.6)        0.21602428          0.216
  * //             //                  //
- * (2,1)          6.7440186           6.744
- * (2,2)          8.0960131           8.096
- * (2,2)          9.8320067           9.832
+ * (2,1.4)        6.7440186           6.744               
+ * (2,1.6)        8.0960131           8.096               
+ * (2,1.8)        9.8320067           9.832               
  * (2,2)          12                  12
  * ```
  *
@@ -321,14 +252,14 @@ public:
      *
      * @return Number of dimensions, \f$ N \f$.
      */
-    static constexpr std::size_t dim() { return grid_type::dim(); }
+    [[nodiscard]] static constexpr std::size_t dim() noexcept { return grid_type::dim(); }
 
     /**
      * @brief Construct a polynomial interpolation object of degree \f$ m \f$ on a given grid \f$ g
      * \f$ with the given function values \f$ f_{i_1, \cdots, i_N} = f(x_1, \dots, x_n) = f(g(i_1,
      * \dots, i_N)) \f$.
      *
-     * It throws a simplemc::simplemc_exception
+     * @details It throws a simplemc::simplemc_exception
      * - if the size of the grid \f$ M \f$ is not equal to the number of function values or
      * - if the size of one of the underlying 1-dimensional grids \f$ M_k \f$ is smaller than
      * \f$ m + 1 \f$, i.e. the number of points used for the interpolating polynomials \f$ h_i(x_i)
@@ -349,13 +280,11 @@ public:
         fvals_(fvals),
         npoints_(m + 1) {
         if (grid_.size() != static_cast<long>(fvals_.size())) {
-            throw simplemc_exception("Number of grid points not equal to number of y values.",
-                "polynomial_interpolation_nd::polynomial_interpolation_nd");
+            throw simplemc_exception("Number of grid points not equal to number of y values");
         }
         if (std::apply([this](const auto... xs) { return ((xs.size() < static_cast<long>(npoints_)) && ...); },
                 grid_.grids())) {
-            throw simplemc_exception("Degree of interpolating polynomial is too high",
-                "polynomial_interpolation_nd::polynomial_interpolation_nd");
+            throw simplemc_exception("Degree of interpolating polynomial is too high");
         }
         for (std::size_t i = 0; i < dim(); ++i) {
             fvecs_[i].resize(npoints_);
@@ -405,7 +334,7 @@ public:
      *
      * @return N-dimensional grid \f$ g \f$.
      */
-    [[nodiscard]] const auto& grid() const { return grid_; }
+    [[nodiscard]] const auto& grid() const noexcept { return grid_; }
 
     /**
      * @brief Get the function values \f$ f_{i_1, \cdots, i_N} = f(g(i_1, \dots, i_N)) \f$.
@@ -413,14 +342,14 @@ public:
      * @return `std::span` containing the function values \f$ f_{i_1, \cdots, i_N} \f$ at the grid
      * points \f$ g(i_1, \dots, i_N) \f$.
      */
-    [[nodiscard]] const auto& function_values() const { return fvals_; }
+    [[nodiscard]] const auto& function_values() const noexcept { return fvals_; }
 
     /**
      * @brief Get the degree \f$ m \f$.
      *
      * @return Degree of the interpolating polynomials \f$ h_i(x_i) \f$ in 1D.
      */
-    [[nodiscard]] auto degree() const { return npoints_ - 1; }
+    [[nodiscard]] auto degree() const noexcept { return npoints_ - 1; }
 
 private:
     // Polynomial interpolation given the point x and the index array of the bin at the lower left
@@ -428,7 +357,8 @@ private:
     //
     // This function is called recursively, with N being the current dimension.
     template <int N>
-    double interp_poly_nd(const typename grid_type::value_type& x, const typename Grid::size_type& idx_arr) const {
+    [[nodiscard]] double interp_poly_nd(
+        const typename grid_type::value_type& x, const typename Grid::size_type& idx_arr) const {
         static_assert(N >= 0 && N < grid_type::dim(), "Invalid template parameter in interp_poly_nd.");
         auto idx_p_arr = idx_arr;
         const auto& grid_n = std::get<N>(grid_.grids());
