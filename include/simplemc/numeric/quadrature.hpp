@@ -11,6 +11,7 @@
 
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <tuple>
 #include <utility>
 
@@ -41,7 +42,7 @@ namespace simplemc {
  *
  * By increasing \f$ M \f$, we can get better approximations to the exact integral. Here, this is done
  * iteratively, i.e. at each level we add \f$ L = 2^{N-2} \f$ new grid points, where \f$ N \f$ denotes
- * the current level of appoximation.
+ * the current level of approximation.
  *
  * The first level, \f$ N = 1 \f$, starts with 2 grid points. The integral is approximated by
  * \f[
@@ -55,9 +56,10 @@ namespace simplemc {
  *
  * This class is used in simplemc::trapez_quadrature and simplemc::simpson_quadrature.
  *
- * @note See p. 163 in Press, Numerical Recipes.
+ * @note See p. 163 in Press, W. H., et al. "Numerical Recipes in C++: The Art of Scientific
+ * Computing", 3rd ed., Cambridge University Press, 2007.
  *
- * @tparam F Callable type.
+ * @tparam F Callable type representing the integrand.
  */
 template <typename F>
 class basic_quadrature {
@@ -73,7 +75,7 @@ public:
      * @param a Lower integration limit \f$ a \f$.
      * @param b Upper integration limit \f$ b \f$.
      */
-    basic_quadrature(F f, double a, double b) :
+    constexpr basic_quadrature(F f, double a, double b) :
         f_(std::move(f)),
         a_(a),
         b_(b),
@@ -84,44 +86,47 @@ public:
      *
      * @return Current approximation \f$ I_N \f$.
      */
-    [[nodiscard]] double current() const { return curr_; }
+    [[nodiscard]] constexpr double current() const noexcept { return curr_; }
 
     /**
      * @brief Get the last approximate value of the integral.
      *
      * @return Last approximation \f$ I_{N-1} \f$.
      */
-    [[nodiscard]] double last() const { return last_; }
+    [[nodiscard]] constexpr double last() const noexcept { return last_; }
 
     /**
      * @brief Get the current approximation level.
      *
      * @return Current level \f$ N \f$.
      */
-    [[nodiscard]] int level() const { return n_; }
+    [[nodiscard]] constexpr int level() const noexcept { return n_; }
 
     /**
      * @brief Get the integration limits.
      *
      * @return `std::array<double, 2>` containing the integration limits \f$ [a, b] \f$.
      */
-    [[nodiscard]] auto integration_limits() const { return std::array { a_, b_ }; }
+    [[nodiscard]] constexpr std::array<double, 2> integration_limits() const noexcept { return std::array { a_, b_ }; }
 
     /**
      * @brief Get the integrand \f$ f \f$.
      *
-     * @return Function object to be integrated.
+     * @return Const reference to the function object to be integrated.
      */
-    [[nodiscard]] const auto& integrand() const { return f_; }
+    [[nodiscard]] constexpr const F& integrand() const noexcept { return f_; }
 
     /**
      * @brief Basic convergence test.
+     *
+     * @details Checks if the relative difference between the current and last approximation is
+     * smaller than the given threshold \f$ \epsilon \f$.
      *
      * @param eps Convergence threshold \f$ \epsilon \f$.
      * @return True, if \f$ N > 1 \f$ and \f$ \left| I_N - I_{N-1} \right| \leq \epsilon |I_N| \f$,
      * otherwise return false.
      */
-    [[nodiscard]] bool is_converged(double eps = 1e-7) const {
+    [[nodiscard]] constexpr bool is_converged(double eps = 1e-7) const noexcept {
         if (n_ == 1) {
             return false;
         }
@@ -139,18 +144,18 @@ public:
      *
      * @return Approximate value of the integral \f$ I_{N+1} \f$.
      */
-    double next() {
+    constexpr double next() {
         ++n_;
-        int l = 1 << (n_ - 2);
-        const double step = (b_ - a_) / l;
+        const auto L = static_cast<std::uint64_t>(1) << (n_ - 2);
+        const double step = (b_ - a_) / static_cast<double>(L);
         double x = a_ + 0.5 * step;
         double sum = 0.0;
-        for (int i = 0; i < l; ++i) {
+        for (std::uint64_t i = 0; i < L; ++i) {
             sum += f_(x);
             x += step;
         }
         last_ = curr_;
-        curr_ = 0.5 * (last_ + (b_ - a_) * sum / l);
+        curr_ = 0.5 * (last_ + (b_ - a_) * sum / static_cast<double>(L));
         return curr_;
     }
 
@@ -173,20 +178,22 @@ private:
  * \f$ is the approximate value of the integral in iteration \f$ N \f$ and \f$ \epsilon > 0 \f$ is the
  * convergence threshold.
  *
- * @note See p. 164 in Press, Numerical Recipes.
+ * @note See p. 164 in Press, W. H., et al. "Numerical Recipes in C++: The Art of Scientific
+ * Computing", 3rd ed., Cambridge University Press, 2007.
  *
- * @tparam F Callable type.
+ * @tparam F Callable type representing the integrand.
  * @param f Callable object representing the integrand \f$ f \f$.
  * @param a Lower integration limit \f$ a \f$.
  * @param b Upper integration limit \f$ b \f$.
  * @param eps Convergence threshold \f$ \epsilon \f$.
  * @param max Maximum number of iterations.
  * @param min Minimum number of iterations.
- * @return A tuple containing the approximate value of the integral \f$ I_N \f$, the absolute
+ * @return A `std::tuple` containing the approximate value of the integral \f$ I_N \f$, the absolute
  * difference \f$ |I_N - I_{N-1}| \f$ and the number of iterations performed \f$ N - 1 \f$.
  */
 template <typename F>
-auto trapez_quadrature(F&& f, double a, double b, double eps = 1e-7, int max = 20, int min = 5) {
+[[nodiscard]] constexpr auto trapez_quadrature(
+    F&& f, double a, double b, double eps = 1e-7, int max = 20, int min = 5) {
     basic_quadrature quad(std::forward<F>(f), a, b);
 
     // do minimum number of iterations
@@ -211,7 +218,7 @@ auto trapez_quadrature(F&& f, double a, double b, double eps = 1e-7, int max = 2
  * \f$ is the approximate value of the integral in iteration \f$ N \f$ and \f$ \epsilon > 0 \f$ is the
  * convergence threshold.
  *
- * The extended Simpson rule can be written in terms of the extended trapezodial rule. Let \f$
+ * The extended Simpson rule can be written in terms of the extended trapezoidal rule. Let \f$
  * I_N^{(t)} \f$ be the approximate value of the integral using the extended trapezoidal rule (see
  * simplemc::basic_quadrature). Then the extended Simpson rule approximation at iteration \f$ N \f$ is
  * given by
@@ -219,28 +226,30 @@ auto trapez_quadrature(F&& f, double a, double b, double eps = 1e-7, int max = 2
  *   I_N = \frac{4 I_N^{(t)} - I_{N-1}^{(t)}}{3}
  * \f]
  *
- * @note See p. 164 in Press, Numerical Recipes.
+ * @note See p. 164 in Press, W. H., et al. "Numerical Recipes in C++: The Art of Scientific
+ * Computing", 3rd ed., Cambridge University Press, 2007.
  *
- * @tparam F Callable type.
+ * @tparam F Callable type representing the integrand.
  * @param f Callable object representing the integrand \f$ f \f$.
  * @param a Lower integration limit \f$ a \f$.
  * @param b Upper integration limit \f$ b \f$.
  * @param eps Convergence threshold \f$ \epsilon \f$.
  * @param max Maximum number of iterations.
  * @param min Minimum number of iterations.
- * @return A tuple containing the approximate value of the integral \f$ I_N \f$, the absolute
+ * @return A `std::tuple` containing the approximate value of the integral \f$ I_N \f$, the absolute
  * difference \f$ |I_N - I_{N-1}| \f$ and the number of iterations performed \f$ N - 1 \f$.
  */
 template <typename F>
-auto simpson_quadrature(F&& f, double a, double b, double eps = 1e-7, int max = 20, int min = 5) {
+[[nodiscard]] constexpr auto simpson_quadrature(
+    F&& f, double a, double b, double eps = 1e-7, int max = 20, int min = 5) {
     basic_quadrature quad(std::forward<F>(f), a, b);
 
     // lambda to check for convergence
-    auto is_converged = [&quad](double current, double last, double eps) {
+    auto is_converged = [&quad](double curr, double prev, double threshold) constexpr noexcept {
         if (quad.level() == 1) {
             return false;
         }
-        return std::abs(current - last) <= eps * std::abs(current);
+        return std::abs(curr - prev) <= threshold * std::abs(curr);
     };
 
     // do minimum number of iterations
