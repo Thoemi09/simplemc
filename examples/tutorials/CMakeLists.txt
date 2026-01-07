@@ -21,56 +21,23 @@
 # tut_numeric_1: Bravais lattices.
 # tut_numeric_2: Using orthogonal polynomials.
 
-add_executable(tut_utils_1 tut_utils_1.cpp)
-target_link_libraries(tut_utils_1 PRIVATE simplemc::simplemc)
-
-add_executable(tut_utils_2 tut_utils_2.cpp)
-target_link_libraries(tut_utils_2 PRIVATE simplemc::simplemc)
-
-add_executable(tut_utils_3 tut_utils_3.cpp)
-target_link_libraries(tut_utils_3 PRIVATE simplemc::simplemc)
-
-add_executable(tut_mpi_1 tut_mpi_1.cpp)
-target_link_libraries(tut_mpi_1 PRIVATE simplemc::simplemc)
-
-add_executable(tut_mpi_2_1 tut_mpi_2_1.cpp)
-target_link_libraries(tut_mpi_2_1 PRIVATE simplemc::simplemc)
-
-add_executable(tut_mpi_2_2 tut_mpi_2_2.cpp)
-target_link_libraries(tut_mpi_2_2 PRIVATE simplemc::simplemc)
-
-add_executable(tut_mpi_2_3 tut_mpi_2_3.cpp)
-target_link_libraries(tut_mpi_2_3 PRIVATE simplemc::simplemc)
-
-add_executable(tut_mpi_2_4 tut_mpi_2_4.cpp)
-target_link_libraries(tut_mpi_2_4 PRIVATE simplemc::simplemc)
-
-add_executable(tut_mpi_2_5 tut_mpi_2_5.cpp)
-target_link_libraries(tut_mpi_2_5 PRIVATE simplemc::simplemc)
-
-add_executable(tut_mpi_2_6 tut_mpi_2_6.cpp)
-target_link_libraries(tut_mpi_2_6 PRIVATE simplemc::simplemc)
-
-add_executable(tut_mpi_3 tut_mpi_3.cpp)
-target_link_libraries(tut_mpi_3 PRIVATE simplemc::simplemc)
-
-add_executable(tut_mpi_4 tut_mpi_4.cpp)
-target_link_libraries(tut_mpi_4 PRIVATE simplemc::simplemc)
-
-add_executable(tut_mpi_5 tut_mpi_5.cpp)
-target_link_libraries(tut_mpi_5 PRIVATE simplemc::simplemc)
-
-add_executable(tut_random_1 tut_random_1.cpp)
-target_link_libraries(tut_random_1 PRIVATE simplemc::simplemc)
-
-add_executable(tut_grids_1 tut_grids_1.cpp)
-target_link_libraries(tut_grids_1 PRIVATE simplemc::simplemc)
-
-add_executable(tut_grids_2 tut_grids_2.cpp)
-target_link_libraries(tut_grids_2 PRIVATE simplemc::simplemc)
-
-add_executable(tut_numeric_1 tut_numeric_1.cpp)
-target_link_libraries(tut_numeric_1 PRIVATE simplemc::simplemc)
-
-add_executable(tut_numeric_2 tut_numeric_2.cpp)
-target_link_libraries(tut_numeric_2 PRIVATE simplemc::simplemc)
+simplemc_add_examples(
+    tut_utils_1
+    tut_utils_2
+    tut_utils_3
+    tut_mpi_1
+    tut_mpi_2_1
+    tut_mpi_2_2
+    tut_mpi_2_3
+    tut_mpi_2_4
+    tut_mpi_2_5
+    tut_mpi_2_6
+    tut_mpi_3
+    tut_mpi_4
+    tut_mpi_5
+    tut_random_1
+    tut_grids_1
+    tut_grids_2
+    tut_numeric_1
+    tut_numeric_2
+)

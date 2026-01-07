@@ -7,14 +7,9 @@
 # doc_xoshiro256: Doc example using simplemc::xoshiro256pp.
 # doc_samples: Doc example sampling from various probability distributions.
 
-add_executable(doc_rngs doc_rngs.cpp)
-target_link_libraries(doc_rngs PRIVATE simplemc::simplemc)
-
-add_executable(doc_splitmix64 doc_splitmix64.cpp)
-target_link_libraries(doc_splitmix64 PRIVATE simplemc::simplemc)
-
-add_executable(doc_xoshiro256 doc_xoshiro256.cpp)
-target_link_libraries(doc_xoshiro256 PRIVATE simplemc::simplemc)
-
-add_executable(doc_samples doc_samples.cpp)
-target_link_libraries(doc_samples PRIVATE simplemc::simplemc)
+simplemc_add_examples(
+    doc_rngs
+    doc_splitmix64
+    doc_xoshiro256
+    doc_samples
+)
