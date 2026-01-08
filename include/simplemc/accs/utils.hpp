@@ -86,7 +86,7 @@ namespace simplemc::accs {
  *     \frac{1}{N} \sum_{j=1}^N \mathbf{z}^{(j)} \; .
  *   \f]
  *
- * - `welford`: The mean data is accumlated with
+ * - `welford`: The mean data is accumulated with
  *   \f[
  *     \mathbf{n}^{(N)} = \mathbf{n}^{(N-1)} + \frac{1}{N} \left( \mathbf{z}^{(N)} - \mathbf{t} -
  *     \mathbf{n}^{(N-1)} \right) =
@@ -100,6 +100,10 @@ namespace simplemc::accs {
  *
  * Here, \f$ \mathbf{t} \f$ is a constant vector that can optionally be applied to the random
  * samples to increase numerical accuracy.
+ *
+ * @note The constant vector \f$ \mathbf{t} \f$ is not part of the function. It is the caller's
+ * responsibility to subtract it while accumulating the data and to add it back after calculating the
+ * mean.
  *
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  * @tparam V simplemc::eigen_vector type.
@@ -131,7 +135,7 @@ template <varalg A, eigen_vector V>
  * accumulated with
  *   \f[
  *     \mathbf{c}^{(N)} = \mathbf{c}^{(N-1)} + \left( \mathbf{x}^{(N)} - \mathbf{s} \right) \odot
- *     \left( \mathbf{y}^{(N)} - \mathbf{y} \right) =
+ *     \left( \mathbf{y}^{(N)} - \mathbf{t} \right) =
  *     \sum_{j=1}^N \left( \mathbf{x}^{(j)} - \mathbf{s} \right) \odot
  *     \left( \mathbf{y}^{(j)} - \mathbf{t} \right) \; ,
  *   \f]
@@ -164,10 +168,15 @@ template <varalg A, eigen_vector V>
  * to the random samples to increase numerical accuracy and \f$ \mathbf{a} \odot \mathbf{b} \f$ is the
  * Hadamard (element-wise) product between two vectors \f$ \mathbf{a} \f$ and \f$ \mathbf{b} \f$.
  *
+ * @note The constant vectors \f$ \mathbf{t} \f$ and \f$ \mathbf{s} \f$ are not part of the function.
+ * It is the caller's responsibility to subtract them while accumulating the data.
+ *
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  * @tparam V simplemc::eigen_vector_dbl type.
- * @param mdata_x Accumulated mean data \f$ \mathbf{m}_\mathbf{X}^{(N)}/\mathbf{n}_\mathbf{X}^{(N)}\f$.
- * @param mdata_y Accumulated mean data \f$ \mathbf{m}_\mathbf{Y}^{(N)}/\mathbf{n}_\mathbf{Y}^{(N)}\f$.
+ * @param mdata_x Accumulated mean data \f$ \mathbf{m}_\mathbf{X}^{(N)}/\mathbf{n}_\mathbf{X}^{(N)}
+ * \f$.
+ * @param mdata_y Accumulated mean data \f$ \mathbf{m}_\mathbf{Y}^{(N)}/\mathbf{n}_\mathbf{Y}^{(N)}
+ * \f$.
  * @param cdata Accumulated (cross-)covariance data \f$ \mathbf{c}^{(N)}/\mathbf{d}^{(N)} \f$.
  * @param n Number of accumulated samples \f$ N \f$.
  * @return Diagonal of the sample (cross-)covariance matrix \f$ s_{\mathbf{X}\mathbf{Y}}^2 \f$.
@@ -234,11 +243,16 @@ template <varalg A, eigen_vector_dbl V>
  * Here, \f$ \mathbf{t} \f$ and \f$ \mathbf{s} \f$ are constant vectors that can optionally be applied
  * to the random samples to increase numerical accuracy.
  *
+ * @note The constant vectors \f$ \mathbf{t} \f$ and \f$ \mathbf{s} \f$ are not part of the function.
+ * It is the caller's responsibility to subtract them while accumulating the data.
+ *
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  * @tparam V simplemc::eigen_vector_dbl type.
  * @tparam M simplemc::eigen_matrix_dbl type.
- * @param mdata_x Accumulated mean data \f$ \mathbf{m}_\mathbf{X}^{(N)}/\mathbf{n}_\mathbf{X}^{(N)}\f$.
- * @param mdata_y Accumulated mean data \f$ \mathbf{m}_\mathbf{Y}^{(N)}/\mathbf{n}_\mathbf{Y}^{(N)}\f$.
+ * @param mdata_x Accumulated mean data \f$ \mathbf{m}_\mathbf{X}^{(N)}/\mathbf{n}_\mathbf{X}^{(N)}
+ * \f$.
+ * @param mdata_y Accumulated mean data \f$ \mathbf{m}_\mathbf{Y}^{(N)}/\mathbf{n}_\mathbf{Y}^{(N)}
+ * \f$.
  * @param cdata Accumulated (cross-)covariance data \f$ \mathbf{C}^{(N)}/\mathbf{D}^{(N)} \f$.
  * @param n Number of accumulated samples \f$ N \f$.
  * @return Sample (cross-)covariance matrix \f$ s_{\mathbf{X}\mathbf{Y}}^2 \f$.
@@ -281,7 +295,7 @@ template <varalg A, eigen_vector_dbl V, eigen_matrix_dbl M>
  * \f]
  * where \f$ s_{\mathbf{X}\mathbf{Y}}^2 \f$ is the naive (unblocked) sample (cross)-covariance matrix
  * and \f$ s_{\overline{\mathbf{X}}^{(B)}\overline{\mathbf{Y}}^{(B)}}^2 =
- * s_{\overline{\mathbf{X}}^{(N)}\overline{\mathbf{Y}}^{(N)}}^2 N_{\mathrm{eff}} = \f$ is the sample
+ * s_{\overline{\mathbf{X}}^{(N)}\overline{\mathbf{Y}}^{(N)}}^2 N_{\mathrm{eff}} \f$ is the sample
  * (cross)-covariance matrix of the blocked samples with block size \f$ B = N / N_{\mathrm{eff}} \f$.
  *
  * A similar equation holds for \f$ \tau_{\mathbf{X}} \f$.
