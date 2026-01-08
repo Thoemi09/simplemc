@@ -50,7 +50,7 @@ namespace simplemc {
  * - finds the highest level \f$ l' \f$ with at least 256 effective samples using find_level() and
  * - prints \f$ s_{\overline{X}}^2 \f$ and the integrated autocorrelation time \f$ \tau_X \f$ for
  * each level \f$ l \leq l' \f$:
- * 
+ *
  * @code{.cpp}
  * #include <fmt/ranges.h>
  * #include <simplemc/accs.hpp>
@@ -273,7 +273,7 @@ public:
      *
      * @details The value is first added to all levels with \f$ l < L_{\text{min}} \f$. If the block
      * in level \f$ L_{\text{min}} - 1 \f$ is full, it is recursively propagated to higher levels.
-     * 
+     *
      * See also @ref simplemc-accs-accs-how.
      *
      * @tparam T Type of the value to be accumulated.
@@ -293,7 +293,7 @@ public:
      *
      * @details The vector is first added to all levels with \f$ l < L_{\text{min}} \f$. If the block
      * in level \f$ L_{\text{min}} - 1 \f$ is full, it is recursively propagated to higher levels.
-     * 
+     *
      * See also @ref simplemc-accs-accs-how.
      *
      * @tparam W Eigen vector/array/expression type.
@@ -312,7 +312,7 @@ public:
      *
      * @details The values are first added to all levels with \f$ l < L_{\text{min}} \f$. If the block
      * in level \f$ L_{\text{min}} - 1 \f$ is full, it is recursively propagated to higher levels.
-     * 
+     *
      * See also @ref simplemc-accs-accs-how.
      *
      * @tparam R Input range of values.
@@ -330,7 +330,7 @@ public:
      *
      * @details The values are first added to all levels with \f$ l < L_{\text{min}} \f$. If the block
      * in level \f$ L_{\text{min}} - 1 \f$ is full, it is recursively propagated to higher levels.
-     * 
+     *
      * See also @ref simplemc-accs-accs-how.
      *
      * @tparam R1 Input range of values.
@@ -402,7 +402,7 @@ public:
      *
      * @return `std::vector` of mean accumulators.
      */
-    [[nodiscard]] const auto& blocks() const { return accs_; }
+    [[nodiscard]] const auto& blocks() const { return blocks_; }
 
     /**
      * @brief Get the block sizes of all levels.
