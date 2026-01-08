@@ -272,7 +272,8 @@ public:
         } else {
             const auto n1 = static_cast<double>(count_);
             const auto n2 = static_cast<double>(acc_other.count_);
-            mdata_ = mdata_ * n1 / (n1 + n2) + acc_other.mdata_ * n2 / (n1 + n2);
+            const auto ratio = n2 / (n1 + n2);
+            mdata_ = mdata_ + (acc_other.mdata_ - mdata_) * ratio;
         }
         count_ += acc_other.count_;
         return *this;
