@@ -329,7 +329,7 @@ template <eigen_matrix_dbl M>
  * @param b Block size \f$ B \f$ used in the blocked estimate (w.r.t. the naive estimate).
  * @return Integrated autocorrelation time \f$ \tau_{XY} \f$ or \f$ \tau_{X} \f$.
  */
-[[nodiscard]] double tau(double s_naive, double s_blocked, std::uint64_t b) {
+[[nodiscard]] inline double tau(double s_naive, double s_blocked, std::uint64_t b) {
     return (s_blocked * static_cast<double>(b) / s_naive - 1.0) * 0.5;
 }
 
