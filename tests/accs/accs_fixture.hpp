@@ -25,10 +25,10 @@ protected:
         using namespace std::literals::complex_literals;
 
         // set up stochastic process with real states
-        auto s1_d = state_d { 1.0, 0.0, 0.0 };
-        auto s2_d = state_d { 0.0, 1.0, 0.0 };
-        auto s3_d = state_d { 0.0, 0.0, 1.0 };
-        auto probs_d = std::vector<double> { 2.5, 0.3, 1.5 };
+        const auto s1_d = state_d { 1.0, 0.0, 0.0 };
+        const auto s2_d = state_d { 0.0, 1.0, 0.0 };
+        const auto s3_d = state_d { 0.0, 0.0, 1.0 };
+        const auto probs_d = std::vector<double> { 2.5, 0.3, 1.5 };
         Eigen::MatrixXd mcmc_props_d(3, 3);
         mcmc_props_d << 10, 1, 3, 2, 8, 1, 4, 1, 10;
         sp_d.set_states(std::vector<state_d> { s1_d, s2_d, s3_d });
@@ -38,10 +38,10 @@ protected:
         sp_d.mcmc_run(steps);
 
         // set up stochastic process with complex states
-        auto s1_c = state_c { 1.0 - 0.5i, 0.0 + 0.0i, 0.0 + 0.0i };
-        auto s2_c = state_c { 0.0 + 0.0i, -0.3 + 0.8i, 0.0 + 0.0i };
-        auto s3_c = state_c { 0.0 + 0.0i, 0.0 + 0.0i, 0.9 + 3.4i };
-        auto probs_c = std::vector<double> { 1.0, 3.4, 0.6 };
+        const auto s1_c = state_c { 1.0 - 0.5i, 0.0 + 0.0i, 0.0 + 0.0i };
+        const auto s2_c = state_c { 0.0 + 0.0i, -0.3 + 0.8i, 0.0 + 0.0i };
+        const auto s3_c = state_c { 0.0 + 0.0i, 0.0 + 0.0i, 0.9 + 3.4i };
+        const auto probs_c = std::vector<double> { 1.0, 3.4, 0.6 };
         Eigen::MatrixXd mcmc_props_c(3, 3);
         mcmc_props_c << 10, 3, 9, 8, 1, 2, 4, 4, 7;
         sp_c.set_states(std::vector<state_c> { s1_c, s2_c, s3_c });
@@ -95,7 +95,7 @@ protected:
 template <typename A>
 void check_empty(const A& acc) {
     ASSERT_EQ(acc.count(), 0);
-    auto mean = acc.mean();
+    const auto mean = acc.mean();
     if constexpr (!A::is_dynamic && A::static_size == 1) {
         check_isnan(mean);
     } else {

@@ -84,7 +84,7 @@ struct stochastic_process {
 
     // Make a single MCMC step.
     void mcmc_step() {
-        auto new_state = mcmc_dists[current](eng);
+        const auto new_state = mcmc_dists[current](eng);
         double ratio = (probs[new_state] * mcmc_dists[new_state].probabilities()[current]) /
             (probs[current] * mcmc_dists[current].probabilities()[new_state]);
         if (uni01(eng) < ratio) {
@@ -147,7 +147,7 @@ template <typename S>
     requires std::is_same_v<typename S::value_type, double>
 [[nodiscard]] auto analytic_variance(const S& sp) {
     auto var = S::vec_type::Zero().eval();
-    auto mean = analytic_mean(sp);
+    const auto mean = analytic_mean(sp);
     for (const auto& [s, p] : simplemc::ranges::views::zip(sp.states, sp.probs)) {
         var += p * (s - mean).square();
     }
@@ -160,7 +160,7 @@ template <typename S>
     auto re_var = S::dbl_vec_type::Zero().eval();
     auto im_var = S::dbl_vec_type::Zero().eval();
     auto re_im_cov = S::dbl_vec_type::Zero().eval();
-    auto mean = analytic_mean(sp);
+    const auto mean = analytic_mean(sp);
     for (const auto& [s, p] : simplemc::ranges::views::zip(sp.states, sp.probs)) {
         auto tmp = s - mean;
         re_var += p * tmp.real().square();
@@ -180,7 +180,7 @@ template <typename S>
         sum += s;
         sum_sq += s * s;
     }
-    auto tc = static_cast<double>(sp.total_count);
+    const auto tc = static_cast<double>(sp.total_count);
     return ((sum_sq - sum * sum / tc) / (tc - 1)).eval();
 }
 
@@ -199,7 +199,7 @@ template <typename S>
         im_sum_sq += s.imag() * s.imag();
         re_im_sum += s.real() * s.imag();
     }
-    auto tc = static_cast<double>(sp.total_count);
+    const auto tc = static_cast<double>(sp.total_count);
     const auto re_var = ((re_sum_sq - re_sum * re_sum / tc) / (tc - 1)).eval();
     const auto im_var = ((im_sum_sq - im_sum * im_sum / tc) / (tc - 1)).eval();
     const auto re_im_cov = ((re_im_sum - re_sum * im_sum / tc) / (tc - 1)).eval();
@@ -211,7 +211,7 @@ template <typename S>
     requires std::is_same_v<typename S::value_type, double>
 [[nodiscard]] auto analytic_covariance(const S& sp) {
     auto cov = S::mat_type::Zero().eval();
-    auto mean = analytic_mean(sp);
+    const auto mean = analytic_mean(sp);
     for (const auto& [s, p] : simplemc::ranges::views::zip(sp.states, sp.probs)) {
         cov += (p * (s - mean).matrix() * (s - mean).matrix().transpose()).array();
     }
@@ -224,7 +224,7 @@ template <typename S>
     auto re_cov = S::dbl_mat_type::Zero().eval();
     auto im_cov = S::dbl_mat_type::Zero().eval();
     auto re_im_cov = S::dbl_mat_type::Zero().eval();
-    auto mean = analytic_mean(sp);
+    const auto mean = analytic_mean(sp);
     for (const auto& [s, p] : simplemc::ranges::views::zip(sp.states, sp.probs)) {
         auto tmp = s - mean;
         re_cov += (p * tmp.real().matrix() * tmp.real().matrix().transpose()).array();
@@ -244,7 +244,7 @@ template <typename S>
         sum += s;
         sum_sq += (s.matrix() * s.matrix().transpose()).array();
     }
-    auto tc = static_cast<double>(sp.total_count);
+    const auto tc = static_cast<double>(sp.total_count);
     return ((sum_sq - (sum.matrix() * sum.matrix().transpose()).array() / tc) / (tc - 1)).eval();
 }
 
@@ -263,7 +263,7 @@ template <typename S>
         im_sum_sq += (s.imag().matrix() * s.imag().matrix().transpose()).array();
         re_im_sum += (s.real().matrix() * s.imag().matrix().transpose()).array();
     }
-    auto tc = static_cast<double>(sp.total_count);
+    const auto tc = static_cast<double>(sp.total_count);
     const auto re_var = ((re_sum_sq - (re_sum.matrix() * re_sum.matrix().transpose()).array() / tc) / (tc - 1)).eval();
     const auto im_var = ((im_sum_sq - (im_sum.matrix() * im_sum.matrix().transpose()).array() / tc) / (tc - 1)).eval();
     const auto re_im_cov =
@@ -293,11 +293,11 @@ template <typename S>
 template <typename S>
     requires std::is_same_v<typename S::value_type, double>
 [[nodiscard]] auto sample_autocorr(const S& sp, std::uint64_t num = 100) {
-    auto mean = analytic_mean(sp);
-    auto var = analytic_variance(sp);
-    std::vector<decltype(mean)> taus(num);
-    auto tau_int = S::vec_type::Constant(0.0).eval();
     const auto tc = static_cast<double>(sp.total_count);
+    const auto mean = analytic_mean(sp);
+    const auto var = analytic_variance(sp);
+    auto taus = std::vector<typename S::vec_type>(num);
+    auto tau_int = S::vec_type::Constant(0.0).eval();
     for (std::uint64_t i = 0; i < num; ++i) {
         const auto id = static_cast<double>(i + 1);
         for (std::uint64_t j = 0; j < sp.total_count - (i + 1); ++j) {
@@ -313,9 +313,9 @@ template <typename S>
 template <typename S>
     requires std::is_same_v<typename S::value_type, double>
 [[nodiscard]] auto blocking_autocorr(const S& sp, std::uint64_t fac = 2) {
-    std::vector<S> bsps;
-    std::vector<decltype(sample_variance(sp))> taus_v;
-    std::vector<decltype(sample_covariance(sp))> taus_c;
+    auto bsps = std::vector<S> {};
+    auto taus_v = std::vector<typename S::vec_type> {};
+    auto taus_c = std::vector<typename S::mat_type> {};
     bsps.emplace_back(sp);
     const auto v0 = sample_variance(bsps[0]);
     taus_v.emplace_back(0.0);
@@ -323,11 +323,10 @@ template <typename S>
     taus_c.emplace_back(0.0);
     auto size = fac;
     while (size < sp.total_count) {
-        auto bsp = block_samples(sp, size);
         bsps.emplace_back(block_samples(sp, size));
-        auto vi = sample_variance(bsps.back());
+        const auto vi = sample_variance(bsps.back());
         taus_v.emplace_back(0.5 * ((vi * size) / v0 - 1));
-        auto ci = sample_covariance(bsps.back());
+        const auto ci = sample_covariance(bsps.back());
         taus_c.emplace_back(0.5 * ((ci * size) / c0 - 1));
         size *= fac;
     }
