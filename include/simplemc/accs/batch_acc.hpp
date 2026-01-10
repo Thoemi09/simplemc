@@ -653,7 +653,7 @@ public:
                 std::ranges::copy(bs, ranges::begin(view));
             }
             for (auto& macc : view) {
-                macc.broadcast(comm, i);
+                macc.broadcast(i, comm);
             }
             prev_idx += vec_sz[i];
         }

@@ -98,7 +98,7 @@ public:
      *
      * @return Its simplemc::varalg tag.
      */
-    static constexpr auto varalg() { return A; }
+    static constexpr auto varalg() noexcept { return A; }
 
     /* Friend declarations. */
     friend class multivalue_acc<mean_acc>;
@@ -117,7 +117,7 @@ private:
     }
 
     // Broadcast into/from the current mean accumulator. Only used in mpi_collect with batch_acc.
-    void broadcast(const mpi::communicator& comm, int root) {
+    void broadcast(int root, const mpi::communicator& comm) {
         mpi::broadcast(make_span(mdata_), root, comm);
         mpi::broadcast(count_, root, comm);
     }
@@ -174,7 +174,7 @@ public:
      * @param i Index \f$ i \f$.
      * @return Reference to `this` object.
      */
-    mean_acc& operator[](size_type i) {
+    mean_acc& operator[](size_type i) noexcept {
         idx_ = i;
         return *this;
     }
@@ -233,6 +233,8 @@ public:
      *   - \f$ \mathbf{n}^{(N)} = \frac{N_1}{N}\mathbf{n}_{1}^{(N_1)} + \frac{N_2}{N}
      *     \mathbf{n}_{2}^{(N_2)} \f$.
      *
+     * If the the accumulator to be incorporated is empty(), nothing is done.
+     *
      * See also @ref simplemc-accs-accs-how.
      *
      * @param acc_other simplemc::mean_acc to be incorporated.
@@ -240,6 +242,13 @@ public:
      */
     mean_acc& operator<<(const mean_acc& acc_other) {
         assert(size() == acc_other.size());
+
+        // early return if the other accumulator is empty
+        if (acc_other.empty()) {
+            return *this;
+        }
+
+        // incorporate the data and count
         if constexpr (varalg() == varalg::standard) {
             mdata_ += acc_other.mdata_;
         } else {
@@ -249,6 +258,7 @@ public:
             mdata_ = mdata_ + (acc_other.mdata_ - mdata_) * ratio;
         }
         count_ += acc_other.count_;
+
         return *this;
     }
 
@@ -303,21 +313,28 @@ public:
      *
      * @return Multi-value accumulator wrapping `this` object.
      */
-    mva_type make_mva() { return mva_type(*this); }
+    [[nodiscard]] mva_type make_mva() noexcept { return mva_type(*this); }
 
     /**
      * @brief Get the size \f$ M \f$ of the accumulator.
      *
      * @return Number of elements.
      */
-    [[nodiscard]] auto size() const { return mdata_.size(); }
+    [[nodiscard]] auto size() const noexcept { return mdata_.size(); }
 
     /**
      * @brief Get the total number of accumulated samples \f$ N \f$.
      *
      * @return Number of accumulated samples.
      */
-    [[nodiscard]] auto count() const { return count_; }
+    [[nodiscard]] auto count() const noexcept { return count_; }
+
+    /**
+     * @brief Check if the accumulator is empty.
+     *
+     * @return True if the count() is zero, i.e. \f$ N = 0 \f$, false otherwise.
+     */
+    [[nodiscard]] bool empty() const noexcept { return count_ == 0; }
 
     /**
      * @brief Get the accumulated data \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$ used for estimating
@@ -326,7 +343,7 @@ public:
      * @return simplemc::eigen_vector of size \f$ M \f$ containing \f$ \mathbf{m}^{(N)}/
      * \mathbf{n}^{(N)} \f$ (content depends on the algorithm, see simplemc::accs::mean).
      */
-    [[nodiscard]] const vec_type& mdata() const { return mdata_; }
+    [[nodiscard]] const vec_type& mdata() const noexcept { return mdata_; }
 
     /**
      * @brief Calculate the sample mean \f$ \overline{\mathbf{z}}^{(N)} \f$.
@@ -352,16 +369,28 @@ public:
      * The reduction operation depends on the simplemc::varalg algorithm used to accumulate the data.
      * See operator<<(const mean_acc&) for how it is done in the case of 2 accumulators.
      *
+     * If the reduced count() of all accumulators is zero, no data is collected and the returned
+     * accumulator will be empty().
+     *
      * It asserts that the size of the accumulator is equal on all processes.
      *
      * @param comm simplemc::mpi::communicator object.
      * @param acc Mean accumulator.
      * @return Mean accumulator with the reduced data from all processes.
      */
-    friend mean_acc mpi_collect(const mpi::communicator& comm, const mean_acc& acc) {
+    [[nodiscard]] friend mean_acc mpi_collect(const mpi::communicator& comm, const mean_acc& acc) {
         assert(all_equal(acc.size(), comm));
-        mean_acc res(acc.size());
+        mean_acc res { acc.size() };
+
+        // reduce the count
         mpi::all_reduce(acc.count_, res.count_, MPI_SUM, comm);
+
+        // early return if the reduced count is zero
+        if (res.count_ == 0) {
+            return res;
+        }
+
+        // reduce the accumulated data
         if constexpr (mean_acc::varalg() == varalg::standard) {
             mpi::all_reduce(make_span(acc.mdata_), make_span(res.mdata_), MPI_SUM, comm);
         } else {
@@ -370,6 +399,7 @@ public:
             const vec_type tmp_mdata = acc.mdata_ * n1 / n;
             mpi::all_reduce(make_span(tmp_mdata), make_span(res.mdata_), MPI_SUM, comm);
         }
+
         return res;
     }
 
