@@ -47,33 +47,6 @@ class batch_acc;
  * The accumulated data is stored in a single vector \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$. Please
  * see simplemc::accs::mean for more details.
  *
- * @code{.cpp}
- * #include <fmt/ranges.h>
- * #include <simplemc/accs/mean_acc.hpp>
- *
- * #include <vector>
- *
- * int main() {
- *     // data to be sampled
- *     std::vector<double> data = { 1.0, 2.0, 3.0, 4.0, 5.0 };
- *
- *     // accumulate samples into a mean accumulator of size 1
- *     simplemc::mean_acc_single<double> acc;
- *     for (auto& val : data) {
- *         acc << val;
- *     }
- *
- *     // print the mean of the accumulated data
- *     fmt::println("Mean: {}", acc.mean());
- * }
- * @endcode
- *
- * Output:
- *
- * ```
- * Mean: 3
- * ```
- *
  * @tparam V simplemc::eigen_vector type.
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  */

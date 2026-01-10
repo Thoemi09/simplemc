@@ -986,6 +986,14 @@
  *
  * @details The sample mean is used as an approximation to the exact expectation value. See
  * @ref simplemc-accs for a definition of the sample mean and expectation value.
+ * 
+ * @include accs/doc_mean_acc.cpp
+ * 
+ * Output:
+ * 
+ * ```
+ * Mean: 3
+ * ```
  */
 
 /**
