@@ -724,7 +724,7 @@
  * \f]
  * where \f$ f_l \f$ is a Fourier coefficient and \f$ p_l(x) \f$ is the l<sup>th</sup> order
  * polynomial.
- * 
+ *
  * See @ref tut_numeric_2 for an example how to use the provided orthogonal polynomials in practice.
  */
 
@@ -947,9 +947,9 @@
  * accumulator is a simplemc::block_acc or simplemc::batch_acc, the user has to call
  * simplemc::block_acc::check_and_add_block or simplemc::batch_acc::check_and_advance as well.
  *
- * - If the size of the accumulator is \f$ M \geq 1 \f$ and a range, `rg`, containing \f$ n \leq M \f$ 
- * values \f$ v_i, \dots, v_{i+n-1} \f$, each \f$ \in \mathbb{R} \f$ or \f$ \in \mathbb{C} \f$, should 
- * be added to consecutive elements in the accumulator starting from index \f$ i \leq M - n \f$, one 
+ * - If the size of the accumulator is \f$ M \geq 1 \f$ and a range, `rg`, containing \f$ n \leq M \f$
+ * values \f$ v_i, \dots, v_{i+n-1} \f$, each \f$ \in \mathbb{R} \f$ or \f$ \in \mathbb{C} \f$, should
+ * be added to consecutive elements in the accumulator starting from index \f$ i \leq M - n \f$, one
  * can use the accumulate function:
  * @code{.cpp}
  * acc.accumulate(rg, i);
@@ -958,9 +958,9 @@
  * \f$ v_{i}, v_{i+1}, \dots, v_{i+n-1} \f$ with indices \f$ i, i + 1, \dots, i + n - 1 \f$ are
  * possibly non-zero.
  *
- * - If the size of the accumulator is \f$ M \geq 1 \f$ and a range, `rg`, containing \f$ n \leq M \f$ 
- * values \f$ v_{i_1}, \dots, v_{i_n} \f$, each \f$ \in \mathbb{R} \f$ or \f$ \in \mathbb{C} \f$, 
- * should be added to the elements of the accumulator with indices \f$ i_1, \dots, i_n \f$, one can 
+ * - If the size of the accumulator is \f$ M \geq 1 \f$ and a range, `rg`, containing \f$ n \leq M \f$
+ * values \f$ v_{i_1}, \dots, v_{i_n} \f$, each \f$ \in \mathbb{R} \f$ or \f$ \in \mathbb{C} \f$,
+ * should be added to the elements of the accumulator with indices \f$ i_1, \dots, i_n \f$, one can
  * use the accumulate function:
  * @code{.cpp}
  * acc.accumulate(rg, idxs);
@@ -974,8 +974,8 @@
  * @code{.cpp}
  * acc << acc_other;
  * @endcode
- * 
- * For information how the data is actually incorporated, please refer to the docs of the different 
+ *
+ * For information how the data is actually incorporated, please refer to the docs of the different
  * accumulator types.
  */
 
@@ -986,11 +986,11 @@
  *
  * @details The sample mean is used as an approximation to the exact expectation value. See
  * @ref simplemc-accs for a definition of the sample mean and expectation value.
- * 
+ *
  * @include accs/doc_mean_acc.cpp
- * 
+ *
  * Output:
- * 
+ *
  * ```
  * Mean: 3
  * ```

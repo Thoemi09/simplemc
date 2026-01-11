@@ -10,11 +10,14 @@
 #include <simplemc/accs/utils.hpp>
 
 // accumulators
-#include <simplemc/accs/autocorr_acc.hpp>
+
 #include <simplemc/accs/batch_acc.hpp>
-#include <simplemc/accs/block_acc.hpp>
 #include <simplemc/accs/covar_acc.hpp>
 #include <simplemc/accs/mean_acc.hpp>
 #include <simplemc/accs/var_acc.hpp>
+
+// accumulator wrappers
+#include <simplemc/accs/autocorr_acc.hpp>
+#include <simplemc/accs/block_acc.hpp>
 
 #endif // SIMPLEMC_ACCS_HPP
