@@ -7,8 +7,10 @@
 #ifndef SIMPLEMC_ACCS_COVAR_ACC_COMPLEX_HPP
 #define SIMPLEMC_ACCS_COVAR_ACC_COMPLEX_HPP
 
+#include <simplemc/accs/concepts.hpp>
 #include <simplemc/accs/covar_acc_fwd.hpp>
 #include <simplemc/accs/utils.hpp>
+#include <simplemc/accs/varalg.hpp>
 #include <simplemc/mpi.hpp>
 #include <simplemc/numeric/eigen.hpp>
 #include <simplemc/numeric/utils.hpp>

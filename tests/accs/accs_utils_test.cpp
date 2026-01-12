@@ -1,6 +1,7 @@
 #include "./accs_fixture.hpp"
 
 #include <simplemc/accs/utils.hpp>
+#include <simplemc/accs/varalg.hpp>
 #include <simplemc/numeric/eigen.hpp>
 #include <simplemc/utils/ranges.hpp>
 

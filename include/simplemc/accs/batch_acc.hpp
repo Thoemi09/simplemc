@@ -6,11 +6,13 @@
 #ifndef SIMPLEMC_ACCS_BATCH_ACC_HPP
 #define SIMPLEMC_ACCS_BATCH_ACC_HPP
 
+#include <simplemc/accs/concepts.hpp>
 #include <simplemc/accs/covar_acc.hpp>
 #include <simplemc/accs/mean_acc.hpp>
 #include <simplemc/accs/multivalue_acc.hpp>
 #include <simplemc/accs/utils.hpp>
 #include <simplemc/accs/var_acc.hpp>
+#include <simplemc/accs/varalg.hpp>
 #include <simplemc/numeric/eigen.hpp>
 #include <simplemc/utils/concepts.hpp>
 #include <simplemc/utils/ranges.hpp>

@@ -6,7 +6,7 @@
 #ifndef SIMPLEMC_ACCS_VAR_ACC_FWD_HPP
 #define SIMPLEMC_ACCS_VAR_ACC_FWD_HPP
 
-#include <simplemc/accs/utils.hpp>
+#include <simplemc/accs/varalg.hpp>
 #include <simplemc/numeric/eigen.hpp>
 #include <simplemc/utils/concepts.hpp>
 

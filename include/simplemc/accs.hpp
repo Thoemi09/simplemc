@@ -7,10 +7,11 @@
 #define SIMPLEMC_ACCS_HPP
 
 // utilities
+#include <simplemc/accs/concepts.hpp>
 #include <simplemc/accs/utils.hpp>
+#include <simplemc/accs/varalg.hpp>
 
 // accumulators
-
 #include <simplemc/accs/batch_acc.hpp>
 #include <simplemc/accs/covar_acc.hpp>
 #include <simplemc/accs/mean_acc.hpp>

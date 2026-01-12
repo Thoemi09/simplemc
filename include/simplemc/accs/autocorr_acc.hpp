@@ -118,6 +118,16 @@ public:
     static constexpr int static_size = acc_type::static_size;
 
     /**
+     * @brief Is the accumulator dynamically sized?
+     */
+    static constexpr bool is_dynamic = acc_type::is_dynamic;
+
+    /**
+     * @brief Does the accumulator return scalars or vectors/matrices?
+     */
+    static constexpr bool returns_scalar = acc_type::returns_scalar;
+
+    /**
      * @brief Type of accumulated values.
      */
     using value_type = typename acc_type::value_type;
