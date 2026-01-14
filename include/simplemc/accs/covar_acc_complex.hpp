@@ -532,7 +532,7 @@ public:
      * @brief Calculate the sample covariance matrix \f$ s_{\mathbf{Z} \mathbf{Z}}^2 \f$.
      *
      * @details It combines the different covariance matrices (real, imaginary, real-imaginary) to
-     * form the full covariance matrix (see @ref simplemc-accs for the formula).
+     * form the full covariance matrix (see @ref simplemc-accs-notes for the formula).
      *
      * For statically sized accumulators with \f$ M = 1 \f$, it returns a complex scalar. Otherwise,
      * it returns a cplx_mat_type object.
