@@ -14,7 +14,7 @@ namespace simplemc {
  */
 
 /**
- * @brief Enumerate the different strategies how to accumulate data.
+ * @brief Enumerate supported strategies how data can be accumulated.
  *
  * @details The following two strategies are available:
  * - `standard`: Simply sums up individual samples.

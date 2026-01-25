@@ -28,7 +28,7 @@ namespace simplemc::accs {
  */
 
 /**
- * @brief Calculate the sample mean of a (complex) random vector.
+ * @brief Calculate the sample mean of a (complex) random vector \f$ \mathbf{Z} \f$.
  *
  * @details The calculation of the sample mean depends on the algorithm used to accumulate the data:
  * - `standard`: The mean data is accumulated with
@@ -154,7 +154,7 @@ template <varalg A, eigen_vector_dbl V>
 }
 
 /**
- * @brief Calculate the full sample (cross-)covariance matrix of two random vectors.
+ * @brief Calculate the full sample (cross-)covariance matrix of two real random vectors.
  *
  * @details The calculation of the sample (cross-)covariance matrix depends on the algorithm used to
  * accumulate the data:
@@ -231,10 +231,10 @@ template <varalg A, eigen_vector_dbl V, eigen_matrix_dbl M>
 }
 
 /**
- * @brief Calculate the integrated autocorrelation time for the elements of a (cross)-covariance
- * matrix or a variance vector.
+ * @brief Calculate the integrated autocorrelation time for the elements of a real (cross)-covariance
+ * matrix or variance vector.
  *
- * @details Inverting the last equation in @ref simplemc-accs, we can write the integrated
+ * @details Inverting the last equation in @ref simplemc-accs-notes, we can write the integrated
  * autocorrelation time as
  * \f[
  *   \tau_{\mathbf{X}\mathbf{Y}} = \frac{1}{2} \left( \frac{\mathrm{Cov}[\overline{\mathbf{X}}^{(N)},
@@ -274,7 +274,8 @@ template <eigen_matrix_dbl M>
 }
 
 /**
- * @brief Calculate the integrated autocorrelation time for a scalar (cross)-covariance or variance.
+ * @brief Calculate the integrated autocorrelation time for a real scalar (cross)-covariance or
+ * variance.
  *
  * @details See simplemc::accs::tau(const M&, const M&, std::uint64_t) for details.
  *
@@ -334,12 +335,12 @@ template <typename A, random_sample_range R, typename... Args>
     using acc_type = A;
 
     if (ranges::size(rg) == 0) {
-        throw simplemc_exception("Empty range of random samples", "detail::make_acc");
+        throw simplemc_exception("Empty range of random samples");
     }
 
-    acc_type acc(std::forward<Args>(args)...);
-    value_type t_shift = (t ? *t : zero_sample(*ranges::begin(rg)));
-    for (auto const& sample : rg) {
+    acc_type acc { std::forward<Args>(args)... };
+    const value_type t_shift = (t ? *t : zero_sample(*ranges::begin(rg)));
+    for (const auto& sample : rg) {
         acc << (sample - t_shift);
     }
     return acc;

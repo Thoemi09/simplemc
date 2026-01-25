@@ -754,12 +754,12 @@
  *
  * @details In the following, we use the notation from @ref simplemc-accs-notes.
  *
+ * @section simplemc-accs-accs-types Accumulator types
+ *
  * **simplemc** implements several accumulators of increasing complexity and for different puproses.
- * They can be used to calculate the sample mean \f$ \overline{\mathbf{x}}^{(N)} \f$, sample variance
- * \f$ s_{\mathbf{X}}^2 \f$, sample covariance \f$ s_{\mathbf{X}\mathbf{X}}^2 \f$ and autocorrelation
- * times \f$ \tau_{\mathbf{X}} \f$ and \f$ \tau_{\mathbf{X} \mathbf{X}} \f$ for a set of random
- * samples \f$ S = \left\{ \mathbf{x}^{(j)} : j = 1, \dots, N \land (\mathbf{x}^{(j)} \in
- * \mathbb{R}^M \lor \mathbf{x}^{(j)} \in \mathbb{C}^M) \right\} \f$.
+ * They can be used to calculate the sample mean, sample variance, sample covariance and
+ * autocorrelation times for a set of random samples taken from the distribution of some random
+ * variable.
  *
  * The following accumulators are available:
  * - @ref simplemc-accs-accs-mean - Simplest and fastest accumulator for calculating only the sample
@@ -786,11 +786,12 @@
  *
  * To accumulate data, one can use different methods (please look at the documentation of a specific
  * accumulator to see which of them are supported). Let `acc` be an instance of one of the accumulator
- * types mentioned above:
- * - If the size of the accumulator is \f$ 1 \f$, then a single value \f$ x \in \mathbb{R} \f$ or \f$
- * x \in \mathbb{C} \f$ can be added with the stream operator:
+ * types `A` mentioned above:
+ *
+ * - If the size of the accumulator is \f$ 1 \f$, then a scalar value \f$ z \in \mathbb{R} \f$ or \f$
+ * z \in \mathbb{C} \f$ can be added with the stream operator:
  * @code{.cpp}
- * acc << x;
+ * acc << z;
  * @endcode
  *
  * - If the size of the accumulator is \f$ M \geq 1 \f$, then an `Eigen` vector/array/expression
@@ -800,18 +801,19 @@
  * acc << v;
  * @endcode
  *
- * - If the size of the accumulator is \f$ M \geq 1 \f$ and only a single value \f$ v_i \in \mathbb{R}
- * \f$ or \f$ v_i \in \mathbb{C} \f$ should be added at once, then one can use the subscript operator
- * together with the stream operator:
+ * - If the size of the accumulator is \f$ M \geq 1 \f$ and only a scalar value \f$ v_i \in \mathbb{R}
+ * \f$ or \f$ v_i \in \mathbb{C} \f$ should be added to a specific element with index \f$ i \f$, then
+ * one can use the subscript operator together with the stream operator:
  * @code{.cpp}
  * acc[i] << v_i;
  * @endcode
  * This is equivalent to adding a full vector \f$ \mathbf{v} = \left(0, \dots, 0, v_i, 0, \dots, 0
  * \right) \f$, where only the i<sup>th</sup> element \f$ v_i \f$ is possibly non-zero.
  *
- * - If the size of the accumulator is \f$ M \geq 1 \f$ and multiple values \f$ v_{i_1}, \dots v_{i_n}
- * \f$, each \f$ \in \mathbb{R} \f$ or \f$ \in \mathbb{C} \f$, should be added at once, then one can
- * use the simplemc::multivalue_acc wrapper together with the stream operator:
+ * - If the size of the accumulator is \f$ M \geq 1 \f$ and multiple scalar values \f$ v_{i_1}, \dots
+ * v_{i_n} \f$, each \f$ \in \mathbb{R} \f$ or \f$ \in \mathbb{C} \f$, should be added to specific
+ * elements with indices \f$ i_1, \dots, i_n \f$, then one can use the simplemc::multivalue_acc
+ * wrapper together with the stream operator:
  * @code{.cpp}
  * auto mva = acc.make_mva();
  * mva[i_1] << v_i_1;
@@ -827,9 +829,9 @@
  * simplemc::block_acc::check_and_add_block or simplemc::batch_acc::check_and_advance as well.
  *
  * - If the size of the accumulator is \f$ M \geq 1 \f$ and a range, `rg`, containing \f$ n \leq M \f$
- * values \f$ v_i, \dots, v_{i+n-1} \f$, each \f$ \in \mathbb{R} \f$ or \f$ \in \mathbb{C} \f$, should
- * be added to consecutive elements in the accumulator starting from index \f$ i \leq M - n \f$, one
- * can use the accumulate function:
+ * scalar values \f$ v_i, \dots, v_{i+n-1} \f$, each \f$ \in \mathbb{R} \f$ or \f$ \in \mathbb{C} \f$, 
+ * should be added to consecutive elements in the accumulator starting from index \f$ i \leq M - n 
+ * \f$, one can use the accumulate function:
  * @code{.cpp}
  * acc.accumulate(rg, i);
  * @endcode
@@ -838,9 +840,9 @@
  * possibly non-zero.
  *
  * - If the size of the accumulator is \f$ M \geq 1 \f$ and a range, `rg`, containing \f$ n \leq M \f$
- * values \f$ v_{i_1}, \dots, v_{i_n} \f$, each \f$ \in \mathbb{R} \f$ or \f$ \in \mathbb{C} \f$,
- * should be added to the elements of the accumulator with indices \f$ i_1, \dots, i_n \f$, one can
- * use the accumulate function:
+ * scalar values \f$ v_{i_1}, \dots, v_{i_n} \f$, each \f$ \in \mathbb{R} \f$ or \f$ \in \mathbb{C} 
+ * \f$, should be added to the elements of the accumulator with indices \f$ i_1, \dots, i_n \f$, one 
+ * can use the accumulate function:
  * @code{.cpp}
  * acc.accumulate(rg, idxs);
  * @endcode
@@ -848,8 +850,8 @@
  * adding a full vector \f$ \mathbf{v} \f$ to the samples, where only elements \f$ v_{i_1}, \dots
  * v_{i_n} \f$ with indices \f$ i_1, \dots, i_n \f$ are possibly non-zero.
  *
- * - If the data from another accumulator, `acc_other`, of the same type and of the same size \f$ M
- * \f$ should be added to the data of the accumulator, one can use the stream operator:
+ * - If the data from another accumulator, `acc_other`, of the same type `A` and of the same size \f$ 
+ * M \f$ should be added to the data of the accumulator, one can use the stream operator:
  * @code{.cpp}
  * acc << acc_other;
  * @endcode
