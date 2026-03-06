@@ -41,7 +41,7 @@ namespace simplemc {
  * data.
  * @return simplemc::var_acc containing the accumulated random samples from the given range.
  */
-template <varalg A = varalg::welford, random_sample_range R>
+template <varalg A = varalg::welford, acc_data_range R>
 [[nodiscard]] auto make_var_acc(
     R&& rg, std::optional<ranges::range_value_t<R>> t = std::nullopt) { // NOLINT (ranges need not be forwarded)
     using value_type = ranges::range_value_t<R>;
@@ -72,7 +72,7 @@ template <varalg A = varalg::welford, random_sample_range R>
  * @return simplemc::block_acc wrapping a simplemc::var_acc containing the accumulated random samples
  * from the given range.
  */
-template <varalg A = varalg::welford, random_sample_range R>
+template <varalg A = varalg::welford, acc_data_range R>
 [[nodiscard]] auto make_block_var_acc(R&& rg, std::uint64_t b, // NOLINT (ranges need not be forwarded)
     std::optional<ranges::range_value_t<R>> t = std::nullopt) {
     using value_type = ranges::range_value_t<R>;
@@ -106,7 +106,7 @@ template <varalg A = varalg::welford, random_sample_range R>
  * @return simplemc::autocorr_acc wrapping a simplemc::var_acc containing the accumulated random
  * samples from the given range.
  */
-template <varalg A = varalg::welford, random_sample_range R>
+template <varalg A = varalg::welford, acc_data_range R>
 [[nodiscard]] auto make_autocorr_var_acc(R&& rg, // NOLINT (ranges need not be forwarded)
     std::optional<ranges::range_value_t<R>> t = std::nullopt) {
     using value_type = ranges::range_value_t<R>;

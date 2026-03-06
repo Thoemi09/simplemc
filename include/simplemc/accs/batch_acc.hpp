@@ -714,7 +714,7 @@ using batch_acc_dynamic = batch_acc<Eigen::Matrix<T, Eigen::Dynamic, 1>, A>;
  * data.
  * @return simplemc::batch_acc containing the accumulated random samples from the given range.
  */
-template <varalg A = varalg::welford, random_sample_range R>
+template <varalg A = varalg::welford, acc_data_range R>
 [[nodiscard]] auto make_batch_acc(R&& rg, std::size_t m_b, // NOLINT (ranges need not be forwarded)
     std::optional<ranges::range_value_t<R>> t = std::nullopt) {
     using value_type = ranges::range_value_t<R>;

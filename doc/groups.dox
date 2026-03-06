@@ -732,11 +732,14 @@
  * @defgroup simplemc-accs simplemc-accs
  * @brief Various accumulators to collect and analyze data.
  *
- * @details **simplemc-accs** implement different @ref simplemc-accs-accs and strategies to estimate
+ * @details **simplemc-accs** implements different @ref simplemc-accs-accs and strategies to estimate
  * the mean, variance, covariance and autocorrelation time of some data.
- *
- * For the user's convenience, @ref simplemc-accs-notes provide mathematical formulas for these
- * quantities and introduces the notation used throughout the documentation.
+ */
+
+/**
+ * @defgroup simplemc-accs-concepts Accumulator concepts
+ * @ingroup simplemc-accs
+ * @brief Concepts that define sample types and the basic interface of accumulators.
  */
 
 /**
@@ -829,8 +832,8 @@
  * simplemc::block_acc::check_and_add_block or simplemc::batch_acc::check_and_advance as well.
  *
  * - If the size of the accumulator is \f$ M \geq 1 \f$ and a range, `rg`, containing \f$ n \leq M \f$
- * scalar values \f$ v_i, \dots, v_{i+n-1} \f$, each \f$ \in \mathbb{R} \f$ or \f$ \in \mathbb{C} \f$, 
- * should be added to consecutive elements in the accumulator starting from index \f$ i \leq M - n 
+ * scalar values \f$ v_i, \dots, v_{i+n-1} \f$, each \f$ \in \mathbb{R} \f$ or \f$ \in \mathbb{C} \f$,
+ * should be added to consecutive elements in the accumulator starting from index \f$ i \leq M - n
  * \f$, one can use the accumulate function:
  * @code{.cpp}
  * acc.accumulate(rg, i);
@@ -840,8 +843,8 @@
  * possibly non-zero.
  *
  * - If the size of the accumulator is \f$ M \geq 1 \f$ and a range, `rg`, containing \f$ n \leq M \f$
- * scalar values \f$ v_{i_1}, \dots, v_{i_n} \f$, each \f$ \in \mathbb{R} \f$ or \f$ \in \mathbb{C} 
- * \f$, should be added to the elements of the accumulator with indices \f$ i_1, \dots, i_n \f$, one 
+ * scalar values \f$ v_{i_1}, \dots, v_{i_n} \f$, each \f$ \in \mathbb{R} \f$ or \f$ \in \mathbb{C}
+ * \f$, should be added to the elements of the accumulator with indices \f$ i_1, \dots, i_n \f$, one
  * can use the accumulate function:
  * @code{.cpp}
  * acc.accumulate(rg, idxs);
@@ -850,7 +853,7 @@
  * adding a full vector \f$ \mathbf{v} \f$ to the samples, where only elements \f$ v_{i_1}, \dots
  * v_{i_n} \f$ with indices \f$ i_1, \dots, i_n \f$ are possibly non-zero.
  *
- * - If the data from another accumulator, `acc_other`, of the same type `A` and of the same size \f$ 
+ * - If the data from another accumulator, `acc_other`, of the same type `A` and of the same size \f$
  * M \f$ should be added to the data of the accumulator, one can use the stream operator:
  * @code{.cpp}
  * acc << acc_other;

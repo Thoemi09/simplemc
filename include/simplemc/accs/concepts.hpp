@@ -15,96 +15,67 @@
 namespace simplemc {
 
 /**
- * @addtogroup simplemc-accs-utils
+ * @addtogroup simplemc-accs-concepts
  * @{
  */
 
 /**
- * @brief Supported types that can be used as a scalar valued random variable (random scalar).
- *
- * @details A random variable \f$ Z \f$ is defined on a probability space \f$ (\Omega, \mathcal{F}, P)
- * \f$ and is a map \f$ Z: \Omega \to A \f$ from the sample space \f$ \Omega \f$ to some measurable
- * set \f$ A \f$.
- *
- * If the set \f$ A \f$ is either \f$ \mathbb{R} \f$ or \f$ \mathbb{C} \f$, then we call \f$ Z \f$ a
- * (complex) random scalar.
+ * @brief A scalar data type supported by @ref simplemc-accs-accs.
  *
  * @tparam T Type to check.
  */
 template <typename T>
-concept random_scalar = double_or_complex<T>;
+concept acc_scalar = double_or_complex<T>;
 
 /**
- * @brief Supported types that can be used as a vector valued random variable (random vector).
- *
- * @details A random variable \f$ \mathbf{Z} \f$ is defined on a probability space \f$ (\Omega,
- * \mathcal{F}, P) \f$ and is a map \f$ \mathbf{Z}: \Omega \to A \f$ from the sample space \f$ \Omega
- * \f$ to some measurable set \f$ A \f$.
- *
- * If the set \f$ A \f$ is either \f$ \mathbb{R}^M \f$ or \f$ \mathbb{C}^M \f$, then we call \f$
- * \mathbf{Z} \f$ a (complex) random vector.
+ * @brief A vector data type supported by @ref simplemc-accs-accs.
  *
  * @tparam T Type to check.
  */
 template <typename T>
-concept random_vector = eigen_vector_dbl<T> || eigen_vector_cplx<T>;
+concept acc_vector = eigen_vector_dbl<T> || eigen_vector_cplx<T>;
 
 /**
- * @brief Supported types that can be used as random samples for statistical analysis.
- *
- * @details A random sample \f$ z^{(j)} \f$ or \f$ \mathbf{z}^{(j)} \f$ is a sample taken from the
- * distribution of a (complex) simplemc::random_scalar \f$ Z \f$ or simplemc::random_vector \f$
- * \mathbf{Z} \f$, respectively.
+ * @brief A data type supported by @ref simplemc-accs-accs.
  *
  * @tparam T Type to check.
  */
 template <typename T>
-concept random_sample = random_scalar<T> || random_vector<T>;
+concept acc_data = acc_scalar<T> || acc_vector<T>;
 
 /**
- * @brief Supported range types whose elements can be used as random samples for statistical analysis.
+ * @brief A range type containing simplemc::acc_data.
  *
- * @details A set of random samples \f$ S_Z = \left\{ z^{(j)} : j = 1, \dots, N \right\} \f$ or \f$ 
- * S_{\mathbf{Z}} = \left\{ \mathbf{z}^{(j)} : j = 1, \dots, N \right\} \f$ contains \f$ N \f$
- * random samples taken from the distribution of a (complex) simplemc::random_scalar \f$ Z \f$ or
- * simplemc::random_vector \f$ \mathbf{Z} \f$, respectively.
- *
- * A range type that models such a set must be a sized, forward range and its elements must satisfy
- * simplemc::random_sample.
+ * @details In addition to its elements satisfying simplemc::acc_data, the range must also be a sized
+ * and forward range.
  *
  * @tparam R Range type to check.
  */
 template <typename R>
-concept random_sample_range =
-    ranges::sized_range<R> && ranges::forward_range<R> && random_sample<ranges::range_value_t<R>>;
+concept acc_data_range = ranges::sized_range<R> && ranges::forward_range<R> && acc_data<ranges::range_value_t<R>>;
 
 /**
- * @brief Basic accumulator interface for statistical data collection.
+ * @brief A basic accumulator for statistical data collection.
  *
- * @details An accumulator collects simplemc::random_sample objects taken from the distribution of a
- * (complex) simplemc::random_scalar \f$ Z \f$ or simplemc::random_vector \f$ \mathbf{Z} \f$.
+ * @details At the core of an accumulator is the ability to collect simplemc::acc_data.
  *
- * Let `acc` be an accumulator instance of type `A` and let `s` be an instance of `A::sample_type`. 
- * The requirements for a type `A` to be a basic accumulator are the following:
+ * Let `acc` be an accumulator instance of type `A` and let `x` be an instance of `A::data_type`
+ * satisfying simplemc::acc_data. The requirements for a type `A` to be a basic accumulator are the
+ * following:
  *
- * - `A::value_type` is the scalar type of accumulated values (simplemc::double_or_complex)
- * - `A::sample_type` is the type of the random sample being accumulated (simplemc::random_sample)
- * - `acc.size()` returns \f$ M \f$, the number of elements of the random variable (integral type)
- * - `acc.count()` returns \f$ N \f$, the number of samples accumulated so far (integral type)
- * - `acc << s` accumulates a random sample `s` and returns a reference to `acc`
+ * - `A::data_type` is the type of accumulated data (simplemc::acc_data)
+ * - `acc.count()` returns \f$ N \f$, the number of data points accumulated so far (integral type)
+ * - `acc << x` accumulates a new data point `x` and returns a reference to `acc`
  *
  * @tparam A Type to check.
  */
 template <typename A>
 concept basic_accumulator = requires {
-    typename A::value_type;
-    typename A::sample_type;
-    requires double_or_complex<typename A::value_type>;
-    requires random_sample<typename A::sample_type>;
-} && requires(A& acc, const A& cacc, typename A::sample_type s) {
-    { cacc.size() } -> std::integral;
+    typename A::data_type;
+    requires acc_data<typename A::data_type>;
+} && requires(A& acc, const A& cacc, typename A::data_type x) {
     { cacc.count() } -> std::integral;
-    { acc << s } -> std::same_as<A&>;
+    { acc << x } -> std::same_as<A&>;
 };
 
 /**
@@ -115,7 +86,7 @@ concept basic_accumulator = requires {
  *
  * - `A` satisfies simplemc::basic_accumulator
  * - `acc.mean()` returns the sample mean \f$ \overline{\mathbf{z}}^{(N)} \f$
- * 
+ *
  * See also @ref simplemc-accs-notes and simplemc::accs::mean for more background information.
  *
  * @tparam A Type to check.
