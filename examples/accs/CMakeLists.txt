@@ -4,6 +4,7 @@
 # ---------------------------------
 # doc_mean_acc: Doc example using a mean accumulator.
 
-simplemc_add_examples(
-    doc_mean_acc
-)
+# FIXME: Temporarily disabled during accs restructure.
+# simplemc_add_examples(
+#     doc_mean_acc
+# )
