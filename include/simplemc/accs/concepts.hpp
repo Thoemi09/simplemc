@@ -20,50 +20,75 @@ namespace simplemc {
  */
 
 /**
- * @brief A scalar data type supported by @ref simplemc-accs-accs.
+ * @brief Scalar data type supported by @ref simplemc-accs-accs.
+ *
+ * @details A type satisfies simplemc::sample_scalar if and only if it satisfies
+ * simplemc::double_or_complex.
+ *
+ * Individual scalar samples are denoted as \f$ z^{(j)} \in \mathbb{C} \f$ or \f$ x^{(j)} \in
+ * \mathbb{R} \f$. See also @ref simplemc-accs-stats.
  *
  * @tparam T Type to check.
  */
 template <typename T>
-concept acc_scalar = double_or_complex<T>;
+concept sample_scalar = double_or_complex<T>;
 
 /**
- * @brief A vector data type supported by @ref simplemc-accs-accs.
+ * @brief Vector data type supported by @ref simplemc-accs-accs.
+ *
+ * @details A type satisfies simplemc::sample_vector if and only if it satisfies
+ * simplemc::eigen_vector_dbl or simplemc::eigen_vector_cplx.
+ *
+ * Individual vector samples are denoted as \f$ \mathbf{z}^{(j)} \in \mathbb{C}^M \f$ or \f$
+ * \mathbf{x}^{(j)} \in \mathbb{R}^M \f$. See also @ref simplemc-accs-stats.
+ *
+ * Both fixed-size (e.g. `Eigen::Vector3d`) and dynamic-size (e.g. `Eigen::VectorXd`) vectors are
+ * supported.
  *
  * @tparam T Type to check.
  */
 template <typename T>
-concept acc_vector = eigen_vector_dbl<T> || eigen_vector_cplx<T>;
+concept sample_vector = eigen_vector_dbl<T> || eigen_vector_cplx<T>;
 
 /**
- * @brief A data type supported by @ref simplemc-accs-accs.
+ * @brief Data type supported by @ref simplemc-accs-accs.
+ *
+ * @details A type satisfies simplemc::sample_type if it is either a simplemc::sample_scalar or a
+ * simplemc::sample_vector.
+ *
+ * All accumulators are parametrized by a type satisfying this concept. It determines whether the
+ * accumulated data samples are scalars or vectors.
  *
  * @tparam T Type to check.
  */
 template <typename T>
-concept acc_data = acc_scalar<T> || acc_vector<T>;
+concept sample_type = sample_scalar<T> || sample_vector<T>;
 
 /**
- * @brief A range type containing simplemc::acc_data.
+ * @brief Range type containing simplemc::sample_type elements.
  *
- * @details In addition to its elements satisfying simplemc::acc_data, the range must also be a sized
- * and forward range.
+ * @details A type satisfies simplemc::sample_range if it is a sized forward range whose elements
+ * satisfy simplemc::sample_type.
+ *
+ * This corresponds to the data sets \f$ S_{\mathbf{Z}} \f$, \f$ S_{\mathbf{X}} \f$ pr \f$
+ * S_{\mathbf{Y}} \f$ introduced in @ref simplemc-accs-stats.
  *
  * @tparam R Range type to check.
  */
 template <typename R>
-concept acc_data_range = ranges::sized_range<R> && ranges::forward_range<R> && acc_data<ranges::range_value_t<R>>;
+concept sample_range = ranges::sized_range<R> && ranges::forward_range<R> && sample_type<ranges::range_value_t<R>>;
 
 /**
- * @brief A basic accumulator for statistical data collection.
+ * @brief Basic accumulator for statistical data collection.
  *
- * @details At the core of an accumulator is the ability to collect simplemc::acc_data.
+ * @details An accumulator collects data samples one at a time and maintains certain running
+ * statistics depending on the type of the accumulator.
  *
- * Let `acc` be an accumulator instance of type `A` and let `x` be an instance of `A::data_type`
- * satisfying simplemc::acc_data. The requirements for a type `A` to be a basic accumulator are the
+ * Let `acc` be an accumulator instance of type `A` and let `x` be an instance of `A::sample_type`
+ * satisfying simplemc::sample_type. The requirements for a type `A` to be a basic accumulator are the
  * following:
  *
- * - `A::data_type` is the type of accumulated data (simplemc::acc_data)
+ * - `A::sample_type` is the type of accumulated data (simplemc::sample_type)
  * - `acc.count()` returns \f$ N \f$, the number of data points accumulated so far (integral type)
  * - `acc << x` accumulates a new data point `x` and returns a reference to `acc`
  *
@@ -71,9 +96,9 @@ concept acc_data_range = ranges::sized_range<R> && ranges::forward_range<R> && a
  */
 template <typename A>
 concept basic_accumulator = requires {
-    typename A::data_type;
-    requires acc_data<typename A::data_type>;
-} && requires(A& acc, const A& cacc, typename A::data_type x) {
+    typename A::sample_type;
+    requires sample_type<typename A::sample_type>;
+} && requires(A& acc, const A& cacc, typename A::sample_type x) {
     { cacc.count() } -> std::integral;
     { acc << x } -> std::same_as<A&>;
 };
@@ -81,13 +106,14 @@ concept basic_accumulator = requires {
 /**
  * @brief Accumulator that computes sample means.
  *
- * @details Let `acc` be an instance of `A`. The requirements for a type `A` to be a mean accumulator
- * are the following:
+ * @details In addition to the requirements of simplemc::basic_accumulator, a mean accumulator
+ * provides the sample mean \f$ \overline{\mathbf{z}}^{(N)} \f$ (see @ref simplemc-accs-stats-mean).
+ *
+ * Let `acc` be an instance of `A`. The requirements for a type `A` to be a mean accumulator are the
+ * following:
  *
  * - `A` satisfies simplemc::basic_accumulator
  * - `acc.mean()` returns the sample mean \f$ \overline{\mathbf{z}}^{(N)} \f$
- *
- * See also @ref simplemc-accs-stats and simplemc::accs::mean for more background information.
  *
  * @tparam A Type to check.
  */
@@ -99,12 +125,15 @@ concept mean_accumulator = basic_accumulator<A> && requires(const A& acc) {
 /**
  * @brief Accumulator that computes sample means and variances.
  *
- * @details Let `a` be an instance of `A`. The requirements for a type `A` to be a variance
- * accumulator are the following:
+ * @details In addition to the requirements of simplemc::mean_accumulator, a variance accumulator
+ * provides the sample variance of the mean \f$ s_{\overline{\mathbf{Z}}}^2 \f$ (see
+ * @ref simplemc-accs-stats-var and @ref simplemc-accs-stats-tau).
+ *
+ * Let `acc` be an instance of `A`. The requirements for a type `A` to be a variance accumulator are
+ * the following:
  *
  * - `A` satisfies simplemc::mean_accumulator
- * - `a.variance()` returns the sample variance of the mean \f$ s_{\overline{\mathbf{X}}}^2 \f$ (see
- * simplemc::accs::diag_covariance)
+ * - `acc.variance()` returns the sample variance of the mean \f$ s_{\overline{\mathbf{Z}}}^2 \f$
  *
  * @tparam A Type to check.
  */
@@ -116,12 +145,16 @@ concept variance_accumulator = mean_accumulator<A> && requires(const A& acc) {
 /**
  * @brief Accumulator that computes sample means, variances, and covariances.
  *
- * @details Let `a` be an instance of `A`. The requirements for a type `A` to be a covariance
- * accumulator are the following:
+ * @details In addition to the requirements of simplemc::variance_accumulator, a covariance
+ * accumulator provides the full sample covariance matrix of the mean \f$ s_{\overline{\mathbf{Z}}
+ * \overline{\mathbf{Z}}}^2 \f$ (see @ref simplemc-accs-stats-covar and @ref simplemc-accs-stats-tau).
+ *
+ * Let `acc` be an instance of `A`. The requirements for a type `A` to be a covariance accumulator are
+ * the following:
  *
  * - `A` satisfies simplemc::variance_accumulator
- * - `a.covariance()` returns the sample covariance matrix of the mean \f$ s_{\overline{\mathbf{X}}
- * \overline{\mathbf{Y}}}^2 \f$ (see simplemc::accs::covariance)
+ * - `acc.covariance()` returns the sample covariance matrix of the mean \f$ s_{\overline{\mathbf{Z}}
+ * \overline{\mathbf{Z}}}^2 \f$
  *
  * @tparam A Type to check.
  */

@@ -456,7 +456,7 @@ using mean_acc_dynamic = mean_acc<Eigen::Matrix<T, Eigen::Dynamic, 1>, A>;
  * data.
  * @return simplemc::mean_acc containing the accumulated random samples from the given range.
  */
-template <varalg A = varalg::welford, acc_data_range R>
+template <varalg A = varalg::welford, sample_range R>
 [[nodiscard]] auto make_mean_acc(R&& rg, // NOLINT (ranges need not be forwarded)
     std::optional<ranges::range_value_t<R>> t = std::nullopt) {
     using value_type = ranges::range_value_t<R>;

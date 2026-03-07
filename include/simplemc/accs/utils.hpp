@@ -308,7 +308,7 @@ auto scalar_or_matrix(T&& obj) {
 }
 
 // Get the number of elements in a random sample.
-template <acc_data T>
+template <sample_type T>
 long random_sample_size([[maybe_unused]] const T& sample) {
     if constexpr (double_or_complex<T>) {
         return 1;
@@ -318,7 +318,7 @@ long random_sample_size([[maybe_unused]] const T& sample) {
 }
 
 // Get a zero scalar/vector depending on the given sample type.
-template <acc_data T>
+template <sample_type T>
 auto zero_sample([[maybe_unused]] const T& sample) {
     if constexpr (double_or_complex<T>) {
         return T { 0.0 };
@@ -328,7 +328,7 @@ auto zero_sample([[maybe_unused]] const T& sample) {
 }
 
 // Factory function to create an accumulator with the given random samples.
-template <typename A, acc_data_range R, typename... Args>
+template <typename A, sample_range R, typename... Args>
 [[nodiscard]] A make_acc(R&& rg, // NOLINT (ranges need not be forwarded)
     std::optional<ranges::range_value_t<R>> t, Args&&... args) {
     using value_type = ranges::range_value_t<R>;

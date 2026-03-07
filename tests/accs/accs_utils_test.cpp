@@ -124,19 +124,19 @@ TEST_F(SimplemcAccs, UtilsCovariance) {
 
 // Test random sample concepts and helper functions.
 TEST_F(SimplemcAccs, UtilsRandomSamples) {
-    // random_sample concept
-    static_assert(simplemc::acc_data<double>);
-    static_assert(simplemc::acc_data<std::complex<double>>);
-    static_assert(simplemc::acc_data<Eigen::VectorXd>);
-    static_assert(!simplemc::acc_data<int>);
-    static_assert(!simplemc::acc_data<Eigen::MatrixXd>);
+    // sample_type concept
+    static_assert(simplemc::sample_type<double>);
+    static_assert(simplemc::sample_type<std::complex<double>>);
+    static_assert(simplemc::sample_type<Eigen::VectorXd>);
+    static_assert(!simplemc::sample_type<int>);
+    static_assert(!simplemc::sample_type<Eigen::MatrixXd>);
 
-    // random_sample_range concept
-    static_assert(simplemc::acc_data_range<std::vector<double>>);
-    static_assert(simplemc::acc_data_range<std::array<std::complex<double>, 5>>);
-    static_assert(simplemc::acc_data_range<std::vector<Eigen::VectorXd>>);
+    // sample_range concept
+    static_assert(simplemc::sample_range<std::vector<double>>);
+    static_assert(simplemc::sample_range<std::array<std::complex<double>, 5>>);
+    static_assert(simplemc::sample_range<std::vector<Eigen::VectorXd>>);
     auto view = simplemc::ranges::transform_view(sp_d.samples, [](const auto& s) { return Eigen::VectorXd { s }; });
-    static_assert(simplemc::acc_data_range<decltype(view)>);
+    static_assert(simplemc::sample_range<decltype(view)>);
 
     // random sample size
     EXPECT_EQ(simplemc::detail::random_sample_size(1.0), 1);
