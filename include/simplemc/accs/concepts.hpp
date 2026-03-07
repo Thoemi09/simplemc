@@ -87,7 +87,7 @@ concept basic_accumulator = requires {
  * - `A` satisfies simplemc::basic_accumulator
  * - `acc.mean()` returns the sample mean \f$ \overline{\mathbf{z}}^{(N)} \f$
  *
- * See also @ref simplemc-accs-notes and simplemc::accs::mean for more background information.
+ * See also @ref simplemc-accs-stats and simplemc::accs::mean for more background information.
  *
  * @tparam A Type to check.
  */

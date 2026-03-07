@@ -734,6 +734,146 @@
  *
  * @details **simplemc-accs** implements different @ref simplemc-accs-accs and strategies to estimate
  * the mean, variance, covariance and autocorrelation time of some data.
+ *
+ * @section simplemc-accs-stats Statistical background
+ *
+ * In the following, we consider collections (ranges) of data values. Each value can be a real or
+ * complex scalar, or a vector of such scalars. A common use case is Monte Carlo sampling, where the
+ * data values are random samples drawn from the distribution of some random variable. However, the
+ * definitions below apply to any ordered collection of data.
+ *
+ * Let \f$ S_{\mathbf{Z}} = \left\{ \mathbf{z}^{(j)} = \mathbf{x}^{(j)} + i \mathbf{y}^{(j)} \in
+ * \mathbb{C}^M : j = 1, \dots, N \right\} \f$ be a set of \f$ N \f$ complex data samples and let
+ * \f$ S_{\mathbf{X}} = \left\{ \mathbf{x}^{(j)} \in \mathbb{R}^M : j = 1, \dots, N \right\} \f$ and
+ * \f$ S_{\mathbf{Y}} = \left\{ \mathbf{y}^{(j)} \in \mathbb{R}^M : j = 1, \dots, N \right\} \f$ be
+ * sets of real data samples. \f$ S_{\mathbf{X}} \f$ and \f$ S_{\mathbf{Y}} \f$ either form the real
+ * and imaginary parts of \f$ S_{\mathbf{Z}} \f$ or they can be seen as independent real data
+ * collections. We use vector notation here, however, the definitions below are easily adapted to the
+ * case of scalar samples.
+ *
+ * In case, the set of samples \f$ S_{\mathbf{Z}} \f$, \f$ S_{\mathbf{X}} \f$ and \f$ S_{\mathbf{Y}}
+ * \f$ contain random samples drawn from the distribution of some random vector, let \f$ \mathbf{Z} =
+ * \mathbf{X} + i \mathbf{Y} \f$, \f$ \mathbf{X} \f$ and \f$ \mathbf{Y} \f$ be the corresponding
+ * random vectors. Each random vector consists of \f$ M \f$ individual random variables, e.g. \f$
+ * \mathbf{Z} = (Z_1, \dots, Z_M) \f$ with \f$ Z_j \f$ being a complex random variable.
+ *
+ * @subsection simplemc-accs-stats-mean Sample mean and expectation value
+ *
+ * The sample mean \f$ \overline{\mathbf{z}}^{(N)} \f$ of a set of complex data samples
+ * \f$ S_{\mathbf{Z}} \f$ is defined as
+ * \f[
+ *   \overline{\mathbf{z}}^{(N)} = \frac{1}{N} \sum_{j=1}^N \mathbf{z}^{(j)} =
+ *   \frac{1}{N} \sum_{j=1}^N \left( \mathbf{x}^{(j)} + i \mathbf{y}^{(j)} \right) =
+ *   \overline{\mathbf{x}}^{(N)} + i \overline{\mathbf{y}}^{(N)} \; ,
+ * \f]
+ * where \f$ \overline{\mathbf{x}}^{(N)} \f$ and \f$ \overline{\mathbf{y}}^{(N)} \f$ are the sample
+ * means of the real and imaginary part, respectively.
+ *
+ * In case the samples come from the distribution of some random vector \f$ \mathbf{Z} \f$, the sample
+ * mean \f$ \overline{\mathbf{z}}^{(N)} \f$ is an estimator for the expectation value \f$
+ * \mathrm{E}[\mathbf{Z}] = \mathrm{E}[\mathbf{X}] + i \mathrm{E}[\mathbf{Y}] \f$, i.e. \f$
+ * \mathrm{E}[\mathbf{Z}] = \lim_{N \to \infty} \overline{\mathbf{z}}^{(N)} \approx
+ * \overline{\mathbf{z}}^{(N)} \f$.
+ *
+ * @subsection simplemc-accs-stats-covar Sample covariance and covariance matrix
+ *
+ * The sample covariance matrix \f$ s_{\mathbf{X}\mathbf{Y}}^2 \f$ of two sets of real data samples
+ * \f$ S_{\mathbf{X}} \f$ and \f$ S_{\mathbf{Y}} \f$ is defined as
+ * \f[
+ *   s_{\mathbf{X}\mathbf{Y}}^2 =
+ *   \frac{1}{N - 1} \sum_{j=1}^N \left( \mathbf{x}^{(j)} -
+ *   \overline{\mathbf{x}}^{(N)} \right)
+ *   \left( \mathbf{y}^{(j)} - \overline{\mathbf{y}}^{(N)} \right)^T =
+ *   \frac{1}{N - 1} \left[ \sum_{j=1}^N \mathbf{x}^{(j)} \left( \mathbf{y}^{(j)}
+ *   \right)^T - \frac{1}{N} \left( \sum_{j=1}^N \mathbf{x}^{(j)} \right)
+ *   \left( \sum_{j=1}^N \mathbf{y}^{(j)} \right)^T \right] \; .
+ * \f]
+ *
+ * For a set of complex data samples \f$ S_{\mathbf{Z}} \f$ with real part \f$ S_{\mathbf{X}} \f$ and
+ * imaginary part \f$ S_{\mathbf{Y}} \f$, we compute the three real sample covariance matrices \f$
+ * s_{\mathbf{X}\mathbf{X}}^2 \f$, \f$ s_{\mathbf{Y}\mathbf{Y}}^2 \f$ and \f$
+ * s_{\mathbf{X}\mathbf{Y}}^2 \f$ and combine them into the complex sample covariance matrix:
+ * \f[
+ *   s_{\mathbf{Z}\mathbf{Z}}^2 =
+ *   s_{\mathbf{X}\mathbf{X}}^2 + s_{\mathbf{Y}\mathbf{Y}}^2 + i \left(
+ *   [s_{\mathbf{X}\mathbf{Y}}^2]^T - s_{\mathbf{X}\mathbf{Y}}^2 \right) \; .
+ * \f]
+ *
+ * In case the data samples come from the distributions of random vectors \f$ \mathbf{X} \f$ and \f$
+ * \mathbf{Y} \f$, or a complex random vector \f$ \mathbf{Z} = \mathbf{X} + i \mathbf{Y} \f$, the
+ * sample covariance matrices are estimators for the true covariance matrices, e.g.
+ * \f[
+ *   \mathrm{Cov}[\mathbf{X}, \mathbf{Y}] =
+ *   \mathrm{E}\left[\left( \mathbf{X} - \mathrm{E}[\mathbf{X}] \right)
+ *   \left( \mathbf{Y} - \mathrm{E}[\mathbf{Y}] \right)^T \right]
+ *   \approx s_{\mathbf{X}\mathbf{Y}}^2
+ * \f]
+ * and
+ * \f[
+ *   \mathrm{Cov}[\mathbf{Z}, \mathbf{Z}] =
+ *   \mathrm{E}\left[\left( \mathbf{Z} - \mathrm{E}[\mathbf{Z}] \right)
+ *   \left( \mathbf{Z} - \mathrm{E}[\mathbf{Z}] \right)^H \right]
+ *   \approx s_{\mathbf{Z}\mathbf{Z}}^2 \; .
+ * \f]
+ *
+ * @subsection simplemc-accs-stats-var Sample variance and variance
+ *
+ * The diagonal elements of the sample covariance matrix are the **sample variances** of the
+ * individual components. For a set of real data samples \f$ S_{\mathbf{X}} \f$, the sample variance
+ * of the i<sup>th</sup> component is
+ * \f[
+ *   s_{X_i}^2 = \left( s_{\mathbf{X}\mathbf{X}}^2 \right)_{ii} =
+ *   \frac{1}{N - 1} \sum_{j=1}^N
+ *   \left( x_i^{(j)} - \overline{x_i}^{(N)} \right)^2 = \frac{1}{N - 1} \left[
+ *   \sum_{j=1}^N \left( x_i^{(j)} \right)^2 - \frac{1}{N} \left( \sum_{j=1}^N
+ *   x_i^{(j)} \right)^2 \right] \; .
+ * \f]
+ *
+ * We write \f$ s_{\mathbf{X}}^2 = \mathrm{diag}(s_{\mathbf{X}\mathbf{X}}^2) \f$ to refer to the
+ * vector of sample variances.
+ *
+ * For a set of complex data samples \f$ S_{\mathbf{Z}} \f$, the sample variance of the i<sup>th</sup>
+ * component is
+ * \f[
+ *   s_{Z_i}^2 = \left( s_{\mathbf{Z}\mathbf{Z}}^2 \right)_{ii} =
+ *   s_{X_i}^2 + s_{Y_i}^2 \; .
+ * \f]
+ *
+ * In case the data samples come from the distribution of some random vector, the sample variance is
+ * an estimator for the true variance, e.g.
+ * \f[
+ *   \mathrm{Var}[X_i] = \mathrm{E}\left[ \left( X_i - \mathrm{E}\left[ X_i \right]
+ *   \right)^2 \right] \approx s_{X_i}^2
+ *   \quad \text{and} \quad
+ *   \mathrm{Var}[Z_i] = \mathrm{E}\left[ \left| Z_i - \mathrm{E}\left[ Z_i \right]
+ *   \right|^2 \right] \approx s_{Z_i}^2 \; .
+ * \f]
+ *
+ * @subsection simplemc-accs-stats-tau Autocorrelation time
+ *
+ * When the data samples are drawn from the distribution of some random vector, the sample
+ * (co)variance divided by \f$ N \f$ provides a naive estimate for the (co)variance of the sample
+ * mean:
+ * \f[
+ *   s_{\overline{\mathbf{X}}\overline{\mathbf{Y}}}^2 =
+ *   \frac{s_{\mathbf{X}\mathbf{Y}}^2}{N} \quad \text{and} \quad
+ *   s_{\overline{\mathbf{X}}}^2 = \frac{s_{\mathbf{X}}^2}{N} \; .
+ * \f]
+ *
+ * These estimates are only correct if the samples are statistically independent. If they are not, one
+ * has to take the **autocorrelation time** into account, which lowers the effective number of
+ * independent samples:
+ * \f[
+ *   \mathrm{Cov}[\overline{\mathbf{X}}^{(N)}, \overline{\mathbf{Y}}^{(N)}] =
+ *   \frac{\mathrm{Cov}[\mathbf{X}, \mathbf{Y}]}{N} \left( 1 + 2
+ *   \tau_{\mathbf{X} \mathbf{Y}} \right) \quad \text{and} \quad
+ *   \mathrm{Var}[\overline{\mathbf{X}}^{(N)}] =
+ *   \frac{\mathrm{Var}[\mathbf{X}]}{N} \left( 1 + 2 \tau_{\mathbf{X}} \right) \; .
+ * \f]
+ *
+ * Here, \f$ \tau_{\mathbf{X}} \f$ (\f$ \tau_{\mathbf{X} \mathbf{Y}} \f$) is a vector (matrix)
+ * containing the integrated autocorrelation times \f$ \tau_{X_i} \f$ (\f$ \tau_{X_i Y_j} \f$). Note
+ * that in general \f$ \tau_{X_i} \neq \tau_{X_j} \f$ and \f$ \tau_{X_i Y_j} \neq \tau_{X_k Y_l} \f$.
  */
 
 /**
@@ -747,7 +887,7 @@
  * @ingroup simplemc-accs
  * @brief General utilities for accumulating and analyzing data.
  *
- * @details In the following, we use the notation from @ref simplemc-accs-notes.
+ * @details In the following, we use the notation from @ref simplemc-accs-stats.
  */
 
 /**
@@ -755,7 +895,7 @@
  * @ingroup simplemc-accs
  * @brief Implementation of various accumulators.
  *
- * @details In the following, we use the notation from @ref simplemc-accs-notes.
+ * @details In the following, we use the notation from @ref simplemc-accs-stats.
  *
  * @section simplemc-accs-accs-types Accumulator types
  *
@@ -869,7 +1009,7 @@
  * @brief Calculating the sample mean of a random vector.
  *
  * @details The sample mean is used as an approximation to the exact expectation value. See
- * @ref simplemc-accs-notes for a definition of the sample mean and expectation value.
+ * @ref simplemc-accs-stats for a definition of the sample mean and expectation value.
  *
  * @include accs/doc_mean_acc.cpp
  *
@@ -886,7 +1026,7 @@
  * @brief Calculating the sample mean and sample variance of a random vector.
  *
  * @details The sample mean and the sample variance are used as approximations to the exact
- * expectation value and diagonal of the covariance matrix, respectively. See @ref simplemc-accs-notes
+ * expectation value and diagonal of the covariance matrix, respectively. See @ref simplemc-accs-stats
  * for a definition of those quantities.
  *
  * The variance estimation does not account for any correlation between the samples. To get more
@@ -905,7 +1045,7 @@
  * @brief Calculating the sample mean and sample covariance matrix of a random vector.
  *
  * @details The sample mean and the sample covariance matrix are used as approximations to the exact
- * expectation value and the covariance matrix, respectively. See @ref simplemc-accs-notes for a
+ * expectation value and the covariance matrix, respectively. See @ref simplemc-accs-stats for a
  * definition of those quantities.
  *
  * The covariance estimation does not account for any correlation between the samples. To get more
@@ -977,7 +1117,7 @@
  * They are in general not the same.
  *
  * In the following, we assume that \f$ f : \mathbb{R}^M \to \mathbb{R} \f$ for simplicity and we use
- * the notation from @ref simplemc-accs-notes. Generalizations to complex and/or vector valued
+ * the notation from @ref simplemc-accs-stats. Generalizations to complex and/or vector valued
  * functions are straight forward.
  *
  * It can be shown, that the approximation \f$ f(\overline{\mathbf{z}_1}^{(N)},

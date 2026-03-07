@@ -35,12 +35,12 @@ the functionality defined in the MPI standard.
 
 It provides
 
-- @ref simplemc-mpi-coll to perform @ref simplemc-mpi-coll-bcast, @ref simplemc-mpi-coll-reduce, 
+- @ref simplemc-mpi-coll to perform @ref simplemc-mpi-coll-bcast, @ref simplemc-mpi-coll-reduce,
 @ref simplemc-mpi-coll-gather and @ref simplemc-mpi-coll-scatter operations across multiple processes.
-- @ref simplemc-mpi-essentials that wrap the most important MPI objects and functions. They are 
-further grouped into @ref simplemc-mpi-essentials-env, @ref simplemc-mpi-essentials-comms, 
-@ref simplemc-mpi-essentials-groups and @ref simplemc-mpi-essentials-types. 
-- @ref simplemc-mpi-utils that contain some helper functions. 
+- @ref simplemc-mpi-essentials that wrap the most important MPI objects and functions. They are
+further grouped into @ref simplemc-mpi-essentials-env, @ref simplemc-mpi-essentials-comms,
+@ref simplemc-mpi-essentials-groups and @ref simplemc-mpi-essentials-types.
+- @ref simplemc-mpi-utils that contain some helper functions.
 
 ## Random library
 
@@ -49,7 +49,7 @@ distributions.
 
 It provides
 
-- @ref simplemc-random-rngs (RNGs) for fast random number generation that satisfy the C++ named 
+- @ref simplemc-random-rngs (RNGs) for fast random number generation that satisfy the C++ named
 requirements [RandomNumberEngine](https://en.cppreference.com/w/cpp/named_req/RandomNumberEngine).
 - Functions that draw @ref simplemc-random-samples from often used probability distributions and that
 evaluate their corresponding probability density functions (PDFs).
@@ -102,8 +102,7 @@ polynomials, that are especially useful for general Fourier series.
 It provides
 
 - @ref simplemc-accs-utils which are mostly used internally in the **simplemc-accs** library.
-- Several @ref simplemc-accs-accs to calculate the mean, variance and covariance of a set of random
-samples.
+- Several @ref simplemc-accs-accs to calculate the mean, variance and covariance of a collection of data values.
 - Various @ref simplemc-accs-wrappers that can be used with specific accumulator types to extend or
 modify their functionality.
 - Tools and techniques for @ref simplemc-accs-resampling.

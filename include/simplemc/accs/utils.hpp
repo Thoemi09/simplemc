@@ -234,7 +234,7 @@ template <varalg A, eigen_vector_dbl V, eigen_matrix_dbl M>
  * @brief Calculate the integrated autocorrelation time for the elements of a real (cross)-covariance
  * matrix or variance vector.
  *
- * @details Inverting the last equation in @ref simplemc-accs-notes, we can write the integrated
+ * @details Inverting the last equation in @ref simplemc-accs-stats, we can write the integrated
  * autocorrelation time as
  * \f[
  *   \tau_{\mathbf{X}\mathbf{Y}} = \frac{1}{2} \left( \frac{\mathrm{Cov}[\overline{\mathbf{X}}^{(N)},
