@@ -36,12 +36,36 @@ namespace simplemc {
  * - the type of the random samples (a simplemc::eigen_vector_dbl type) and
  * - the algorithm (simplemc::varalg) that should be used to accumulate the data.
  *
- * Both of them determine how the accumulation is actually done and what is stored in the accumulator.
- * The accumulated data is stored in two objects:
- * - a real vector \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$ for the mean data and
- * - a real matrix \f$ \mathbf{C}^{(N)}/\mathbf{D}^{(N)} \f$ for the covariance data.
+ * Both of them determine how the accumulation is actually done and what is stored in the
+ * accumulator. The mean data \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$ is accumulated as
+ * described in simplemc::mean_acc. The covariance data
+ * \f$ \mathbf{C}^{(N)}/\mathbf{D}^{(N)} \f$ depends on the algorithm:
+ * - `standard`: The covariance data is accumulated with
+ *   \f[
+ *     \mathbf{C}^{(N)} = \mathbf{C}^{(N-1)} + \left( \mathbf{x}^{(N)} - \mathbf{t} \right)
+ *     \left( \mathbf{x}^{(N)} - \mathbf{t} \right)^T =
+ *     \sum_{j=1}^N \left( \mathbf{x}^{(j)} - \mathbf{t} \right)
+ *     \left( \mathbf{x}^{(j)} - \mathbf{t} \right)^T \; ,
+ *   \f]
+ *   such that the sample covariance matrix is given by
+ *   \f[
+ *     s_{\mathbf{X}\mathbf{X}}^2 = \frac{1}{N - 1} \left\{ \mathbf{C}^{(N)} -
+ *     \frac{\mathbf{m}^{(N)} \left( \mathbf{m}^{(N)} \right)^T}{N} \right\} \; .
+ *   \f]
  *
- * See simplemc::accs::mean and simplemc::accs::covariance.
+ * - `welford`: The covariance data is accumulated with
+ *   \f[
+ *     \mathbf{D}^{(N)} = \mathbf{D}^{(N-1)} + \left( \mathbf{x}^{(N)} - \mathbf{t} -
+ *     \mathbf{n}^{(N-1)} \right) \left( \mathbf{x}^{(N)} - \mathbf{t} -
+ *     \mathbf{n}^{(N)} \right)^T \; ,
+ *   \f]
+ *   such that the sample covariance matrix is given by
+ *   \f[
+ *     s_{\mathbf{X}\mathbf{X}}^2 = \frac{\mathbf{D}^{(N)}}{N - 1} \; .
+ *   \f]
+ *
+ * Here, \f$ \mathbf{t} \f$ is a constant vector that can optionally be applied to the random
+ * samples to increase numerical accuracy. See also @ref simplemc-accs-stats-covar.
  *
  * @code{.cpp}
  * #include <fmt/ranges.h>
@@ -383,7 +407,7 @@ public:
      * the mean.
      *
      * @return simplemc::eigen_vector_dbl of size \f$ M \f$ containing \f$ \mathbf{m}^{(N)}/
-     * \mathbf{n}^{(N)} \f$ (content depends on the algorithm, see simplemc::accs::mean).
+     * \mathbf{n}^{(N)} \f$ (content depends on the algorithm, see simplemc::mean_acc).
      */
     [[nodiscard]] const vec_type& mdata() const { return mdata_; }
 
@@ -395,7 +419,7 @@ public:
      * `selfadjointView<Eigen::Lower>()` to get the full covariance matrix.
      *
      * @return simplemc::eigen_matrix_dbl of size \f$ M \times M \f$ containing \f$ \mathbf{C}^{(N)}/
-     * \mathbf{D}^{(N)} \f$ (content depends on the algorithm, see simplemc::accs::covariance).
+     * \mathbf{D}^{(N)} \f$ (content depends on the algorithm, see the class documentation).
      */
     [[nodiscard]] const mat_type& cdata() const { return cdata_; }
 

@@ -45,7 +45,9 @@ namespace simplemc {
  * - a real vector \f$ \mathbf{c}_{ri}^{(N)}/\mathbf{d}_{ri}^{(N)} \f$ for the cross-covariance data
  * between the real and imaginary parts of the random vector.
  *
- * See simplemc::accs::mean and simplemc::accs::diag_covariance.
+ * See simplemc::mean_acc for the mean accumulation algorithm. For the variance accumulation
+ * algorithm, the same formulas as in the real specialization are applied separately to the real
+ * part \f$ \mathbf{X} \f$, the imaginary part \f$ \mathbf{Y} \f$, and their cross-covariance.
  *
  * @code{.cpp}
  * #include <fmt/ranges.h>
@@ -421,7 +423,7 @@ public:
      * the mean.
      *
      * @return simplemc::eigen_vector_cplx of size \f$ M \f$ containing \f$ \mathbf{m}^{(N)}/
-     * \mathbf{n}^{(N)} \f$ (content depends on the algorithm, see simplemc::accs::mean).
+     * \mathbf{n}^{(N)} \f$ (content depends on the algorithm, see simplemc::mean_acc).
      */
     [[nodiscard]] const cplx_vec_type& mdata() const { return mdata_; }
 
@@ -430,8 +432,7 @@ public:
      * estimating the variance of the real part of the random vector.
      *
      * @return simplemc::eigen_vector_dbl of size \f$ M \f$ containing \f$ \mathbf{c}_{r}^{(N)}/
-     * \mathbf{d}_{r}^{(N)} \f$ (content depends on the algorithm, see
-     * simplemc::accs::diag_covariance).
+     * \mathbf{d}_{r}^{(N)} \f$ (content depends on the algorithm, see the class documentation).
      */
     [[nodiscard]] const dbl_vec_type& rdata() const { return rdata_; }
 
@@ -440,8 +441,7 @@ public:
      * estimating the variance of the imaginary part of the random vector.
      *
      * @return simplemc::eigen_vector_dbl of size \f$ M \f$ containing \f$ \mathbf{c}_{i}^{(N)}/
-     * \mathbf{d}_{i}^{(N)} \f$ (content depends on the algorithm, see
-     * simplemc::accs::diag_covariance).
+     * \mathbf{d}_{i}^{(N)} \f$ (content depends on the algorithm, see the class documentation).
      */
     [[nodiscard]] const dbl_vec_type& idata() const { return idata_; }
 
@@ -450,8 +450,7 @@ public:
      * estimating the cross-covariance between the real and imaginary parts of the random vector.
      *
      * @return simplemc::eigen_vector_dbl of size \f$ M \f$ containing \f$ \mathbf{c}_{ri}^{(N)}/
-     * \mathbf{d}_{ri}^{(N)} \f$ (content depends on the algorithm, see
-     * simplemc::accs::diag_covariance).
+     * \mathbf{d}_{ri}^{(N)} \f$ (content depends on the algorithm, see the class documentation).
      */
     [[nodiscard]] const dbl_vec_type& cdata() const { return cdata_; }
 

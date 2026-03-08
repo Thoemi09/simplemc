@@ -24,10 +24,31 @@ namespace simplemc {
  * @brief Wrapper for simplemc::var_acc and simplemc::covar_acc to estimate the integrated
  * autocorrelation time.
  *
- * @details It uses blocks of increasing size to decorrelate individual samples. The (co)variance and
+ * @details Following the derivation in @ref simplemc-accs-stats-tau, we can write the integrated
+ * autocorrelation time as
+ * \f[
+ *   \tau_{\mathbf{X}\mathbf{Y}} = \frac{1}{2} \left( \frac{\mathrm{Cov}[\overline{\mathbf{X}}^{(N)},
+ *   \overline{\mathbf{Y}}^{(N)}]}{\mathrm{Cov}[\mathbf{X}, \mathbf{Y}]} N - 1 \right) \approx
+ *   \frac{1}{2} \left( \frac{s_{\overline{\mathbf{X}}^{(N)}\overline{\mathbf{Y}}^{(N)}}^2}
+ *   {s_{\mathbf{X}\mathbf{Y}}^2} N - 1 \right) \; .
+ * \f]
+ * If we use a blocking method to determine the block size \f$ B \f$ at which the block averages,
+ * \f$ \overline{\mathbf{X}}^{(B)} \f$ and \f$ \overline{\mathbf{Y}}^{(B)} \f$, become uncorrelated,
+ * then this equation can be further approximated with
+ * \f[
+ *   \tau_{\mathbf{X}\mathbf{Y}} \approx \frac{1}{2} \left( \frac{s_{\overline{\mathbf{X}}^{(B)}
+ *   \overline{\mathbf{Y}}^{(B)}}^2}{s_{\mathbf{X}\mathbf{Y}}^2} B - 1 \right) \; ,
+ * \f]
+ * where \f$ s_{\mathbf{X}\mathbf{Y}}^2 \f$ is the naive (unblocked) sample (cross)-covariance matrix
+ * and \f$ s_{\overline{\mathbf{X}}^{(B)}\overline{\mathbf{Y}}^{(B)}}^2 =
+ * s_{\overline{\mathbf{X}}^{(N)}\overline{\mathbf{Y}}^{(N)}}^2 N_{\mathrm{eff}} \f$ is the sample
+ * (cross)-covariance matrix of the blocked samples with block size \f$ B = N / N_{\mathrm{eff}} \f$.
+ *
+ * A similar equation holds for \f$ \tau_{\mathbf{X}} \f$.
+ *
+ * This class uses blocks of increasing size to decorrelate individual samples. The (co)variance and
  * the integrated autocorrelation time will increase with the block size until it reaches a plateau.
- * The value at the plateau should give you a good estimate of both quantities. See @ref simplemc-accs
- * for how the blocked (co)variance relates to the integrated autocorrelation time.
+ * The value at the plateau should give you a good estimate of both quantities.
  *
  * The block sizes are given by \f$ B_{l+1} = B_l * c \f$, where \f$ l \f$ is the level index and \f$
  * c > 1 \f$ is the multiplication factor for increasing block sizes. The first level has a block size
@@ -45,7 +66,9 @@ namespace simplemc {
  *
  * Note that the accumulator only groups the data into levels with increasing block sizes. It does not
  * give a final estimate of the integrated autocorrelation time. It is the users responsibility to
- * inspect the blocked data and decide what to do with it. Here is a usual workflow, that
+ * inspect the blocked data and decide what to do with it.
+ *
+ * Here is a usual workflow, that
  * - accumulates samples from an AR(1) process into a simplemc::autocorr_acc,
  * - finds the highest level \f$ l' \f$ with at least 256 effective samples using find_level() and
  * - prints \f$ s_{\overline{X}}^2 \f$ and the integrated autocorrelation time \f$ \tau_X \f$ for

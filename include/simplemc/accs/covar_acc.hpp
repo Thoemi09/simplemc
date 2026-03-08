@@ -28,8 +28,7 @@ namespace simplemc {
 /**
  * @brief Accumulate (complex) random samples in a simplemc::covar_acc.
  *
- * @details See simplemc::accs::covariance and simplemc::covar_acc for more details on how the random
- * samples are accumulated.
+ * @details See simplemc::covar_acc for more details on how the random samples are accumulated.
  *
  * It throws a simplemc::simplemc_exception if the range is empty.
  *
@@ -58,8 +57,8 @@ template <varalg A = varalg::welford, sample_range R>
  * @brief Accumulate (complex) random samples in a simplemc::covar_acc wrapped in a
  * simplemc::block_acc.
  *
- * @details See simplemc::accs::covariance, simplemc::covar_acc and simplemc::block_acc for more
- * details on how the random samples are accumulated.
+ * @details See simplemc::covar_acc and simplemc::block_acc for more details on how the random
+ * samples are accumulated.
  *
  * It throws a simplemc::simplemc_exception if the range is empty.
  *
@@ -90,8 +89,8 @@ template <varalg A = varalg::welford, sample_range R>
  * @brief Accumulate (complex) random samples in a simplemc::covar_acc wrapped in a
  * simplemc::autocorr_acc.
  *
- * @details See simplemc::accs::covariance, simplemc::covar_acc and simplemc::autocorr_acc for more
- * details on how the random samples are accumulated.
+ * @details See simplemc::covar_acc and simplemc::autocorr_acc for more details on how the random
+ * samples are accumulated.
  *
  * The autocorrelation accumulator uses the default multiplication factor \f$ c = 2 \f$ and minimum
  * number of levels \f$ L_{\text{min}} = 2 \f$.

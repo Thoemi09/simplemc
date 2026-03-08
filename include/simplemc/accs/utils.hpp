@@ -28,38 +28,10 @@ namespace simplemc::accs {
  */
 
 /**
- * @brief Calculate the sample mean of a (complex) random vector \f$ \mathbf{Z} \f$.
+ * @brief Calculate the sample mean of (complex) random vector \f$ \mathbf{Z} \f$.
  *
- * @details The calculation of the sample mean depends on the algorithm used to accumulate the data:
- * - `standard`: The mean data is accumulated with
- *   \f[
- *     \mathbf{m}^{(N)} = \mathbf{m}^{(N-1)} + \mathbf{z}^{(N)} - \mathbf{t} =
- *     \sum_{j=1}^N \left( \mathbf{z}^{(j)} - \mathbf{t} \right) \; ,
- *   \f]
- *   such that the sample mean is given by
- *   \f[
- *     \overline{\mathbf{z}}^{(N)} = \frac{\mathbf{m}^{(N)}}{N} + \mathbf{t} =
- *     \frac{1}{N} \sum_{j=1}^N \mathbf{z}^{(j)} \; .
- *   \f]
- *
- * - `welford`: The mean data is accumulated with
- *   \f[
- *     \mathbf{n}^{(N)} = \mathbf{n}^{(N-1)} + \frac{1}{N} \left( \mathbf{z}^{(N)} - \mathbf{t} -
- *     \mathbf{n}^{(N-1)} \right) =
- *     \frac{1}{N} \sum_{j=1}^N \left( \mathbf{z}^{(j)} - \mathbf{t} \right) \; ,
- *   \f]
- *   such that the sample mean is given by
- *   \f[
- *     \overline{\mathbf{z}}^{(N)} = \mathbf{n}^{(N)} + \mathbf{t} =
- *     \frac{1}{N} \sum_{j=1}^N \mathbf{z}^{(j)} \; .
- *   \f]
- *
- * Here, \f$ \mathbf{t} \f$ is a constant vector that can optionally be applied to the random
- * samples to increase numerical accuracy.
- *
- * @note The constant vector \f$ \mathbf{t} \f$ is not part of the function. It is the caller's
- * responsibility to subtract it while accumulating the data and to add it back after calculating the
- * mean.
+ * @details See simplemc::mean_acc for a description of how the mean data is accumulated depending on
+ * the simplemc::varalg.
  *
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  * @tparam V simplemc::eigen_vector type.
@@ -83,59 +55,21 @@ template <varalg A, eigen_vector V>
  * @brief Calculate the diagonal elements of the sample (cross-)covariance matrix of two real random
  * vectors.
  *
- * @details The calculation of the diagonal elements of the sample (cross-)covariance matrix depends
- * on the algorithm used to accumulate the data:
- * - `standard`: The mean data, \f$ \mathbf{m}_\mathbf{X}^{(N)} \f$ and
- * \f$ \mathbf{m}_\mathbf{Y}^{(N)} \f$, for the two real random vectors \f$ \mathbf{X} \f$ and
- * \f$ \mathbf{Y} \f$ is accumulated as stated in simplemc::accs::mean. The (cross-)covariance data is
- * accumulated with
- *   \f[
- *     \mathbf{c}^{(N)} = \mathbf{c}^{(N-1)} + \left( \mathbf{x}^{(N)} - \mathbf{s} \right) \odot
- *     \left( \mathbf{y}^{(N)} - \mathbf{t} \right) =
- *     \sum_{j=1}^N \left( \mathbf{x}^{(j)} - \mathbf{s} \right) \odot
- *     \left( \mathbf{y}^{(j)} - \mathbf{t} \right) \; ,
- *   \f]
- *   such that the diagonal of the sample (cross-)covariance matrix is given by
- *   \f[
- *     \mathrm{diag} \left( s_{\mathbf{X}\mathbf{Y}}^2 \right) = \frac{1}{N - 1} \left\{
- *     \mathbf{c}^{(N)} - \frac{\mathbf{m}_\mathbf{X}^{(N)} \odot \mathbf{m}_\mathbf{Y}^{(N)}}{N}
- *     \right\} = \frac{1}{N - 1} \left\{ \sum_{j=1}^N \mathbf{x}^{(j)} \odot \mathbf{y}^{(j)} -
- *     \frac{\sum_{j=1}^N \mathbf{x}^{(j)} \odot \sum_{k=1}^N \mathbf{y}^{(k)}}{N} \right\} \; .
- *   \f]
- * - `welford`: The mean data, \f$ \mathbf{n}_\mathbf{X}^{(N)} \f$ and
- * \f$ \mathbf{n}_\mathbf{Y}^{(N)} \f$, for the two real random vectors \f$ \mathbf{X} \f$ and
- * \f$ \mathbf{Y} \f$ is accumulated as stated in simplemc::accs::mean. The (cross-)covariance data is
- * accumulated with
- *   \f[
- *     \mathbf{d}^{(N)} = \mathbf{d}^{(N-1)} + \left( \mathbf{x}^{(N)} - \mathbf{s} -
- *     \mathbf{n}_\mathbf{X}^{(N-1)} \right) \odot \left( \mathbf{y}^{(N)} - \mathbf{t} -
- *     \mathbf{n}_\mathbf{Y}^{(N)} \right)
- *     = \sum_{j=1}^N \left( \mathbf{x}^{(j)} - \mathbf{s} - \mathbf{n}_\mathbf{X}^{(N)} \right)
- *     \odot \left( \mathbf{y}^{(j)} - \mathbf{t} - \mathbf{n}_\mathbf{Y}^{(N)} \right) \; ,
- *   \f]
- *   such that the diagonal of the sample (cross-)covariance matrix is given by
- *   \f[
- *     \mathrm{diag} \left( s_{\mathbf{X}\mathbf{Y}}^2 \right) = \frac{\mathbf{d}^{(N)}}{N - 1} =
- *     \frac{1}{N - 1} \left\{ \sum_{j=1}^N \mathbf{x}^{(j)} \odot \mathbf{y}^{(j)} -
- *     \frac{\sum_{j=1}^N \mathbf{x}^{(j)} \odot \sum_{k=1}^N \mathbf{y}^{(k)}}{N} \right\} \; .
- *   \f]
- *
- * Here, \f$ \mathbf{t} \f$ and \f$ \mathbf{s} \f$ are constant vectors that can optionally be applied
- * to the random samples to increase numerical accuracy and \f$ \mathbf{a} \odot \mathbf{b} \f$ is the
- * Hadamard (element-wise) product between two vectors \f$ \mathbf{a} \f$ and \f$ \mathbf{b} \f$.
- *
- * @note The constant vectors \f$ \mathbf{t} \f$ and \f$ \mathbf{s} \f$ are not part of the function.
- * It is the caller's responsibility to subtract them while accumulating the data.
+ * @details See simplemc::var_acc for a description of how the variance data is accumulated depending
+ * on the simplemc::varalg. This function generalizes the variance formulas to the cross-covariance
+ * case (\f$ \mathbf{X} \neq \mathbf{Y} \f$).
  *
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  * @tparam V simplemc::eigen_vector_dbl type.
- * @param mdata_x Accumulated mean data \f$ \mathbf{m}_\mathbf{X}^{(N)}/\mathbf{n}_\mathbf{X}^{(N)}
- * \f$.
- * @param mdata_y Accumulated mean data \f$ \mathbf{m}_\mathbf{Y}^{(N)}/\mathbf{n}_\mathbf{Y}^{(N)}
- * \f$.
- * @param cdata Accumulated (cross-)covariance data \f$ \mathbf{c}^{(N)}/\mathbf{d}^{(N)} \f$.
+ * @param mdata_x Accumulated mean data
+ * \f$ \mathbf{m}_\mathbf{X}^{(N)}/\mathbf{n}_\mathbf{X}^{(N)} \f$.
+ * @param mdata_y Accumulated mean data
+ * \f$ \mathbf{m}_\mathbf{Y}^{(N)}/\mathbf{n}_\mathbf{Y}^{(N)} \f$.
+ * @param cdata Accumulated (cross-)covariance data
+ * \f$ \mathbf{c}^{(N)}/\mathbf{d}^{(N)} \f$.
  * @param n Number of accumulated samples \f$ N \f$.
- * @return Diagonal of the sample (cross-)covariance matrix \f$ s_{\mathbf{X}\mathbf{Y}}^2 \f$.
+ * @return Diagonal of the sample (cross-)covariance matrix
+ * \f$ s_{\mathbf{X}\mathbf{Y}}^2 \f$.
  */
 template <varalg A, eigen_vector_dbl V>
 [[nodiscard]] V diag_covariance(
@@ -156,60 +90,19 @@ template <varalg A, eigen_vector_dbl V>
 /**
  * @brief Calculate the full sample (cross-)covariance matrix of two real random vectors.
  *
- * @details The calculation of the sample (cross-)covariance matrix depends on the algorithm used to
- * accumulate the data:
- * - `standard`: The mean data, \f$ \mathbf{m}_\mathbf{X}^{(N)} \f$ and
- * \f$ \mathbf{m}_\mathbf{Y}^{(N)} \f$, for the two real random vectors \f$ \mathbf{X} \f$ and
- * \f$ \mathbf{Y} \f$ is accumulated as stated in simplemc::accs::mean. The (cross-)covariance data is
- * accumulated with
- *   \f[
- *     \mathbf{C}^{(N)} =
- *     \mathbf{C}^{(N-1)} + \left( \mathbf{x}^{(N)} - \mathbf{s} \right) \left( \mathbf{y}^{(N)} -
- *     \mathbf{t} \right)^T =
- *     \sum_{j=1}^N \left( \mathbf{x}^{(j)} - \mathbf{s} \right) \left( \mathbf{y}^{(j)} - \mathbf{t}
- *     \right)^T \; ,
- *   \f]
- *   such that the sample (cross-)covariance matrix is given by
- *   \f[
- *     s_{\mathbf{X}\mathbf{Y}}^2 = \frac{1}{N - 1} \left\{ \mathbf{C}^{(N)} -
- *     \frac{\mathbf{m}_\mathbf{X}^{(N)} \left( \mathbf{m}_\mathbf{Y}^{(N)} \right)^T}{N} \right\} =
- *     \frac{1}{N - 1} \left\{ \sum_{j=1}^N \mathbf{x}^{(j)} \left( \mathbf{y}^{(j)} \right)^T -
- *     \frac{\sum_{j=1}^N \mathbf{x}^{(j)} \left( \sum_{k=1}^N \mathbf{y}^{(k)} \right)^T}{N} \right\}
- *     \; .
- *   \f]
- * - `welford`: The mean data, \f$ \mathbf{n}_\mathbf{X}^{(N)} \f$ and
- * \f$ \mathbf{n}_\mathbf{Y}^{(N)} \f$, for the two real random vectors \f$ \mathbf{X} \f$ and
- * \f$ \mathbf{Y} \f$ is accumulated as stated in simplemc::accs::mean. The (cross-)covariance data is
- * accumulated with
- *   \f{eqnarray*}{
- *     \mathbf{D}^{(N)} &=&
- *     \mathbf{D}^{(N-1)} + \left( \mathbf{x}^{(N)} - \mathbf{s} - \mathbf{n}_\mathbf{X}^{(N-1)}
- *     \right) \left( \mathbf{y}^{(N)} - \mathbf{t} - \mathbf{n}_\mathbf{Y}^{(N)} \right)^T \\
- *     &=& \sum_{j=1}^N \left( \mathbf{x}^{(j)} - \mathbf{s} - \mathbf{n}_\mathbf{X}^{(N)} \right)
- *     \left( \mathbf{y}^{(j)} - \mathbf{t} - \mathbf{n}_\mathbf{Y}^{(N)} \right)^T \; ,
- *   \f}
- *   such that the sample (cross-)covariance matrix is given by
- *   \f[
- *     s_{\mathbf{X}\mathbf{Y}}^2 = \frac{\mathbf{D}^{(N)}}{N - 1} =
- *     \frac{1}{N - 1} \left\{ \sum_{j=1}^N \mathbf{x}^{(j)} \left( \mathbf{y}^{(j)} \right)^T -
- *     \frac{\sum_{j=1}^N \mathbf{x}^{(j)} \left( \sum_{k=1}^N \mathbf{y}^{(k)} \right)^T}{N}
- *     \right\} \; .
- *   \f]
- *
- * Here, \f$ \mathbf{t} \f$ and \f$ \mathbf{s} \f$ are constant vectors that can optionally be applied
- * to the random samples to increase numerical accuracy.
- *
- * @note The constant vectors \f$ \mathbf{t} \f$ and \f$ \mathbf{s} \f$ are not part of the function.
- * It is the caller's responsibility to subtract them while accumulating the data.
+ * @details See simplemc::covar_acc for a description of how the covariance data is accumulated
+ * depending on the simplemc::varalg. This function generalizes the covariance formulas to the
+ * cross-covariance case (\f$ \mathbf{X} \neq \mathbf{Y} \f$).
  *
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  * @tparam V simplemc::eigen_vector_dbl type.
  * @tparam M simplemc::eigen_matrix_dbl type.
- * @param mdata_x Accumulated mean data \f$ \mathbf{m}_\mathbf{X}^{(N)}/\mathbf{n}_\mathbf{X}^{(N)}
- * \f$.
- * @param mdata_y Accumulated mean data \f$ \mathbf{m}_\mathbf{Y}^{(N)}/\mathbf{n}_\mathbf{Y}^{(N)}
- * \f$.
- * @param cdata Accumulated (cross-)covariance data \f$ \mathbf{C}^{(N)}/\mathbf{D}^{(N)} \f$.
+ * @param mdata_x Accumulated mean data
+ * \f$ \mathbf{m}_\mathbf{X}^{(N)}/\mathbf{n}_\mathbf{X}^{(N)} \f$.
+ * @param mdata_y Accumulated mean data
+ * \f$ \mathbf{m}_\mathbf{Y}^{(N)}/\mathbf{n}_\mathbf{Y}^{(N)} \f$.
+ * @param cdata Accumulated (cross-)covariance data
+ * \f$ \mathbf{C}^{(N)}/\mathbf{D}^{(N)} \f$.
  * @param n Number of accumulated samples \f$ N \f$.
  * @return Sample (cross-)covariance matrix \f$ s_{\mathbf{X}\mathbf{Y}}^2 \f$.
  */
@@ -231,37 +124,17 @@ template <varalg A, eigen_vector_dbl V, eigen_matrix_dbl M>
 }
 
 /**
- * @brief Calculate the integrated autocorrelation time for the elements of a real (cross)-covariance
+ * @brief Calculate the integrated autocorrelation time for the elements of a real (cross-)covariance
  * matrix or variance vector.
  *
- * @details Inverting the last equation in @ref simplemc-accs-stats, we can write the integrated
- * autocorrelation time as
- * \f[
- *   \tau_{\mathbf{X}\mathbf{Y}} = \frac{1}{2} \left( \frac{\mathrm{Cov}[\overline{\mathbf{X}}^{(N)},
- *   \overline{\mathbf{Y}}^{(N)}]}{\mathrm{Cov}[\mathbf{X}, \mathbf{Y}]} N - 1 \right) \approx
- *   \frac{1}{2} \left( \frac{s_{\overline{\mathbf{X}}^{(N)}\overline{\mathbf{Y}}^{(N)}}^2}
- *   {s_{\mathbf{X}\mathbf{Y}}^2} N - 1 \right) \; .
- * \f]
- * If we use a blocking method to determine the block size \f$ B \f$ at which the block averages,
- * \f$ \overline{\mathbf{X}}^{(B)} \f$ and \f$ \overline{\mathbf{Y}}^{(B)} \f$, become uncorrelated,
- * then this equation can be further approximated with
- * \f[
- *   \tau_{\mathbf{X}\mathbf{Y}} \approx \frac{1}{2} \left( \frac{s_{\overline{\mathbf{X}}^{(B)}
- *   \overline{\mathbf{Y}}^{(B)}}^2}{s_{\mathbf{X}\mathbf{Y}}^2} B - 1 \right) \; ,
- * \f]
- * where \f$ s_{\mathbf{X}\mathbf{Y}}^2 \f$ is the naive (unblocked) sample (cross)-covariance matrix
- * and \f$ s_{\overline{\mathbf{X}}^{(B)}\overline{\mathbf{Y}}^{(B)}}^2 =
- * s_{\overline{\mathbf{X}}^{(N)}\overline{\mathbf{Y}}^{(N)}}^2 N_{\mathrm{eff}} \f$ is the sample
- * (cross)-covariance matrix of the blocked samples with block size \f$ B = N / N_{\mathrm{eff}} \f$.
- *
- * A similar equation holds for \f$ \tau_{\mathbf{X}} \f$.
+ * @details See simplemc::autocorr_acc for the derivation and context of this formula.
  *
  * @tparam M simplemc::eigen_matrix_dbl type.
- * @param s_naive Naive (unblocked) estimate of the sample (cross)-covariance matrix
- * \f$ s_{\mathbf{X}\mathbf{Y}}^2 \f$ or the sample variance \f$ s_{\mathbf{X}}^2 \f$.
- * @param s_blocked Blocked estimate of the sample (cross)-covariance matrix
- * \f$ s_{\overline{\mathbf{X}}^{(B)}\overline{\mathbf{Y}}^{(B)}}^2 \f$ or the sample variance
- * \f$ s_{\overline{\mathbf{X}}^{(B)}}^2 \f$.
+ * @param s_naive Naive (unblocked) estimate of the sample (cross-)covariance matrix \f$ s_{\mathbf{X}
+ * \mathbf{Y}}^2 \f$ or the sample variance \f$ s_{\mathbf{X}}^2 \f$.
+ * @param s_blocked Blocked estimate of the sample (cross-)covariance matrix \f$ s_{\overline{
+ * \mathbf{X}}^{(B)}\overline{\mathbf{Y}}^{(B)}}^2 \f$ or the sample variance \f$ s_{\overline{
+ * \mathbf{X}}^{(B)}}^2 \f$.
  * @param b Block size \f$ B \f$ used in the blocked estimate (w.r.t. the naive estimate).
  * @return Matrix \f$ \tau_{\mathbf{X}\mathbf{Y}} \f$ or vector \f$ \tau_{\mathbf{X}} \f$ of
  * integrated autocorrelation times.
@@ -274,10 +147,11 @@ template <eigen_matrix_dbl M>
 }
 
 /**
- * @brief Calculate the integrated autocorrelation time for a real scalar (cross)-covariance or
+ * @brief Calculate the integrated autocorrelation time for a real scalar (cross-)covariance or
  * variance.
  *
- * @details See simplemc::accs::tau(const M&, const M&, std::uint64_t) for details.
+ * @details Scalar overload. See simplemc::autocorr_acc for the derivation and context of this
+ * formula.
  *
  * @param s_naive Naive (unblocked) estimate of the sample (cross)-covariance \f$ s_{XY}^2 \f$ or the
  * sample variance \f$ s_{X}^2 \f$.

@@ -21,8 +21,8 @@ namespace simplemc {
  * - `welford`: Uses the Welford algorithm or a variant thereof to accumulate the data (see
  * [Wikipedia](https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance)).
  *
- * See simplemc::accs::mean, simplemc::accs::diag_covariance and simplemc::accs::covariance for more
- * details how the choice of the algorithm affects the accumulation of the data.
+ * See simplemc::mean_acc, simplemc::var_acc and simplemc::covar_acc for more details how the choice
+ * of the algorithm affects the accumulation of the data.
  */
 enum class varalg { standard, welford };
 

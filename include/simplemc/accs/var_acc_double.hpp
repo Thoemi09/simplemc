@@ -34,12 +34,37 @@ namespace simplemc {
  * - the type of the random samples (a simplemc::eigen_vector_dbl type) and
  * - the algorithm (simplemc::varalg) that should be used to accumulate the data.
  *
- * Both of them determine how the accumulation is actually done and what is stored in the accumulator.
- * The accumulated data is stored in two vectors:
- * - a real vector \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$ for the mean data and
- * - a real vector \f$ \mathbf{c}^{(N)}/\mathbf{d}^{(N)} \f$ for the variance data.
+ * Both of them determine how the accumulation is actually done and what is stored in the
+ * accumulator. The mean data \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$ is accumulated as
+ * described in simplemc::mean_acc. The variance data \f$ \mathbf{c}^{(N)}/\mathbf{d}^{(N)} \f$
+ * depends on the algorithm:
+ * - `standard`: The variance data is accumulated with
+ *   \f[
+ *     \mathbf{c}^{(N)} = \mathbf{c}^{(N-1)} + \left( \mathbf{x}^{(N)} - \mathbf{t} \right)
+ *     \odot \left( \mathbf{x}^{(N)} - \mathbf{t} \right) =
+ *     \sum_{j=1}^N \left( \mathbf{x}^{(j)} - \mathbf{t} \right)^{\odot 2} \; ,
+ *   \f]
+ *   such that the sample variance is given by
+ *   \f[
+ *     s_{\mathbf{X}}^2 = \frac{1}{N - 1} \left\{
+ *     \mathbf{c}^{(N)} - \frac{\mathbf{m}^{(N)} \odot \mathbf{m}^{(N)}}{N}
+ *     \right\} \; .
+ *   \f]
  *
- * See simplemc::accs::mean and simplemc::accs::diag_covariance.
+ * - `welford`: The variance data is accumulated with
+ *   \f[
+ *     \mathbf{d}^{(N)} = \mathbf{d}^{(N-1)} + \left( \mathbf{x}^{(N)} - \mathbf{t} -
+ *     \mathbf{n}^{(N-1)} \right) \odot \left( \mathbf{x}^{(N)} - \mathbf{t} -
+ *     \mathbf{n}^{(N)} \right) \; ,
+ *   \f]
+ *   such that the sample variance is given by
+ *   \f[
+ *     s_{\mathbf{X}}^2 = \frac{\mathbf{d}^{(N)}}{N - 1} \; .
+ *   \f]
+ *
+ * Here, \f$ \mathbf{t} \f$ is a constant vector that can optionally be applied to the random
+ * samples to increase numerical accuracy and \f$ \mathbf{a} \odot \mathbf{b} \f$ denotes the
+ * Hadamard (element-wise) product. See also @ref simplemc-accs-stats-var.
  *
  * @code{.cpp}
  * #include <fmt/ranges.h>
@@ -365,7 +390,7 @@ public:
      * the mean.
      *
      * @return simplemc::eigen_vector_dbl of size \f$ M \f$ containing \f$ \mathbf{m}^{(N)}/
-     * \mathbf{n}^{(N)} \f$ (content depends on the algorithm, see simplemc::accs::mean).
+     * \mathbf{n}^{(N)} \f$ (content depends on the algorithm, see simplemc::mean_acc).
      */
     [[nodiscard]] const vec_type& mdata() const { return mdata_; }
 
@@ -374,14 +399,15 @@ public:
      * the variance.
      *
      * @return simplemc::eigen_vector_dbl of size \f$ M \f$ containing \f$ \mathbf{c}^{(N)}/
-     * \mathbf{d}^{(N)} \f$ (content depends on the algorithm, see simplemc::accs::diag_covariance).
+     * \mathbf{d}^{(N)} \f$ (content depends on the algorithm, see the class documentation).
      */
     [[nodiscard]] const vec_type& cdata() const { return cdata_; }
 
     /**
      * @brief Calculate the sample mean \f$ \overline{\mathbf{x}}^{(N)} \f$.
      *
-     * @details It calls simplemc::accs::mean with the accumulated mean data and the count.
+     * @details It calls simplemc::accs::mean with the accumulated mean data and the
+     * count.
      *
      * For statically sized accumulators with \f$ M = 1 \f$, it returns a real scalar. Otherwise, it
      * returns a vec_type object.
@@ -414,7 +440,8 @@ public:
     /**
      * @brief Calculate the sample variance \f$ s_{\mathbf{X}}^2 \f$.
      *
-     * @details It calls simplemc::accs::diag_covariance with the accumulated data and the count.
+     * @details It calls simplemc::accs::diag_covariance with the accumulated data and
+     * the count.
      *
      * For statically sized accumulators with \f$ M = 1 \f$, it returns a real scalar. Otherwise, it
      * returns a vec_type object.

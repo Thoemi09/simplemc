@@ -45,9 +45,34 @@ class batch_acc;
  * - the type of the random samples (a simplemc::eigen_vector type) and
  * - the algorithm (simplemc::varalg) that should be used to accumulate the data.
  *
- * Both of them determine how the accumulation is actually done and what is stored in the accumulator.
- * The accumulated data is stored in a single vector \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$. Please
- * see simplemc::accs::mean for more details.
+ * Both of them determine how the accumulation is actually done and what is stored in the
+ * accumulator. The accumulated data is stored in a single vector
+ * \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$ depending on the algorithm:
+ * - `standard`: The mean data is accumulated with
+ *   \f[
+ *     \mathbf{m}^{(N)} = \mathbf{m}^{(N-1)} + \mathbf{z}^{(N)} - \mathbf{t} =
+ *     \sum_{j=1}^N \left( \mathbf{z}^{(j)} - \mathbf{t} \right) \; ,
+ *   \f]
+ *   such that the sample mean is given by
+ *   \f[
+ *     \overline{\mathbf{z}}^{(N)} = \frac{\mathbf{m}^{(N)}}{N} + \mathbf{t} =
+ *     \frac{1}{N} \sum_{j=1}^N \mathbf{z}^{(j)} \; .
+ *   \f]
+ *
+ * - `welford`: The mean data is accumulated with
+ *   \f[
+ *     \mathbf{n}^{(N)} = \mathbf{n}^{(N-1)} + \frac{1}{N} \left( \mathbf{z}^{(N)} -
+ *     \mathbf{t} - \mathbf{n}^{(N-1)} \right) =
+ *     \frac{1}{N} \sum_{j=1}^N \left( \mathbf{z}^{(j)} - \mathbf{t} \right) \; ,
+ *   \f]
+ *   such that the sample mean is given by
+ *   \f[
+ *     \overline{\mathbf{z}}^{(N)} = \mathbf{n}^{(N)} + \mathbf{t} =
+ *     \frac{1}{N} \sum_{j=1}^N \mathbf{z}^{(j)} \; .
+ *   \f]
+ *
+ * Here, \f$ \mathbf{t} \f$ is a constant vector that can optionally be applied to the random
+ * samples to increase numerical accuracy. See also @ref simplemc-accs-stats-mean.
  *
  * @tparam V simplemc::eigen_vector type.
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
@@ -343,7 +368,7 @@ public:
      * the mean.
      *
      * @return simplemc::eigen_vector of size \f$ M \f$ containing \f$ \mathbf{m}^{(N)}/
-     * \mathbf{n}^{(N)} \f$ (content depends on the algorithm, see simplemc::accs::mean).
+     * \mathbf{n}^{(N)} \f$ (content depends on the algorithm, see simplemc::mean_acc).
      */
     [[nodiscard]] const vec_type& mdata() const noexcept { return mdata_; }
 
@@ -443,8 +468,7 @@ using mean_acc_dynamic = mean_acc<Eigen::Matrix<T, Eigen::Dynamic, 1>, A>;
 /**
  * @brief Accumulate (complex) random samples in a simplemc::mean_acc.
  *
- * @details See simplemc::accs::mean and simplemc::mean_acc for more details on how the random samples
- * are accumulated.
+ * @details See simplemc::mean_acc for more details on how the random samples are accumulated.
  *
  * It throws a simplemc::simplemc_exception if the range is empty.
  *
