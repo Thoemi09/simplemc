@@ -3,8 +3,9 @@
 # The following targets are defined:
 # ---------------------------------
 # doc_mean_acc: Doc example using a mean accumulator.
+# doc_multivalue_acc: Doc example using a multivalue accumulator.
 
-# FIXME: Temporarily disabled during accs restructure.
-# simplemc_add_examples(
-#     doc_mean_acc
-# )
+simplemc_add_examples(
+    doc_mean_acc
+    doc_multivalue_acc
+)

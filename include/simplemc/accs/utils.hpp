@@ -28,10 +28,12 @@ namespace simplemc::accs {
  */
 
 /**
- * @brief Calculate the sample mean of (complex) random vector \f$ \mathbf{Z} \f$.
+ * @brief Calculate the sample mean of some (complex) data.
  *
- * @details See simplemc::mean_acc for a description of how the mean data is accumulated depending on
- * the simplemc::varalg.
+ * @details The function expects that the data has already been accumulated according to the specified
+ * simplemc::varalg.
+ *
+ * See simplemc::mean_acc and @ref simplemc-accs-stats-mean for more details.
  *
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  * @tparam V simplemc::eigen_vector type.

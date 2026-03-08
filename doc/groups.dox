@@ -737,9 +737,12 @@
  *
  * @section simplemc-accs-stats Statistical background
  *
- * In the following, we consider collections (ranges) of data values. Each value can be a real or
- * complex scalar, or a vector of such scalars. A common use case is Monte Carlo sampling, where the
- * data values are random samples drawn from the distribution of some random variable. However, the
+ * In the following, we give some background information and introduce the notation that will be used
+ * in the documentation of the different accumulators and their member functions.
+ *
+ * Accumulators work on collections (ranges) of data samples. Each sample can be a real or complex
+ * scalar, or a vector of such scalars. A common use case is Monte Carlo sampling, where the data
+ * values are random samples drawn from the distribution of some random variable. However, the
  * definitions below apply to any ordered collection of data.
  *
  * Let \f$ S_{\mathbf{Z}} = \left\{ \mathbf{z}^{(j)} = \mathbf{x}^{(j)} + i \mathbf{y}^{(j)} \in
@@ -748,14 +751,16 @@
  * \f$ S_{\mathbf{Y}} = \left\{ \mathbf{y}^{(j)} \in \mathbb{R}^M : j = 1, \dots, N \right\} \f$ be
  * sets of real data samples. \f$ S_{\mathbf{X}} \f$ and \f$ S_{\mathbf{Y}} \f$ either form the real
  * and imaginary parts of \f$ S_{\mathbf{Z}} \f$ or they can be seen as independent real data
- * collections. We use vector notation here, however, the definitions below are easily adapted to the
- * case of scalar samples.
+ * collections. We use vector notation here, however, the definitions are easily adapted to the case
+ * of scalar samples.
  *
  * In case, the set of samples \f$ S_{\mathbf{Z}} \f$, \f$ S_{\mathbf{X}} \f$ and \f$ S_{\mathbf{Y}}
  * \f$ contain random samples drawn from the distribution of some random vector, let \f$ \mathbf{Z} =
  * \mathbf{X} + i \mathbf{Y} \f$, \f$ \mathbf{X} \f$ and \f$ \mathbf{Y} \f$ be the corresponding
- * random vectors. Each random vector consists of \f$ M \f$ individual random variables, e.g. \f$
- * \mathbf{Z} = (Z_1, \dots, Z_M) \f$ with \f$ Z_j \f$ being a complex random variable.
+ * random vectors. Each random vector consists of \f$ M \f$ individual random variables, i.e. \f$
+ * \mathbf{Z} = (Z_1, \dots, Z_M) \f$, \f$ \mathbf{X} = (X_1, \dots, X_M) \f$ and \f$ \mathbf{Y} =
+ * (Y_1, \dots, Y_M) \f$ with \f$ Z_j \f$, \f$ X_j \f$ and \f$ Y_j \f$ being (complex) random
+ * variables.
  *
  * @subsection simplemc-accs-stats-mean Sample mean and expectation value
  *
@@ -901,16 +906,15 @@
  *
  * **simplemc** implements several accumulators of increasing complexity and for different puproses.
  * They can be used to calculate the sample mean, sample variance, sample covariance and
- * autocorrelation times for a set of random samples taken from the distribution of some random
- * variable.
+ * autocorrelation times for some data.
  *
  * The following accumulators are available:
  * - @ref simplemc-accs-accs-mean - Simplest and fastest accumulator for calculating only the sample
- * mean of a random vector.
+ * mean.
  * - @ref simplemc-accs-accs-var - In addition to the sample mean, it provides a naive (non-blocking)
- * estimate of the variance of a random vector, i.e. the diagonal of its covariance matrix.
- * - @ref simplemc-accs-accs-covar - In addition to the sample mean, it provides a naive (non-blocking)
- * estimate of the full covariance matrix of a random vector.
+ * estimate of the variance.
+ * - @ref simplemc-accs-accs-covar - In addition to the sample mean, it provides a naive
+ * (non-blocking) estimate of the full covariance matrix.
  *
  * The variance and covariance accumulators can be further wrapped with
  * - simplemc::block_acc to improve the error estimation by grouping individual samples into blocks to
@@ -931,70 +935,71 @@
  * accumulator to see which of them are supported). Let `acc` be an instance of one of the accumulator
  * types `A` mentioned above:
  *
- * - If the size of the accumulator is \f$ 1 \f$, then a scalar value \f$ z \in \mathbb{R} \f$ or \f$
- * z \in \mathbb{C} \f$ can be added with the stream operator:
- * @code{.cpp}
- * acc << z;
- * @endcode
+ * - For scalar samples, i.e. if the size of the accumulator is \f$ M = 1 \f$, we can do the
+ * following:
+ *   - A scalar value \f$ u \in \mathbb{R} \f$ or \f$ u \in \mathbb{C} \f$ can be added with the
+ *   stream operator:
+ *   @code{.cpp}
+ *   acc << u;
+ *   @endcode
  *
- * - If the size of the accumulator is \f$ M \geq 1 \f$, then an `Eigen` vector/array/expression
- * object \f$ \mathbf{v} \in \mathbb{R}^M \f$ or \f$ \mathbf{v} \in \mathbb{C}^M \f$ can be added with
+ * - For vector samples, i.e. if the size of the accumulator is \f$ M \geq 1 \f$, we can do the
+ * following:
+ *   - An `Eigen` vector/array/expression object \f$ \mathbf{v} \in \mathbb{R}^M \f$ or \f$ \mathbf{v}
+ *   \in \mathbb{C}^M \f$ can be added with the stream operator:
+ *   @code{.cpp}
+ *   acc << v;
+ *   @endcode
+ *
+ *   - If only a scalar value \f$ v_i \in \mathbb{R} \f$ or \f$ v_i \in \mathbb{C} \f$ should be added
+ *   to a specific element with index \f$ i \f$, then one can use the subscript operator together with
+ *   the stream operator:
+ *   @code{.cpp}
+ *   acc[i] << v_i;
+ *   @endcode
+ *   This is equivalent to adding a full vector \f$ \mathbf{v} = \left(0, \dots, 0, v_i, 0, \dots, 0
+ *   \right) \f$, where only the i<sup>th</sup> element \f$ v_i \f$ is possibly non-zero.
+ *
+ *   - If multiple scalar values \f$ v_{i_1}, \dots v_{i_n} \f$, each \f$ \in \mathbb{R} \f$ or \f$
+ *   \in \mathbb{C} \f$, should be added to specific elements with indices \f$ i_1, \dots, i_n \f$,
+ *   then one can use the simplemc::multivalue_acc wrapper together with the stream operator:
+ *   @code{.cpp}
+ *   auto mva = acc.make_mva();
+ *   mva[i_1] << v_i_1;
+ *   // ...
+ *   mva[i_n] << v_i_n;
+ *   mva.increment_count();
+ *   @endcode
+ *   This is equivalent to adding a full vector \f$ \mathbf{v} \f$ to the samples, where only elements
+ *   \f$ v_{i_1}, \dots v_{i_n} \f$ with indices \f$ i_1, \dots, i_n \f$, etc. are possibly non-zero.
+ *   @note It is the user's responsibility to call simplemc::multivalue_acc::increment_count of the
+ *   multi-value accumulator once after all values have been added. In addition, if the wrapped
+ *   accumulator is a simplemc::block_acc or simplemc::batch_acc, the user has to call
+ *   simplemc::block_acc::check_and_add_block or simplemc::batch_acc::check_and_advance as well.
+ *
+ *   - If a range, `rg`, containing \f$ n \leq M \f$ scalar values \f$ v_i, \dots, v_{i+n-1} \f$, each
+ *   \f$ \in \mathbb{R} \f$ or \f$ \in \mathbb{C} \f$, should be added to consecutive elements in the
+ *   accumulator starting from index \f$ i \leq M - n \f$, one can use the accumulate function:
+ *   @code{.cpp}
+ *   acc.accumulate(rg, i);
+ *   @endcode
+ *   This is equivalent to adding a full vector \f$ \mathbf{v} \f$ to the samples, where only elements
+ *   \f$ v_{i}, v_{i+1}, \dots, v_{i+n-1} \f$ with indices \f$ i, i + 1, \dots, i + n - 1 \f$ are
+ *   possibly non-zero.
+ *
+ *   - If a range, `rg`, containing \f$ n \leq M \f$ scalar values \f$ v_{i_1}, \dots, v_{i_n} \f$,
+ *   each \f$ \in \mathbb{R} \f$ or \f$ \in \mathbb{C} \f$, should be added to the elements of the
+ *   accumulator with indices \f$ i_1, \dots, i_n \f$, one can use the accumulate function:
+ *   @code{.cpp}
+ *   acc.accumulate(rg, idxs);
+ *   @endcode
+ *   Here, `idxs` is a range containing the indices \f$ i_1, \dots, i_n \f$. This is equivalent to
+ *   adding a full vector \f$ \mathbf{v} \f$ to the samples, where only elements \f$ v_{i_1}, \dots
+ *   v_{i_n} \f$ with indices \f$ i_1, \dots, i_n \f$ are possibly non-zero.
+ *
+ * - For scalar and vector samples, if the data from another accumulator, `acc_other`, of the same
+ * type `A` and of the same size \f$ M \f$ should be added to the data of the accumulator, one can use
  * the stream operator:
- * @code{.cpp}
- * acc << v;
- * @endcode
- *
- * - If the size of the accumulator is \f$ M \geq 1 \f$ and only a scalar value \f$ v_i \in \mathbb{R}
- * \f$ or \f$ v_i \in \mathbb{C} \f$ should be added to a specific element with index \f$ i \f$, then
- * one can use the subscript operator together with the stream operator:
- * @code{.cpp}
- * acc[i] << v_i;
- * @endcode
- * This is equivalent to adding a full vector \f$ \mathbf{v} = \left(0, \dots, 0, v_i, 0, \dots, 0
- * \right) \f$, where only the i<sup>th</sup> element \f$ v_i \f$ is possibly non-zero.
- *
- * - If the size of the accumulator is \f$ M \geq 1 \f$ and multiple scalar values \f$ v_{i_1}, \dots
- * v_{i_n} \f$, each \f$ \in \mathbb{R} \f$ or \f$ \in \mathbb{C} \f$, should be added to specific
- * elements with indices \f$ i_1, \dots, i_n \f$, then one can use the simplemc::multivalue_acc
- * wrapper together with the stream operator:
- * @code{.cpp}
- * auto mva = acc.make_mva();
- * mva[i_1] << v_i_1;
- * // ...
- * mva[i_n] << v_i_n;
- * mva.increment_count();
- * @endcode
- * This is equivalent to adding a full vector \f$ \mathbf{v} \f$ to the samples, where only elements
- * \f$ v_{i_1}, \dots v_{i_n} \f$ with indices \f$ i_1, \dots, i_n \f$, etc. are possibly non-zero.
- * @note It is the user's responsibility to call simplemc::multivalue_acc::increment_count of the
- * multi-value accumulator once after all values have been added. In addition, if the wrapped
- * accumulator is a simplemc::block_acc or simplemc::batch_acc, the user has to call
- * simplemc::block_acc::check_and_add_block or simplemc::batch_acc::check_and_advance as well.
- *
- * - If the size of the accumulator is \f$ M \geq 1 \f$ and a range, `rg`, containing \f$ n \leq M \f$
- * scalar values \f$ v_i, \dots, v_{i+n-1} \f$, each \f$ \in \mathbb{R} \f$ or \f$ \in \mathbb{C} \f$,
- * should be added to consecutive elements in the accumulator starting from index \f$ i \leq M - n
- * \f$, one can use the accumulate function:
- * @code{.cpp}
- * acc.accumulate(rg, i);
- * @endcode
- * This is equivalent to adding a full vector \f$ \mathbf{v} \f$ to the samples, where only elements
- * \f$ v_{i}, v_{i+1}, \dots, v_{i+n-1} \f$ with indices \f$ i, i + 1, \dots, i + n - 1 \f$ are
- * possibly non-zero.
- *
- * - If the size of the accumulator is \f$ M \geq 1 \f$ and a range, `rg`, containing \f$ n \leq M \f$
- * scalar values \f$ v_{i_1}, \dots, v_{i_n} \f$, each \f$ \in \mathbb{R} \f$ or \f$ \in \mathbb{C}
- * \f$, should be added to the elements of the accumulator with indices \f$ i_1, \dots, i_n \f$, one
- * can use the accumulate function:
- * @code{.cpp}
- * acc.accumulate(rg, idxs);
- * @endcode
- * Here, `idxs` is a range containing the indices \f$ i_1, \dots, i_n \f$. This is equivalent to
- * adding a full vector \f$ \mathbf{v} \f$ to the samples, where only elements \f$ v_{i_1}, \dots
- * v_{i_n} \f$ with indices \f$ i_1, \dots, i_n \f$ are possibly non-zero.
- *
- * - If the data from another accumulator, `acc_other`, of the same type `A` and of the same size \f$
- * M \f$ should be added to the data of the accumulator, one can use the stream operator:
  * @code{.cpp}
  * acc << acc_other;
  * @endcode
@@ -1006,18 +1011,10 @@
 /**
  * @defgroup simplemc-accs-accs-mean Mean accumulator
  * @ingroup simplemc-accs-accs
- * @brief Calculating the sample mean of a random vector.
+ * @brief Calculating the sample mean of a data set.
  *
- * @details The sample mean is used as an approximation to the exact expectation value. See
- * @ref simplemc-accs-stats for a definition of the sample mean and expectation value.
- *
- * @include accs/doc_mean_acc.cpp
- *
- * Output:
- *
- * ```
- * Mean: 3
- * ```
+ * @details The sample mean is defined in @ref simplemc-accs-stats-mean. It can be used as an
+ * approximation to the expectation value of some random variable.
  */
 
 /**

@@ -1,6 +1,7 @@
 #include "./accs_fixture.hpp"
 
 #include <simplemc/accs/mean_acc.hpp>
+#include <simplemc/accs/multivalue_acc.hpp>
 #include <simplemc/utils/ranges.hpp>
 
 #include <complex>
@@ -17,11 +18,29 @@ constexpr double tol = 1e-10;
 
 } // namespace
 
+// Test accumulator concepts.
+TEST_F(SimplemcAccs, MeanAccConcepts) {
+    // basic_accumulator concept for mean_acc
+    static_assert(basic_accumulator<mean_acc<double>>);
+    static_assert(basic_accumulator<mean_acc<std::complex<double>>>);
+    static_assert(basic_accumulator<mean_acc<Eigen::VectorXd>>);
+
+    // basic_accumulator concept for multivalue_acc<mean_acc>
+    static_assert(basic_accumulator<multivalue_acc<mean_acc<double>>>);
+    static_assert(basic_accumulator<multivalue_acc<mean_acc<std::complex<double>>>>);
+    static_assert(basic_accumulator<multivalue_acc<mean_acc<Eigen::Vector3d>>>);
+
+    // mean_accumulator concept for mean_acc
+    static_assert(mean_accumulator<mean_acc<double>>);
+    static_assert(mean_accumulator<mean_acc<std::complex<double>>>);
+    static_assert(mean_accumulator<mean_acc<Eigen::VectorXd>>);
+}
+
 // Check empty accumulators.
 TEST_F(SimplemcAccs, MeanAccEmpty) {
     using namespace simplemc;
 
-    mean_acc_single<double> acc_sd;
+    mean_acc<double> acc_sd;
     ASSERT_EQ(acc_sd.size(), 1);
     check_empty(acc_sd);
     acc_sd << acc_sd;
@@ -29,7 +48,7 @@ TEST_F(SimplemcAccs, MeanAccEmpty) {
     static_assert(!acc_sd.is_dynamic);
     static_assert(acc_sd.static_size == 1);
 
-    mean_acc_single<std::complex<double>, standard> acc_sc;
+    mean_acc<std::complex<double>, standard> acc_sc;
     ASSERT_EQ(acc_sc.size(), 1);
     check_empty(acc_sc);
     acc_sc << acc_sc;
@@ -74,10 +93,10 @@ TEST_F(SimplemcAccs, MeanAccEmpty) {
 TEST_F(SimplemcAccs, MeanAccSingle) {
     // general set up
     using namespace simplemc;
-    mean_acc_single<double, standard> acc_std_d1, acc_std_d2;
-    mean_acc_single<double, welford> acc_wel_d1, acc_wel_d2;
-    mean_acc_single<std::complex<double>, standard> acc_std_c1, acc_std_c2;
-    mean_acc_single<std::complex<double>, welford> acc_wel_c1, acc_wel_c2;
+    mean_acc<double, standard> acc_std_d1, acc_std_d2;
+    mean_acc<double, welford> acc_wel_d1, acc_wel_d2;
+    mean_acc<std::complex<double>, standard> acc_std_c1, acc_std_c2;
+    mean_acc<std::complex<double>, welford> acc_wel_c1, acc_wel_c2;
 
     // fill accumulators
     const auto merge_size = steps / 2;

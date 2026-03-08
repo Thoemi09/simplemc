@@ -8,7 +8,7 @@ int main() {
     std::vector<double> data = { 1.0, 2.0, 3.0, 4.0, 5.0 };
 
     // accumulate samples into a mean accumulator of size 1
-    simplemc::mean_acc_single<double> acc {};
+    simplemc::mean_acc<double> acc {};
     for (const auto& val : data) {
         acc << val;
     }

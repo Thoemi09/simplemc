@@ -21,37 +21,14 @@ namespace simplemc {
  * a simplemc::block_acc or simplemc::batch_acc, the user has to call
  * simplemc::block_acc::check_and_add_block or simplemc::batch_acc::check_and_advance as well.
  *
- * The intended use is for mean, variance, blocked variance and batch accumulators. All of them
- * provide a factory function, `make_mva()`, that wraps the current accumulator object and returns a
- * simplemc::multivalue_acc object:
+ * All accumulator types mentioned above provide a factory function, `make_mva()`, that wraps the
+ * current accumulator object and returns a simplemc::multivalue_acc object:
  * - simplemc::mean_acc::make_mva(),
  * - simplemc::var_acc<X, A>::make_mva() and simplemc::var_acc<Z, A>::make_mva(),
  * - simplemc::block_acc::make_mva(),
  * - simplemc::batch_acc::make_mva().
  *
- * @code{.cpp}
- * #include <fmt/ranges.h>
- * #include <simplemc/accs.hpp>
- *
- * #include <vector>
- *
- * int main() {
- *     // data to be sampled
- *     std::vector<double> data = { 1.0, 2.0, 3.0, 4.0, 5.0 };
- *
- *     // accumulate samples into the first and third elements of a mean accumulator of size 3
- *     simplemc::mean_acc_dynamic<double> acc(3);
- *     for (auto& val : data) {
- *         auto mva = acc.make_mva();
- *         mva[0] << val;
- *         mva[2] << val;
- *         mva.increment_count();
- *     }
- *
- *     // print the mean of the accumulated data
- *     fmt::print("Mean: {}\n", acc.mean());
- * }
- * @endcode
+ * @include accs/doc_multivalue_acc.cpp
  *
  * Output:
  *
@@ -70,12 +47,17 @@ public:
     using acc_type = A;
 
     /**
-     * @brief Type of accumulated values.
+     * @brief Type of accumulated samples (simplemc::sample_type).
+     */
+    using sample_type = typename acc_type::sample_type;
+
+    /**
+     * @brief Underlying scalar type of accumulated samples (simplemc::double_or_complex).
      */
     using value_type = typename acc_type::value_type;
 
     /**
-     * @brief Type for counting the number of accumulated values.
+     * @brief Type for counting the number of accumulated samples.
      */
     using count_type = typename acc_type::count_type;
 
@@ -114,13 +96,13 @@ public:
      *
      * @note The sample count is not incremented. Manually use increment_count().
      *
-     * @tparam T Type of the value to be accumulated.
+     * @tparam U Type of the value to be accumulated.
      * @param x Value \f$ x \f$ to be accumulated.
      * @return Reference to `this` object.
      */
-    template <typename T>
-        requires std::convertible_to<T, value_type>
-    multivalue_acc& operator<<(const T& x) {
+    template <typename U>
+        requires std::convertible_to<U, value_type>
+    multivalue_acc& operator<<(const U& x) {
         acc_.add_value(x, acc_.idx_, acc_.count_ + 1);
         return *this;
     }
@@ -195,6 +177,41 @@ public:
      * @param inc Increment.
      */
     void increment_count(count_type inc = 1) { acc_.count_ += inc; }
+
+    /**
+     * @brief Get the size \f$ M \f$ of the wrapped accumulator.
+     *
+     * @return Number of elements.
+     */
+    [[nodiscard]] auto size() const noexcept { return acc_.size(); }
+
+    /**
+     * @brief Get the total number of accumulated samples \f$ N \f$.
+     *
+     * @return Number of accumulated samples.
+     */
+    [[nodiscard]] auto count() const noexcept { return acc_.count(); }
+
+    /**
+     * @brief Check if the accumulator is empty.
+     *
+     * @return True if the count() is zero, i.e. \f$ N = 0 \f$, false otherwise.
+     */
+    [[nodiscard]] bool empty() const noexcept { return count() == 0; }
+
+    /**
+     * @brief Get the wrapped accumulator object.
+     *
+     * @return Reference to the wrapped accumulator.
+     */
+    acc_type& accumulator() noexcept { return acc_; }
+
+    /**
+     * @brief Get the wrapped accumulator object.
+     *
+     * @return Const reference to the wrapped accumulator.
+     */
+    const acc_type& accumulator() const noexcept { return acc_; }
 
 private:
     acc_type& acc_; // NOLINT (reference is wanted here)
