@@ -762,7 +762,7 @@
  * (Y_1, \dots, Y_M) \f$ with \f$ Z_j \f$, \f$ X_j \f$ and \f$ Y_j \f$ being (complex) random
  * variables.
  *
- * @subsection simplemc-accs-stats-mean Sample mean and expectation value
+ * @subsection simplemc-accs-stats-mean Sample mean
  *
  * The sample mean \f$ \overline{\mathbf{z}}^{(N)} \f$ of a set of complex data samples
  * \f$ S_{\mathbf{Z}} \f$ is defined as
@@ -780,7 +780,7 @@
  * \mathrm{E}[\mathbf{Z}] = \lim_{N \to \infty} \overline{\mathbf{z}}^{(N)} \approx
  * \overline{\mathbf{z}}^{(N)} \f$.
  *
- * @subsection simplemc-accs-stats-covar Sample covariance and covariance matrix
+ * @subsection simplemc-accs-stats-covar Sample covariance
  *
  * The sample covariance matrix \f$ s_{\mathbf{X}\mathbf{Y}}^2 \f$ of two sets of real data samples
  * \f$ S_{\mathbf{X}} \f$ and \f$ S_{\mathbf{Y}} \f$ is defined as
@@ -821,7 +821,7 @@
  *   \approx s_{\mathbf{Z}\mathbf{Z}}^2 \; .
  * \f]
  *
- * @subsection simplemc-accs-stats-var Sample variance and variance
+ * @subsection simplemc-accs-stats-var Sample variance
  *
  * The diagonal elements of the sample covariance matrix are the **sample variances** of the
  * individual components. For a set of real data samples \f$ S_{\mathbf{X}} \f$, the sample variance
@@ -1020,19 +1020,19 @@
 /**
  * @defgroup simplemc-accs-accs-var Variance accumulator
  * @ingroup simplemc-accs-accs
- * @brief Calculating the sample mean and sample variance of a random vector.
+ * @brief Calculating the sample mean and sample variance of a data set.
  *
- * @details The sample mean and the sample variance are used as approximations to the exact
- * expectation value and diagonal of the covariance matrix, respectively. See @ref simplemc-accs-stats
- * for a definition of those quantities.
+ * @details The sample mean and variance are defined in @ref simplemc-accs-stats-mean and 
+ * @ref simplemc-accs-stats-var, respectively. They can be used as approximations to the expectation 
+ * value and variance of some random variable.
  *
  * The variance estimation does not account for any correlation between the samples. To get more
  * reliable results in case autocorrelation is a problem, see simplemc::block_acc,
- * simplemc::autocorr_acc or @ref simplemc-accs-accs-batch.
+ * simplemc::autocorr_acc or simplemc::batch_acc.
  *
- * The implementation for real and complex random vectors is quite different. See the specializations
- * - @ref "simplemc::var_acc< X, A >" "simplemc::var_acc for real" and
- * - @ref "simplemc::var_acc< Z, A >" "simplemc::var_acc for cplx"
+ * The implementation for real and complex data samples is quite different. See the specializations
+ * - @ref "simplemc::var_acc< X, A >" "simplemc::var_acc for real samples" and
+ * - @ref "simplemc::var_acc< Z, A >" "simplemc::var_acc for complex samples"
  * for more details.
  */
 
@@ -1050,8 +1050,8 @@
  * simplemc::autocorr_acc or @ref simplemc-accs-accs-batch.
  *
  * The implementation for real and complex random vectors is quite different. See the specializations
- * - @ref "simplemc::covar_acc< X, A >" "simplemc::covar_acc for real" and
- * - @ref "simplemc::covar_acc< Z, A >" "simplemc::covar_acc for cplx"
+ * - @ref "simplemc::covar_acc< X, A >" "simplemc::covar_acc for real samples" and
+ * - @ref "simplemc::covar_acc< Z, A >" "simplemc::covar_acc for complex samples"
  * for more details.
  */
 

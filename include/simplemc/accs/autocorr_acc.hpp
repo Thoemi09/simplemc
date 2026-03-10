@@ -74,38 +74,7 @@ namespace simplemc {
  * - prints \f$ s_{\overline{X}}^2 \f$ and the integrated autocorrelation time \f$ \tau_X \f$ for
  * each level \f$ l \leq l' \f$:
  *
- * @code{.cpp}
- * #include <fmt/ranges.h>
- * #include <simplemc/accs.hpp>
- *
- * #include <random>
- *
- * int main() {
- *     // AR(1) parameters and white noise distribution: phi = 0.9, sigma = 1.0
- *     const double phi = 0.9;
- *     const double sigma = 1.0;
- *     std::mt19937_64 rng;
- *     std::normal_distribution<double> normal_dist(0.0, sigma);
- *
- *     // accumulate samples into an autocorrelation accumulator
- *     simplemc::autocorr_acc<simplemc::var_acc_single<double>> acc;
- *     double x_t = 0.0;
- *     for (int i = 0; i < 1000000; ++i) {
- *         acc << x_t;
- *         x_t = phi * x_t + normal_dist(rng);
- *     }
- *
- *     // inspect how the variance and tau increases with increasing block sizes
- *     auto const s0 = acc.accumulators()[0].variance_of_data();
- *     auto const max_level = acc.find_level(256);
- *     fmt::print("{:<15}{:<15}{:<15}{:<15}\n", "Count", "Block size", "Variance", "tau");
- *     for (std::size_t i = 0; i <= max_level; ++i) {
- *         const auto& va = acc.accumulators()[i];
- *         fmt::print("{:<15}{:<15}{:<15.8f}{:<15.8f}\n", va.count(), acc.block_size(i), va.variance(),
- *             simplemc::accs::tau(s0, va.variance_of_data(), acc.block_size(i)));
- *     }
- * }
- * @endcode
+ * @include accs/doc_autocorr_acc.cpp
  *
  * Output:
  *
@@ -136,22 +105,12 @@ public:
     using acc_type = A;
 
     /**
-     * @brief Static size of the accumulator.
+     * @brief Type of accumulated samples (simplemc::sample_type).
      */
-    static constexpr int static_size = acc_type::static_size;
+    using sample_type = typename acc_type::sample_type;
 
     /**
-     * @brief Is the accumulator dynamically sized?
-     */
-    static constexpr bool is_dynamic = acc_type::is_dynamic;
-
-    /**
-     * @brief Does the accumulator return scalars or vectors/matrices?
-     */
-    static constexpr bool returns_scalar = acc_type::returns_scalar;
-
-    /**
-     * @brief Type of accumulated values.
+     * @brief Underlying scalar type of accumulated samples (simplemc::double_or_complex).
      */
     using value_type = typename acc_type::value_type;
 
@@ -166,6 +125,16 @@ public:
     using size_type = typename acc_type::size_type;
 
     /**
+     * @brief Static size of the accumulator.
+     */
+    static constexpr int static_size = acc_type::static_size;
+
+    /**
+     * @brief Is the accumulator dynamically sized?
+     */
+    static constexpr bool is_dynamic = acc_type::is_dynamic;
+
+    /**
      * @brief Get the algorithm used to accumulate the data.
      *
      * @return simplemc::varalg tag of the wrapped accumulator.
@@ -175,7 +144,7 @@ public:
     /**
      * @brief Mean accumulator type for accumulating block data.
      */
-    using mean_acc_type = mean_acc<Eigen::Matrix<value_type, static_size, 1>, varalg()>;
+    using mean_acc_type = mean_acc<typename acc_type::sample_type, varalg()>;
 
 private:
     // Check if the given level is full?
@@ -309,13 +278,13 @@ public:
      *
      * See also @ref simplemc-accs-accs-how.
      *
-     * @tparam T Type of the value to be accumulated.
+     * @tparam U Type of the value to be accumulated.
      * @param x Value \f$ x \f$ to be accumulated.
      * @return Reference to `this` object.
      */
-    template <typename T>
-        requires std::convertible_to<T, value_type>
-    autocorr_acc& operator<<(const T& x) {
+    template <typename U>
+        requires std::convertible_to<U, value_type>
+    autocorr_acc& operator<<(const U& x) {
         auto f = [](auto& acc, auto idx_, auto val) { acc[idx_] << val; };
         add_values(f, idx_, x);
         return *this;
@@ -488,32 +457,31 @@ public:
      */
     void check_levels() const {
         if (fac_ <= 1) {
-            throw simplemc_exception("Multiplication factor for block sizes <= 1", "autocorr_acc::check_levels");
+            throw simplemc_exception("Multiplication factor for block sizes <= 1");
         }
         if (min_levels_ < 2) {
-            throw simplemc_exception("Minimum number of levels < 2", "autocorr_acc::check_levels");
+            throw simplemc_exception("Minimum number of levels < 2");
         }
         if (accs_.size() != blocks_.size()) {
-            throw simplemc_exception(
-                "Number of (co)variance accs != number of mean accs", "autocorr_acc::check_levels");
+            throw simplemc_exception("Number of (co)variance accs != number of mean accs");
         }
         if (accs_.size() < min_levels_) {
-            throw simplemc_exception("Number of levels < minimum number of levels", "autocorr_acc::check_levels");
+            throw simplemc_exception("Number of levels < minimum number of levels");
         }
         count_type b_l = 1;
         auto n_l = accs_[0].count();
         for (std::size_t i = 0; i < accs_.size(); ++i) {
             if (accs_[i].size() != size()) {
-                throw simplemc_exception("Size mismatch between accumulators", "autocorr_acc::check_levels");
+                throw simplemc_exception("Size mismatch between accumulators");
             }
             if (blocks_[i].size() != size()) {
-                throw simplemc_exception("Size mismatch between blocks", "autocorr_acc::check_levels");
+                throw simplemc_exception("Size mismatch between blocks");
             }
             if (accs_[i].count() != n_l) {
-                throw simplemc_exception("Wrong sample count", "autocorr_acc::check_levels");
+                throw simplemc_exception("Wrong sample count");
             }
             if (blsizes_[i] != b_l) {
-                throw simplemc_exception("Wrong block size", "autocorr_acc::check_levels");
+                throw simplemc_exception("Wrong block size");
             }
             n_l /= fac_;
             b_l *= fac_;

@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Accumulator for calculating the sample mean and sample variance of a complex random vector.
+ * @brief Accumulator for calculating the sample mean and sample variance of a complex data set.
  */
 
 #ifndef SIMPLEMC_ACCS_VAR_ACC_COMPLEX_HPP
@@ -23,60 +23,33 @@
 #include <cassert>
 #include <complex>
 #include <cstdint>
+#include <type_traits>
 
 namespace simplemc {
 
 /**
  * @ingroup simplemc-accs-accs-var
- * @brief Accumulator for calculating the sample mean and sample variance of a complex random vector
- * \f$ \mathbf{Z} = \mathbf{X} + i \mathbf{Y} \f$.
+ * @brief Accumulator for calculating the sample mean and sample variance of a complex data set.
  *
- * @details The accumulator takes two template parameters:
- * - the type of the random samples (a simplemc::eigen_vector_cplx type) and
+ * @details The accumulator satisfies simplemc::variance_accumulator and takes two template 
+ * parameters:
+ * - the type of the data samples (complex simplemc::sample_type) and
  * - the algorithm (simplemc::varalg) that should be used to accumulate the data.
  *
  * Both of them determine how the accumulation is actually done and what is stored in the accumulator.
  * The accumulated data is stored in four vectors:
  * - a complex vector \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$ for the mean data,
  * - a real vector \f$ \mathbf{c}_r^{(N)}/\mathbf{d}_r^{(N)} \f$ for the variance data of the real
- * part \f$ \mathbf{X} \f$ of the random vector,
+ * part of the complex samples,
  * - a real vector \f$ \mathbf{c}_i^{(N)}/\mathbf{d}_i^{(N)} \f$ for the variance data of the
- * imaginary part \f$ \mathbf{Y} \f$ of the random vector and
+ * imaginary part of the compelx samples and
  * - a real vector \f$ \mathbf{c}_{ri}^{(N)}/\mathbf{d}_{ri}^{(N)} \f$ for the cross-covariance data
- * between the real and imaginary parts of the random vector.
+ * between the real and imaginary parts.
  *
- * See simplemc::mean_acc for the mean accumulation algorithm. For the variance accumulation
- * algorithm, the same formulas as in the real specialization are applied separately to the real
- * part \f$ \mathbf{X} \f$, the imaginary part \f$ \mathbf{Y} \f$, and their cross-covariance.
+ * The mean data is accumulated as described in simplemc::mean_acc and the accumulation of the
+ * variance data follows @ref "simplemc::var_acc< X, A >" "simplemc::var_acc for real samples".
  *
- * @code{.cpp}
- * #include <fmt/ranges.h>
- * #include <fmt/std.h>
- * #include <simplemc/accs.hpp>
- *
- * #include <complex>
- * #include <random>
- *
- * int main() {
- *     // complex distribution to be sampled:
- *     // - real part: normal distributed with mu = 5 and sigma = 1
- *     // - imaginary part: normal distributed with mu = -3 and sigma = 0.5
- *     std::mt19937_64 rng;
- *     std::normal_distribution<double> normal_dist_r(5.0, 1.0);
- *     std::normal_distribution<double> normal_dist_i(-3.0, 0.5);
- *
- *     // accumulate samples into a variance accumulator of size 1
- *     simplemc::var_acc_single<std::complex<double>> acc;
- *     for (int i = 0; i < 100000; ++i) {
- *         acc << std::complex<double> { normal_dist_r(rng), normal_dist_i(rng) };
- *     }
- *
- *     // print the mean and variance of the real/imaginary parts of the accumulated data
- *     fmt::println("Mean: {:.5f}", acc.mean());
- *     fmt::println("Variance of real part: {:.5f}", acc.variance_of_real_data());
- *     fmt::println("Variance of imag part: {:.5f}", acc.variance_of_imag_data());
- * }
- * @endcode
+ * @include accs/doc_var_acc_cplx.cpp
  *
  * Output:
  *
@@ -86,34 +59,35 @@ namespace simplemc {
  * Variance of imag part: 0.25073
  * ```
  *
- * @tparam Z simplemc::eigen_vector_cplx type.
+ * @tparam Z Complex simplemc::sample_type.
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  */
-template <eigen_vector_cplx Z, varalg A>
+template <sample_type Z, varalg A>
+    requires(std::same_as<Z, std::complex<double>> || eigen_vector_cplx<Z>)
 class var_acc<Z, A> {
 public:
     /**
-     * @brief Type of accumulated value.
+     * @brief Type of accumulated samples (complex simplemc::sample_type).
+     */
+    using sample_type = Z;
+
+    /**
+     * @brief Complex vector type for storing accumulated mean data.
+     */
+    using cplx_vec_type = std::conditional_t<sample_scalar<Z>, Eigen::Matrix<Z, 1, 1>, Z>;
+
+    /**
+     * @brief Real vector type for storing accumulated (cross-co)variance data.
+     */
+    using dbl_vec_type = Eigen::Matrix<double, cplx_vec_type::RowsAtCompileTime, 1>;
+
+    /**
+     * @brief Underlying scalar type of accumulated samples.
      */
     using value_type = std::complex<double>;
 
     /**
-     * @brief Static size of the accumulator.
-     */
-    static constexpr int static_size = Z::RowsAtCompileTime;
-
-    /**
-     * @brief Is the accumulator dynamically sized?
-     */
-    static constexpr bool is_dynamic = (Z::RowsAtCompileTime == Eigen::Dynamic);
-
-    /**
-     * @brief Does the accumulator return scalars or vectors/matrices?
-     */
-    static constexpr bool returns_scalar = (!is_dynamic && static_size == 1);
-
-    /**
-     * @brief Type for counting the number of accumulated values.
+     * @brief Type for counting the number of accumulated samples.
      */
     using count_type = std::uint64_t;
 
@@ -123,19 +97,14 @@ public:
     using size_type = long;
 
     /**
-     * @brief Complex vector type.
+     * @brief Static size of the accumulator.
      */
-    using cplx_vec_type = Z;
+    static constexpr int static_size = cplx_vec_type::RowsAtCompileTime;
 
     /**
-     * @brief Double vector type.
+     * @brief Is the accumulator dynamically sized?
      */
-    using dbl_vec_type = Eigen::Matrix<double, static_size, 1>;
-
-    /**
-     * @brief Multi-value accumulator type.
-     */
-    using mva_type = multivalue_acc<var_acc>;
+    static constexpr bool is_dynamic = (cplx_vec_type::RowsAtCompileTime == Eigen::Dynamic);
 
     /**
      * @brief Get the algorithm used to accumulate the data.
@@ -187,7 +156,7 @@ public:
         idx_(0) {
         if constexpr (is_dynamic) {
             if (m <= 0) {
-                throw simplemc_exception("Dynamic size <= 0", "var_acc::var_acc");
+                throw simplemc_exception("Dynamic size <= 0");
             }
         }
     }
@@ -200,12 +169,10 @@ public:
      * \f$ \geq 1 \f$. Otherwise, it throws a simplemc::simplemc_exception.
      *
      * @param md Accumulated mean data \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$.
-     * @param rd Accumulated variance data \f$ \mathbf{c}_r^{(N)}/\mathbf{d}_r^{(N)} \f$ of the real
-     * part \f$ \mathbf{X} \f$ of the random vector.
-     * @param id Accumulated variance data \f$ \mathbf{c}_i^{(N)}/\mathbf{d}_i^{(N)} \f$ of the
-     * imaginary part \f$ \mathbf{Y} \f$ of the random vector.
-     * @param cd Accumulated covariance data \f$ \mathbf{c}_{ri}^{(N)}/\mathbf{d}_{ri}^{(N)} \f$
-     * between the real and imaginary parts of the random vector.
+     * @param rd Accumulated variance data \f$ \mathbf{c}_r^{(N)}/\mathbf{d}_r^{(N)} \f$.
+     * @param id Accumulated variance data \f$ \mathbf{c}_i^{(N)}/\mathbf{d}_i^{(N)} \f$.
+     * @param cd Accumulated cross-covariance data \f$ \mathbf{c}_{ri}^{(N)}/\mathbf{d}_{ri}^{(N)}
+     * \f$.
      * @param n Number of accumulated samples \f$ N \f$.
      */
     var_acc(
@@ -218,10 +185,10 @@ public:
         idx_(0) {
         if constexpr (is_dynamic) {
             if (mdata_.size() <= 0) {
-                throw simplemc_exception("Dynamic size <= 0", "var_acc::var_acc");
+                throw simplemc_exception("Dynamic size <= 0");
             }
             if (mdata_.size() != rdata_.size() || mdata_.size() != idata_.size() || mdata_.size() != cdata_.size()) {
-                throw simplemc_exception("Sizes of data storages do not match", "var_acc::var_acc");
+                throw simplemc_exception("Sizes of data storages do not match");
             }
         }
     }
@@ -250,20 +217,20 @@ public:
     }
 
     /**
-     * @brief Stream operator for accumulating a single value \f$ z \f$.
+     * @brief Stream operator for accumulating a single (scalar) value \f$ z \f$.
      *
      * @details For accumulators with size \f$ M > 1 \f$, the value is added to the element at the
      * current index \f$ i \f$ (see operator[]()).
      *
      * See also @ref simplemc-accs-accs-how.
      *
-     * @tparam T Type of the value to be accumulated.
+     * @tparam U Type of the value to be accumulated.
      * @param z Value \f$ z \f$ to be accumulated.
      * @return Reference to `this` object.
      */
-    template <typename T>
-        requires std::convertible_to<T, value_type>
-    var_acc& operator<<(const T& z) {
+    template <typename U>
+        requires std::convertible_to<U, value_type>
+    var_acc& operator<<(const U& z) {
         ++count_;
         add_value(z, idx_, count_);
         return *this;
@@ -308,8 +275,8 @@ public:
      *   - \f$ \mathbf{m}^{(N)} = \mathbf{m}_{1}^{(N_1)} + \mathbf{m}_{2}^{(N_2)} \f$ and
      *   - \f$ \mathbf{c}^{(N)} = \mathbf{c}_{1}^{(N_1)} + \mathbf{c}_{2}^{(N_2)} \f$ .
      *
-     *   Here, \f$ \mathbf{c} \f$ stands for any of the accumulated (co)variance data, i.e. for \f$
-     *   \mathbf{c}_r^{(N)} \f$, \f$ \mathbf{c}_i^{(N)} \f$ and for \f$ \mathbf{c}_{ri}^{(N)} \f$.
+     *   Here, \f$ \mathbf{c} \f$ stands for any of the accumulated (cross-co)variance data, i.e. for 
+     *   \f$ \mathbf{c}_r^{(N)} \f$, \f$ \mathbf{c}_i^{(N)} \f$ and for \f$ \mathbf{c}_{ri}^{(N)} \f$.
      *
      * - `welford`: Let \f$ \mathbf{a} \odot \mathbf{b} \f$ denote the element-wise (Hadamard) product
      *   of two vectors \f$ \mathbf{a} \f$ and \f$ \mathbf{b} \f$. Then,
@@ -320,8 +287,8 @@ public:
      *     \mathbf{n}^{(N)} \right) + N_2 \Re\left( \mathbf{n}_{2}^{(N_2)} - \mathbf{n}^{(N)} \right)
      *     \odot \Re\left( \mathbf{n}_{2}^{(N_2)} - \mathbf{n}^{(N)} \right) \f$ .
      *
-     *   Similar expressions hold for the other accumulated (co)variance data, \f$ \mathbf{d}_i^{(N)}
-     *   \f$ and \f$ \mathbf{d}_{ri}^{(N)} \f$.
+     *   Similar expressions hold for the other accumulated (cross-co)variance data, \f$ 
+     *   \mathbf{d}_i^{(N)} \f$ and \f$ \mathbf{d}_{ri}^{(N)} \f$.
      *
      * See also @ref simplemc-accs-accs-how.
      *
@@ -402,7 +369,7 @@ public:
      *
      * @return Multi-value accumulator wrapping `this` object.
      */
-    mva_type make_mva() { return mva_type(*this); }
+    [[nodiscard]] auto make_mva() { return multivalue_acc<var_acc>(*this); }
 
     /**
      * @brief Get the size \f$ M \f$ of the accumulator.
@@ -419,53 +386,49 @@ public:
     [[nodiscard]] auto count() const { return count_; }
 
     /**
-     * @brief Get the accumulated data \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$ used for estimating
-     * the mean.
+     * @brief Get the accumulated mean data \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$.
      *
      * @return simplemc::eigen_vector_cplx of size \f$ M \f$ containing \f$ \mathbf{m}^{(N)}/
-     * \mathbf{n}^{(N)} \f$ (content depends on the algorithm, see simplemc::mean_acc).
+     * \mathbf{n}^{(N)} \f$.
      */
     [[nodiscard]] const cplx_vec_type& mdata() const { return mdata_; }
 
     /**
-     * @brief Get the accumulated data \f$ \mathbf{c}_r^{(N)}/\mathbf{d}_r^{(N)} \f$ used for
-     * estimating the variance of the real part of the random vector.
+     * @brief Get the accumulated variance data \f$ \mathbf{c}_r^{(N)}/\mathbf{d}_r^{(N)} \f$.
      *
      * @return simplemc::eigen_vector_dbl of size \f$ M \f$ containing \f$ \mathbf{c}_{r}^{(N)}/
-     * \mathbf{d}_{r}^{(N)} \f$ (content depends on the algorithm, see the class documentation).
+     * \mathbf{d}_{r}^{(N)} \f$.
      */
     [[nodiscard]] const dbl_vec_type& rdata() const { return rdata_; }
 
     /**
-     * @brief Get the accumulated data \f$ \mathbf{c}_i^{(N)}/\mathbf{d}_i^{(N)} \f$ used for
-     * estimating the variance of the imaginary part of the random vector.
+     * @brief Get the accumulated variance data \f$ \mathbf{c}_i^{(N)}/\mathbf{d}_i^{(N)} \f$.
      *
      * @return simplemc::eigen_vector_dbl of size \f$ M \f$ containing \f$ \mathbf{c}_{i}^{(N)}/
-     * \mathbf{d}_{i}^{(N)} \f$ (content depends on the algorithm, see the class documentation).
+     * \mathbf{d}_{i}^{(N)} \f$.
      */
     [[nodiscard]] const dbl_vec_type& idata() const { return idata_; }
 
     /**
-     * @brief Get the accumulated data \f$ \mathbf{c}_{ri}^{(N)}/\mathbf{d}_{ri}^{(N)} \f$ used for
-     * estimating the cross-covariance between the real and imaginary parts of the random vector.
+     * @brief Get the accumulated cross-covariance data \f$ \mathbf{c}_{ri}^{(N)}/
+     * \mathbf{d}_{ri}^{(N)} \f$.
      *
      * @return simplemc::eigen_vector_dbl of size \f$ M \f$ containing \f$ \mathbf{c}_{ri}^{(N)}/
-     * \mathbf{d}_{ri}^{(N)} \f$ (content depends on the algorithm, see the class documentation).
+     * \mathbf{d}_{ri}^{(N)} \f$.
      */
     [[nodiscard]] const dbl_vec_type& cdata() const { return cdata_; }
 
     /**
      * @brief Calculate the sample mean \f$ \overline{\mathbf{z}}^{(N)} \f$.
      *
-     * @details It calls simplemc::accs::mean with the accumulated mean data and the count.
-     *
-     * For statically sized accumulators with \f$ M = 1 \f$, it returns a complex scalar. Otherwise,
-     * it returns a cplx_vec_type object.
+     * @details It calls simplemc::accs::mean with the accumulated mean data \f$ \mathbf{m}^{(N)}/
+     * \mathbf{n}^{(N)} \f$ and the count \f$ N \f$.
      *
      * @return Sample mean \f$ \overline{\mathbf{z}}^{(N)} \f$.
      */
     [[nodiscard]] auto mean() const {
-        return detail::scalar_or_matrix<returns_scalar>(simplemc::accs::mean<varalg()>(mdata_, count_));
+        using simplemc::accs::mean;
+        return detail::scalar_or_matrix<sample_scalar<sample_type>>(mean<varalg()>(mdata_, count_));
     }
 
     /**
@@ -474,14 +437,11 @@ public:
      * @details It adds variance_of_real_data() and variance_of_imag_data() and divides the result by
      * count().
      *
-     * For statically sized accumulators with \f$ M = 1 \f$, it returns a real scalar. Otherwise, it
-     * returns a dbl_vec_type object.
-     *
      * @return Sample variance of the mean \f$ s_{\overline{\mathbf{Z}}}^2 \f$.
      */
     [[nodiscard]] auto variance() const {
         auto res = (variance_of_real_data() + variance_of_imag_data()) / static_cast<double>(count_);
-        if constexpr (returns_scalar) {
+        if constexpr (sample_scalar<sample_type>) {
             return res;
         } else {
             return res.eval();
@@ -493,14 +453,11 @@ public:
      *
      * @details It adds the results from variance_of_real_data() and variance_of_imag_data().
      *
-     * For statically sized accumulators with \f$ M = 1 \f$, it returns a real scalar. Otherwise, it
-     * returns a dbl_vec_type object.
-     *
      * @return Sample variance \f$ s_{\mathbf{Z}}^2 \f$.
      */
     [[nodiscard]] auto variance_of_data() const {
         auto res = variance_of_real_data() + variance_of_imag_data();
-        if constexpr (returns_scalar) {
+        if constexpr (sample_scalar<sample_type>) {
             return res;
         } else {
             return res.eval();
@@ -508,66 +465,62 @@ public:
     }
 
     /**
-     * @brief Calculate the sample variance \f$ s_{\mathbf{X}}^2 \f$ of the real part \f$ \mathbf{X}
-     * \f$ of the random vector.
+     * @brief Calculate the sample variance \f$ s_{\mathbf{X}}^2 \f$ of the real part of the data set.
      *
-     * @details It calls simplemc::accs::diag_covariance with the accumulated real data and the count.
+     * @details It calls simplemc::accs::diag_covariance with the real part of the accumulated mean
+     * data \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$, the variance data \f$ \mathbf{c}_r^{(N)}/
+     * \mathbf{d}_r^{(N)} \f$ and the count \f$ N \f$.
      *
-     * For statically sized accumulators with \f$ M = 1 \f$, it returns a real scalar. Otherwise, it
-     * returns a dbl_vec_type object.
-     *
-     * @return Sample variance of the real part of the random vector, i.e. \f$ s_{\mathbf{X}}^2 \f$.
+     * @return Sample variance of the real part of the data set, i.e. \f$ s_{\mathbf{X}}^2 \f$.
      */
     [[nodiscard]] auto variance_of_real_data() const {
         using simplemc::accs::diag_covariance;
         dbl_vec_type mdata_r = mdata_.real();
-        return detail::scalar_or_matrix<returns_scalar>(diag_covariance<varalg()>(mdata_r, mdata_r, rdata_, count_));
+        return detail::scalar_or_matrix<sample_scalar<sample_type>>(
+            diag_covariance<varalg()>(mdata_r, mdata_r, rdata_, count_));
     }
 
     /**
-     * @brief Calculate the sample variance \f$ s_{\mathbf{Y}}^2 \f$ of the imaginary part \f$
-     * \mathbf{Y} \f$ of the random vector.
+     * @brief Calculate the sample variance \f$ s_{\mathbf{Y}}^2 \f$ of the imaginary part of the data
+     * set.
      *
-     * @details It calls simplemc::accs::diag_covariance with the accumulated imaginary data and the
-     * count.
+     * @details It calls simplemc::accs::diag_covariance with the imaginary part of the accumulated
+     * mean data \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$, the variance data \f$ \mathbf{c}_i^{(N)}/
+     * \mathbf{d}_i^{(N)} \f$ and the count \f$ N \f$.
      *
-     * For statically sized accumulators with \f$ M = 1 \f$, it returns a real scalar. Otherwise, it
-     * returns a dbl_vec_type object.
-     *
-     * @return Sample variance of the imaginary part of the random vector, i.e. \f$ s_{\mathbf{Y}}^2
-     * \f$.
+     * @return Sample variance of the imaginary part of the data set, i.e. \f$ s_{\mathbf{Y}}^2 \f$.
      */
     [[nodiscard]] auto variance_of_imag_data() const {
         using simplemc::accs::diag_covariance;
         dbl_vec_type mdata_i = mdata_.imag();
-        return detail::scalar_or_matrix<returns_scalar>(diag_covariance<varalg()>(mdata_i, mdata_i, idata_, count_));
+        return detail::scalar_or_matrix<sample_scalar<sample_type>>(
+            diag_covariance<varalg()>(mdata_i, mdata_i, idata_, count_));
     }
 
     /**
-     * @brief Calculate the sample covariance \f$ \mathrm{diag}(s_{\mathbf{XY}}^2) \f$ between the
-     * real (\f$ \mathbf{X} \f$) and imaginary (\f$ \mathbf{Y} \f$) parts of the random vector.
+     * @brief Calculate the sample cross-covariance \f$ \mathrm{diag}(s_{\mathbf{XY}}^2) \f$ between
+     * the real and imaginary parts of the data set.
      *
-     * @details It calls simplemc::accs::diag_covariance with the accumulated real and imaginary data
-     * and the count.
+     * @details It calls simplemc::accs::diag_covariance with the real and imaginary parts of the
+     * accumulated mean data \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$, the cross-covariance data \f$
+     * \mathbf{c}_{ri}^{(N)}/\mathbf{d}_{ri}^{(N)} \f$ and the count \f$ N \f$.
      *
-     * For statically sized accumulators with \f$ M = 1 \f$, it returns a real scalar. Otherwise, it
-     * returns a dbl_vec_type object.
-     *
-     * @return Sample covariance between the real and imaginary parts of the random vector, i.e. \f$
+     * @return Sample cross-covariance between the real and imaginary parts of the data set, i.e. \f$
      * \mathrm{diag}(s_{\mathbf{XY}}^2) \f$.
      */
     [[nodiscard]] auto covariance_of_real_and_imag_data() const {
         using simplemc::accs::diag_covariance;
         dbl_vec_type mdata_r = mdata_.real();
         dbl_vec_type mdata_i = mdata_.imag();
-        return detail::scalar_or_matrix<returns_scalar>(diag_covariance<varalg()>(mdata_r, mdata_i, cdata_, count_));
+        return detail::scalar_or_matrix<sample_scalar<sample_type>>(
+            diag_covariance<varalg()>(mdata_r, mdata_i, cdata_, count_));
     }
 
     /**
      * @brief Collect variance accumulators from different MPI processes.
      *
      * @details It constructs a new variance accumulator with the reduced accumulated mean data,
-     * variance data and counts from all MPI processes.
+     * (cross-co)variance data and counts from all MPI processes.
      *
      * The reduction operation depends on the simplemc::varalg algorithm used to accumulate the data.
      * See operator<<(const var_acc&) for how it is done in the case of 2 accumulators.

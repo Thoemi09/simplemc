@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Wrapper accumulator to block random samples.
+ * @brief Wrapper accumulator to block data samples.
  */
 
 #ifndef SIMPLEMC_ACCS_BLOCK_ACC_HPP
@@ -23,40 +23,19 @@ namespace simplemc {
  */
 
 /**
- * @brief Wrapper for simplemc::var_acc and simplemc::covar_acc to block random samples.
+ * @brief Wrapper for simplemc::var_acc and simplemc::covar_acc to block data samples.
  *
- * @details It groups the random samples into blocks of a given size \f$ B \f$ before accumulating
- * them into the wrapped accumulator object. This helps to decorrelate consecutive samples.
+ * @details It groups the data samples into blocks of a given size \f$ B \f$ before accumulating them
+ * into the wrapped accumulator object. This helps to decorrelate consecutive samples.
  *
- * A block is simply a simplemc::mean_acc object. When a new random sample is accumlated, it is added
- * to the mean accumulator. When the number of samples in the block is equal to \f$ B \f$, the mean of
- * the block is accumulated into the underlying variance/covariance accumulator.
+ * A block is simply a simplemc::mean_acc object. When a new sample is accumlated, it is added to the
+ * mean accumulator. When the number of samples in the block is equal to \f$ B \f$, the mean of the
+ * block is accumulated into the underlying variance/covariance accumulator.
  *
  * Functionality and usage is similar to the supported wrapped accumulators. Results can be obtained
  * from the wrapped accumulators directly by calling accumulator().
  *
- * @code{.cpp}
- * #include <fmt/ranges.h>
- * #include <simplemc/accs.hpp>
- *
- * #include <random>
- *
- * int main() {
- *     // normal distribution to be sampled: mu = 5, sigma = 1
- *     std::mt19937_64 rng;
- *     std::normal_distribution<double> normal_dist(5.0, 1.0);
- *
- *     // accumulate samples into a block accumulator with block size B = 10
- *     simplemc::block_acc<simplemc::var_acc_single<double>> blacc{10};
- *     for (int i = 0; i < 100000; ++i) {
- *         blacc << normal_dist(rng);
- *     }
- *
- *     // print the mean and variance of the accumulated data
- *     fmt::println("Mean: {}", blacc.accumulator().mean());
- *     fmt::println("Variance: {}", blacc.accumulator().variance_of_data());
- * }
- * @endcode
+ * @include accs/doc_block_acc.cpp
  *
  * Output:
  *
@@ -76,12 +55,12 @@ public:
     using acc_type = A;
 
     /**
-     * @brief Static size of the accumulator.
+     * @brief Type of accumulated samples (simplemc::sample_type).
      */
-    static constexpr int static_size = acc_type::static_size;
+    using sample_type = typename acc_type::sample_type;
 
     /**
-     * @brief Type of accumulated values.
+     * @brief Underlying scalar type of accumulated samples (simplemc::double_or_complex).
      */
     using value_type = typename acc_type::value_type;
 
@@ -105,7 +84,7 @@ public:
     /**
      * @brief Mean accumulator type for accumulating block data.
      */
-    using mean_acc_type = mean_acc<Eigen::Matrix<value_type, static_size, 1>, varalg()>;
+    using mean_acc_type = mean_acc<typename acc_type::sample_type, varalg()>;
 
 public:
     /**
@@ -120,7 +99,7 @@ public:
      */
     explicit block_acc(count_type b, size_type m = 1) : acc_(m), block_(m), blsize_(b) {
         if (blsize_ == 0) {
-            throw simplemc_exception("Block size == 0", "block_acc::block_acc");
+            throw simplemc_exception("Block size == 0");
         }
     }
 
@@ -135,7 +114,7 @@ public:
      */
     explicit block_acc(const acc_type& acc, count_type b) : acc_(acc), block_(acc_.size()), blsize_(b) {
         if (blsize_ == 0) {
-            throw simplemc_exception("Block size == 0", "block_acc::block_acc");
+            throw simplemc_exception("Block size == 0");
         }
     }
 
@@ -147,7 +126,7 @@ public:
      * \f$. Otherwise, it throws a simplemc::simplemc_exception.
      *
      * @param acc Accumulator to be wrapped.
-     * @param block_data Mean accumulator for the block data.
+     * @param block_data Mean accumulator containing the block data.
      * @param b Block size \f$ B \f$.
      */
     explicit block_acc(const acc_type& acc, const mean_acc_type& block_data, count_type b) :
@@ -155,10 +134,10 @@ public:
         block_(block_data),
         blsize_(b) {
         if (acc_.size() != block_.size()) {
-            throw simplemc_exception("Size mismatch between accumulator and block data", "block_acc::block_acc");
+            throw simplemc_exception("Size mismatch between accumulator and block data");
         }
         if (blsize_ == 0) {
-            throw simplemc_exception("Block size == 0", "block_acc::block_acc");
+            throw simplemc_exception("Block size == 0");
         }
     }
 
@@ -183,18 +162,18 @@ public:
     }
 
     /**
-     * @brief Stream operator for accumulating a single value \f$ x \f$.
+     * @brief Stream operator for accumulating a single (scalar) value \f$ x \f$.
      *
      * @details The value is first added to the current block using
      * simplemc::mean_acc::operator<<(const T&) and then check_and_add_block() is called.
      *
-     * @tparam T Type of the value to be accumulated.
+     * @tparam U Type of the value to be accumulated.
      * @param x Value \f$ x \f$ to be accumulated.
      * @return Reference to `this` object.
      */
-    template <typename T>
-        requires std::convertible_to<T, value_type>
-    block_acc& operator<<(const T& x) {
+    template <typename U>
+        requires std::convertible_to<U, value_type>
+    block_acc& operator<<(const U& x) {
         block_ << x;
         check_and_add_block();
         return *this;
@@ -270,17 +249,9 @@ public:
     /**
      * @brief Create a multi-value accumulator (only for variance accumulators).
      *
-     * @details The user is responsible for calling simplemc::multivalue_acc::increment_count as well
+     * @note The user is responsible for calling simplemc::multivalue_acc::increment_count as well
      * as check_and_add_block() after all values have been added, otherwise the number of samples will
-     * not be correct. For example,
-     * @code{.cpp}
-     * auto mva = acc.make_mva();
-     * mva[i_1] << v_i_1;
-     * // ...
-     * mva[i_n] << v_i_n;
-     * mva.increment_count();
-     * acc.check_and_add_block();
-     * @endcode
+     * not be correct.
      *
      * @return Multi-value accumulator wrapping `this` object.
      */

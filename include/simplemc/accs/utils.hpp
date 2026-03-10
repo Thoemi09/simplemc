@@ -33,7 +33,8 @@ namespace simplemc::accs {
  * @details The function expects that the data has already been accumulated according to the specified
  * simplemc::varalg.
  *
- * See simplemc::mean_acc and @ref simplemc-accs-stats-mean for more details.
+ * See @ref simplemc-accs-stats-mean for some background information and simplemc::mean_acc for
+ * algorithmic details.
  *
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  * @tparam V simplemc::eigen_vector type.
@@ -54,24 +55,29 @@ template <varalg A, eigen_vector V>
 }
 
 /**
- * @brief Calculate the diagonal elements of the sample (cross-)covariance matrix of two real random
- * vectors.
+ * @brief Calculate the diagonal elements of the sample (cross-)covariance matrix of some real data.
  *
- * @details See simplemc::var_acc for a description of how the variance data is accumulated depending
- * on the simplemc::varalg. This function generalizes the variance formulas to the cross-covariance
- * case (\f$ \mathbf{X} \neq \mathbf{Y} \f$).
+ * @details The function expects that the data has already been accumulated according to the specified
+ * simplemc::varalg.
+ *
+ * Let \f$ S_{\mathbf{X}} \f$ and \f$ S_{\mathbf{Y}} \f$ be two data sets. This function calculates
+ * the diagonal of the (cross)-covariance matrix, i.e. \f$ \mathrm{diag}(s_{\mathbf{X}\mathbf{Y}}^2)
+ * \f$. In case, the two data sets are the same, this corresponds to the sample variance
+ * \f$ s_{\mathbf{X}}^2 \f$ of the data set.
+ *
+ * See @ref simplemc-accs-stats-var for some background information and simplemc::mean_acc and
+ * @ref "simplemc::var_acc< X, A >" for algorithmic details.
  *
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  * @tparam V simplemc::eigen_vector_dbl type.
- * @param mdata_x Accumulated mean data
- * \f$ \mathbf{m}_\mathbf{X}^{(N)}/\mathbf{n}_\mathbf{X}^{(N)} \f$.
- * @param mdata_y Accumulated mean data
- * \f$ \mathbf{m}_\mathbf{Y}^{(N)}/\mathbf{n}_\mathbf{Y}^{(N)} \f$.
- * @param cdata Accumulated (cross-)covariance data
- * \f$ \mathbf{c}^{(N)}/\mathbf{d}^{(N)} \f$.
+ * @param mdata_x Accumulated mean data \f$ \mathbf{m}_\mathbf{X}^{(N)}/\mathbf{n}_\mathbf{X}^{(N)}
+ * \f$.
+ * @param mdata_y Accumulated mean data \f$ \mathbf{m}_\mathbf{Y}^{(N)}/\mathbf{n}_\mathbf{Y}^{(N)}
+ * \f$.
+ * @param cdata Accumulated (cross-)covariance data \f$ \mathbf{c}^{(N)}/\mathbf{d}^{(N)} \f$.
  * @param n Number of accumulated samples \f$ N \f$.
- * @return Diagonal of the sample (cross-)covariance matrix
- * \f$ s_{\mathbf{X}\mathbf{Y}}^2 \f$.
+ * @return Diagonal of the sample (cross-)covariance matrix, i.e.\f$ \mathrm{diag}(s_{\mathbf{X}
+ * \mathbf{Y}}^2) \f$.
  */
 template <varalg A, eigen_vector_dbl V>
 [[nodiscard]] V diag_covariance(

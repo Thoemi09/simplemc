@@ -42,7 +42,7 @@ class batch_acc;
 /**
  * @brief Accumulator for calculating the sample mean.
  *
- * @details The accumulator takes two template parameters:
+ * @details The accumulator satisfies simplemc::mean_accumulator and takes two template parameters:
  * - the type of the data samples (a simplemc::sample_type) and
  * - the algorithm (simplemc::varalg) that should be used to accumulate the data.
  *
@@ -168,7 +168,7 @@ public:
     explicit mean_acc(size_type m = 1) : mdata_(vec_type::Zero(is_dynamic ? m : static_size)), count_(0), idx_(0) {
         if constexpr (is_dynamic) {
             if (m <= 0) {
-                throw simplemc_exception("Dynamic size <= 0", "mean_acc::mean_acc");
+                throw simplemc_exception("Dynamic size <= 0");
             }
         }
     }
@@ -186,7 +186,7 @@ public:
     mean_acc(const vec_type& md, count_type n) : mdata_(md), count_(n), idx_(0) {
         if constexpr (is_dynamic) {
             if (mdata_.size() <= 0) {
-                throw simplemc_exception("Dynamic size <= 0", "mean_acc::mean_acc");
+                throw simplemc_exception("Dynamic size <= 0");
             }
         }
     }

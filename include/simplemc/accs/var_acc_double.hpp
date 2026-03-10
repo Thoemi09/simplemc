@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Accumulator for calculating the sample mean and sample variance of a real random vector.
+ * @brief Accumulator for calculating the sample mean and sample variance of a real data set.
  */
 
 #ifndef SIMPLEMC_ACCS_VAR_ACC_DOUBLE_HPP
@@ -22,22 +22,23 @@
 
 #include <cassert>
 #include <cstdint>
+#include <type_traits>
 
 namespace simplemc {
 
 /**
  * @ingroup simplemc-accs-accs-var
- * @brief Accumulator for calculating the sample mean and sample variance of a real random vector
- * \f$ \mathbf{X} \f$.
+ * @brief Accumulator for calculating the sample mean and sample variance of a real data set.
  *
- * @details The accumulator takes two template parameters:
- * - the type of the random samples (a simplemc::eigen_vector_dbl type) and
+ * @details The accumulator satisfies simplemc::variance_accumulator and takes two template 
+ * parameters:
+ * - the type of the data samples (real simplemc::sample_type) and
  * - the algorithm (simplemc::varalg) that should be used to accumulate the data.
  *
- * Both of them determine how the accumulation is actually done and what is stored in the
- * accumulator. The mean data \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$ is accumulated as
- * described in simplemc::mean_acc. The variance data \f$ \mathbf{c}^{(N)}/\mathbf{d}^{(N)} \f$
- * depends on the algorithm:
+ * Both of them determine how the accumulation is actually done and what is stored in the accumulator.
+ * The mean data \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$ is accumulated as described in
+ * simplemc::mean_acc. The variance data \f$ \mathbf{c}^{(N)}/\mathbf{d}^{(N)} \f$ is stored in a
+ * single vector and its content depends on the algorithm:
  * - `standard`: The variance data is accumulated with
  *   \f[
  *     \mathbf{c}^{(N)} = \mathbf{c}^{(N-1)} + \left( \mathbf{x}^{(N)} - \mathbf{t} \right)
@@ -62,32 +63,11 @@ namespace simplemc {
  *     s_{\mathbf{X}}^2 = \frac{\mathbf{d}^{(N)}}{N - 1} \; .
  *   \f]
  *
- * Here, \f$ \mathbf{t} \f$ is a constant vector that can optionally be applied to the random
+ * Here, \f$ \mathbf{t} \f$ is a constant vector that can optionally be applied to the data
  * samples to increase numerical accuracy and \f$ \mathbf{a} \odot \mathbf{b} \f$ denotes the
  * Hadamard (element-wise) product. See also @ref simplemc-accs-stats-var.
  *
- * @code{.cpp}
- * #include <fmt/ranges.h>
- * #include <simplemc/accs.hpp>
- *
- * #include <random>
- *
- * int main() {
- *     // normal distribution to be sampled: mu = 5, sigma = 1
- *     std::mt19937_64 rng;
- *     std::normal_distribution<double> normal_dist(5.0, 1.0);
- *
- *     // accumulate samples into a variance accumulator of size 1
- *     simplemc::var_acc_single<double> acc;
- *     for (int i = 0; i < 100000; ++i) {
- *         acc << normal_dist(rng);
- *     }
- *
- *     // print the mean and variance of the accumulated data
- *     fmt::println("Mean: {}", acc.mean());
- *     fmt::println("Variance: {}", acc.variance_of_data());
- * }
- * @endcode
+ * @include accs/doc_var_acc_dbl.cpp
  *
  * Output:
  *
@@ -96,34 +76,30 @@ namespace simplemc {
  * Variance: 1.0037814573268022
  * ```
  *
- * @tparam X simplemc::eigen_vector_dbl type.
+ * @tparam X Real simplemc::sample_type.
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  */
-template <eigen_vector_dbl X, varalg A>
+template <sample_type X, varalg A>
+    requires(std::same_as<X, double> || eigen_vector_dbl<X>)
 class var_acc<X, A> {
 public:
     /**
-     * @brief Type of accumulated value.
+     * @brief Type of accumulated samples (real simplemc::sample_type).
+     */
+    using sample_type = X;
+
+    /**
+     * @brief Real vector type for storing accumulated mean and variance data.
+     */
+    using vec_type = std::conditional_t<sample_scalar<X>, Eigen::Matrix<X, 1, 1>, X>;
+
+    /**
+     * @brief Underlying scalar type of accumulated samples.
      */
     using value_type = double;
 
     /**
-     * @brief Static size of the accumulator.
-     */
-    static constexpr int static_size = X::RowsAtCompileTime;
-
-    /**
-     * @brief Is the accumulator dynamically sized?
-     */
-    static constexpr bool is_dynamic = (X::RowsAtCompileTime == Eigen::Dynamic);
-
-    /**
-     * @brief Does the accumulator return scalars or vectors/matrices?
-     */
-    static constexpr bool returns_scalar = (!is_dynamic && static_size == 1);
-
-    /**
-     * @brief Type for counting the number of accumulated values.
+     * @brief Type for counting the number of accumulated samples.
      */
     using count_type = std::uint64_t;
 
@@ -133,14 +109,14 @@ public:
     using size_type = long;
 
     /**
-     * @brief Vector type.
+     * @brief Static size of the accumulator.
      */
-    using vec_type = X;
+    static constexpr int static_size = vec_type::RowsAtCompileTime;
 
     /**
-     * @brief Multi-value accumulator type.
+     * @brief Is the accumulator dynamically sized?
      */
-    using mva_type = multivalue_acc<var_acc>;
+    static constexpr bool is_dynamic = (vec_type::RowsAtCompileTime == Eigen::Dynamic);
 
     /**
      * @brief Get the algorithm used to accumulate the data.
@@ -185,7 +161,7 @@ public:
         idx_(0) {
         if constexpr (is_dynamic) {
             if (m <= 0) {
-                throw simplemc_exception("Dynamic size <= 0", "var_acc::var_acc");
+                throw simplemc_exception("Dynamic size <= 0");
             }
         }
     }
@@ -204,10 +180,10 @@ public:
     var_acc(const vec_type& md, const vec_type& cd, count_type n) : mdata_(md), cdata_(cd), count_(n), idx_(0) {
         if constexpr (is_dynamic) {
             if (mdata_.size() <= 0) {
-                throw simplemc_exception("Dynamic size <= 0", "var_acc::var_acc");
+                throw simplemc_exception("Dynamic size <= 0");
             }
             if (mdata_.size() != cdata_.size()) {
-                throw simplemc_exception("Sizes of data storages do not match", "var_acc::var_acc");
+                throw simplemc_exception("Sizes of data storages do not match");
             }
         }
     }
@@ -234,20 +210,20 @@ public:
     }
 
     /**
-     * @brief Stream operator for accumulating a single value \f$ x \f$.
+     * @brief Stream operator for accumulating a single (scalar) value \f$ x \f$.
      *
      * @details For accumulators with size \f$ M > 1 \f$, the value is added to the element at the
      * current index \f$ i \f$ (see operator[]()).
      *
      * See also @ref simplemc-accs-accs-how.
      *
-     * @tparam T Type of the value to be accumulated.
+     * @tparam U Type of the value to be accumulated.
      * @param x Value \f$ x \f$ to be accumulated.
      * @return Reference to `this` object.
      */
-    template <typename T>
-        requires std::convertible_to<T, value_type>
-    var_acc& operator<<(const T& x) {
+    template <typename U>
+        requires std::convertible_to<U, value_type>
+    var_acc& operator<<(const U& x) {
         ++count_;
         add_value(x, idx_, count_);
         return *this;
@@ -369,7 +345,7 @@ public:
      *
      * @return Multi-value accumulator wrapping `this` object.
      */
-    mva_type make_mva() { return mva_type(*this); }
+    [[nodiscard]] auto make_mva() { return multivalue_acc<var_acc>(*this); }
 
     /**
      * @brief Get the size \f$ M \f$ of the accumulator.
@@ -386,36 +362,32 @@ public:
     [[nodiscard]] auto count() const { return count_; }
 
     /**
-     * @brief Get the accumulated data \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$ used for estimating
-     * the mean.
+     * @brief Get the accumulated mean data \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$.
      *
      * @return simplemc::eigen_vector_dbl of size \f$ M \f$ containing \f$ \mathbf{m}^{(N)}/
-     * \mathbf{n}^{(N)} \f$ (content depends on the algorithm, see simplemc::mean_acc).
+     * \mathbf{n}^{(N)} \f$.
      */
     [[nodiscard]] const vec_type& mdata() const { return mdata_; }
 
     /**
-     * @brief Get the accumulated data \f$ \mathbf{c}^{(N)}/\mathbf{d}^{(N)} \f$ used for estimating
-     * the variance.
+     * @brief Get the accumulated variance data \f$ \mathbf{c}^{(N)}/\mathbf{d}^{(N)} \f$.
      *
      * @return simplemc::eigen_vector_dbl of size \f$ M \f$ containing \f$ \mathbf{c}^{(N)}/
-     * \mathbf{d}^{(N)} \f$ (content depends on the algorithm, see the class documentation).
+     * \mathbf{d}^{(N)} \f$.
      */
     [[nodiscard]] const vec_type& cdata() const { return cdata_; }
 
     /**
      * @brief Calculate the sample mean \f$ \overline{\mathbf{x}}^{(N)} \f$.
      *
-     * @details It calls simplemc::accs::mean with the accumulated mean data and the
-     * count.
-     *
-     * For statically sized accumulators with \f$ M = 1 \f$, it returns a real scalar. Otherwise, it
-     * returns a vec_type object.
+     * @details It calls simplemc::accs::mean with the accumulated mean data \f$ \mathbf{m}^{(N)}/
+     * \mathbf{n}^{(N)} \f$ and the count \f$ N \f$.
      *
      * @return Sample mean \f$ \overline{\mathbf{x}}^{(N)} \f$.
      */
     [[nodiscard]] auto mean() const {
-        return detail::scalar_or_matrix<returns_scalar>(simplemc::accs::mean<varalg()>(mdata_, count_));
+        using simplemc::accs::mean;
+        return detail::scalar_or_matrix<sample_scalar<sample_type>>(mean<varalg()>(mdata_, count_));
     }
 
     /**
@@ -423,14 +395,11 @@ public:
      *
      * @details It calls variance_of_data() and divides the result by count().
      *
-     * For statically sized accumulators with \f$ M = 1 \f$, it returns a real scalar. Otherwise, it
-     * returns a vec_type object.
-     *
      * @return Sample variance of the mean \f$ s_{\overline{\mathbf{X}}}^2 \f$.
      */
     [[nodiscard]] auto variance() const {
         auto res = variance_of_data() / static_cast<double>(count_);
-        if constexpr (returns_scalar) {
+        if constexpr (sample_scalar<sample_type>) {
             return res;
         } else {
             return res.eval();
@@ -440,17 +409,16 @@ public:
     /**
      * @brief Calculate the sample variance \f$ s_{\mathbf{X}}^2 \f$.
      *
-     * @details It calls simplemc::accs::diag_covariance with the accumulated data and
-     * the count.
-     *
-     * For statically sized accumulators with \f$ M = 1 \f$, it returns a real scalar. Otherwise, it
-     * returns a vec_type object.
+     * @details It calls simplemc::accs::diag_covariance with the accumulated mean data \f$
+     * \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$, the variance data \f$ \mathbf{c}^{(N)}/\mathbf{d}^{(N)}
+     * \f$ and the count \f$ N \f$.
      *
      * @return Sample variance \f$ s_{\mathbf{X}}^2 \f$.
      */
     [[nodiscard]] auto variance_of_data() const {
         using simplemc::accs::diag_covariance;
-        return detail::scalar_or_matrix<returns_scalar>(diag_covariance<varalg()>(mdata_, mdata_, cdata_, count_));
+        return detail::scalar_or_matrix<sample_scalar<sample_type>>(
+            diag_covariance<varalg()>(mdata_, mdata_, cdata_, count_));
     }
 
     /**

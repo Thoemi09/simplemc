@@ -2,6 +2,7 @@
 
 #include <simplemc/accs/autocorr_acc.hpp>
 #include <simplemc/accs/block_acc.hpp>
+#include <simplemc/accs/concepts.hpp>
 #include <simplemc/accs/var_acc.hpp>
 
 #include <complex>
@@ -20,17 +21,51 @@ constexpr double tol = 1e-10;
 
 } // namespace
 
+// Check that accumulator concepts are satisfied.
+TEST_F(SimplemcAccs, VarAccConcepts) {
+    using namespace simplemc;
+
+    // var_acc with scalar types
+    static_assert(basic_accumulator<var_acc<double>>);
+    static_assert(mean_accumulator<var_acc<double>>);
+    static_assert(variance_accumulator<var_acc<double>>);
+    static_assert(basic_accumulator<var_acc<std::complex<double>>>);
+    static_assert(mean_accumulator<var_acc<std::complex<double>>>);
+    static_assert(variance_accumulator<var_acc<std::complex<double>>>);
+
+    // var_acc with static vector types
+    static_assert(basic_accumulator<var_acc_static<double, 3>>);
+    static_assert(mean_accumulator<var_acc_static<double, 3>>);
+    static_assert(variance_accumulator<var_acc_static<double, 3>>);
+    static_assert(basic_accumulator<var_acc_static<std::complex<double>, 3>>);
+    static_assert(mean_accumulator<var_acc_static<std::complex<double>, 3>>);
+    static_assert(variance_accumulator<var_acc_static<std::complex<double>, 3>>);
+
+    // var_acc with dynamic vector types
+    static_assert(basic_accumulator<var_acc_dynamic<double>>);
+    static_assert(mean_accumulator<var_acc_dynamic<double>>);
+    static_assert(variance_accumulator<var_acc_dynamic<double>>);
+    static_assert(basic_accumulator<var_acc_dynamic<std::complex<double>>>);
+    static_assert(mean_accumulator<var_acc_dynamic<std::complex<double>>>);
+    static_assert(variance_accumulator<var_acc_dynamic<std::complex<double>>>);
+
+    // multivalue_acc wrapping var_acc
+    static_assert(basic_accumulator<multivalue_acc<var_acc<double>>>);
+    static_assert(basic_accumulator<multivalue_acc<var_acc<std::complex<double>>>>);
+    static_assert(basic_accumulator<multivalue_acc<var_acc_static<double, 3>>>);
+}
+
 // Check empty accumulators.
 TEST_F(SimplemcAccs, VarAccEmpty) {
     using namespace simplemc;
 
-    var_acc_single<double> acc_sd;
+    var_acc<double> acc_sd;
     ASSERT_EQ(acc_sd.size(), 1);
     check_empty(acc_sd);
     static_assert(!acc_sd.is_dynamic);
     static_assert(acc_sd.static_size == 1);
 
-    var_acc_single<std::complex<double>, standard> acc_sc;
+    var_acc<std::complex<double>, standard> acc_sc;
     ASSERT_EQ(acc_sc.size(), 1);
     check_empty(acc_sc);
     static_assert(!acc_sc.is_dynamic);
@@ -65,10 +100,10 @@ TEST_F(SimplemcAccs, VarAccEmpty) {
 TEST_F(SimplemcAccs, VarAccSingle) {
     // general set up
     using namespace simplemc;
-    var_acc_single<double, standard> acc_std_d1, acc_std_d2;
-    var_acc_single<double, welford> acc_wel_d1, acc_wel_d2;
-    var_acc_single<std::complex<double>, standard> acc_std_c1, acc_std_c2;
-    var_acc_single<std::complex<double>, welford> acc_wel_c1, acc_wel_c2;
+    var_acc<double, standard> acc_std_d1, acc_std_d2;
+    var_acc<double, welford> acc_wel_d1, acc_wel_d2;
+    var_acc<std::complex<double>, standard> acc_std_c1, acc_std_c2;
+    var_acc<std::complex<double>, welford> acc_wel_c1, acc_wel_c2;
 
     // fill accumulators
     const auto merge_size = steps / 2;
@@ -356,7 +391,7 @@ TEST_F(SimplemcAccs, VarAccAutocorrelation) {
     // general set up
     using namespace simplemc;
     autocorr_acc<var_acc_static<double, size, welford>> acc_vec, acc_acc1, acc_acc2;
-    autocorr_acc<var_acc_single<double, welford>> acc_single(1, 2, 5);
+    autocorr_acc<var_acc<double, welford>> acc_single(1, 2, 5);
 
     // fill accumulators
     std::vector<long> idxs(3);

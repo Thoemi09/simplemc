@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Accumulator for calculating the sample mean and sample variance of a random vector.
+ * @brief Accumulator for calculating the sample mean and sample variance of a data set.
  */
 
 #ifndef SIMPLEMC_ACCS_VAR_ACC_HPP
@@ -26,19 +26,21 @@ namespace simplemc {
  */
 
 /**
- * @brief Accumulate (complex) random samples in a simplemc::var_acc.
+ * @brief Accumulate (complex) data samples in a simplemc::var_acc.
  *
- * @details See simplemc::var_acc for more details on how the random samples are accumulated.
+ * @details See @ref "simplemc::var_acc< X, A >" "simplemc::var_acc for real samples" and
+ * @ref "simplemc::var_acc< Z, A >" "simplemc::var_acc for complex samples" for more details on how
+ * the data samples are accumulated.
  *
  * It throws a simplemc::simplemc_exception if the range is empty.
  *
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
- * @tparam R simplemc::random_sample_range type.
- * @param rg Range containing the random samples \f$ \left\{ \mathbf{z}^{(j)} : j = 1, \dots, N
+ * @tparam R simplemc::sample_range type.
+ * @param rg Range containing the data samples \f$ \left\{ \mathbf{z}^{(j)} : j = 1, \dots, N
  * \right\} \f$.
  * @param t Optional vector/scalar shift \f$ \mathbf{t} \f$ that is applied when accumulating the
  * data.
- * @return simplemc::var_acc containing the accumulated random samples from the given range.
+ * @return simplemc::var_acc containing the accumulated data samples from the given range.
  */
 template <varalg A = varalg::welford, sample_range R>
 [[nodiscard]] auto make_var_acc(
@@ -46,29 +48,27 @@ template <varalg A = varalg::welford, sample_range R>
     using value_type = ranges::range_value_t<R>;
 
     auto const sz = detail::random_sample_size(*ranges::begin(rg));
-    if constexpr (double_or_complex<value_type>) {
-        return detail::make_acc<var_acc_single<value_type, A>>(rg, t, sz);
-    } else {
-        return detail::make_acc<var_acc<value_type, A>>(rg, t, sz);
-    }
+    return detail::make_acc<var_acc<value_type, A>>(rg, t, sz);
 }
 
 /**
- * @brief Accumulate (complex) random samples in a simplemc::var_acc wrapped in a simplemc::block_acc.
+ * @brief Accumulate (complex) data samples in a simplemc::var_acc wrapped in a
+ * simplemc::block_acc.
  *
- * @details See simplemc::var_acc and simplemc::block_acc for more details on how the random samples
- * are accumulated.
+ * @details See @ref "simplemc::var_acc< X, A >" "simplemc::var_acc for real samples",
+ * @ref "simplemc::var_acc< Z, A >" "simplemc::var_acc for complex samples" and simplemc::block_acc
+ * for more details on how the data samples are accumulated.
  *
  * It throws a simplemc::simplemc_exception if the range is empty.
  *
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
- * @tparam R simplemc::random_sample_range type.
- * @param rg Range containing the random samples \f$ \left\{ \mathbf{z}^{(j)} : j = 1, \dots, N
+ * @tparam R simplemc::sample_range type.
+ * @param rg Range containing the data samples \f$ \left\{ \mathbf{z}^{(j)} : j = 1, \dots, N
  * \right\} \f$.
  * @param b Block size \f$ B \f$.
  * @param t Optional vector/scalar shift \f$ \mathbf{t} \f$ that is applied when accumulating the
  * data.
- * @return simplemc::block_acc wrapping a simplemc::var_acc containing the accumulated random samples
+ * @return simplemc::block_acc wrapping a simplemc::var_acc containing the accumulated data samples
  * from the given range.
  */
 template <varalg A = varalg::welford, sample_range R>
@@ -77,19 +77,16 @@ template <varalg A = varalg::welford, sample_range R>
     using value_type = ranges::range_value_t<R>;
 
     auto const sz = detail::random_sample_size(*ranges::begin(rg));
-    if constexpr (double_or_complex<value_type>) {
-        return detail::make_acc<block_acc<var_acc_single<value_type, A>>>(rg, t, b, sz);
-    } else {
-        return detail::make_acc<block_acc<var_acc<value_type, A>>>(rg, t, b, sz);
-    }
+    return detail::make_acc<block_acc<var_acc<value_type, A>>>(rg, t, b, sz);
 }
 
 /**
- * @brief Accumulate (complex) random samples in a simplemc::var_acc wrapped in a
+ * @brief Accumulate (complex) data samples in a simplemc::var_acc wrapped in a
  * simplemc::autocorr_acc.
  *
- * @details See simplemc::var_acc and simplemc::autocorr_acc for more details on how the random
- * samples are accumulated.
+ * @details See @ref "simplemc::var_acc< X, A >" "simplemc::var_acc for real samples",
+ * @ref "simplemc::var_acc< Z, A >" "simplemc::var_acc for complex samples" and simplemc::autocorr_acc
+ * for more details on how the data samples are accumulated.
  *
  * The autocorrelation accumulator uses the default multiplication factor \f$ c = 2 \f$ and minimum
  * number of levels \f$ L_{\text{min}} = 2 \f$.
@@ -97,12 +94,12 @@ template <varalg A = varalg::welford, sample_range R>
  * It throws a simplemc::simplemc_exception if the range is empty.
  *
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
- * @tparam R simplemc::random_sample_range type.
- * @param rg Range containing the random samples \f$ \left\{ \mathbf{z}^{(j)} : j = 1, \dots, N
+ * @tparam R simplemc::sample_range type.
+ * @param rg Range containing the data samples \f$ \left\{ \mathbf{z}^{(j)} : j = 1, \dots, N
  * \right\} \f$.
  * @param t Optional vector/scalar shift \f$ \mathbf{t} \f$ that is applied when accumulating the
  * data.
- * @return simplemc::autocorr_acc wrapping a simplemc::var_acc containing the accumulated random
+ * @return simplemc::autocorr_acc wrapping a simplemc::var_acc containing the accumulated data
  * samples from the given range.
  */
 template <varalg A = varalg::welford, sample_range R>
@@ -111,11 +108,7 @@ template <varalg A = varalg::welford, sample_range R>
     using value_type = ranges::range_value_t<R>;
 
     auto const sz = detail::random_sample_size(*ranges::begin(rg));
-    if constexpr (double_or_complex<value_type>) {
-        return detail::make_acc<autocorr_acc<var_acc_single<value_type, A>>>(rg, t, sz);
-    } else {
-        return detail::make_acc<autocorr_acc<var_acc<value_type, A>>>(rg, t, sz);
-    }
+    return detail::make_acc<autocorr_acc<var_acc<value_type, A>>>(rg, t, sz);
 }
 
 /** @} */

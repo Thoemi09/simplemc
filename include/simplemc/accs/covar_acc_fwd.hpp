@@ -23,8 +23,8 @@ namespace simplemc {
  * @brief Class template for covariance accumulators.
  *
  * @details Please see the specializations
- * - @ref "simplemc::covar_acc< X, A >" "simplemc::covar_acc for real" and
- * - @ref "simplemc::covar_acc< Z, A >" "simplemc::covar_acc for cplx"
+ * - @ref "simplemc::covar_acc< X, A >" "simplemc::covar_acc for real samples" and
+ * - @ref "simplemc::covar_acc< Z, A >" "simplemc::covar_acc for complex samples"
  * for more details.
  *
  * @tparam V simplemc::eigen_vector type.
