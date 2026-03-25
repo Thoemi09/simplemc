@@ -101,6 +101,7 @@ polynomials, that are especially useful for general Fourier series.
 
 It provides
 
+- @ref simplemc-accs-concepts that define accumulator specific requirements.
 - @ref simplemc-accs-utils which are mostly used internally in the **simplemc-accs** library.
 - Several @ref simplemc-accs-accs to calculate the mean, variance and covariance of a collection of data values.
 - Various @ref simplemc-accs-wrappers that can be used with specific accumulator types to extend or
