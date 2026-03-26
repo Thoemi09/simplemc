@@ -885,6 +885,20 @@
  * @defgroup simplemc-accs-concepts Accumulator concepts
  * @ingroup simplemc-accs
  * @brief Concepts that define sample types and the basic interface of accumulators.
+ *
+ * @details A **sample** is a single data point, e.g. collected during a Monte Carlo simulation, such 
+ * as the value of an observable evaluated at a particular configuration. Samples can be real or 
+ * complex scalars, or real or complex vectors (see simplemc::sample_type).
+ *
+ * An **accumulator** is an object that ingests samples one at a time and incrementally maintains
+ * running statistics — such as the mean, variance, or covariance — without storing the individual
+ * samples. This makes accumulators memory-efficient and suitable for long-running simulations where
+ * the number of samples can be very large.
+ *
+ * The accumulator concepts defined here form a refinement hierarchy: every 
+ * simplemc::variance_accumulator is also a simplemc::mean_accumulator, which in turn is also a
+ * simplemc::basic_accumulator. This allows generic algorithms to be written against the minimal
+ * interface they require.
  */
 
 /**

@@ -89,7 +89,9 @@ concept sample_range = ranges::sized_range<R> && ranges::forward_range<R> && sam
  * following:
  *
  * - `A::sample_type` is the type of accumulated data (simplemc::sample_type)
+ * - `A::value_type` is the underlying scalar type (simplemc::double_or_complex)
  * - `acc.count()` returns \f$ N \f$, the number of data points accumulated so far (integral type)
+ * - `acc.size()` returns \f$ M \f$, the number of components of the accumulator (integral type)
  * - `acc << x` accumulates a new data point `x` and returns a reference to `acc`
  *
  * @tparam A Type to check.
@@ -98,8 +100,11 @@ template <typename A>
 concept basic_accumulator = requires {
     typename A::sample_type;
     requires sample_type<typename A::sample_type>;
+    typename A::value_type;
+    requires double_or_complex<typename A::value_type>;
 } && requires(A& acc, const A& cacc, typename A::sample_type x) {
     { cacc.count() } -> std::integral;
+    { cacc.size() } -> std::integral;
     { acc << x } -> std::same_as<A&>;
 };
 
