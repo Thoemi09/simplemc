@@ -65,7 +65,7 @@ template <varalg A, eigen_vector V>
  * \f$. In case, the two data sets are the same, this corresponds to the sample variance
  * \f$ s_{\mathbf{X}}^2 \f$ of the data set.
  *
- * See @ref simplemc-accs-stats-var for some background information and simplemc::mean_acc and
+ * See @ref simplemc-accs-stats-var for some background information and
  * @ref "simplemc::var_acc< X, A >" for algorithmic details.
  *
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
@@ -98,9 +98,16 @@ template <varalg A, eigen_vector_dbl V>
 /**
  * @brief Calculate the full sample (cross-)covariance matrix of two real random vectors.
  *
- * @details See simplemc::covar_acc for a description of how the covariance data is accumulated
- * depending on the simplemc::varalg. This function generalizes the covariance formulas to the
- * cross-covariance case (\f$ \mathbf{X} \neq \mathbf{Y} \f$).
+ * @details The function expects that the data has already been accumulated according to the specified
+ * simplemc::varalg.
+ *
+ * Let \f$ S_{\mathbf{X}} \f$ and \f$ S_{\mathbf{Y}} \f$ be two data sets. This function calculates
+ * the full (cross-)covariance matrix \f$ s_{\mathbf{X}\mathbf{Y}}^2 \f$. In case, the two data sets
+ * are the same, this corresponds to the sample covariance matrix \f$ s_{\mathbf{X}}^2 \f$ of the data
+ * set.
+ *
+ * See @ref simplemc-accs-stats-covar for some background information and
+ * @ref "simplemc::covar_acc< X, A >" for algorithmic details.
  *
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  * @tparam V simplemc::eigen_vector_dbl type.
@@ -135,7 +142,12 @@ template <varalg A, eigen_vector_dbl V, eigen_matrix_dbl M>
  * @brief Calculate the integrated autocorrelation time for the elements of a real (cross-)covariance
  * matrix or variance vector.
  *
- * @details See simplemc::autocorr_acc for the derivation and context of this formula.
+ * @details The integrated autocorrelation time quantifies the degree of correlation between
+ * successive samples. It is estimated by comparing a naive (unblocked) and a blocked estimate of the
+ * sample (cross-)covariance matrix or variance.
+ *
+ * See @ref simplemc-accs-stats-tau for some background information and simplemc::autocorr_acc for
+ * algorithmic details.
  *
  * @tparam M simplemc::eigen_matrix_dbl type.
  * @param s_naive Naive (unblocked) estimate of the sample (cross-)covariance matrix \f$ s_{\mathbf{X}
@@ -148,7 +160,7 @@ template <varalg A, eigen_vector_dbl V, eigen_matrix_dbl M>
  * integrated autocorrelation times.
  */
 template <eigen_matrix_dbl M>
-[[nodiscard]] M tau(const M& s_naive, const M& s_blocked, std::uint64_t b) {
+[[nodiscard]] M tau(const M& s_naive, const M& s_blocked, std::uint64_t b) noexcept {
     assert(s_naive.rows() == s_blocked.rows());
     assert(s_naive.cols() == s_blocked.cols());
     return ((s_blocked.array() * b / s_naive.array() - 1.0) * 0.5).matrix();
@@ -158,8 +170,7 @@ template <eigen_matrix_dbl M>
  * @brief Calculate the integrated autocorrelation time for a real scalar (cross-)covariance or
  * variance.
  *
- * @details Scalar overload. See simplemc::autocorr_acc for the derivation and context of this
- * formula.
+ * @details Scalar overload of simplemc::accs::tau(const M&, const M&, std::uint64_t).
  *
  * @param s_naive Naive (unblocked) estimate of the sample (cross)-covariance \f$ s_{XY}^2 \f$ or the
  * sample variance \f$ s_{X}^2 \f$.
@@ -168,7 +179,7 @@ template <eigen_matrix_dbl M>
  * @param b Block size \f$ B \f$ used in the blocked estimate (w.r.t. the naive estimate).
  * @return Integrated autocorrelation time \f$ \tau_{XY} \f$ or \f$ \tau_{X} \f$.
  */
-[[nodiscard]] inline double tau(double s_naive, double s_blocked, std::uint64_t b) {
+[[nodiscard]] inline double tau(double s_naive, double s_blocked, std::uint64_t b) noexcept {
     return (s_blocked * static_cast<double>(b) / s_naive - 1.0) * 0.5;
 }
 
@@ -181,7 +192,7 @@ namespace simplemc::detail {
 // Depending on the size and the memory location of an Eigen object, either a vector/matrix or a
 // scalar is returned.
 template <bool return_scalar, typename T>
-auto scalar_or_matrix(T&& obj) {
+auto scalar_or_matrix(T&& obj) noexcept {
     if constexpr (return_scalar) {
         return std::forward<T>(obj)(0, 0);
     } else {
@@ -191,7 +202,7 @@ auto scalar_or_matrix(T&& obj) {
 
 // Get the number of elements in a random sample.
 template <sample_type T>
-long random_sample_size([[maybe_unused]] const T& sample) {
+long random_sample_size([[maybe_unused]] const T& sample) noexcept {
     if constexpr (double_or_complex<T>) {
         return 1;
     } else {

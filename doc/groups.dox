@@ -906,7 +906,10 @@
  * @ingroup simplemc-accs
  * @brief General utilities for accumulating and analyzing data.
  *
- * @details In the following, we use the notation from @ref simplemc-accs-stats.
+ * @details In the following, we use the notation from @ref simplemc-accs-stats. The functions 
+ * described here operate on the raw accumulated data stored by the accumulators and convert it into 
+ * meaningful statistical quantities such as the sample mean, (cross-)covariance matrix and integrated
+ * autocorrelation time.
  */
 
 /**
