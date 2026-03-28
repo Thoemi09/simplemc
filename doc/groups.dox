@@ -915,36 +915,53 @@
 /**
  * @defgroup simplemc-accs-accs Accumulators
  * @ingroup simplemc-accs
- * @brief Implementation of various accumulators.
+ * @brief Online accumulators for computing running statistics of scalar and vector data.
  *
- * @details In the following, we use the notation from @ref simplemc-accs-stats.
+ * @details Accumulators are lightweight objects that consume data samples one at a time and maintain
+ * running statistics — mean, variance, covariance — without storing the individual samples.
+ * This makes them well suited for Monte Carlo simulations where millions of samples are generated
+ * sequentially and memory-efficient, online estimation of expectation values and error bars is
+ * needed.
+ *
+ * Every accumulator satisfies one of the accumulator concepts (simplemc::basic_accumulator,
+ * simplemc::mean_accumulator, simplemc::variance_accumulator, simplemc::covariance_accumulator),
+ * which form a refinement hierarchy. This allows generic code to work with any accumulator that
+ * provides the required statistics.
+ *
+ * In the following, we use the notation from @ref simplemc-accs-stats.
  *
  * @section simplemc-accs-accs-types Accumulator types
  *
- * **simplemc** implements several accumulators of increasing complexity and for different purposes.
- * They can be used to calculate the sample mean, sample variance, sample covariance and
- * autocorrelation times for some data.
+ * **simplemc** provides four accumulator types:
+ * - @ref simplemc-accs-accs-mean satisfies simplemc::mean_accumulator and computes the sample mean.
+ * - @ref simplemc-accs-accs-var satisfies simplemc::variance_accumulator and computes the sample mean 
+ * and element-wise variance.
+ * - @ref simplemc-accs-accs-covar satisfies simplemc::covariance_accumulator and computes the sample 
+ * mean and the full covariance matrix.
+ * - @ref simplemc-accs-accs-batch satisfies simplemc::mean_accumulator and computes the sample mean 
+ * via batches; individual batches are accessible for @ref simplemc-accs-resampling.
  *
- * The following accumulators are available:
- * - @ref simplemc-accs-accs-mean - Simplest and fastest accumulator for calculating only the sample
- * mean.
- * - @ref simplemc-accs-accs-var - In addition to the sample mean, it provides a naive (non-blocking)
- * estimate of the variance.
- * - @ref simplemc-accs-accs-covar - In addition to the sample mean, it provides a naive
- * (non-blocking) estimate of the full covariance matrix.
+ * The first three form a hierarchy of increasing statistical output. The variance and covariance
+ * estimates provided by simplemc::var_acc and simplemc::covar_acc are *naive* (non-blocking), meaning 
+ * they do not account for autocorrelation between consecutive samples.
  *
- * The variance and covariance accumulators can be further wrapped with
- * - simplemc::block_acc to improve the error estimation by grouping individual samples into blocks to
- * decorrelate them or
- * - simplemc::autocorr_acc to get an estimate for the autocorrelation time.
+ * The @ref simplemc-accs-accs-batch takes a complementary approach: instead of accumulating running
+ * variance or covariance directly, it distributes all samples into a fixed number of batches \f$ M_b 
+ * \f$, doubling the per-batch count as needed. Because the individual batches are retained, they can 
+ * be used for further analysis — e.g. constructing a simplemc::var_acc or simplemc::covar_acc from 
+ * the batch means, or feeding them into @ref simplemc-accs-resampling techniques such as jackknife to 
+ * propagate error bars through nonlinear functions of expectation values.
  *
- * Another type of accumulator is the @ref simplemc-accs-accs-batch. It is similar to
- * simplemc::block_acc and simplemc::autocorr_acc in that it groups individual samples into a fixed
- * number of batches. The main advantage of the batch accumulator is that one has access to individual
- * batches, which means that they can be used for further analysis, e.g. jackknife resampling.
+ * When autocorrelation between consecutive samples is present (as is common in Markov chain Monte
+ * Carlo), the variance and covariance accumulators can be wrapped with @ref simplemc-accs-wrappers
+ * to improve error estimates:
+ * - simplemc::block_acc — groups consecutive samples into blocks of a fixed size \f$ B \f$ before
+ * feeding their means into the wrapped accumulator, decorrelating the effective samples;
+ * - simplemc::autocorr_acc — uses blocks of geometrically increasing size to estimate the
+ * integrated autocorrelation time \f$ \tau \f$.
  *
- * All accumulators support the `standard` and the more stable `welford` algorithm when accumulating
- * data (see simplemc::varalg).
+ * All accumulators support the `standard` and the numerically more stable `welford` algorithm for
+ * accumulating data (see simplemc::varalg). The `welford` algorithm is the default.
  *
  * @section simplemc-accs-accs-how How to accumulate data
  *
