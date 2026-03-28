@@ -203,6 +203,10 @@ public:
     /**
      * @brief Subscript operator sets the index \f$ i \f$ and returns a reference to `this` object.
      *
+     * @details The index is *sticky*: it persists until changed by another call to operator[]() or
+     * until reset() is called. For scalar accumulators (size \f$ M = 1 \f$), the index should
+     * remain at 0.
+     *
      * @param i Index \f$ i \f$.
      * @return Reference to `this` object.
      */
@@ -265,7 +269,7 @@ public:
      *   - \f$ \mathbf{n}^{(N)} = \frac{N_1}{N}\mathbf{n}_{1}^{(N_1)} + \frac{N_2}{N}
      *     \mathbf{n}_{2}^{(N_2)} \f$.
      *
-     * If the the accumulator to be incorporated is empty(), nothing is done.
+     * If the accumulator to be incorporated is empty(), nothing is done.
      *
      * See also @ref simplemc-accs-accs-how.
      *

@@ -95,6 +95,7 @@ protected:
 template <typename A>
 void check_empty(const A& acc) {
     ASSERT_EQ(acc.count(), 0);
+    ASSERT_TRUE(acc.empty());
     const auto mean = acc.mean();
     if constexpr (!A::is_dynamic && A::static_size == 1) {
         check_isnan(mean);

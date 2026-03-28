@@ -886,8 +886,8 @@
  * @ingroup simplemc-accs
  * @brief Concepts that define sample types and the basic interface of accumulators.
  *
- * @details A **sample** is a single data point, e.g. collected during a Monte Carlo simulation, such 
- * as the value of an observable evaluated at a particular configuration. Samples can be real or 
+ * @details A **sample** is a single data point, e.g. collected during a Monte Carlo simulation, such
+ * as the value of an observable evaluated at a particular configuration. Samples can be real or
  * complex scalars, or real or complex vectors (see simplemc::sample_type).
  *
  * An **accumulator** is an object that ingests samples one at a time and incrementally maintains
@@ -895,7 +895,7 @@
  * samples. This makes accumulators memory-efficient and suitable for long-running simulations where
  * the number of samples can be very large.
  *
- * The accumulator concepts defined here form a refinement hierarchy: every 
+ * The accumulator concepts defined here form a refinement hierarchy: every
  * simplemc::variance_accumulator is also a simplemc::mean_accumulator, which in turn is also a
  * simplemc::basic_accumulator. This allows generic algorithms to be written against the minimal
  * interface they require.
@@ -906,8 +906,8 @@
  * @ingroup simplemc-accs
  * @brief General utilities for accumulating and analyzing data.
  *
- * @details In the following, we use the notation from @ref simplemc-accs-stats. The functions 
- * described here operate on the raw accumulated data stored by the accumulators and convert it into 
+ * @details In the following, we use the notation from @ref simplemc-accs-stats. The functions
+ * described here operate on the raw accumulated data stored by the accumulators and convert it into
  * meaningful statistical quantities such as the sample mean, (cross-)covariance matrix and integrated
  * autocorrelation time.
  */
@@ -934,22 +934,22 @@
  *
  * **simplemc** provides four accumulator types:
  * - @ref simplemc-accs-accs-mean satisfies simplemc::mean_accumulator and computes the sample mean.
- * - @ref simplemc-accs-accs-var satisfies simplemc::variance_accumulator and computes the sample mean 
+ * - @ref simplemc-accs-accs-var satisfies simplemc::variance_accumulator and computes the sample mean
  * and element-wise variance.
- * - @ref simplemc-accs-accs-covar satisfies simplemc::covariance_accumulator and computes the sample 
+ * - @ref simplemc-accs-accs-covar satisfies simplemc::covariance_accumulator and computes the sample
  * mean and the full covariance matrix.
- * - @ref simplemc-accs-accs-batch satisfies simplemc::mean_accumulator and computes the sample mean 
+ * - @ref simplemc-accs-accs-batch satisfies simplemc::mean_accumulator and computes the sample mean
  * via batches; individual batches are accessible for @ref simplemc-accs-resampling.
  *
  * The first three form a hierarchy of increasing statistical output. The variance and covariance
- * estimates provided by simplemc::var_acc and simplemc::covar_acc are *naive* (non-blocking), meaning 
+ * estimates provided by simplemc::var_acc and simplemc::covar_acc are *naive* (non-blocking), meaning
  * they do not account for autocorrelation between consecutive samples.
  *
  * The @ref simplemc-accs-accs-batch takes a complementary approach: instead of accumulating running
- * variance or covariance directly, it distributes all samples into a fixed number of batches \f$ M_b 
- * \f$, doubling the per-batch count as needed. Because the individual batches are retained, they can 
- * be used for further analysis — e.g. constructing a simplemc::var_acc or simplemc::covar_acc from 
- * the batch means, or feeding them into @ref simplemc-accs-resampling techniques such as jackknife to 
+ * variance or covariance directly, it distributes all samples into a fixed number of batches \f$ M_b
+ * \f$, doubling the per-batch count as needed. Because the individual batches are retained, they can
+ * be used for further analysis — e.g. constructing a simplemc::var_acc or simplemc::covar_acc from
+ * the batch means, or feeding them into @ref simplemc-accs-resampling techniques such as jackknife to
  * propagate error bars through nonlinear functions of expectation values.
  *
  * When autocorrelation between consecutive samples is present (as is common in Markov chain Monte
@@ -1056,10 +1056,22 @@
 /**
  * @defgroup simplemc-accs-accs-mean Mean accumulator
  * @ingroup simplemc-accs-accs
- * @brief Calculating the sample mean of a data set.
+ * @brief Lightest accumulator — tracks only the sample mean.
  *
- * @details The sample mean is defined in @ref simplemc-accs-stats-mean. It can be used as an
- * approximation to the expectation value of some random variable.
+ * @details The mean accumulator computes the sample mean \f$ \overline{\mathbf{z}}^{(N)} \f$ as
+ * defined in @ref simplemc-accs-stats-mean. It can be used as an approximation to the expectation
+ * value of some random variable.
+ *
+ * Because it stores only the running mean data (a single vector of size \f$ M \f$) and a sample
+ * count, it has the smallest memory footprint and the lowest per-sample cost of all accumulators. Use
+ * it when only the mean is needed.
+ *
+ * Scalar accumulators are created directly, e.g. `mean_acc<double>` or
+ * `mean_acc<std::complex<double>>`.
+ *
+ * For vector accumulator, the following convenience aliases are provided:
+ * - simplemc::mean_acc_static — statically sized vector accumulator,
+ * - simplemc::mean_acc_dynamic — dynamically sized vector accumulator.
  */
 
 /**
@@ -1067,8 +1079,8 @@
  * @ingroup simplemc-accs-accs
  * @brief Calculating the sample mean and sample variance of a data set.
  *
- * @details The sample mean and variance are defined in @ref simplemc-accs-stats-mean and 
- * @ref simplemc-accs-stats-var, respectively. They can be used as approximations to the expectation 
+ * @details The sample mean and variance are defined in @ref simplemc-accs-stats-mean and
+ * @ref simplemc-accs-stats-var, respectively. They can be used as approximations to the expectation
  * value and variance of some random variable.
  *
  * The variance estimation does not account for any correlation between the samples. To get more

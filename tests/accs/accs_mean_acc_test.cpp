@@ -295,3 +295,44 @@ TEST_F(SimplemcAccs, MeanAccIndividualIndices) {
     check_near(acc_std_c1.mean()(idx), m_c(idx), tol);
     check_range_near(acc_wel_c1.mean(), m_wel_c, tol);
 }
+
+// Check construction from pre-existing accumulated data.
+TEST_F(SimplemcAccs, MeanAccDataConstructor) {
+    using namespace simplemc;
+
+    // scalar: accumulate manually, then construct from mdata and count
+    mean_acc<double> acc_d;
+    for (int i = 0; i < 10; ++i) {
+        acc_d << sp_d.samples[i](0);
+    }
+    mean_acc<double> acc_d_copy(acc_d.mdata(), acc_d.count());
+    ASSERT_EQ(acc_d_copy.count(), acc_d.count());
+    ASSERT_EQ(acc_d_copy.mdata(), acc_d.mdata());
+
+    // complex scalar
+    mean_acc<std::complex<double>, standard> acc_c;
+    for (int i = 0; i < 10; ++i) {
+        acc_c << sp_c.samples[i](0);
+    }
+    mean_acc<std::complex<double>, standard> acc_c_copy(acc_c.mdata(), acc_c.count());
+    ASSERT_EQ(acc_c_copy.count(), acc_c.count());
+    ASSERT_EQ(acc_c_copy.mdata(), acc_c.mdata());
+
+    // vector: static
+    mean_acc_static<double, size> acc_v;
+    for (int i = 0; i < 10; ++i) {
+        acc_v << sp_d.samples[i].matrix();
+    }
+    mean_acc_static<double, size> acc_v_copy(acc_v.mdata(), acc_v.count());
+    ASSERT_EQ(acc_v_copy.count(), acc_v.count());
+    ASSERT_EQ(acc_v_copy.mdata(), acc_v.mdata());
+
+    // vector: dynamic
+    mean_acc_dynamic<double> acc_dyn(size);
+    for (int i = 0; i < 10; ++i) {
+        acc_dyn << sp_d.samples[i].matrix();
+    }
+    mean_acc_dynamic<double> acc_dyn_copy(acc_dyn.mdata(), acc_dyn.count());
+    ASSERT_EQ(acc_dyn_copy.count(), acc_dyn.count());
+    ASSERT_EQ(acc_dyn_copy.mdata(), acc_dyn.mdata());
+}
