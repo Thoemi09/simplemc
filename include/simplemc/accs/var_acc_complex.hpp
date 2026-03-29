@@ -31,7 +31,7 @@ namespace simplemc {
  * @ingroup simplemc-accs-accs-var
  * @brief Accumulator for calculating the sample mean and sample variance of a complex data set.
  *
- * @details The accumulator satisfies simplemc::variance_accumulator and takes two template 
+ * @details The accumulator satisfies simplemc::variance_accumulator and takes two template
  * parameters:
  * - the type of the data samples (complex simplemc::sample_type) and
  * - the algorithm (simplemc::varalg) that should be used to accumulate the data.
@@ -42,7 +42,7 @@ namespace simplemc {
  * - a real vector \f$ \mathbf{c}_r^{(N)}/\mathbf{d}_r^{(N)} \f$ for the variance data of the real
  * part of the complex samples,
  * - a real vector \f$ \mathbf{c}_i^{(N)}/\mathbf{d}_i^{(N)} \f$ for the variance data of the
- * imaginary part of the compelx samples and
+ * imaginary part of the complex samples and
  * - a real vector \f$ \mathbf{c}_{ri}^{(N)}/\mathbf{d}_{ri}^{(N)} \f$ for the cross-covariance data
  * between the real and imaginary parts.
  *
@@ -111,7 +111,7 @@ public:
      *
      * @return Its simplemc::varalg tag.
      */
-    static constexpr auto varalg() { return A; }
+    static constexpr auto varalg() noexcept { return A; }
 
     /* Friend declarations. */
     friend class multivalue_acc<var_acc>;
@@ -208,10 +208,14 @@ public:
     /**
      * @brief Subscript operator sets the index \f$ i \f$ and returns a reference to `this` object.
      *
+     * @details The index is *sticky*: it persists until changed by another call to operator[]() or
+     * until reset() is called. For scalar accumulators (size \f$ M = 1 \f$), the index should
+     * remain at 0.
+     *
      * @param i Index \f$ i \f$.
      * @return Reference to `this` object.
      */
-    var_acc& operator[](size_type i) {
+    var_acc& operator[](size_type i) noexcept {
         idx_ = i;
         return *this;
     }
@@ -275,7 +279,7 @@ public:
      *   - \f$ \mathbf{m}^{(N)} = \mathbf{m}_{1}^{(N_1)} + \mathbf{m}_{2}^{(N_2)} \f$ and
      *   - \f$ \mathbf{c}^{(N)} = \mathbf{c}_{1}^{(N_1)} + \mathbf{c}_{2}^{(N_2)} \f$ .
      *
-     *   Here, \f$ \mathbf{c} \f$ stands for any of the accumulated (cross-co)variance data, i.e. for 
+     *   Here, \f$ \mathbf{c} \f$ stands for any of the accumulated (cross-co)variance data, i.e. for
      *   \f$ \mathbf{c}_r^{(N)} \f$, \f$ \mathbf{c}_i^{(N)} \f$ and for \f$ \mathbf{c}_{ri}^{(N)} \f$.
      *
      * - `welford`: Let \f$ \mathbf{a} \odot \mathbf{b} \f$ denote the element-wise (Hadamard) product
@@ -287,7 +291,7 @@ public:
      *     \mathbf{n}^{(N)} \right) + N_2 \Re\left( \mathbf{n}_{2}^{(N_2)} - \mathbf{n}^{(N)} \right)
      *     \odot \Re\left( \mathbf{n}_{2}^{(N_2)} - \mathbf{n}^{(N)} \right) \f$ .
      *
-     *   Similar expressions hold for the other accumulated (cross-co)variance data, \f$ 
+     *   Similar expressions hold for the other accumulated (cross-co)variance data, \f$
      *   \mathbf{d}_i^{(N)} \f$ and \f$ \mathbf{d}_{ri}^{(N)} \f$.
      *
      * See also @ref simplemc-accs-accs-how.
@@ -297,6 +301,13 @@ public:
      */
     var_acc& operator<<(const var_acc& acc_other) {
         assert(size() == acc_other.size());
+
+        // early return if the other accumulator is empty
+        if (acc_other.empty()) {
+            return *this;
+        }
+
+        // incorporate the data and count
         if constexpr (varalg() == varalg::standard) {
             mdata_ += acc_other.mdata_;
             rdata_ += acc_other.rdata_;
@@ -315,6 +326,7 @@ public:
             mdata_ = m;
         }
         count_ += acc_other.count_;
+
         return *this;
     }
 
@@ -369,21 +381,28 @@ public:
      *
      * @return Multi-value accumulator wrapping `this` object.
      */
-    [[nodiscard]] auto make_mva() { return multivalue_acc<var_acc>(*this); }
+    [[nodiscard]] auto make_mva() noexcept { return multivalue_acc<var_acc>(*this); }
 
     /**
      * @brief Get the size \f$ M \f$ of the accumulator.
      *
      * @return Number of elements.
      */
-    [[nodiscard]] auto size() const { return mdata_.size(); }
+    [[nodiscard]] auto size() const noexcept { return mdata_.size(); }
 
     /**
      * @brief Get the total number of accumulated samples \f$ N \f$.
      *
      * @return Number of accumulated samples.
      */
-    [[nodiscard]] auto count() const { return count_; }
+    [[nodiscard]] auto count() const noexcept { return count_; }
+
+    /**
+     * @brief Check if the accumulator is empty.
+     *
+     * @return True if the count() is zero, i.e. \f$ N = 0 \f$, false otherwise.
+     */
+    [[nodiscard]] bool empty() const noexcept { return count_ == 0; }
 
     /**
      * @brief Get the accumulated mean data \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$.
@@ -391,7 +410,7 @@ public:
      * @return simplemc::eigen_vector_cplx of size \f$ M \f$ containing \f$ \mathbf{m}^{(N)}/
      * \mathbf{n}^{(N)} \f$.
      */
-    [[nodiscard]] const cplx_vec_type& mdata() const { return mdata_; }
+    [[nodiscard]] const cplx_vec_type& mdata() const noexcept { return mdata_; }
 
     /**
      * @brief Get the accumulated variance data \f$ \mathbf{c}_r^{(N)}/\mathbf{d}_r^{(N)} \f$.
@@ -399,7 +418,7 @@ public:
      * @return simplemc::eigen_vector_dbl of size \f$ M \f$ containing \f$ \mathbf{c}_{r}^{(N)}/
      * \mathbf{d}_{r}^{(N)} \f$.
      */
-    [[nodiscard]] const dbl_vec_type& rdata() const { return rdata_; }
+    [[nodiscard]] const dbl_vec_type& rdata() const noexcept { return rdata_; }
 
     /**
      * @brief Get the accumulated variance data \f$ \mathbf{c}_i^{(N)}/\mathbf{d}_i^{(N)} \f$.
@@ -407,7 +426,7 @@ public:
      * @return simplemc::eigen_vector_dbl of size \f$ M \f$ containing \f$ \mathbf{c}_{i}^{(N)}/
      * \mathbf{d}_{i}^{(N)} \f$.
      */
-    [[nodiscard]] const dbl_vec_type& idata() const { return idata_; }
+    [[nodiscard]] const dbl_vec_type& idata() const noexcept { return idata_; }
 
     /**
      * @brief Get the accumulated cross-covariance data \f$ \mathbf{c}_{ri}^{(N)}/
@@ -416,7 +435,7 @@ public:
      * @return simplemc::eigen_vector_dbl of size \f$ M \f$ containing \f$ \mathbf{c}_{ri}^{(N)}/
      * \mathbf{d}_{ri}^{(N)} \f$.
      */
-    [[nodiscard]] const dbl_vec_type& cdata() const { return cdata_; }
+    [[nodiscard]] const dbl_vec_type& cdata() const noexcept { return cdata_; }
 
     /**
      * @brief Calculate the sample mean \f$ \overline{\mathbf{z}}^{(N)} \f$.

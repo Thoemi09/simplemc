@@ -1077,20 +1077,33 @@
 /**
  * @defgroup simplemc-accs-accs-var Variance accumulator
  * @ingroup simplemc-accs-accs
- * @brief Calculating the sample mean and sample variance of a data set.
+ * @brief Tracks the sample mean and element-wise variance.
  *
- * @details The sample mean and variance are defined in @ref simplemc-accs-stats-mean and
+ * @details The variance accumulator computes the sample mean \f$ \overline{\mathbf{z}}^{(N)} \f$ and
+ * the sample variance \f$ s_{\mathbf{Z}}^2 \f$ as defined in @ref simplemc-accs-stats-mean and
  * @ref simplemc-accs-stats-var, respectively. They can be used as approximations to the expectation
  * value and variance of some random variable.
  *
- * The variance estimation does not account for any correlation between the samples. To get more
- * reliable results in case autocorrelation is a problem, see simplemc::block_acc,
- * simplemc::autocorr_acc or simplemc::batch_acc.
+ * In addition to the mean data, it stores running variance data. The variance estimation is *naive*
+ * (non-blocking) and does not account for any correlation between consecutive samples. When
+ * autocorrelation is present, the variance accumulator can be wrapped with
+ * simplemc::block_acc or simplemc::autocorr_acc (see @ref simplemc-accs-wrappers) to improve the
+ * error estimate. Alternatively, simplemc::batch_acc provides a similar capability with access to
+ * individual batches.
  *
- * The implementation for real and complex data samples is quite different. See the specializations
+ * The implementation for real and complex data samples is quite different. For complex samples, the
+ * variance is decomposed into separate real-part, imaginary-part, and cross-covariance contributions.
+ * See the specializations
  * - @ref "simplemc::var_acc< X, A >" "simplemc::var_acc for real samples" and
  * - @ref "simplemc::var_acc< Z, A >" "simplemc::var_acc for complex samples"
- * for more details.
+ * for algorithmic details.
+ *
+ * Scalar accumulators are created directly, e.g. `var_acc<double>` or
+ * `var_acc<std::complex<double>>`.
+ *
+ * For vector accumulators, the following convenience aliases are provided:
+ * - simplemc::var_acc_static — statically sized vector accumulator,
+ * - simplemc::var_acc_dynamic — dynamically sized vector accumulator.
  */
 
 /**

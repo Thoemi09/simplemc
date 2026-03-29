@@ -62,11 +62,15 @@ TEST_F(SimplemcAccs, VarAccEmpty) {
     var_acc<double> acc_sd;
     ASSERT_EQ(acc_sd.size(), 1);
     check_empty(acc_sd);
+    acc_sd << acc_sd;
+    check_empty(acc_sd);
     static_assert(!acc_sd.is_dynamic);
     static_assert(acc_sd.static_size == 1);
 
     var_acc<std::complex<double>, standard> acc_sc;
     ASSERT_EQ(acc_sc.size(), 1);
+    check_empty(acc_sc);
+    acc_sc << acc_sc;
     check_empty(acc_sc);
     static_assert(!acc_sc.is_dynamic);
     static_assert(acc_sc.static_size == 1);
@@ -74,11 +78,15 @@ TEST_F(SimplemcAccs, VarAccEmpty) {
     var_acc_static<double, 5> acc_st_d;
     ASSERT_EQ(acc_st_d.size(), 5);
     check_empty(acc_st_d);
+    acc_st_d << acc_st_d;
+    check_empty(acc_st_d);
     static_assert(!acc_st_d.is_dynamic);
     static_assert(acc_st_d.static_size == 5);
 
     var_acc_static<std::complex<double>, 5, standard> acc_st_c;
     ASSERT_EQ(acc_st_c.size(), 5);
+    check_empty(acc_st_c);
+    acc_st_c << acc_st_c;
     check_empty(acc_st_c);
     static_assert(!acc_st_c.is_dynamic);
     static_assert(acc_st_c.static_size == 5);
@@ -86,11 +94,15 @@ TEST_F(SimplemcAccs, VarAccEmpty) {
     var_acc_dynamic<double> acc_dyn_d(5);
     ASSERT_EQ(acc_dyn_d.size(), 5);
     check_empty(acc_dyn_d);
+    acc_dyn_d << acc_dyn_d;
+    check_empty(acc_dyn_d);
     static_assert(acc_dyn_d.is_dynamic);
     static_assert(acc_dyn_d.static_size == Eigen::Dynamic);
 
     var_acc_dynamic<std::complex<double>, standard> acc_dyn_c(5);
     ASSERT_EQ(acc_dyn_c.size(), 5);
+    check_empty(acc_dyn_c);
+    acc_dyn_c << acc_dyn_c;
     check_empty(acc_dyn_c);
     static_assert(acc_dyn_c.is_dynamic);
     static_assert(acc_dyn_c.static_size == Eigen::Dynamic);
@@ -431,4 +443,52 @@ TEST_F(SimplemcAccs, VarAccAutocorrelation) {
         check_level(acc_acc1, i);
         check_level(acc_acc2, i);
     }
+}
+
+// Check construction from pre-existing accumulated data.
+TEST_F(SimplemcAccs, VarAccDataConstructor) {
+    using namespace simplemc;
+
+    // real scalar: accumulate manually, then construct from mdata, cdata and count
+    var_acc<double> acc_d;
+    for (int i = 0; i < 10; ++i) {
+        acc_d << sp_d.samples[i](0);
+    }
+    var_acc<double> acc_d_copy(acc_d.mdata(), acc_d.cdata(), acc_d.count());
+    ASSERT_EQ(acc_d_copy.count(), acc_d.count());
+    ASSERT_EQ(acc_d_copy.mdata(), acc_d.mdata());
+    ASSERT_EQ(acc_d_copy.cdata(), acc_d.cdata());
+
+    // complex scalar
+    var_acc<std::complex<double>, standard> acc_c;
+    for (int i = 0; i < 10; ++i) {
+        acc_c << sp_c.samples[i](0);
+    }
+    var_acc<std::complex<double>, standard> acc_c_copy(
+        acc_c.mdata(), acc_c.rdata(), acc_c.idata(), acc_c.cdata(), acc_c.count());
+    ASSERT_EQ(acc_c_copy.count(), acc_c.count());
+    ASSERT_EQ(acc_c_copy.mdata(), acc_c.mdata());
+    ASSERT_EQ(acc_c_copy.rdata(), acc_c.rdata());
+    ASSERT_EQ(acc_c_copy.idata(), acc_c.idata());
+    ASSERT_EQ(acc_c_copy.cdata(), acc_c.cdata());
+
+    // real vector: static
+    var_acc_static<double, size> acc_v;
+    for (int i = 0; i < 10; ++i) {
+        acc_v << sp_d.samples[i].matrix();
+    }
+    var_acc_static<double, size> acc_v_copy(acc_v.mdata(), acc_v.cdata(), acc_v.count());
+    ASSERT_EQ(acc_v_copy.count(), acc_v.count());
+    ASSERT_EQ(acc_v_copy.mdata(), acc_v.mdata());
+    ASSERT_EQ(acc_v_copy.cdata(), acc_v.cdata());
+
+    // real vector: dynamic
+    var_acc_dynamic<double> acc_dyn(size);
+    for (int i = 0; i < 10; ++i) {
+        acc_dyn << sp_d.samples[i].matrix();
+    }
+    var_acc_dynamic<double> acc_dyn_copy(acc_dyn.mdata(), acc_dyn.cdata(), acc_dyn.count());
+    ASSERT_EQ(acc_dyn_copy.count(), acc_dyn.count());
+    ASSERT_EQ(acc_dyn_copy.mdata(), acc_dyn.mdata());
+    ASSERT_EQ(acc_dyn_copy.cdata(), acc_dyn.cdata());
 }

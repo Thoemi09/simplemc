@@ -30,7 +30,7 @@ namespace simplemc {
  * @ingroup simplemc-accs-accs-var
  * @brief Accumulator for calculating the sample mean and sample variance of a real data set.
  *
- * @details The accumulator satisfies simplemc::variance_accumulator and takes two template 
+ * @details The accumulator satisfies simplemc::variance_accumulator and takes two template
  * parameters:
  * - the type of the data samples (real simplemc::sample_type) and
  * - the algorithm (simplemc::varalg) that should be used to accumulate the data.
@@ -123,7 +123,7 @@ public:
      *
      * @return Its simplemc::varalg tag.
      */
-    static constexpr auto varalg() { return A; }
+    static constexpr auto varalg() noexcept { return A; }
 
     /* Friend declarations. */
     friend class multivalue_acc<var_acc>;
@@ -201,10 +201,14 @@ public:
     /**
      * @brief Subscript operator sets the index \f$ i \f$ and returns a reference to `this` object.
      *
+     * @details The index is *sticky*: it persists until changed by another call to operator[]() or
+     * until reset() is called. For scalar accumulators (size \f$ M = 1 \f$), the index should
+     * remain at 0.
+     *
      * @param i Index \f$ i \f$.
      * @return Reference to `this` object.
      */
-    var_acc& operator[](size_type i) {
+    var_acc& operator[](size_type i) noexcept {
         idx_ = i;
         return *this;
     }
@@ -279,6 +283,13 @@ public:
      */
     var_acc& operator<<(const var_acc& acc_other) {
         assert(size() == acc_other.size());
+
+        // early return if the other accumulator is empty
+        if (acc_other.empty()) {
+            return *this;
+        }
+
+        // incorporate the data and count
         if constexpr (varalg() == varalg::standard) {
             mdata_ += acc_other.mdata_;
             cdata_ += acc_other.cdata_;
@@ -291,6 +302,7 @@ public:
             mdata_ = m;
         }
         count_ += acc_other.count_;
+
         return *this;
     }
 
@@ -345,21 +357,28 @@ public:
      *
      * @return Multi-value accumulator wrapping `this` object.
      */
-    [[nodiscard]] auto make_mva() { return multivalue_acc<var_acc>(*this); }
+    [[nodiscard]] auto make_mva() noexcept { return multivalue_acc<var_acc>(*this); }
 
     /**
      * @brief Get the size \f$ M \f$ of the accumulator.
      *
      * @return Number of elements.
      */
-    [[nodiscard]] auto size() const { return mdata_.size(); }
+    [[nodiscard]] auto size() const noexcept { return mdata_.size(); }
 
     /**
      * @brief Get the total number of accumulated samples \f$ N \f$.
      *
      * @return Number of accumulated samples.
      */
-    [[nodiscard]] auto count() const { return count_; }
+    [[nodiscard]] auto count() const noexcept { return count_; }
+
+    /**
+     * @brief Check if the accumulator is empty.
+     *
+     * @return True if the count() is zero, i.e. \f$ N = 0 \f$, false otherwise.
+     */
+    [[nodiscard]] bool empty() const noexcept { return count_ == 0; }
 
     /**
      * @brief Get the accumulated mean data \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$.
@@ -367,7 +386,7 @@ public:
      * @return simplemc::eigen_vector_dbl of size \f$ M \f$ containing \f$ \mathbf{m}^{(N)}/
      * \mathbf{n}^{(N)} \f$.
      */
-    [[nodiscard]] const vec_type& mdata() const { return mdata_; }
+    [[nodiscard]] const vec_type& mdata() const noexcept { return mdata_; }
 
     /**
      * @brief Get the accumulated variance data \f$ \mathbf{c}^{(N)}/\mathbf{d}^{(N)} \f$.
@@ -375,7 +394,7 @@ public:
      * @return simplemc::eigen_vector_dbl of size \f$ M \f$ containing \f$ \mathbf{c}^{(N)}/
      * \mathbf{d}^{(N)} \f$.
      */
-    [[nodiscard]] const vec_type& cdata() const { return cdata_; }
+    [[nodiscard]] const vec_type& cdata() const noexcept { return cdata_; }
 
     /**
      * @brief Calculate the sample mean \f$ \overline{\mathbf{x}}^{(N)} \f$.
