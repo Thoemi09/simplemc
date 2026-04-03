@@ -6,9 +6,9 @@
 #ifndef SIMPLEMC_ACCS_BLOCK_ACC_HPP
 #define SIMPLEMC_ACCS_BLOCK_ACC_HPP
 
+#include <simplemc/accs/concepts.hpp>
 #include <simplemc/accs/mean_acc.hpp>
 #include <simplemc/accs/utils.hpp>
-#include <simplemc/numeric/eigen.hpp>
 #include <simplemc/utils/ranges.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
@@ -75,11 +75,21 @@ public:
     using size_type = typename acc_type::size_type;
 
     /**
+     * @brief Static size of the accumulator.
+     */
+    static constexpr int static_size = acc_type::static_size;
+
+    /**
+     * @brief Is the accumulator dynamically sized?
+     */
+    static constexpr bool is_dynamic = acc_type::is_dynamic;
+
+    /**
      * @brief Get the algorithm used to accumulate the data.
      *
      * @return simplemc::varalg tag of the wrapped accumulator.
      */
-    static constexpr auto varalg() { return A::varalg(); }
+    static constexpr auto varalg() noexcept { return A::varalg(); }
 
     /**
      * @brief Mean accumulator type for accumulating block data.
@@ -156,7 +166,7 @@ public:
      * @param i Index \f$ i \f$.
      * @return Reference to `this` object.
      */
-    block_acc& operator[](size_type i) {
+    block_acc& operator[](size_type i) noexcept {
         block_[i];
         return *this;
     }
@@ -255,21 +265,21 @@ public:
      *
      * @return Multi-value accumulator wrapping `this` object.
      */
-    [[nodiscard]] auto make_mva() { return block_.make_mva(); }
+    [[nodiscard]] auto make_mva() noexcept { return block_.make_mva(); }
 
     /**
      * @brief Get the size \f$ M \f$ of the accumulator.
      *
      * @return Number of elements.
      */
-    [[nodiscard]] auto size() const { return acc_.size(); }
+    [[nodiscard]] auto size() const noexcept { return acc_.size(); }
 
     /**
      * @brief Get the block size \f$ B \f$ of the accumulator.
      *
      * @return Block size.
      */
-    [[nodiscard]] auto block_size() const { return blsize_; }
+    [[nodiscard]] auto block_size() const noexcept { return blsize_; }
 
     /**
      * @brief Get the effective number of accumulated samples \f$ N_{\mathrm{eff}} = \lfloor N / B
@@ -277,7 +287,7 @@ public:
      *
      * @return Number of accumulated blocks.
      */
-    [[nodiscard]] auto count() const { return acc_.count(); }
+    [[nodiscard]] auto count() const noexcept { return acc_.count(); }
 
     /**
      * @brief Get the total number of accumulated samples \f$ N \f$.
@@ -285,21 +295,28 @@ public:
      * @return Number of accumulated blocks times the block size plus what is left in the current
      * block.
      */
-    [[nodiscard]] auto total_count() const { return count() * blsize_ + block_.count(); }
+    [[nodiscard]] auto total_count() const noexcept { return count() * blsize_ + block_.count(); }
+
+    /**
+     * @brief Check if the accumulator is empty.
+     *
+     * @return True if the count() is zero, i.e. \f$ N_{\mathrm{eff}} = 0 \f$, false otherwise.
+     */
+    [[nodiscard]] bool empty() const noexcept { return count() == 0; }
 
     /**
      * @brief Get the wrapped accumulator.
      *
-     * @return Underlying variance/covariance accumulator object.
+     * @return Const reference to the wrapped accumulator. 
      */
-    [[nodiscard]] const auto& accumulator() const { return acc_; }
+    [[nodiscard]] const auto& accumulator() const noexcept { return acc_; }
 
     /**
      * @brief Get the simplemc::mean_acc object used to accumulate block data.
      *
      * @return Current block data.
      */
-    [[nodiscard]] const auto& block() const { return block_; }
+    [[nodiscard]] const auto& block() const noexcept { return block_; }
 
     /**
      * @brief Check if the current block is full.
@@ -307,7 +324,48 @@ public:
      * @return True if the number of accumulated samples in the block is \f$ \geq B \f$, false
      * otherwise.
      */
-    [[nodiscard]] auto is_full() const { return block_.count() >= blsize_; }
+    [[nodiscard]] auto is_full() const noexcept { return block_.count() >= blsize_; }
+
+    /**
+     * @brief Calculate the sample mean \f$ \overline{\mathbf{z}}^{(N)} \f$.
+     *
+     * @details Delegates to the wrapped accumulator's `%mean()` method.
+     *
+     * @return Sample mean \f$ \overline{\mathbf{z}}^{(N)} \f$.
+     */
+    [[nodiscard]] auto mean() const { return acc_.mean(); }
+
+    /**
+     * @brief Calculate the sample variance of the mean \f$ s_{\overline{\mathbf{Z}}}^2 \f$.
+     *
+     * @details Delegates to the wrapped accumulator's `%variance()` method.
+     *
+     * @note Only available when the wrapped accumulator satisfies simplemc::variance_accumulator.
+     *
+     * @return Sample variance of the mean \f$ s_{\overline{\mathbf{Z}}}^2 \f$
+     */
+    [[nodiscard]] auto variance() const
+        requires variance_accumulator<acc_type>
+    {
+        return acc_.variance();
+    }
+
+    /**
+     * @brief Calculate the sample covariance matrix of the mean \f$ s_{\overline{\mathbf{Z}} 
+     * \overline{\mathbf{Z}}}^2 \f$.
+     *
+     * @details Delegates to the wrapped accumulator's `%covariance()` method.
+     *
+     * @note Only available when the wrapped accumulator satisfies simplemc::covariance_accumulator.
+     *
+     * @return Sample covariance matrix of the mean \f$ s_{\overline{\mathbf{Z}} 
+     * \overline{\mathbf{Z}}}^2 \f$.
+     */
+    [[nodiscard]] auto covariance() const
+        requires covariance_accumulator<acc_type>
+    {
+        return acc_.covariance();
+    }
 
     /**
      * @brief Check if the current block is_full() and add it to the effective samples if so.
@@ -322,8 +380,8 @@ public:
     /**
      * @brief Collect block accumulators from different MPI processes.
      *
-     * @details It simply calls `mpi_collect` for the wrapped accumulator. Accumulated data in current
-     * blocks is ignored.
+     * @details It simply calls `%mpi_collect` for the wrapped accumulator. Accumulated data in
+     * current blocks is ignored.
      *
      * It asserts that the block size \f$ B \f$ and the size \f$ M \f$ of the wrapped accumulator is
      * equal on all processes.
