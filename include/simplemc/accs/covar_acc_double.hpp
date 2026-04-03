@@ -436,6 +436,21 @@ public:
     }
 
     /**
+     * @brief Calculate the sample variance of the mean \f$ s_{\overline{\mathbf{X}}}^2 \f$.
+     *
+     * @details It returns the diagonal of covariance().
+     *
+     * @return Sample variance of the mean \f$ s_{\overline{\mathbf{X}}}^2 \f$.
+     */
+    [[nodiscard]] auto variance() const {
+        if constexpr (sample_scalar<sample_type>) {
+            return covariance();
+        } else {
+            return covariance().diagonal().eval();
+        }
+    }
+
+    /**
      * @brief Calculate the sample covariance matrix \f$ s_{\overline{\mathbf{X}}
      * \overline{\mathbf{X}}}^2 \f$ of the mean.
      *

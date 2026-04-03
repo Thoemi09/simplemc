@@ -493,6 +493,21 @@ public:
     }
 
     /**
+     * @brief Calculate the sample variance of the mean \f$ s_{\overline{\mathbf{Z}}}^2 \f$.
+     *
+     * @details It returns the diagonal of covariance().
+     *
+     * @return Sample variance of the mean \f$ s_{\overline{\mathbf{Z}}}^2 \f$.
+     */
+    [[nodiscard]] auto variance() const {
+        if constexpr (sample_scalar<sample_type>) {
+            return covariance();
+        } else {
+            return covariance().diagonal().eval();
+        }
+    }
+
+    /**
      * @brief Calculate the sample covariance matrix \f$ s_{\overline{\mathbf{Z}}
      * \overline{\mathbf{Z}}}^2 \f$ of the mean.
      *
@@ -520,11 +535,12 @@ public:
      */
     [[nodiscard]] auto covariance_of_data() const {
         using namespace std::complex_literals;
-        auto res = covariance_of_real_data() + covariance_of_imag_data() +
-            (0.0 + 1.0i) * (covariance_of_real_and_imag_data().transpose() - covariance_of_real_and_imag_data());
         if constexpr (sample_scalar<sample_type>) {
+            auto res = covariance_of_real_data() + covariance_of_imag_data();
             return res;
         } else {
+            auto res = covariance_of_real_data() + covariance_of_imag_data() +
+                (0.0 + 1.0i) * (covariance_of_real_and_imag_data().transpose() - covariance_of_real_and_imag_data());
             return res.eval();
         }
     }
