@@ -103,8 +103,8 @@ template <varalg A, eigen_vector_dbl V>
  *
  * Let \f$ S_{\mathbf{X}} \f$ and \f$ S_{\mathbf{Y}} \f$ be two data sets. This function calculates
  * the full (cross-)covariance matrix \f$ s_{\mathbf{X}\mathbf{Y}}^2 \f$. In case, the two data sets
- * are the same, this corresponds to the sample covariance matrix \f$ s_{\mathbf{X}}^2 \f$ of the data
- * set.
+ * are the same, this corresponds to the sample covariance matrix \f$ s_{\mathbf{X}\mathbf{X}}^2 \f$ 
+ * of the data set.
  *
  * See @ref simplemc-accs-stats-covar for some background information and
  * @ref "simplemc::covar_acc< X, A >" for algorithmic details.

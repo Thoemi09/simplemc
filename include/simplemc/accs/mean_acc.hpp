@@ -20,9 +20,11 @@
 #include <Eigen/Dense>
 
 #include <cassert>
+#include <concepts>
 #include <cstdint>
 #include <optional>
 #include <type_traits>
+#include <vector>
 
 namespace simplemc {
 
@@ -389,8 +391,7 @@ public:
      * @return Sample mean \f$ \overline{\mathbf{z}}^{(N)} \f$.
      */
     [[nodiscard]] auto mean() const {
-        using simplemc::accs::mean;
-        return detail::scalar_or_matrix<sample_scalar<sample_type>>(mean<varalg()>(mdata_, count_));
+        return detail::scalar_or_matrix<sample_scalar<sample_type>>(accs::mean<varalg()>(mdata_, count_));
     }
 
     /**

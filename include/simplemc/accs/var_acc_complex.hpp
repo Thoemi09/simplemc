@@ -22,6 +22,7 @@
 
 #include <cassert>
 #include <complex>
+#include <concepts>
 #include <cstdint>
 #include <type_traits>
 
@@ -77,11 +78,6 @@ public:
     using cplx_vec_type = std::conditional_t<sample_scalar<Z>, Eigen::Matrix<Z, 1, 1>, Z>;
 
     /**
-     * @brief Real vector type for storing accumulated (cross-co)variance data.
-     */
-    using dbl_vec_type = Eigen::Matrix<double, cplx_vec_type::RowsAtCompileTime, 1>;
-
-    /**
      * @brief Underlying scalar type of accumulated samples.
      */
     using value_type = std::complex<double>;
@@ -105,6 +101,11 @@ public:
      * @brief Is the accumulator dynamically sized?
      */
     static constexpr bool is_dynamic = (cplx_vec_type::RowsAtCompileTime == Eigen::Dynamic);
+
+    /**
+     * @brief Real vector type for storing accumulated (cross-co)variance data.
+     */
+    using dbl_vec_type = Eigen::Matrix<double, static_size, 1>;
 
     /**
      * @brief Get the algorithm used to accumulate the data.
@@ -413,7 +414,8 @@ public:
     [[nodiscard]] const cplx_vec_type& mdata() const noexcept { return mdata_; }
 
     /**
-     * @brief Get the accumulated variance data \f$ \mathbf{c}_r^{(N)}/\mathbf{d}_r^{(N)} \f$.
+     * @brief Get the accumulated variance data \f$ \mathbf{c}_r^{(N)}/\mathbf{d}_r^{(N)} \f$ of the
+     * real part of the complex samples.
      *
      * @return simplemc::eigen_vector_dbl of size \f$ M \f$ containing \f$ \mathbf{c}_{r}^{(N)}/
      * \mathbf{d}_{r}^{(N)} \f$.
@@ -421,7 +423,8 @@ public:
     [[nodiscard]] const dbl_vec_type& rdata() const noexcept { return rdata_; }
 
     /**
-     * @brief Get the accumulated variance data \f$ \mathbf{c}_i^{(N)}/\mathbf{d}_i^{(N)} \f$.
+     * @brief Get the accumulated variance data \f$ \mathbf{c}_i^{(N)}/\mathbf{d}_i^{(N)} \f$ of the
+     * imaginary part of the complex samples.
      *
      * @return simplemc::eigen_vector_dbl of size \f$ M \f$ containing \f$ \mathbf{c}_{i}^{(N)}/
      * \mathbf{d}_{i}^{(N)} \f$.
@@ -430,7 +433,7 @@ public:
 
     /**
      * @brief Get the accumulated cross-covariance data \f$ \mathbf{c}_{ri}^{(N)}/
-     * \mathbf{d}_{ri}^{(N)} \f$.
+     * \mathbf{d}_{ri}^{(N)} \f$ between the real and imaginary parts of the complex samples.
      *
      * @return simplemc::eigen_vector_dbl of size \f$ M \f$ containing \f$ \mathbf{c}_{ri}^{(N)}/
      * \mathbf{d}_{ri}^{(N)} \f$.
@@ -446,8 +449,7 @@ public:
      * @return Sample mean \f$ \overline{\mathbf{z}}^{(N)} \f$.
      */
     [[nodiscard]] auto mean() const {
-        using simplemc::accs::mean;
-        return detail::scalar_or_matrix<sample_scalar<sample_type>>(mean<varalg()>(mdata_, count_));
+        return detail::scalar_or_matrix<sample_scalar<sample_type>>(simplemc::accs::mean<varalg()>(mdata_, count_));
     }
 
     /**
@@ -493,10 +495,9 @@ public:
      * @return Sample variance of the real part of the data set, i.e. \f$ s_{\mathbf{X}}^2 \f$.
      */
     [[nodiscard]] auto variance_of_real_data() const {
-        using simplemc::accs::diag_covariance;
         dbl_vec_type mdata_r = mdata_.real();
         return detail::scalar_or_matrix<sample_scalar<sample_type>>(
-            diag_covariance<varalg()>(mdata_r, mdata_r, rdata_, count_));
+            simplemc::accs::diag_covariance<varalg()>(mdata_r, mdata_r, rdata_, count_));
     }
 
     /**
@@ -510,10 +511,9 @@ public:
      * @return Sample variance of the imaginary part of the data set, i.e. \f$ s_{\mathbf{Y}}^2 \f$.
      */
     [[nodiscard]] auto variance_of_imag_data() const {
-        using simplemc::accs::diag_covariance;
         dbl_vec_type mdata_i = mdata_.imag();
         return detail::scalar_or_matrix<sample_scalar<sample_type>>(
-            diag_covariance<varalg()>(mdata_i, mdata_i, idata_, count_));
+            simplemc::accs::diag_covariance<varalg()>(mdata_i, mdata_i, idata_, count_));
     }
 
     /**
@@ -528,11 +528,10 @@ public:
      * \mathrm{diag}(s_{\mathbf{XY}}^2) \f$.
      */
     [[nodiscard]] auto covariance_of_real_and_imag_data() const {
-        using simplemc::accs::diag_covariance;
         dbl_vec_type mdata_r = mdata_.real();
         dbl_vec_type mdata_i = mdata_.imag();
         return detail::scalar_or_matrix<sample_scalar<sample_type>>(
-            diag_covariance<varalg()>(mdata_r, mdata_i, cdata_, count_));
+            simplemc::accs::diag_covariance<varalg()>(mdata_r, mdata_i, cdata_, count_));
     }
 
     /**
@@ -553,7 +552,16 @@ public:
     friend var_acc mpi_collect(const mpi::communicator& comm, const var_acc& acc) {
         assert(all_equal(acc.size(), comm));
         var_acc res(acc.size());
+
+        // reduce the count
         mpi::all_reduce(acc.count_, res.count_, MPI_SUM, comm);
+
+        // early return if the reduced count is zero
+        if (res.count_ == 0) {
+            return res;
+        }
+
+        // reduce the accumulated data
         if constexpr (var_acc::varalg() == varalg::standard) {
             mpi::all_reduce(make_span(acc.mdata_), make_span(res.mdata_), MPI_SUM, comm);
             mpi::all_reduce(make_span(acc.rdata_), make_span(res.rdata_), MPI_SUM, comm);
@@ -574,6 +582,7 @@ public:
                 acc.cdata_ + n1 * (acc.mdata_ - res.mdata_).real().cwiseProduct((acc.mdata_ - res.mdata_).imag());
             mpi::all_reduce(make_span(tmp_cdata), make_span(res.cdata_), MPI_SUM, comm);
         }
+
         return res;
     }
 

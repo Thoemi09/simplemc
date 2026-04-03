@@ -21,6 +21,7 @@
 #include <Eigen/Dense>
 
 #include <cassert>
+#include <concepts>
 #include <cstdint>
 #include <type_traits>
 
@@ -63,9 +64,9 @@ namespace simplemc {
  *     s_{\mathbf{X}}^2 = \frac{\mathbf{d}^{(N)}}{N - 1} \; .
  *   \f]
  *
- * Here, \f$ \mathbf{t} \f$ is a constant vector that can optionally be applied to the data
- * samples to increase numerical accuracy and \f$ \mathbf{a} \odot \mathbf{b} \f$ denotes the
- * Hadamard (element-wise) product. See also @ref simplemc-accs-stats-var.
+ * Here, \f$ \mathbf{t} \f$ is a constant vector that can optionally be applied to the data samples to
+ * increase numerical accuracy and \f$ \mathbf{a} \odot \mathbf{b} \f$ denotes the Hadamard
+ * (element-wise) product. See also @ref simplemc-accs-stats-var.
  *
  * @include accs/doc_var_acc_dbl.cpp
  *
@@ -91,7 +92,7 @@ public:
     /**
      * @brief Real vector type for storing accumulated mean and variance data.
      */
-    using vec_type = std::conditional_t<sample_scalar<X>, Eigen::Matrix<X, 1, 1>, X>;
+    using dbl_vec_type = std::conditional_t<sample_scalar<X>, Eigen::Matrix<X, 1, 1>, X>;
 
     /**
      * @brief Underlying scalar type of accumulated samples.
@@ -111,12 +112,12 @@ public:
     /**
      * @brief Static size of the accumulator.
      */
-    static constexpr int static_size = vec_type::RowsAtCompileTime;
+    static constexpr int static_size = dbl_vec_type::RowsAtCompileTime;
 
     /**
      * @brief Is the accumulator dynamically sized?
      */
-    static constexpr bool is_dynamic = (vec_type::RowsAtCompileTime == Eigen::Dynamic);
+    static constexpr bool is_dynamic = (dbl_vec_type::RowsAtCompileTime == Eigen::Dynamic);
 
     /**
      * @brief Get the algorithm used to accumulate the data.
@@ -155,8 +156,8 @@ public:
      * @param m Number of elements \f$ M \f$.
      */
     explicit var_acc(size_type m = 1) :
-        mdata_(vec_type::Zero(is_dynamic ? m : static_size)),
-        cdata_(vec_type::Zero(is_dynamic ? m : static_size)),
+        mdata_(dbl_vec_type::Zero(is_dynamic ? m : static_size)),
+        cdata_(dbl_vec_type::Zero(is_dynamic ? m : static_size)),
         count_(0),
         idx_(0) {
         if constexpr (is_dynamic) {
@@ -177,7 +178,7 @@ public:
      * @param cd Accumulated variance data \f$ \mathbf{c}^{(N)}/\mathbf{d}^{(N)} \f$.
      * @param n Number of accumulated samples \f$ N \f$.
      */
-    var_acc(const vec_type& md, const vec_type& cd, count_type n) : mdata_(md), cdata_(cd), count_(n), idx_(0) {
+    var_acc(const dbl_vec_type& md, const dbl_vec_type& cd, count_type n) : mdata_(md), cdata_(cd), count_(n), idx_(0) {
         if constexpr (is_dynamic) {
             if (mdata_.size() <= 0) {
                 throw simplemc_exception("Dynamic size <= 0");
@@ -386,7 +387,7 @@ public:
      * @return simplemc::eigen_vector_dbl of size \f$ M \f$ containing \f$ \mathbf{m}^{(N)}/
      * \mathbf{n}^{(N)} \f$.
      */
-    [[nodiscard]] const vec_type& mdata() const noexcept { return mdata_; }
+    [[nodiscard]] const dbl_vec_type& mdata() const noexcept { return mdata_; }
 
     /**
      * @brief Get the accumulated variance data \f$ \mathbf{c}^{(N)}/\mathbf{d}^{(N)} \f$.
@@ -394,7 +395,7 @@ public:
      * @return simplemc::eigen_vector_dbl of size \f$ M \f$ containing \f$ \mathbf{c}^{(N)}/
      * \mathbf{d}^{(N)} \f$.
      */
-    [[nodiscard]] const vec_type& cdata() const noexcept { return cdata_; }
+    [[nodiscard]] const dbl_vec_type& cdata() const noexcept { return cdata_; }
 
     /**
      * @brief Calculate the sample mean \f$ \overline{\mathbf{x}}^{(N)} \f$.
@@ -405,8 +406,7 @@ public:
      * @return Sample mean \f$ \overline{\mathbf{x}}^{(N)} \f$.
      */
     [[nodiscard]] auto mean() const {
-        using simplemc::accs::mean;
-        return detail::scalar_or_matrix<sample_scalar<sample_type>>(mean<varalg()>(mdata_, count_));
+        return detail::scalar_or_matrix<sample_scalar<sample_type>>(simplemc::accs::mean<varalg()>(mdata_, count_));
     }
 
     /**
@@ -435,9 +435,8 @@ public:
      * @return Sample variance \f$ s_{\mathbf{X}}^2 \f$.
      */
     [[nodiscard]] auto variance_of_data() const {
-        using simplemc::accs::diag_covariance;
         return detail::scalar_or_matrix<sample_scalar<sample_type>>(
-            diag_covariance<varalg()>(mdata_, mdata_, cdata_, count_));
+            simplemc::accs::diag_covariance<varalg()>(mdata_, mdata_, cdata_, count_));
     }
 
     /**
@@ -458,25 +457,35 @@ public:
     friend var_acc mpi_collect(const mpi::communicator& comm, const var_acc& acc) {
         assert(all_equal(acc.size(), comm));
         var_acc res(acc.size());
+
+        // reduce the count
         mpi::all_reduce(acc.count_, res.count_, MPI_SUM, comm);
+
+        // early return if the reduced count is zero
+        if (res.count_ == 0) {
+            return res;
+        }
+
+        // reduce the accumulated data
         if constexpr (var_acc::varalg() == varalg::standard) {
             mpi::all_reduce(make_span(acc.mdata_), make_span(res.mdata_), MPI_SUM, comm);
             mpi::all_reduce(make_span(acc.cdata_), make_span(res.cdata_), MPI_SUM, comm);
         } else {
             const auto n1 = static_cast<double>(acc.count_);
             const auto n = static_cast<double>(res.count_);
-            const vec_type tmp_mdata = acc.mdata_ * n1 / n;
+            const dbl_vec_type tmp_mdata = acc.mdata_ * n1 / n;
             mpi::all_reduce(make_span(tmp_mdata), make_span(res.mdata_), MPI_SUM, comm);
-            const vec_type tmp_vdata =
+            const dbl_vec_type tmp_vdata =
                 acc.cdata_ + n1 * (acc.mdata_ - res.mdata_).cwiseProduct(acc.mdata_ - res.mdata_);
             mpi::all_reduce(make_span(tmp_vdata), make_span(res.cdata_), MPI_SUM, comm);
         }
+
         return res;
     }
 
 private:
-    vec_type mdata_;
-    vec_type cdata_;
+    dbl_vec_type mdata_;
+    dbl_vec_type cdata_;
     count_type count_;
     size_type idx_;
 };

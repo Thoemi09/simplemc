@@ -52,8 +52,7 @@ template <varalg A = varalg::welford, sample_range R>
 }
 
 /**
- * @brief Accumulate (complex) data samples in a simplemc::var_acc wrapped in a
- * simplemc::block_acc.
+ * @brief Accumulate (complex) data samples in a simplemc::var_acc wrapped in a simplemc::block_acc.
  *
  * @details See @ref "simplemc::var_acc< X, A >" "simplemc::var_acc for real samples",
  * @ref "simplemc::var_acc< Z, A >" "simplemc::var_acc for complex samples" and simplemc::block_acc

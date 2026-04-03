@@ -756,11 +756,11 @@
  *
  * In case, the set of samples \f$ S_{\mathbf{Z}} \f$, \f$ S_{\mathbf{X}} \f$ and \f$ S_{\mathbf{Y}}
  * \f$ contain random samples drawn from the distribution of some random vector, let \f$ \mathbf{Z} =
- * \mathbf{X} + i \mathbf{Y} \f$, \f$ \mathbf{X} \f$ and \f$ \mathbf{Y} \f$ be the corresponding
- * random vectors. Each random vector consists of \f$ M \f$ individual random variables, i.e. \f$
- * \mathbf{Z} = (Z_1, \dots, Z_M) \f$, \f$ \mathbf{X} = (X_1, \dots, X_M) \f$ and \f$ \mathbf{Y} =
- * (Y_1, \dots, Y_M) \f$ with \f$ Z_j \f$, \f$ X_j \f$ and \f$ Y_j \f$ being (complex) random
- * variables.
+ * \mathbf{X} + i \mathbf{Y} \f$ be a complex random vector and let \f$ \mathbf{X} \f$ and \f$ 
+ * \mathbf{Y} \f$ be the corresponding real random vectors. Each random vector consists of \f$ M \f$ 
+ * individual random variables, i.e. \f$ \mathbf{Z} = (Z_1, \dots, Z_M) \f$, \f$ \mathbf{X} = (X_1, 
+ * \dots, X_M) \f$ and \f$ \mathbf{Y} = (Y_1, \dots, Y_M) \f$ with random scalars \f$ Z_j \f$, \f$ X_j 
+ * \f$ and \f$ Y_j \f$.
  *
  * @subsection simplemc-accs-stats-mean Sample mean
  *
@@ -1109,20 +1109,34 @@
 /**
  * @defgroup simplemc-accs-accs-covar Covariance accumulator
  * @ingroup simplemc-accs-accs
- * @brief Calculating the sample mean and sample covariance matrix of a random vector.
+ * @brief Tracks the sample mean and the full covariance matrix.
  *
- * @details The sample mean and the sample covariance matrix are used as approximations to the exact
- * expectation value and the covariance matrix, respectively. See @ref simplemc-accs-stats for a
- * definition of those quantities.
+ * @details The covariance accumulator computes the sample mean
+ * \f$ \overline{\mathbf{z}}^{(N)} \f$ and the sample covariance matrix
+ * \f$ s_{\mathbf{Z}\mathbf{Z}}^2 \f$ as defined in @ref simplemc-accs-stats-mean and
+ * @ref simplemc-accs-stats-covar, respectively. They can be used as approximations to the
+ * expectation value and the covariance matrix of some random vector.
  *
- * The covariance estimation does not account for any correlation between the samples. To get more
- * reliable results in case autocorrelation is a problem, see simplemc::block_acc,
- * simplemc::autocorr_acc or @ref simplemc-accs-accs-batch.
+ * In addition to the mean data, it stores a running covariance matrix. The covariance estimation
+ * is *naive* (non-blocking) and does not account for any correlation between consecutive samples.
+ * When autocorrelation is present, the covariance accumulator can be wrapped with
+ * simplemc::block_acc or simplemc::autocorr_acc (see @ref simplemc-accs-wrappers) to improve the
+ * error estimate. Alternatively, simplemc::batch_acc provides a similar capability with access to
+ * individual batches.
  *
- * The implementation for real and complex random vectors is quite different. See the specializations
+ * The implementation for real and complex random vectors is quite different. For complex vectors,
+ * the covariance is decomposed into separate real-part, imaginary-part, and cross-covariance
+ * contributions. See the specializations
  * - @ref "simplemc::covar_acc< X, A >" "simplemc::covar_acc for real samples" and
  * - @ref "simplemc::covar_acc< Z, A >" "simplemc::covar_acc for complex samples"
- * for more details.
+ * for algorithmic details.
+ *
+ * Scalar accumulators are created directly, e.g. `covar_acc<double>` or
+ * `covar_acc<std::complex<double>>`.
+ *
+ * For vector accumulators, the following convenience aliases are provided:
+ * - simplemc::covar_acc_static — statically sized vector accumulator,
+ * - simplemc::covar_acc_dynamic — dynamically sized vector accumulator.
  */
 
 /**

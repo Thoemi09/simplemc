@@ -14,4 +14,6 @@ simplemc_add_examples(
     doc_multivalue_acc
     doc_var_acc_cplx
     doc_var_acc_dbl
+    doc_covar_acc_dbl
+    doc_covar_acc_cplx
 )

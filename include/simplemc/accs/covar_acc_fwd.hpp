@@ -6,8 +6,8 @@
 #ifndef SIMPLEMC_ACCS_COVAR_ACC_FWD_HPP
 #define SIMPLEMC_ACCS_COVAR_ACC_FWD_HPP
 
+#include <simplemc/accs/concepts.hpp>
 #include <simplemc/accs/varalg.hpp>
-#include <simplemc/numeric/eigen.hpp>
 #include <simplemc/utils/concepts.hpp>
 
 #include <Eigen/Dense>
@@ -27,25 +27,16 @@ namespace simplemc {
  * - @ref "simplemc::covar_acc< Z, A >" "simplemc::covar_acc for complex samples"
  * for more details.
  *
- * @tparam V simplemc::eigen_vector type.
+ * @tparam T simplemc::sample_type to accumulate.
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  */
-template <eigen_vector V, varalg A = varalg::welford>
+template <sample_type T, varalg A = varalg::welford>
 class covar_acc;
-
-/**
- * @brief Alias for a statically sized covariance accumulator of size 1.
- *
- * @tparam T Type of accumulated data.
- * @tparam A simplemc::varalg algorithm used to accumulate the data.
- */
-template <double_or_complex T, varalg A = varalg::welford>
-using covar_acc_single = covar_acc<Eigen::Matrix<T, 1, 1>, A>;
 
 /**
  * @brief Alias for a statically sized covariance accumulator.
  *
- * @tparam T Type of accumulated data.
+ * @tparam T Underlying scalar type of accumulated values (simplemc::double_or_complex).
  * @tparam M Size of the accumulator.
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  */
@@ -56,7 +47,7 @@ using covar_acc_static = covar_acc<Eigen::Matrix<T, M, 1>, A>;
 /**
  * @brief Alias for a dynamically sized covariance accumulator.
  *
- * @tparam T Type of accumulated data.
+ * @tparam T Underlying scalar type of accumulated values (simplemc::double_or_complex).
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  */
 template <double_or_complex T, varalg A = varalg::welford>

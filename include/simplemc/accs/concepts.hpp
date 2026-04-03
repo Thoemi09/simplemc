@@ -70,7 +70,7 @@ concept sample_type = sample_scalar<T> || sample_vector<T>;
  * @details A type satisfies simplemc::sample_range if it is a sized forward range whose elements
  * satisfy simplemc::sample_type.
  *
- * This corresponds to the data sets \f$ S_{\mathbf{Z}} \f$, \f$ S_{\mathbf{X}} \f$ pr \f$
+ * This corresponds to the data sets \f$ S_{\mathbf{Z}} \f$, \f$ S_{\mathbf{X}} \f$ or \f$
  * S_{\mathbf{Y}} \f$ introduced in @ref simplemc-accs-stats.
  *
  * @tparam R Range type to check.
@@ -124,7 +124,7 @@ concept basic_accumulator = requires {
  */
 template <typename A>
 concept mean_accumulator = basic_accumulator<A> && requires(const A& acc) {
-    { acc.mean() };
+    { acc.mean() } -> std::same_as<typename A::sample_type>;
 };
 
 /**
