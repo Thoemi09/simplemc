@@ -77,17 +77,20 @@ public:
     /**
      * @brief Subscript operator sets the index \f$ i \f$ of the wrapped accumulator and returns a
      * reference to `this` object.
+     * 
+     * @details The index is *sticky*: it persists until changed by another call to operator[](). For 
+     * scalar accumulators (size \f$ M = 1 \f$), the index should remain at 0.
      *
      * @param idx Index \f$ i \f$.
      * @return Reference to `this` object.
      */
-    multivalue_acc& operator[](size_type idx) {
+    multivalue_acc& operator[](size_type idx) noexcept {
         acc_.idx_ = idx;
         return *this;
     }
 
     /**
-     * @brief Stream operator for accumulating a single value \f$ x \f$.
+     * @brief Stream operator for accumulating a single (scalar) value \f$ x \f$.
      *
      * @details For accumulators with size \f$ M > 1 \f$, the value is added to the element at the
      * current index \f$ i \f$ (see operator[]()).
@@ -176,7 +179,7 @@ public:
      *
      * @param inc Increment.
      */
-    void increment_count(count_type inc = 1) { acc_.count_ += inc; }
+    void increment_count(count_type inc = 1) noexcept { acc_.count_ += inc; }
 
     /**
      * @brief Get the size \f$ M \f$ of the wrapped accumulator.
