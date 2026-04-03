@@ -26,33 +26,32 @@ TEST_F(SimplemcAccs, VarAccConcepts) {
     using namespace simplemc;
 
     // var_acc with scalar types
-    static_assert(basic_accumulator<var_acc<double>>);
-    static_assert(mean_accumulator<var_acc<double>>);
     static_assert(variance_accumulator<var_acc<double>>);
-    static_assert(basic_accumulator<var_acc<std::complex<double>>>);
-    static_assert(mean_accumulator<var_acc<std::complex<double>>>);
     static_assert(variance_accumulator<var_acc<std::complex<double>>>);
 
     // var_acc with static vector types
-    static_assert(basic_accumulator<var_acc_static<double, 3>>);
-    static_assert(mean_accumulator<var_acc_static<double, 3>>);
     static_assert(variance_accumulator<var_acc_static<double, 3>>);
-    static_assert(basic_accumulator<var_acc_static<std::complex<double>, 3>>);
-    static_assert(mean_accumulator<var_acc_static<std::complex<double>, 3>>);
     static_assert(variance_accumulator<var_acc_static<std::complex<double>, 3>>);
 
     // var_acc with dynamic vector types
-    static_assert(basic_accumulator<var_acc_dynamic<double>>);
-    static_assert(mean_accumulator<var_acc_dynamic<double>>);
     static_assert(variance_accumulator<var_acc_dynamic<double>>);
-    static_assert(basic_accumulator<var_acc_dynamic<std::complex<double>>>);
-    static_assert(mean_accumulator<var_acc_dynamic<std::complex<double>>>);
     static_assert(variance_accumulator<var_acc_dynamic<std::complex<double>>>);
 
     // multivalue_acc wrapping var_acc
     static_assert(basic_accumulator<multivalue_acc<var_acc<double>>>);
     static_assert(basic_accumulator<multivalue_acc<var_acc<std::complex<double>>>>);
     static_assert(basic_accumulator<multivalue_acc<var_acc_static<double, 3>>>);
+    static_assert(basic_accumulator<multivalue_acc<var_acc_static<std::complex<double>, 3>>>);
+    static_assert(basic_accumulator<multivalue_acc<var_acc_dynamic<double>>>);
+    static_assert(basic_accumulator<multivalue_acc<var_acc_dynamic<std::complex<double>>>>);
+
+    // block_acc wrapping var_acc
+    static_assert(variance_accumulator<block_acc<var_acc<double>>>);
+    static_assert(variance_accumulator<block_acc<var_acc<std::complex<double>>>>);
+    static_assert(variance_accumulator<block_acc<var_acc_static<double, 3>>>);
+    static_assert(variance_accumulator<block_acc<var_acc_static<std::complex<double>, 3>>>);
+    static_assert(variance_accumulator<block_acc<var_acc_dynamic<double>>>);
+    static_assert(variance_accumulator<block_acc<var_acc_dynamic<std::complex<double>>>>);
 }
 
 // Check empty accumulators.

@@ -2,6 +2,7 @@
 
 #include <simplemc/accs/autocorr_acc.hpp>
 #include <simplemc/accs/block_acc.hpp>
+#include <simplemc/accs/concepts.hpp>
 #include <simplemc/accs/covar_acc.hpp>
 
 #include <complex>
@@ -19,6 +20,39 @@ constexpr auto welford = varalg::welford;
 constexpr double tol = 1e-10;
 
 } // namespace
+
+// Check that accumulator concepts are satisfied.
+TEST_F(SimplemcAccs, CovarAccConcepts) {
+    using namespace simplemc;
+
+    // covar_acc with scalar types
+    static_assert(covariance_accumulator<covar_acc<double>>);
+    static_assert(covariance_accumulator<covar_acc<std::complex<double>>>);
+
+    // covar_acc with static vector types
+    static_assert(covariance_accumulator<covar_acc_static<double, 3>>);
+    static_assert(covariance_accumulator<covar_acc_static<std::complex<double>, 3>>);
+
+    // covar_acc with dynamic vector types
+    static_assert(covariance_accumulator<covar_acc_dynamic<double>>);
+    static_assert(covariance_accumulator<covar_acc_dynamic<std::complex<double>>>);
+
+    // multivalue_acc wrapping covar_acc
+    static_assert(basic_accumulator<multivalue_acc<covar_acc<double>>>);
+    static_assert(basic_accumulator<multivalue_acc<covar_acc<std::complex<double>>>>);
+    static_assert(basic_accumulator<multivalue_acc<covar_acc_static<double, 3>>>);
+    static_assert(basic_accumulator<multivalue_acc<covar_acc_static<std::complex<double>, 3>>>);
+    static_assert(basic_accumulator<multivalue_acc<covar_acc_dynamic<double>>>);
+    static_assert(basic_accumulator<multivalue_acc<covar_acc_dynamic<std::complex<double>>>>);
+
+    // block_acc wrapping covar_acc
+    static_assert(covariance_accumulator<block_acc<covar_acc<double>>>);
+    static_assert(covariance_accumulator<block_acc<covar_acc<std::complex<double>>>>);
+    static_assert(covariance_accumulator<block_acc<covar_acc_static<double, 3>>>);
+    static_assert(covariance_accumulator<block_acc<covar_acc_static<std::complex<double>, 3>>>);
+    static_assert(covariance_accumulator<block_acc<covar_acc_dynamic<double>>>);
+    static_assert(covariance_accumulator<block_acc<covar_acc_dynamic<std::complex<double>>>>);
+}
 
 // Check empty accumulators.
 TEST_F(SimplemcAccs, CovarAccEmpty) {
