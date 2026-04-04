@@ -6,6 +6,7 @@
 #ifndef SIMPLEMC_ACCS_AUTOCORR_ACC_HPP
 #define SIMPLEMC_ACCS_AUTOCORR_ACC_HPP
 
+#include <simplemc/accs/concepts.hpp>
 #include <simplemc/accs/mean_acc.hpp>
 #include <simplemc/accs/utils.hpp>
 #include <simplemc/numeric/eigen.hpp>
@@ -13,6 +14,7 @@
 #include <simplemc/utils/simplemc_exception.hpp>
 
 #include <cassert>
+#include <concepts>
 #include <cstddef>
 #include <utility>
 #include <vector>
@@ -64,7 +66,7 @@ namespace simplemc {
  * Functionality and usage is similar to the wrapped accumulator except that multi-value accumulation
  * is not supported right now (please use accumulate(R1&&, R2&&) instead).
  *
- * Note that the accumulator only groups the data into levels with increasing block sizes. It does not
+ * @note The accumulator only groups the data into levels with increasing block sizes. It does not
  * give a final estimate of the integrated autocorrelation time. It is the users responsibility to
  * inspect the blocked data and decide what to do with it.
  *
@@ -139,7 +141,7 @@ public:
      *
      * @return simplemc::varalg tag of the wrapped accumulator.
      */
-    static constexpr auto varalg() { return A::varalg(); }
+    static constexpr auto varalg() noexcept { return A::varalg(); }
 
     /**
      * @brief Mean accumulator type for accumulating block data.
@@ -257,10 +259,15 @@ public:
         accs_ = std::vector<acc_type>(min_levels_, acc_type { size() });
         blocks_ = std::vector<mean_acc_type>(min_levels_, mean_acc_type { size() });
         blsizes_ = make_blsizes(min_levels_, fac_);
+        idx_ = 0;
     }
 
     /**
      * @brief Subscript operator sets the index \f$ i \f$ and returns a reference to `this` object.
+     *
+     * @details The index is *sticky*: it persists until changed by another call to operator[]() or
+     * until reset() is called. For scalar accumulators (size \f$ M = 1 \f$), the index should
+     * remain at 0.
      *
      * @param i Index \f$ i \f$.
      * @return Reference to `this` object.
@@ -271,10 +278,11 @@ public:
     }
 
     /**
-     * @brief Stream operator for accumulating a single value \f$ x \f$.
+     * @brief Stream operator for accumulating a single (scalar) value \f$ x \f$.
      *
-     * @details The value is first added to all levels with \f$ l < L_{\text{min}} \f$. If the block
-     * in level \f$ L_{\text{min}} - 1 \f$ is full, it is recursively propagated to higher levels.
+     * @details The value is first added to all levels with \f$ l < L_{\text{min}} \f$ using
+     * simplemc::mean_acc::operator<<(const U&). If the block in level \f$ L_{\text{min}} - 1 \f$ is
+     * full, it is recursively propagated to higher levels.
      *
      * See also @ref simplemc-accs-accs-how.
      *
@@ -293,8 +301,9 @@ public:
     /**
      * @brief Stream operator for accumulating a vector \f$ \mathbf{v} \f$.
      *
-     * @details The vector is first added to all levels with \f$ l < L_{\text{min}} \f$. If the block
-     * in level \f$ L_{\text{min}} - 1 \f$ is full, it is recursively propagated to higher levels.
+     * @details The vector is first added to all levels with \f$ l < L_{\text{min}} \f$ using
+     * simplemc::mean_acc::operator<<(const W&). If the block in level \f$ L_{\text{min}} - 1 \f$ is
+     * full, it is recursively propagated to higher levels.
      *
      * See also @ref simplemc-accs-accs-how.
      *
@@ -304,6 +313,7 @@ public:
      */
     template <typename W>
     autocorr_acc& operator<<(const W& v) {
+        assert(v.size() == size());
         auto f = [](auto& acc, const auto& vec) { acc << vec; };
         add_values(f, v);
         return *this;
@@ -312,8 +322,9 @@ public:
     /**
      * @brief Accumulate a range of values to consecutive elements in the accumulator.
      *
-     * @details The values are first added to all levels with \f$ l < L_{\text{min}} \f$. If the block
-     * in level \f$ L_{\text{min}} - 1 \f$ is full, it is recursively propagated to higher levels.
+     * @details The values are first added to all levels with \f$ l < L_{\text{min}} \f$ using
+     * simplemc::mean_acc::accumulate(). If the block in level \f$ L_{\text{min}} - 1 \f$ is full, it
+     * is recursively propagated to higher levels.
      *
      * See also @ref simplemc-accs-accs-how.
      *
@@ -330,8 +341,9 @@ public:
     /**
      * @brief Accumulate a range of values to arbitrary elements with the given indices.
      *
-     * @details The values are first added to all levels with \f$ l < L_{\text{min}} \f$. If the block
-     * in level \f$ L_{\text{min}} - 1 \f$ is full, it is recursively propagated to higher levels.
+     * @details The values are first added to all levels with \f$ l < L_{\text{min}} \f$ using
+     * simplemc::mean_acc::accumulate(R1 &&, R2 &&). If the block in level \f$ L_{\text{min}} - 1 \f$
+     * is full, it is recursively propagated to higher levels.
      *
      * See also @ref simplemc-accs-accs-how.
      *
@@ -353,21 +365,21 @@ public:
      *
      * @return Number of elements.
      */
-    [[nodiscard]] auto size() const { return accs_[0].size(); }
+    [[nodiscard]] auto size() const noexcept { return accs_[0].size(); }
 
     /**
      * @brief Get the multiplication factor \f$ c \f$ for increasing block sizes.
      *
      * @return Multiplication factor.
      */
-    [[nodiscard]] auto factor() const { return fac_; }
+    [[nodiscard]] auto factor() const noexcept { return fac_; }
 
     /**
      * @brief Get the number \f$ L \f$ of levels.
      *
      * @return Current number of levels.
      */
-    [[nodiscard]] auto num_levels() const { return accs_.size(); }
+    [[nodiscard]] auto num_levels() const noexcept { return accs_.size(); }
 
     /**
      * @brief Get the effective number \f$ N_l \f$ of samples in level \f$ l \f$.
@@ -375,10 +387,17 @@ public:
      * @param l Level index.
      * @return Number of accumulated samples in level \f$ l \f$.
      */
-    [[nodiscard]] auto count(std::size_t l = 0) const {
+    [[nodiscard]] auto count(std::size_t l = 0) const noexcept {
         assert(l < accs_.size());
         return accs_[l].count();
     }
+
+    /**
+     * @brief Check if the accumulator is empty.
+     *
+     * @return True if the count() is zero, i.e. \f$ N_0 = 0 \f$, false otherwise.
+     */
+    [[nodiscard]] bool empty() const noexcept { return count() == 0; }
 
     /**
      * @brief Get the block size \f$ B_l \f$ of level \f$ l \f$.
@@ -386,41 +405,42 @@ public:
      * @param l Level index.
      * @return Block size of level \f$ l \f$.
      */
-    [[nodiscard]] auto block_size(std::size_t l = 0) const {
+    [[nodiscard]] auto block_size(std::size_t l = 0) const noexcept {
         assert(l < accs_.size());
         return blsizes_[l];
     }
 
     /**
-     * @brief Get the (co)variance accumulators used to accumulate the effective (blocked) samples.
+     * @brief Get the (co)variance accumulators used to accumulate the effective (blocked)
+     * samples.
      *
      * @return `std::vector` of (co)variance accumulators.
      */
-    [[nodiscard]] const auto& accumulators() const { return accs_; }
+    [[nodiscard]] const auto& accumulators() const noexcept { return accs_; }
 
     /**
-     * @brief Get the mean accumulators used to accumulate inidividual samples and to block them into
-     * effective samples.
+     * @brief Get the mean accumulators used to accumulate individual samples and to block
+     * them into effective samples.
      *
      * @return `std::vector` of mean accumulators.
      */
-    [[nodiscard]] const auto& blocks() const { return blocks_; }
+    [[nodiscard]] const auto& blocks() const noexcept { return blocks_; }
 
     /**
      * @brief Get the block sizes of all levels.
      *
      * @return `std::vector` containing the block sizes \f$ B_l \f$.
      */
-    [[nodiscard]] const auto& block_sizes() const { return blsizes_; }
+    [[nodiscard]] const auto& block_sizes() const noexcept { return blsizes_; }
 
     /**
-     * @brief Find the highest level \f$ l' \f$ with at least a given number of effective samples
-     * \f$ N_{\text{min}} \f$.
+     * @brief Find the highest level \f$ l' \f$ with at least a given number of effective samples \f$
+     * N_{\text{min}} \f$.
      *
-     * @param n_min Minimum number of effective samples.
+     * @param n_min Minimum number of effective samples \f$ N_{\text{min}} \f$.
      * @return Level index \f$ l' = \max_l \{ l : N_l \geq N_{\text{min}} \} \f$.
      */
-    [[nodiscard]] std::size_t find_level(count_type n_min) const {
+    [[nodiscard]] std::size_t find_level(count_type n_min) const noexcept {
         for (auto i = accs_.size(); i > 1; --i) {
             if (accs_[i - 1].count() >= n_min) {
                 return i - 1;
@@ -430,16 +450,51 @@ public:
     }
 
     /**
-     * @brief Calculate the sample mean \f$ \overline{\mathbf{x}}^{(N)} \f$.
+     * @brief Calculate the sample mean \f$ \overline{\mathbf{z}}^{(N)} \f$.
      *
-     * @details It calls the `mean` method of the (co)variance accumulator in level \f$ 0 \f$.
+     * @details Delegates to the wrapped accumulator's `%mean()` method in level \f$ 0 \f$.
      *
-     * For statically sized accumulators with \f$ M = 1 \f$, it returns a real scalar. Otherwise, it
-     * returns a vector.
-     *
-     * @return Sample mean \f$ \overline{\mathbf{x}}^{(N)} \f$.
+     * @return Sample mean \f$ \overline{\mathbf{z}}^{(N)} \f$.
      */
     [[nodiscard]] auto mean() const { return accs_[0].mean(); }
+
+    /**
+     * @brief Calculate the sample variance of the mean \f$ s_{\overline{\mathbf{Z}}}^2 \f$.
+     *
+     * @details It uses find_level() to determine the highest level with at least \f$ N_{\text{min}}
+     * \f$ effective samples and delegates to that level's `%variance()` method.
+     *
+     * @note Only available when the wrapped accumulator satisfies simplemc::variance_accumulator.
+     *
+     * @param n_min Minimum number of effective samples \f$ N_{\text{min}} \f$. If zero, level \f$ 0
+     * \f$ is used.
+     * @return Sample variance of the mean \f$ s_{\overline{\mathbf{Z}}}^2 \f$.
+     */
+    [[nodiscard]] auto variance(count_type n_min = 0) const
+        requires variance_accumulator<acc_type>
+    {
+        return accs_[n_min == 0 ? 0 : find_level(n_min)].variance();
+    }
+
+    /**
+     * @brief Calculate the sample covariance matrix of the mean \f$ s_{\overline{\mathbf{Z}}
+     * \overline{\mathbf{Z}}}^2 \f$.
+     *
+     * @details It uses find_level() to determine the highest level with at least \f$ N_{\text{min}}
+     * \f$ effective samples and delegates to that level's `%covariance()` method.
+     *
+     * @note Only available when the wrapped accumulator satisfies simplemc::covariance_accumulator.
+     *
+     * @param n_min Minimum number of effective samples \f$ N_{\text{min}} \f$. If zero, level \f$ 0
+     * \f$ is used.
+     * @return Sample covariance matrix of the mean \f$ s_{\overline{\mathbf{Z}}
+     * \overline{\mathbf{Z}}}^2 \f$.
+     */
+    [[nodiscard]] auto covariance(count_type n_min = 0) const
+        requires covariance_accumulator<acc_type>
+    {
+        return accs_[n_min == 0 ? 0 : find_level(n_min)].covariance();
+    }
 
     /**
      * @brief Check accumulators and parameters for consistency.

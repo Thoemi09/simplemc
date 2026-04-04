@@ -52,6 +52,14 @@ TEST_F(SimplemcAccs, VarAccConcepts) {
     static_assert(variance_accumulator<block_acc<var_acc_static<std::complex<double>, 3>>>);
     static_assert(variance_accumulator<block_acc<var_acc_dynamic<double>>>);
     static_assert(variance_accumulator<block_acc<var_acc_dynamic<std::complex<double>>>>);
+
+    // autocorr_acc wrapping var_acc
+    static_assert(variance_accumulator<autocorr_acc<var_acc<double>>>);
+    static_assert(variance_accumulator<autocorr_acc<var_acc<std::complex<double>>>>);
+    static_assert(variance_accumulator<autocorr_acc<var_acc_static<double, 3>>>);
+    static_assert(variance_accumulator<autocorr_acc<var_acc_static<std::complex<double>, 3>>>);
+    static_assert(variance_accumulator<autocorr_acc<var_acc_dynamic<double>>>);
+    static_assert(variance_accumulator<autocorr_acc<var_acc_dynamic<std::complex<double>>>>);
 }
 
 // Check empty accumulators.

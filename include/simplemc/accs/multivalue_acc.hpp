@@ -8,6 +8,8 @@
 
 #include <simplemc/utils/ranges.hpp>
 
+#include <concepts>
+
 namespace simplemc {
 
 /**
