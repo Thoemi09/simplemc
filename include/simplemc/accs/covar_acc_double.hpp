@@ -460,11 +460,11 @@ public:
      * \overline{\mathbf{X}}}^2 \f$.
      */
     [[nodiscard]] auto covariance() const {
-        auto res = covariance_of_data() / static_cast<double>(count_);
+        // make sure that Eigen expressions don't have dangling reference
         if constexpr (sample_scalar<sample_type>) {
-            return res;
+            return covariance_of_data() / static_cast<double>(count_);
         } else {
-            return res.eval();
+            return (covariance_of_data() / static_cast<double>(count_)).eval();
         }
     }
 

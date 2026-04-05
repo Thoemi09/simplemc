@@ -417,11 +417,11 @@ public:
      * @return Sample variance of the mean \f$ s_{\overline{\mathbf{X}}}^2 \f$.
      */
     [[nodiscard]] auto variance() const {
-        auto res = variance_of_data() / static_cast<double>(count_);
+        // make sure that Eigen expressions don't have dangling reference
         if constexpr (sample_scalar<sample_type>) {
-            return res;
+            return variance_of_data() / static_cast<double>(count_);
         } else {
-            return res.eval();
+            return (variance_of_data() / static_cast<double>(count_)).eval();
         }
     }
 

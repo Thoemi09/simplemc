@@ -517,11 +517,11 @@ public:
      * \overline{\mathbf{Z}}}^2 \f$.
      */
     [[nodiscard]] auto covariance() const {
-        auto res = covariance_of_data() / static_cast<double>(count_);
+        // make sure that Eigen expressions don't have dangling reference
         if constexpr (sample_scalar<sample_type>) {
-            return res;
+            return covariance_of_data() / static_cast<double>(count_);
         } else {
-            return res.eval();
+            return (covariance_of_data() / static_cast<double>(count_)).eval();
         }
     }
 
@@ -535,13 +535,13 @@ public:
      */
     [[nodiscard]] auto covariance_of_data() const {
         using namespace std::complex_literals;
+        // make sure that Eigen expressions don't have dangling reference
         if constexpr (sample_scalar<sample_type>) {
-            auto res = covariance_of_real_data() + covariance_of_imag_data();
-            return res;
+            return covariance_of_real_data() + covariance_of_imag_data();
         } else {
-            auto res = covariance_of_real_data() + covariance_of_imag_data() +
-                (0.0 + 1.0i) * (covariance_of_real_and_imag_data().transpose() - covariance_of_real_and_imag_data());
-            return res.eval();
+            return (covariance_of_real_data() + covariance_of_imag_data() +
+                (0.0 + 1.0i) * (covariance_of_real_and_imag_data().transpose() - covariance_of_real_and_imag_data()))
+                .eval();
         }
     }
 
