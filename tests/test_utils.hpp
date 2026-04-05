@@ -3,6 +3,7 @@
 
 #include <fmt/ranges.h>
 #include <gtest/gtest.h>
+#include <simplemc/utils/concepts.hpp>
 #include <simplemc/utils/ranges.hpp>
 
 #include <cmath>
@@ -69,6 +70,26 @@ void check_isnan(auto val) {
     } else {
         ASSERT_TRUE(std::isnan(val.real()));
         ASSERT_TRUE(std::isnan(val.imag()));
+    }
+}
+
+// Check an empty accumulator (shared with basic and advanced accumulator tests).
+template <typename A>
+void check_empty(const A& acc) {
+    ASSERT_EQ(acc.count(), 0);
+    ASSERT_TRUE(acc.empty());
+    const auto mean = acc.mean();
+    if constexpr (!A::is_dynamic && A::static_size == 1) {
+        using mean_type = std::remove_cvref_t<decltype(mean)>;
+        if constexpr (simplemc::double_or_complex<mean_type>) {
+            check_isnan(mean);
+        } else {
+            check_isnan(mean(0, 0));
+        }
+    } else {
+        for (int i = 0; i < acc.size(); ++i) {
+            check_isnan(mean[i]);
+        }
     }
 }
 
