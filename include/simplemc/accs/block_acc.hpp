@@ -181,7 +181,7 @@ public:
      *
      * @details The value is first added to the current block using
      * simplemc::mean_acc::operator<<(const U&) and then check_and_add_block() is called.
-     * 
+     *
      * See also @ref simplemc-accs-accs-how.
      *
      * @tparam U Type of the value to be accumulated.
@@ -201,7 +201,7 @@ public:
      *
      * @details The vector is first added to the current block using
      * simplemc::mean_acc::operator<<(const W&) and then check_and_add_block() is called.
-     * 
+     *
      * See also @ref simplemc-accs-accs-how.
      *
      * @tparam W Eigen vector/array/expression type.
@@ -220,7 +220,7 @@ public:
      * @brief Stream operator for incorporating the data from another block accumulator.
      *
      * @details The data is added by simply calling `operator<<` with the wrapped accumulator objects.
-     * 
+     *
      * See also @ref simplemc-accs-accs-how.
      *
      * @note Data in the current block is ignored and not incorporated.
@@ -239,7 +239,7 @@ public:
      *
      * @details The values are first added to the current block using
      * simplemc::mean_acc::accumulate() and then check_and_add_block() is called.
-     * 
+     *
      * See also @ref simplemc-accs-accs-how.
      *
      * @tparam R Input range of values.
@@ -257,7 +257,7 @@ public:
      *
      * @details The values are first added to the current block using
      * simplemc::mean_acc::accumulate(R1 &&, R2 &&) and then check_and_add_block() is called.
-     * 
+     *
      * See also @ref simplemc-accs-accs-how.
      *
      * @tparam R1 Input range of values.
@@ -344,7 +344,7 @@ public:
     /**
      * @brief Calculate the sample mean \f$ \overline{\mathbf{z}}^{(N)} \f$.
      *
-     * @details Delegates to the wrapped accumulator's `%mean()` method.
+     * @details It calls the wrapped accumulator's `%mean()` method.
      *
      * @return Sample mean \f$ \overline{\mathbf{z}}^{(N)} \f$.
      */
@@ -353,7 +353,7 @@ public:
     /**
      * @brief Calculate the sample variance of the mean \f$ s_{\overline{\mathbf{Z}}}^2 \f$.
      *
-     * @details Delegates to the wrapped accumulator's `%variance()` method.
+     * @details It calls the wrapped accumulator's `%variance()` method.
      *
      * @note Only available when the wrapped accumulator satisfies simplemc::variance_accumulator.
      *
@@ -369,7 +369,7 @@ public:
      * @brief Calculate the sample covariance matrix of the mean \f$ s_{\overline{\mathbf{Z}}
      * \overline{\mathbf{Z}}}^2 \f$.
      *
-     * @details Delegates to the wrapped accumulator's `%covariance()` method.
+     * @details It calls the wrapped accumulator's `%covariance()` method.
      *
      * @note Only available when the wrapped accumulator satisfies simplemc::covariance_accumulator.
      *

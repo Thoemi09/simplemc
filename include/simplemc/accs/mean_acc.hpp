@@ -36,7 +36,7 @@ namespace simplemc {
 /// @cond
 
 /* Forward declarations. */
-template <eigen_vector V, varalg A>
+template <sample_type T, varalg A>
 class batch_acc;
 
 /// @endcond
@@ -136,7 +136,7 @@ public:
 
     /* Friend declarations. */
     friend class multivalue_acc<mean_acc>;
-    friend std::vector<mean_acc> mpi_collect(const mpi::communicator&, const batch_acc<vec_type, varalg()>&, bool);
+    friend std::vector<mean_acc> mpi_collect(const mpi::communicator&, const batch_acc<sample_type, varalg()>&, bool);
 
 private:
     // Add a single value to the accumulator without increasing the count (the given count is assumed

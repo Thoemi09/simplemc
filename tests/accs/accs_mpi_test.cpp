@@ -217,7 +217,7 @@ TEST_F(SimplemcAccsMPI, BatchAccumulator) {
     const auto nbatches = 4;
 
     // 4 batches, each with 2^{rank + 1} samples
-    simplemc::batch_acc_single<double> bacc { 1, nbatches };
+    simplemc::batch_acc<double> bacc { 1, nbatches };
     auto nsamples = std::vector<int>(size);
     for (int i = 0; i < size; ++i) {
         nsamples[i] = (1 << i) * nbatches * 2;

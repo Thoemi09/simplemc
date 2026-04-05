@@ -2,6 +2,7 @@
 
 #include <simplemc/accs/autocorr_acc.hpp>
 #include <simplemc/accs/batch_acc.hpp>
+#include <simplemc/accs/concepts.hpp>
 #include <simplemc/accs/utils.hpp>
 
 #include <complex>
@@ -17,17 +18,42 @@ constexpr double tol = 1e-10;
 
 } // namespace
 
+// Check that accumulator concepts are satisfied.
+TEST_F(SimplemcAccs, BatchAccConcepts) {
+    using namespace simplemc;
+
+    // batch_acc with scalar types
+    static_assert(covariance_accumulator<batch_acc<double>>);
+    static_assert(covariance_accumulator<batch_acc<std::complex<double>>>);
+
+    // batch_acc with static vector types
+    static_assert(covariance_accumulator<batch_acc_static<double, 3>>);
+    static_assert(covariance_accumulator<batch_acc_static<std::complex<double>, 3>>);
+
+    // var_acc with dynamic vector types
+    static_assert(covariance_accumulator<batch_acc_dynamic<double>>);
+    static_assert(covariance_accumulator<batch_acc_dynamic<std::complex<double>>>);
+
+    // multivalue_acc wrapping batch_acc
+    static_assert(basic_accumulator<multivalue_acc<batch_acc<double>>>);
+    static_assert(basic_accumulator<multivalue_acc<batch_acc<std::complex<double>>>>);
+    static_assert(basic_accumulator<multivalue_acc<batch_acc_static<double, 3>>>);
+    static_assert(basic_accumulator<multivalue_acc<batch_acc_static<std::complex<double>, 3>>>);
+    static_assert(basic_accumulator<multivalue_acc<batch_acc_dynamic<double>>>);
+    static_assert(basic_accumulator<multivalue_acc<batch_acc_dynamic<std::complex<double>>>>);
+}
+
 // Check empty accumulators.
 TEST_F(SimplemcAccs, BatchAccEmpty) {
     using namespace simplemc;
 
-    batch_acc_single<double> acc_sd;
+    batch_acc<double> acc_sd;
     ASSERT_EQ(acc_sd.size(), 1);
     check_empty(acc_sd.mean_accumulator());
     static_assert(!acc_sd.is_dynamic);
     static_assert(acc_sd.static_size == 1);
 
-    batch_acc_single<std::complex<double>, standard> acc_sc;
+    batch_acc<std::complex<double>, standard> acc_sc;
     ASSERT_EQ(acc_sc.size(), 1);
     check_empty(acc_sc.mean_accumulator());
     static_assert(!acc_sc.is_dynamic);
@@ -63,11 +89,11 @@ TEST_F(SimplemcAccs, BatchAccSingle) {
     // general set up
     using namespace simplemc;
     std::vector<std::size_t> num_vec { 32, 64, 128 };
-    std::vector<batch_acc_single<double, standard>> acc_vec;
+    std::vector<batch_acc<double, standard>> acc_vec;
     for (auto num : num_vec) {
         acc_vec.emplace_back(1, num);
     }
-    autocorr_acc<var_acc_single<double, standard>> acc_autocorr;
+    autocorr_acc<var_acc<double, standard>> acc_autocorr;
 
     // fill accumulators
     for (int i = 0; i < steps; ++i) {

@@ -98,7 +98,12 @@ void check_empty(const A& acc) {
     ASSERT_TRUE(acc.empty());
     const auto mean = acc.mean();
     if constexpr (!A::is_dynamic && A::static_size == 1) {
-        check_isnan(mean);
+        using mean_type = std::remove_cvref_t<decltype(mean)>;
+        if constexpr (simplemc::double_or_complex<mean_type>) {
+            check_isnan(mean);
+        } else {
+            check_isnan(mean(0, 0));
+        }
     } else {
         for (int i = 0; i < acc.size(); ++i) {
             check_isnan(mean[i]);

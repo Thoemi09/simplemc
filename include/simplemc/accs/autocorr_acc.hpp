@@ -452,7 +452,7 @@ public:
     /**
      * @brief Calculate the sample mean \f$ \overline{\mathbf{z}}^{(N)} \f$.
      *
-     * @details Delegates to the wrapped accumulator's `%mean()` method in level \f$ 0 \f$.
+     * @details It calls the wrapped accumulator's `%mean()` method in level \f$ 0 \f$.
      *
      * @return Sample mean \f$ \overline{\mathbf{z}}^{(N)} \f$.
      */
@@ -462,7 +462,7 @@ public:
      * @brief Calculate the sample variance of the mean \f$ s_{\overline{\mathbf{Z}}}^2 \f$.
      *
      * @details It uses find_level() to determine the highest level with at least \f$ N_{\text{min}}
-     * \f$ effective samples and delegates to that level's `%variance()` method.
+     * \f$ effective samples and it calls that level's `%variance()` method.
      *
      * @note Only available when the wrapped accumulator satisfies simplemc::variance_accumulator.
      *
@@ -481,7 +481,7 @@ public:
      * \overline{\mathbf{Z}}}^2 \f$.
      *
      * @details It uses find_level() to determine the highest level with at least \f$ N_{\text{min}}
-     * \f$ effective samples and delegates to that level's `%covariance()` method.
+     * \f$ effective samples and it calls that level's `%covariance()` method.
      *
      * @note Only available when the wrapped accumulator satisfies simplemc::covariance_accumulator.
      *
