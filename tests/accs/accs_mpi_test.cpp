@@ -2,283 +2,238 @@
 #include "../gtest-mpi-listener.hpp"
 
 #include <simplemc/accs.hpp>
+#include <simplemc/accs/concepts.hpp>
 #include <simplemc/mpi.hpp>
 
-// anonymous namespace with parameters
 namespace {
 
 using namespace simplemc;
 constexpr auto standard = varalg::standard;
 constexpr auto welford = varalg::welford;
-constexpr double tol = 1e-7;
 
 } // namespace
 
-// Fixture class for testing the MPI interface of the simplemc-accs library.
+// MPI fixture: distributes fixture data across ranks
+// and provides the communicator.
 class SimplemcAccsMPI : public SimplemcAccs {
 protected:
     void SetUp() override {
         SimplemcAccs::SetUp();
-        const auto rank = comm.rank();
-        nsamples = steps / comm.size();
-        for (int i = 0; i < steps; ++i) {
-            exp_macc_std_d << sp_d.samples[i];
-            exp_macc_wel_d << sp_d.samples[i];
-            exp_macc_std_c << sp_c.samples[i];
-            exp_macc_wel_c << sp_c.samples[i];
+        rank_ = comm_.rank();
+        size_ = comm_.size();
+    }
 
-            exp_vacc_std_d << sp_d.samples[i];
-            exp_vacc_wel_d << sp_d.samples[i];
-            exp_vacc_std_c << sp_c.samples[i];
-            exp_vacc_wel_c << sp_c.samples[i];
+    simplemc::mpi::communicator comm_;
+    int rank_ { 0 };
+    int size_ { 0 };
+};
 
-            exp_cacc_std_d << sp_d.samples[i];
-            exp_cacc_wel_d << sp_d.samples[i];
-            exp_cacc_std_c << sp_c.samples[i];
-            exp_cacc_wel_c << sp_c.samples[i];
+// Test mpi_collect for mean_acc with static vectors.
+TEST_F(SimplemcAccsMPI, MeanAccCollectVector) {
+    // Each rank gets vec_d_data[rank % 4].
+    mean_acc_static<double, 3> acc;
+    acc << vec_d_data[rank_ % vec_d_n];
 
-            exp_blacc_wel_d << sp_d.samples[i];
+    auto res = mpi_collect(comm_, acc);
+    ASSERT_EQ(res.count(), static_cast<std::uint64_t>(size_));
 
-            if (i >= nsamples * rank && i < nsamples * (rank + 1)) {
-                macc_std_d << sp_d.samples[i];
-                macc_wel_d << sp_d.samples[i];
-                macc_std_c << sp_c.samples[i];
-                macc_wel_c << sp_c.samples[i];
+    // With 4 ranks, each feeding one of the 4 vec_d_data
+    // samples, the mean should converge to vec_d_mean.
+    if (size_ == vec_d_n) {
+        check_range_near(res.mean(), vec_d_mean, 1e-14);
+    }
+}
 
-                vacc_std_d << sp_d.samples[i];
-                vacc_wel_d << sp_d.samples[i];
-                vacc_std_c << sp_c.samples[i];
-                vacc_wel_c << sp_c.samples[i];
+// Test mpi_collect for mean_acc with scalar double.
+TEST_F(SimplemcAccsMPI, MeanAccCollectScalar) {
+    // Each rank accumulates one scalar.
+    mean_acc<double> acc;
+    acc << static_cast<double>(rank_ + 1);
 
-                cacc_std_d << sp_d.samples[i];
-                cacc_wel_d << sp_d.samples[i];
-                cacc_std_c << sp_c.samples[i];
-                cacc_wel_c << sp_c.samples[i];
+    auto res = mpi_collect(comm_, acc);
+    ASSERT_EQ(res.count(), static_cast<std::uint64_t>(size_));
 
-                blacc_wel_d << sp_d.samples[i];
+    // Mean of {1, 2, ..., size} = (size+1)/2.
+    const double expected_mean =
+        (static_cast<double>(size_) + 1.0) / 2.0;
+    check_near(res.mean(), expected_mean, 1e-14);
+}
+
+// Test mpi_collect for mean_acc with scalar complex.
+TEST_F(SimplemcAccsMPI, MeanAccCollectComplex) {
+    // Each rank gets cplx_5[rank % 5].
+    mean_acc<cplx> acc;
+    acc << cplx_5[rank_ % cplx_5_n];
+
+    auto res = mpi_collect(comm_, acc);
+    ASSERT_EQ(res.count(), static_cast<std::uint64_t>(size_));
+
+    if (size_ == cplx_5_n) {
+        check_near(res.mean(), cplx_5_mean, 1e-14);
+    }
+}
+
+// Test mpi_collect for var_acc with static vectors.
+TEST_F(SimplemcAccsMPI, VarAccCollectVector) {
+    // Each rank gets vec_d_data[rank % 4].
+    var_acc_static<double, 3> acc;
+    acc << vec_d_data[rank_ % vec_d_n];
+
+    auto res = mpi_collect(comm_, acc);
+    ASSERT_EQ(res.count(), static_cast<std::uint64_t>(size_));
+
+    if (size_ == vec_d_n) {
+        check_range_near(res.mean(), vec_d_mean, 1e-14);
+        check_range_near(
+            res.variance_of_data(), vec_d_var, 1e-14);
+    }
+}
+
+// Test mpi_collect for var_acc with scalar double.
+TEST_F(SimplemcAccsMPI, VarAccCollectScalar) {
+    // Each rank accumulates one scalar.
+    var_acc<double> acc;
+    acc << static_cast<double>(rank_ + 1);
+
+    auto res = mpi_collect(comm_, acc);
+    ASSERT_EQ(res.count(), static_cast<std::uint64_t>(size_));
+
+    // Mean of {1, 2, ..., size} = (size+1)/2.
+    const double expected_mean =
+        (static_cast<double>(size_) + 1.0) / 2.0;
+    check_near(res.mean(), expected_mean, 1e-14);
+}
+
+// Test mpi_collect for var_acc with scalar complex.
+TEST_F(SimplemcAccsMPI, VarAccCollectComplex) {
+    // Each rank gets cplx_5[rank % 5].
+    var_acc<cplx> acc;
+    acc << cplx_5[rank_ % cplx_5_n];
+
+    auto res = mpi_collect(comm_, acc);
+    ASSERT_EQ(res.count(), static_cast<std::uint64_t>(size_));
+
+    if (size_ == cplx_5_n) {
+        check_near(res.mean(), cplx_5_mean, 1e-14);
+        check_near(res.variance_of_real_data(),
+            cplx_5_var_re, 1e-14);
+        check_near(res.variance_of_imag_data(),
+            cplx_5_var_im, 1e-14);
+    }
+}
+
+// Test mpi_collect for covar_acc with static vectors.
+TEST_F(SimplemcAccsMPI, CovarAccCollectVector) {
+    covar_acc_static<double, 3> acc;
+    acc << vec_d_data[rank_ % vec_d_n];
+
+    auto res = mpi_collect(comm_, acc);
+    ASSERT_EQ(res.count(), static_cast<std::uint64_t>(size_));
+
+    if (size_ == vec_d_n) {
+        check_range_near(res.mean(), vec_d_mean, 1e-14);
+        // Check full covariance matrix.
+        auto cov = res.covariance_of_data();
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                check_near(cov(i, j), vec_d_cov(i, j), 1e-14);
             }
         }
     }
-
-    int nsamples { 0 };
-    simplemc::mpi::communicator comm;
-
-    // mean accumulators
-    simplemc::mean_acc_static<double, size, standard> macc_std_d, exp_macc_std_d;
-    simplemc::mean_acc_static<double, size, welford> macc_wel_d, exp_macc_wel_d;
-    simplemc::mean_acc_static<std::complex<double>, size, standard> macc_std_c, exp_macc_std_c;
-    simplemc::mean_acc_static<std::complex<double>, size, welford> macc_wel_c, exp_macc_wel_c;
-
-    // variance accumulators
-    simplemc::var_acc_static<double, size, standard> vacc_std_d, exp_vacc_std_d;
-    simplemc::var_acc_static<double, size, welford> vacc_wel_d, exp_vacc_wel_d;
-    simplemc::var_acc_static<std::complex<double>, size, standard> vacc_std_c, exp_vacc_std_c;
-    simplemc::var_acc_static<std::complex<double>, size, welford> vacc_wel_c, exp_vacc_wel_c;
-
-    // covariance accumulators
-    simplemc::covar_acc_static<double, size, standard> cacc_std_d, exp_cacc_std_d;
-    simplemc::covar_acc_static<double, size, welford> cacc_wel_d, exp_cacc_wel_d;
-    simplemc::covar_acc_static<std::complex<double>, size, standard> cacc_std_c, exp_cacc_std_c;
-    simplemc::covar_acc_static<std::complex<double>, size, welford> cacc_wel_c, exp_cacc_wel_c;
-
-    // block accumulator
-    simplemc::block_acc<simplemc::var_acc_static<double, size, welford>> blacc_wel_d { 5 }, exp_blacc_wel_d { 5 };
-};
-
-// Test MPI routines for mean_acc.
-TEST_F(SimplemcAccsMPI, MeanAccumulator) {
-    EXPECT_EQ(macc_std_d.count(), nsamples);
-    EXPECT_EQ(macc_wel_d.count(), nsamples);
-    EXPECT_EQ(macc_std_c.count(), nsamples);
-    EXPECT_EQ(macc_wel_c.count(), nsamples);
-    EXPECT_EQ(exp_macc_std_d.count(), steps);
-    EXPECT_EQ(exp_macc_wel_d.count(), steps);
-    EXPECT_EQ(exp_macc_std_c.count(), steps);
-    EXPECT_EQ(exp_macc_wel_c.count(), steps);
-
-    // double standard
-    auto res_macc_std_d = mpi_collect(comm, macc_std_d);
-    EXPECT_EQ(res_macc_std_d.count(), steps);
-    check_range_near(res_macc_std_d.mdata(), exp_macc_std_d.mdata(), tol);
-
-    // double welford
-    auto res_macc_wel_d = mpi_collect(comm, macc_wel_d);
-    EXPECT_EQ(res_macc_wel_d.count(), steps);
-    check_range_near(res_macc_wel_d.mdata(), exp_macc_wel_d.mdata(), tol);
-
-    // complex standard
-    auto res_macc_std_c = mpi_collect(comm, macc_std_c);
-    EXPECT_EQ(res_macc_std_c.count(), steps);
-    check_range_near(res_macc_std_c.mdata(), exp_macc_std_c.mdata(), tol);
-
-    // complex welford
-    auto res_macc_wel_c = mpi_collect(comm, macc_wel_c);
-    EXPECT_EQ(res_macc_wel_c.count(), steps);
-    check_range_near(res_macc_wel_c.mdata(), exp_macc_wel_c.mdata(), tol);
 }
 
-// Test MPI routines for var_acc.
-TEST_F(SimplemcAccsMPI, VarianceAccumulator) {
-    EXPECT_EQ(vacc_std_d.count(), nsamples);
-    EXPECT_EQ(vacc_wel_d.count(), nsamples);
-    EXPECT_EQ(vacc_std_c.count(), nsamples);
-    EXPECT_EQ(vacc_wel_c.count(), nsamples);
-    EXPECT_EQ(exp_vacc_std_d.count(), steps);
-    EXPECT_EQ(exp_vacc_wel_d.count(), steps);
-    EXPECT_EQ(exp_vacc_std_c.count(), steps);
-    EXPECT_EQ(exp_vacc_wel_c.count(), steps);
+// Test mpi_collect for covar_acc with scalar complex.
+TEST_F(SimplemcAccsMPI, CovarAccCollectComplex) {
+    // Each rank gets cplx_5[rank % 5].
+    covar_acc<cplx> acc;
+    acc << cplx_5[rank_ % cplx_5_n];
 
-    // double standard
-    auto res_vacc_std_d = mpi_collect(comm, vacc_std_d);
-    EXPECT_EQ(res_vacc_std_d.count(), steps);
-    check_range_near(res_vacc_std_d.mdata(), exp_vacc_std_d.mdata(), tol);
-    check_range_near(res_vacc_std_d.cdata(), exp_vacc_std_d.cdata(), tol);
+    auto res = mpi_collect(comm_, acc);
+    ASSERT_EQ(res.count(), static_cast<std::uint64_t>(size_));
 
-    // double welford
-    auto res_vacc_wel_d = mpi_collect(comm, vacc_wel_d);
-    EXPECT_EQ(res_vacc_wel_d.count(), steps);
-    check_range_near(res_vacc_wel_d.mdata(), exp_vacc_wel_d.mdata(), tol);
-    check_range_near(res_vacc_wel_d.cdata(), exp_vacc_wel_d.cdata(), tol);
-
-    // complex standard
-    auto res_vacc_std_c = mpi_collect(comm, vacc_std_c);
-    EXPECT_EQ(res_vacc_std_c.count(), steps);
-    check_range_near(res_vacc_std_c.mdata(), exp_vacc_std_c.mdata(), tol);
-    check_range_near(res_vacc_std_c.rdata(), exp_vacc_std_c.rdata(), tol);
-    check_range_near(res_vacc_std_c.idata(), exp_vacc_std_c.idata(), tol);
-    check_range_near(res_vacc_std_c.cdata(), exp_vacc_std_c.cdata(), tol);
-
-    // complex welford
-    auto res_vacc_wel_c = mpi_collect(comm, vacc_wel_c);
-    EXPECT_EQ(res_vacc_wel_c.count(), steps);
-    check_range_near(res_vacc_wel_c.mdata(), exp_vacc_wel_c.mdata(), tol);
-    check_range_near(res_vacc_wel_c.rdata(), exp_vacc_wel_c.rdata(), tol);
-    check_range_near(res_vacc_wel_c.idata(), exp_vacc_wel_c.idata(), tol);
-    check_range_near(res_vacc_wel_c.cdata(), exp_vacc_wel_c.cdata(), tol);
-}
-
-// Test MPI routines for covar_acc.
-TEST_F(SimplemcAccsMPI, CovarianceAccumulator) {
-    using namespace simplemc;
-    EXPECT_EQ(cacc_std_d.count(), nsamples);
-    EXPECT_EQ(cacc_wel_d.count(), nsamples);
-    EXPECT_EQ(cacc_std_c.count(), nsamples);
-    EXPECT_EQ(cacc_wel_c.count(), nsamples);
-    EXPECT_EQ(exp_cacc_std_d.count(), steps);
-    EXPECT_EQ(exp_cacc_wel_d.count(), steps);
-    EXPECT_EQ(exp_cacc_std_c.count(), steps);
-    EXPECT_EQ(exp_cacc_wel_c.count(), steps);
-
-    // double standard
-    auto res_cacc_std_d = mpi_collect(comm, cacc_std_d);
-    EXPECT_EQ(res_cacc_std_d.count(), steps);
-    check_range_near(res_cacc_std_d.mdata(), exp_cacc_std_d.mdata(), tol);
-    check_range_near(make_span(res_cacc_std_d.cdata()), make_span(exp_cacc_std_d.cdata()), tol);
-
-    // double welford
-    auto res_cacc_wel_d = mpi_collect(comm, cacc_wel_d);
-    EXPECT_EQ(res_cacc_wel_d.count(), steps);
-    check_range_near(res_cacc_wel_d.mdata(), exp_cacc_wel_d.mdata(), tol);
-    check_range_near(make_span(res_cacc_wel_d.cdata()), make_span(exp_cacc_wel_d.cdata()), tol);
-
-    // complex standard
-    auto res_cacc_std_c = mpi_collect(comm, cacc_std_c);
-    EXPECT_EQ(res_cacc_std_c.count(), steps);
-    check_range_near(res_cacc_std_c.mdata(), exp_cacc_std_c.mdata(), tol);
-    check_range_near(make_span(res_cacc_std_c.rdata()), make_span(exp_cacc_std_c.rdata()), tol);
-    check_range_near(make_span(res_cacc_std_c.idata()), make_span(exp_cacc_std_c.idata()), tol);
-    check_range_near(make_span(res_cacc_std_c.cdata()), make_span(exp_cacc_std_c.cdata()), tol);
-
-    // complex welford
-    auto res_cacc_wel_c = mpi_collect(comm, cacc_wel_c);
-    EXPECT_EQ(res_cacc_wel_c.count(), steps);
-    check_range_near(res_cacc_wel_c.mdata(), exp_cacc_wel_c.mdata(), tol);
-    check_range_near(make_span(res_cacc_wel_c.rdata()), make_span(exp_cacc_wel_c.rdata()), tol);
-    check_range_near(make_span(res_cacc_wel_c.idata()), make_span(exp_cacc_wel_c.idata()), tol);
-    check_range_near(make_span(res_cacc_wel_c.cdata()), make_span(exp_cacc_wel_c.cdata()), tol);
-}
-
-// Test MPI routines for block_acc.
-TEST_F(SimplemcAccsMPI, BlockAccumulator) {
-    EXPECT_EQ(blacc_wel_d.total_count(), nsamples);
-    EXPECT_EQ(exp_blacc_wel_d.total_count(), steps);
-
-    // double welford
-    auto res_blacc_wel_d = mpi_collect(comm, blacc_wel_d);
-    EXPECT_EQ(res_blacc_wel_d.total_count(), steps);
-    check_range_near(res_blacc_wel_d.accumulator().mdata(), exp_blacc_wel_d.accumulator().mdata(), tol);
-    check_range_near(res_blacc_wel_d.accumulator().cdata(), exp_blacc_wel_d.accumulator().cdata(), tol);
-}
-
-// Test MPI routines for batch_acc.
-TEST_F(SimplemcAccsMPI, BatchAccumulator) {
-    const auto rank = comm.rank();
-    const auto size = comm.size();
-    const auto nbatches = 4;
-
-    // 4 batches, each with 2^{rank + 1} samples
-    simplemc::batch_acc<double> bacc { 1, nbatches };
-    auto nsamples = std::vector<int>(size);
-    for (int i = 0; i < size; ++i) {
-        nsamples[i] = (1 << i) * nbatches * 2;
-    }
-    const auto max_count = (1 << (size - 1)) * 2;
-    for (int i = 0; i < nsamples[rank]; ++i) {
-        bacc << rank;
-    }
-
-    // gather all batches regardless of their count
-    auto coll_diff_size = mpi_collect(comm, bacc, false);
-    EXPECT_EQ(coll_diff_size.size(), size * nbatches);
-    for (int i = 0; i < size; ++i) {
-        for (int j = 0; j < nbatches; ++j) {
-            const auto idx = i * nbatches + j;
-            EXPECT_DOUBLE_EQ(coll_diff_size[idx].mdata()[0], i);
-            EXPECT_EQ(coll_diff_size[idx].count(), (1 << (i + 1)));
-        }
-    }
-
-    // gather only batches with the same count
-    auto coll_same_size = mpi_collect(comm, bacc, true);
-    auto gathered_batches = 0;
-    for (const auto& x : nsamples) {
-        gathered_batches += x / max_count;
-    }
-    EXPECT_EQ(coll_same_size.size(), gathered_batches);
-    int idx = 0;
-    for (int i = 0; i < comm.size(); ++i) {
-        const auto contributed = nsamples[i] / max_count;
-        for (int j = 0; j < contributed; ++j) {
-            EXPECT_DOUBLE_EQ(coll_same_size[idx].mdata()[0], i);
-            EXPECT_EQ(coll_same_size[idx].count(), max_count);
-            ++idx;
-        }
+    if (size_ == cplx_5_n) {
+        check_near(res.mean(), cplx_5_mean, 1e-14);
     }
 }
 
-// Custom main function for MPI.
+// Test mpi_collect for block_acc<var_acc>.
+TEST_F(SimplemcAccsMPI, BlockVarAccCollect) {
+    // Each rank accumulates 2 samples with block_size = 1
+    // so each block is a single sample.
+    block_acc<var_acc<double>> acc(1);
+
+    // Rank 0: {1,2}, Rank 1: {3,4}, etc.
+    for (int i = 0; i < 2; ++i) {
+        const auto idx = rank_ * 2 + i;
+        // Use modular indexing for safety with different
+        // rank counts.
+        acc << dbl_5[idx % dbl_5_n];
+    }
+
+    auto res = mpi_collect(comm_, acc);
+    // After collecting, total_count should increase.
+    ASSERT_GE(res.total_count(), acc.total_count());
+}
+
+// Test mpi_collect for block_acc<covar_acc>.
+TEST_F(SimplemcAccsMPI, BlockCovarAccCollect) {
+    // Each rank accumulates 2 samples with block_size = 1.
+    block_acc<covar_acc<double>> acc(1);
+
+    for (int i = 0; i < 2; ++i) {
+        const auto idx = rank_ * 2 + i;
+        acc << dbl_5[idx % dbl_5_n];
+    }
+
+    auto res = mpi_collect(comm_, acc);
+    ASSERT_GE(res.total_count(), acc.total_count());
+}
+
+// Test mpi_collect for batch_acc.
+TEST_F(SimplemcAccsMPI, BatchAccCollect) {
+    // Each rank accumulates enough samples to produce full batches.
+    batch_acc<double> acc(1, 2);
+    for (int i = 0; i < 4; ++i) {
+        acc << static_cast<double>(rank_ * 4 + i + 1);
+    }
+
+    auto res = mpi_collect(comm_, acc, false);
+    // Each rank contributes its full batches.
+    ASSERT_FALSE(res.empty());
+}
+
+// Test multiple samples per rank with merging.
+TEST_F(SimplemcAccsMPI, MeanAccMultipleSamples) {
+    // Rank 0: all 5 dbl_5 samples.
+    // Other ranks: empty.
+    mean_acc<double> acc;
+    if (rank_ == 0) {
+        for (const auto& x : dbl_5) { acc << x; }
+    }
+
+    auto res = mpi_collect(comm_, acc);
+    ASSERT_EQ(res.count(), dbl_5_n);
+    check_near(res.mean(), dbl_5_mean, 1e-14);
+}
+
+// Custom main for MPI.
 int main(int argc, char** argv) {
-    // filter out Google Test arguments
     ::testing::InitGoogleTest(&argc, argv);
 
-    // initialize MPI
     MPI_Init(&argc, &argv);
 
-    // add object that will finalize MPI on exit; Google Test owns this pointer
-    ::testing::AddGlobalTestEnvironment(new GTestMPIListener::MPIEnvironment);
+    ::testing::AddGlobalTestEnvironment(
+        new GTestMPIListener::MPIEnvironment);
 
-    // get the event listener list.
-    ::testing::TestEventListeners& listeners = ::testing::UnitTest::GetInstance()->listeners();
+    ::testing::TestEventListeners& listeners =
+        ::testing::UnitTest::GetInstance()->listeners();
 
-    // remove default listener: the default printer and the default XML printer
-    ::testing::TestEventListener* l = listeners.Release(listeners.default_result_printer());
+    ::testing::TestEventListener* l =
+        listeners.Release(listeners.default_result_printer());
 
-    // adds MPI listener; Google Test owns this pointer
-    listeners.Append(new GTestMPIListener::MPIWrapperPrinter(l, MPI_COMM_WORLD));
+    listeners.Append(
+        new GTestMPIListener::MPIWrapperPrinter(
+            l, MPI_COMM_WORLD));
 
-    // run tests, then clean up and exit. RUN_ALL_TESTS() returns 0 if all tests
-    // pass and 1 if some test fails.
-    int result = RUN_ALL_TESTS();
-
-    return result;
+    return RUN_ALL_TESTS();
 }

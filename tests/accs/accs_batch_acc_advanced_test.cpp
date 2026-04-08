@@ -5,6 +5,8 @@
 #include <simplemc/accs/concepts.hpp>
 #include <simplemc/accs/utils.hpp>
 
+#include <simplemc/utils/ranges.hpp>
+
 #include <complex>
 #include <vector>
 
@@ -17,72 +19,6 @@ constexpr auto welford = varalg::welford;
 constexpr double tol = 1e-10;
 
 } // namespace
-
-// Check that accumulator concepts are satisfied.
-TEST_F(SimplemcAccsAdvanced, BatchAccConcepts) {
-    using namespace simplemc;
-
-    // batch_acc with scalar types
-    static_assert(covariance_accumulator<batch_acc<double>>);
-    static_assert(covariance_accumulator<batch_acc<std::complex<double>>>);
-
-    // batch_acc with static vector types
-    static_assert(covariance_accumulator<batch_acc_static<double, 3>>);
-    static_assert(covariance_accumulator<batch_acc_static<std::complex<double>, 3>>);
-
-    // var_acc with dynamic vector types
-    static_assert(covariance_accumulator<batch_acc_dynamic<double>>);
-    static_assert(covariance_accumulator<batch_acc_dynamic<std::complex<double>>>);
-
-    // multivalue_acc wrapping batch_acc
-    static_assert(basic_accumulator<multivalue_acc<batch_acc<double>>>);
-    static_assert(basic_accumulator<multivalue_acc<batch_acc<std::complex<double>>>>);
-    static_assert(basic_accumulator<multivalue_acc<batch_acc_static<double, 3>>>);
-    static_assert(basic_accumulator<multivalue_acc<batch_acc_static<std::complex<double>, 3>>>);
-    static_assert(basic_accumulator<multivalue_acc<batch_acc_dynamic<double>>>);
-    static_assert(basic_accumulator<multivalue_acc<batch_acc_dynamic<std::complex<double>>>>);
-}
-
-// Check empty accumulators.
-TEST_F(SimplemcAccsAdvanced, BatchAccEmpty) {
-    using namespace simplemc;
-
-    batch_acc<double> acc_sd;
-    ASSERT_EQ(acc_sd.size(), 1);
-    check_empty(acc_sd.mean_accumulator());
-    static_assert(!acc_sd.is_dynamic);
-    static_assert(acc_sd.static_size == 1);
-
-    batch_acc<std::complex<double>, standard> acc_sc;
-    ASSERT_EQ(acc_sc.size(), 1);
-    check_empty(acc_sc.mean_accumulator());
-    static_assert(!acc_sc.is_dynamic);
-    static_assert(acc_sc.static_size == 1);
-
-    batch_acc_static<double, 5> acc_st_d;
-    ASSERT_EQ(acc_st_d.size(), 5);
-    check_empty(acc_st_d.mean_accumulator());
-    static_assert(!acc_st_d.is_dynamic);
-    static_assert(acc_st_d.static_size == 5);
-
-    batch_acc_static<std::complex<double>, 5, standard> acc_st_c;
-    ASSERT_EQ(acc_st_c.size(), 5);
-    check_empty(acc_st_c.mean_accumulator());
-    static_assert(!acc_st_c.is_dynamic);
-    static_assert(acc_st_c.static_size == 5);
-
-    batch_acc_dynamic<double> acc_dyn_d(5);
-    ASSERT_EQ(acc_dyn_d.size(), 5);
-    check_empty(acc_dyn_d.mean_accumulator());
-    static_assert(acc_dyn_d.is_dynamic);
-    static_assert(acc_dyn_d.static_size == Eigen::Dynamic);
-
-    batch_acc_dynamic<std::complex<double>, standard> acc_dyn_c(5);
-    ASSERT_EQ(acc_dyn_c.size(), 5);
-    check_empty(acc_dyn_c.mean_accumulator());
-    static_assert(acc_dyn_c.is_dynamic);
-    static_assert(acc_dyn_c.static_size == Eigen::Dynamic);
-}
 
 // Check batch accumulator of size 1.
 TEST_F(SimplemcAccsAdvanced, BatchAccSingle) {
@@ -150,6 +86,11 @@ TEST_F(SimplemcAccsAdvanced, BatchAccSingle) {
     check_range_near(vacc_64.cdata(), vacc_256_c4.cdata(), tol);
     check_range_near(vacc_128.mdata(), vacc_256_c2.mdata(), tol);
     check_range_near(vacc_128.cdata(), vacc_256_c2.cdata(), tol);
+
+    // reset and verify empty
+    acc_vec[0].reset();
+    ASSERT_TRUE(acc_vec[0].empty());
+    ASSERT_EQ(acc_vec[0].count(), 0UL);
 }
 
 // Check batch accumulator using the full random vectors.
@@ -196,6 +137,11 @@ TEST_F(SimplemcAccsAdvanced, BatchAccVec) {
         check_range_near(simplemc::make_span(cacc.rdata()), simplemc::make_span(cacc_exp.rdata()), tol);
         check_range_near(simplemc::make_span(cacc.idata()), simplemc::make_span(cacc_exp.idata()), tol);
     }
+
+    // reset and verify empty
+    acc_vec[0].reset();
+    ASSERT_TRUE(acc_vec[0].empty());
+    ASSERT_EQ(acc_vec[0].count(), 0UL);
 }
 
 // Check batch accumulator using only part of random vectors.

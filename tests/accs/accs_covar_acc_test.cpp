@@ -4,11 +4,10 @@
 #include <simplemc/accs/block_acc.hpp>
 #include <simplemc/accs/concepts.hpp>
 #include <simplemc/accs/covar_acc.hpp>
+#include <simplemc/accs/multivalue_acc.hpp>
+#include <simplemc/utils/ranges.hpp>
 
 #include <complex>
-#include <numeric>
-#include <tuple>
-#include <type_traits>
 #include <vector>
 
 // anonymous namespace with parameters
@@ -17,14 +16,23 @@ namespace {
 using namespace simplemc;
 constexpr auto standard = varalg::standard;
 constexpr auto welford = varalg::welford;
-constexpr double tol = 1e-10;
+
+/// @brief Check two Eigen matrices for element-wise nearness.
+template <typename M1, typename M2>
+void check_mat_near(const M1& lhs, const M2& rhs, double eps = 1e-14) {
+    ASSERT_EQ(lhs.rows(), rhs.rows());
+    ASSERT_EQ(lhs.cols(), rhs.cols());
+    for (int i = 0; i < lhs.rows(); ++i) {
+        for (int j = 0; j < lhs.cols(); ++j) {
+            check_near(lhs(i, j), rhs(i, j), eps);
+        }
+    }
+}
 
 } // namespace
 
-// Check that accumulator concepts are satisfied.
+// Test accumulator concepts.
 TEST_F(SimplemcAccs, CovarAccConcepts) {
-    using namespace simplemc;
-
     // covar_acc with scalar types
     static_assert(covariance_accumulator<covar_acc<double>>);
     static_assert(covariance_accumulator<covar_acc<std::complex<double>>>);
@@ -36,6 +44,14 @@ TEST_F(SimplemcAccs, CovarAccConcepts) {
     // covar_acc with dynamic vector types
     static_assert(covariance_accumulator<covar_acc_dynamic<double>>);
     static_assert(covariance_accumulator<covar_acc_dynamic<std::complex<double>>>);
+
+    // multivalue_acc wrapping covar_acc
+    static_assert(basic_accumulator<multivalue_acc<covar_acc<double>>>);
+    static_assert(basic_accumulator<multivalue_acc<covar_acc<std::complex<double>>>>);
+    static_assert(basic_accumulator<multivalue_acc<covar_acc_static<double, 3>>>);
+    static_assert(basic_accumulator<multivalue_acc<covar_acc_static<std::complex<double>, 3>>>);
+    static_assert(basic_accumulator<multivalue_acc<covar_acc_dynamic<double>>>);
+    static_assert(basic_accumulator<multivalue_acc<covar_acc_dynamic<std::complex<double>>>>);
 
     // block_acc wrapping covar_acc
     static_assert(covariance_accumulator<block_acc<covar_acc<double>>>);
@@ -54,10 +70,8 @@ TEST_F(SimplemcAccs, CovarAccConcepts) {
     static_assert(covariance_accumulator<autocorr_acc<covar_acc_dynamic<std::complex<double>>>>);
 }
 
-// Check empty accumulators.
+// Test empty accumulators.
 TEST_F(SimplemcAccs, CovarAccEmpty) {
-    using namespace simplemc;
-
     covar_acc<double> acc_sd;
     ASSERT_EQ(acc_sd.size(), 1);
     check_empty(acc_sd);
@@ -107,399 +121,473 @@ TEST_F(SimplemcAccs, CovarAccEmpty) {
     static_assert(acc_dyn_c.static_size == Eigen::Dynamic);
 }
 
-// Check covariance accumulator of size 1.
-TEST_F(SimplemcAccs, CovarAccSingle) {
-    // general set up
-    using namespace simplemc;
-    covar_acc<double, standard> acc_std_d1, acc_std_d2;
-    covar_acc<double, welford> acc_wel_d1, acc_wel_d2;
-    covar_acc<std::complex<double>, standard> acc_std_c1, acc_std_c2;
-    covar_acc<std::complex<double>, welford> acc_wel_c1, acc_wel_c2;
-
-    // fill accumulators
-    const auto merge_size = steps / 2;
-    for (int i = 0; i < merge_size; ++i) {
-        acc_std_d1 << sp_d.samples[i](0);
-        acc_wel_d1 << sp_d.samples[i](0);
-        acc_std_c1 << sp_c.samples[i](0);
-        acc_wel_c1 << sp_c.samples[i](0);
-    }
-    for (int i = merge_size; i < steps; ++i) {
-        acc_std_d2[0] << sp_d.samples[i](0);
-        acc_wel_d2[0] << sp_d.samples[i](0);
-        acc_std_c2[0] << sp_c.samples[i](0);
-        acc_wel_c2[0] << sp_c.samples[i](0);
+// Test scalar double accumulation.
+TEST_F(SimplemcAccs, CovarAccScalarDouble) {
+    covar_acc<double, standard> acc_std;
+    covar_acc<double, welford> acc_wel;
+    for (const auto& x : dbl_5) {
+        acc_std << x;
+        acc_wel << x;
     }
 
-    // check count
-    ASSERT_EQ(acc_std_d1.count(), merge_size);
-    ASSERT_EQ(acc_wel_d1.count(), merge_size);
-    ASSERT_EQ(acc_std_c1.count(), merge_size);
-    ASSERT_EQ(acc_wel_c1.count(), merge_size);
-    ASSERT_EQ(acc_std_d2.count(), steps - merge_size);
-    ASSERT_EQ(acc_wel_d2.count(), steps - merge_size);
-    ASSERT_EQ(acc_std_c2.count(), steps - merge_size);
-    ASSERT_EQ(acc_wel_c2.count(), steps - merge_size);
+    ASSERT_EQ(acc_std.count(), dbl_5_n);
+    ASSERT_EQ(acc_wel.count(), dbl_5_n);
+    ASSERT_FALSE(acc_std.empty());
+    ASSERT_FALSE(acc_wel.empty());
 
-    // merge accumulators
-    acc_std_d1 << acc_std_d2;
-    acc_wel_d1 << acc_wel_d2;
-    acc_std_c1 << acc_std_c2;
-    acc_wel_c1 << acc_wel_c2;
+    // mean
+    check_near(acc_std.mean(), dbl_5_mean, 1e-14);
+    check_near(acc_wel.mean(), dbl_5_mean, 1e-14);
 
-    // factory function
-    auto dview = simplemc::ranges::transform_view(sp_d.samples, [](const auto& s) { return s(0); });
-    auto acc_std_d3 = make_covar_acc<standard>(dview);
-    auto acc_wel_d3 = make_covar_acc(dview);
-    auto cview = simplemc::ranges::transform_view(sp_c.samples, [](const auto& s) { return s(0); });
-    auto acc_std_c3 = make_covar_acc<standard>(cview);
-    auto acc_wel_c3 = make_covar_acc(cview);
+    // covariance of data (= sample variance for scalar)
+    check_near(acc_std.covariance_of_data(), dbl_5_var_data, 1e-14);
+    check_near(acc_wel.covariance_of_data(), dbl_5_var_data, 1e-14);
 
-    // check mean and variance
-    const auto m_d = sample_mean(sp_d);
-    const auto c_d = sample_covariance(sp_d);
-    const auto m_c = sample_mean(sp_c);
-    const auto [r_c, i_c, ri_c] = sample_covariance(sp_c);
-    check_near(acc_std_d1.mean(), m_d(0), tol);
-    check_near(acc_std_d1.covariance_of_data(), c_d(0, 0), tol);
-    check_near(acc_wel_d1.mean(), m_d(0), tol);
-    check_near(acc_wel_d1.covariance_of_data(), c_d(0, 0), tol);
-    check_near(acc_std_d3.mean(), m_d(0), tol);
-    check_near(acc_std_d3.covariance_of_data(), c_d(0, 0), tol);
-    check_near(acc_wel_d3.mean(), m_d(0), tol);
-    check_near(acc_wel_d3.covariance_of_data(), c_d(0, 0), tol);
-    check_near(acc_std_c1.mean(), m_c(0), tol);
-    check_near(acc_std_c1.covariance_of_real_data(), r_c(0, 0), tol);
-    check_near(acc_std_c1.covariance_of_imag_data(), i_c(0, 0), tol);
-    check_near(acc_std_c1.covariance_of_real_and_imag_data(), ri_c(0, 0), tol);
-    check_near(acc_wel_c1.mean(), m_c(0), tol);
-    check_near(acc_wel_c1.covariance_of_real_data(), r_c(0, 0), tol);
-    check_near(acc_wel_c1.covariance_of_imag_data(), i_c(0, 0), tol);
-    check_near(acc_wel_c1.covariance_of_real_and_imag_data(), ri_c(0, 0), tol);
-    check_near(acc_std_c3.mean(), m_c(0), tol);
-    check_near(acc_std_c3.covariance_of_real_data(), r_c(0, 0), tol);
-    check_near(acc_std_c3.covariance_of_imag_data(), i_c(0, 0), tol);
-    check_near(acc_std_c3.covariance_of_real_and_imag_data(), ri_c(0, 0), tol);
-    check_near(acc_wel_c3.mean(), m_c(0), tol);
-    check_near(acc_wel_c3.covariance_of_real_data(), r_c(0, 0), tol);
-    check_near(acc_wel_c3.covariance_of_imag_data(), i_c(0, 0), tol);
-    check_near(acc_wel_c3.covariance_of_real_and_imag_data(), ri_c(0, 0), tol);
+    // covariance of the mean
+    check_near(acc_std.covariance(), dbl_5_var_mean, 1e-14);
+    check_near(acc_wel.covariance(), dbl_5_var_mean, 1e-14);
+
+    // variance (diagonal of covariance = covariance for scalar)
+    check_near(acc_std.variance(), dbl_5_var_mean, 1e-14);
+    check_near(acc_wel.variance(), dbl_5_var_mean, 1e-14);
 }
 
-// Check covariance accumulator using the full random vectors.
-TEST_F(SimplemcAccs, CovarAccVector) {
-    // general set up
-    using namespace simplemc;
-    covar_acc_static<double, size, standard> acc_std_d1, acc_std_d2;
-    covar_acc_dynamic<double, welford> acc_wel_d1(size), acc_wel_d2(size);
-    covar_acc_static<std::complex<double>, size, standard> acc_std_c1, acc_std_c2;
-    covar_acc_dynamic<std::complex<double>, welford> acc_wel_c1(size), acc_wel_c2(size);
-
-    // fill accumulators
-    const auto merge_size = steps / 2;
-    std::vector<long> idxs(3);
-    std::iota(idxs.begin(), idxs.end(), 0l);
-    for (int i = 0; i < merge_size; ++i) {
-        acc_std_d1 << sp_d.samples[i].matrix();
-        acc_wel_d1 << sp_d.samples[i].matrix();
-        acc_std_c1 << sp_c.samples[i].matrix();
-        acc_wel_c1 << sp_c.samples[i].matrix();
-    }
-    for (int i = merge_size; i < steps; ++i) {
-        acc_std_d2.accumulate(sp_d.samples[i], 0);
-        acc_wel_d2.accumulate(sp_d.samples[i], idxs);
-        acc_std_c2.accumulate(sp_c.samples[i], 0);
-        acc_wel_c2.accumulate(sp_c.samples[i], idxs);
+// Test scalar complex accumulation.
+TEST_F(SimplemcAccs, CovarAccScalarComplex) {
+    covar_acc<cplx, standard> acc_std;
+    covar_acc<cplx, welford> acc_wel;
+    for (const auto& z : cplx_5) {
+        acc_std << z;
+        acc_wel << z;
     }
 
-    // check count
-    ASSERT_EQ(acc_std_d1.count(), merge_size);
-    ASSERT_EQ(acc_wel_d1.count(), merge_size);
-    ASSERT_EQ(acc_std_c1.count(), merge_size);
-    ASSERT_EQ(acc_wel_c1.count(), merge_size);
-    ASSERT_EQ(acc_std_d2.count(), steps - merge_size);
-    ASSERT_EQ(acc_wel_d2.count(), steps - merge_size);
-    ASSERT_EQ(acc_std_c2.count(), steps - merge_size);
-    ASSERT_EQ(acc_wel_c2.count(), steps - merge_size);
+    ASSERT_EQ(acc_std.count(), cplx_5_n);
+    ASSERT_EQ(acc_wel.count(), cplx_5_n);
 
-    // merge accumulators
-    acc_std_d1 << acc_std_d2;
-    acc_wel_d1 << acc_wel_d2;
-    acc_std_c1 << acc_std_c2;
-    acc_wel_c1 << acc_wel_c2;
+    // mean
+    check_near(acc_std.mean(), cplx_5_mean, 1e-14);
+    check_near(acc_wel.mean(), cplx_5_mean, 1e-14);
 
-    // factory function
-    auto dview = simplemc::ranges::transform_view(sp_d.samples, [](const auto& s) { return Eigen::Vector3d(s); });
-    auto acc_std_d3 = make_covar_acc<standard>(dview);
-    auto acc_wel_d3 = make_covar_acc(dview);
-    auto cview = simplemc::ranges::transform_view(sp_c.samples, [](const auto& s) { return Eigen::Vector3cd(s); });
-    auto acc_std_c3 = make_covar_acc<standard>(cview);
-    auto acc_wel_c3 = make_covar_acc(cview);
+    // covariance components
+    check_near(acc_std.covariance_of_real_data(), cplx_5_var_re, 1e-14);
+    check_near(acc_std.covariance_of_imag_data(), cplx_5_var_im, 1e-14);
+    check_near(acc_std.covariance_of_real_and_imag_data(), cplx_5_cov_re_im, 1e-14);
+    check_near(acc_wel.covariance_of_real_data(), cplx_5_var_re, 1e-14);
+    check_near(acc_wel.covariance_of_imag_data(), cplx_5_var_im, 1e-14);
+    check_near(acc_wel.covariance_of_real_and_imag_data(), cplx_5_cov_re_im, 1e-14);
 
-    // check mean and variance
-    using simplemc::make_span;
-    const auto m_d = sample_mean(sp_d);
-    const auto c_d = sample_covariance(sp_d);
-    const auto m_c = sample_mean(sp_c);
-    const auto [r_c, i_c, ri_c] = sample_covariance(sp_c);
-    check_range_near(acc_std_d1.mean(), m_d, tol);
-    check_range_near(make_span(acc_std_d1.covariance_of_data()), make_span(c_d), tol);
-    check_range_near(acc_wel_d1.mean(), m_d, tol);
-    check_range_near(make_span(acc_wel_d1.covariance_of_data()), make_span(c_d), tol);
-    check_range_near(acc_std_d3.mean(), m_d, tol);
-    check_range_near(make_span(acc_std_d3.covariance_of_data()), make_span(c_d), tol);
-    check_range_near(acc_wel_d3.mean(), m_d, tol);
-    check_range_near(make_span(acc_wel_d3.covariance_of_data()), make_span(c_d), tol);
-    check_range_near(acc_std_c1.mean(), m_c, tol);
-    check_range_near(make_span(acc_std_c1.covariance_of_real_data()), make_span(r_c), tol);
-    check_range_near(make_span(acc_std_c1.covariance_of_imag_data()), make_span(i_c), tol);
-    check_range_near(make_span(acc_std_c1.covariance_of_real_and_imag_data()), make_span(ri_c), tol);
-    check_range_near(acc_wel_c1.mean(), m_c, tol);
-    check_range_near(make_span(acc_wel_c1.covariance_of_real_data()), make_span(r_c), tol);
-    check_range_near(make_span(acc_wel_c1.covariance_of_imag_data()), make_span(i_c), tol);
-    check_range_near(make_span(acc_wel_c1.covariance_of_real_and_imag_data()), make_span(ri_c), tol);
-    check_range_near(acc_std_c3.mean(), m_c, tol);
-    check_range_near(make_span(acc_std_c3.covariance_of_real_data()), make_span(r_c), tol);
-    check_range_near(make_span(acc_std_c3.covariance_of_imag_data()), make_span(i_c), tol);
-    check_range_near(make_span(acc_std_c3.covariance_of_real_and_imag_data()), make_span(ri_c), tol);
-    check_range_near(acc_wel_c3.mean(), m_c, tol);
-    check_range_near(make_span(acc_wel_c3.covariance_of_real_data()), make_span(r_c), tol);
-    check_range_near(make_span(acc_wel_c3.covariance_of_imag_data()), make_span(i_c), tol);
-    check_range_near(make_span(acc_wel_c3.covariance_of_real_and_imag_data()), make_span(ri_c), tol);
+    // total covariance of data = var_re + var_im
+    const auto expect_cov_data = cplx_5_var_re + cplx_5_var_im;
+    check_near(acc_std.covariance_of_data(), expect_cov_data, 1e-14);
+    check_near(acc_wel.covariance_of_data(), expect_cov_data, 1e-14);
 }
 
-// Check covariance accumulator using only part of random vectors.
-TEST_F(SimplemcAccs, CovarAccIndividualIndices) {
-    // general set up
-    using namespace simplemc;
-    covar_acc_static<double, size, standard> acc_std_d1, acc_std_d2;
-    covar_acc_dynamic<double, welford> acc_wel_d1(size), acc_wel_d2(size);
-    covar_acc_static<std::complex<double>, size, standard> acc_std_c1, acc_std_c2;
-    covar_acc_dynamic<std::complex<double>, welford> acc_wel_c1(size), acc_wel_c2(size);
-
-    // fill accumulators
-    const auto merge_size = steps / 2;
-    std::vector<long> idxs { 0, size - 1 };
-    const auto idx = 1;
-    for (int i = 0; i < merge_size; ++i) {
-        acc_std_d1[idx] << sp_d.samples[i](idx);
-        acc_wel_d1.accumulate(sp_d.samples[i](idxs), idxs);
-        acc_std_c1[idx] << sp_c.samples[i](idx);
-        acc_wel_c1.accumulate(sp_c.samples[i](idxs), idxs);
-    }
-    for (int i = merge_size; i < steps; ++i) {
-        acc_std_d2[idx] << sp_d.samples[i](idx);
-        acc_wel_d2.accumulate(sp_d.samples[i](idxs), idxs);
-        acc_std_c2[idx] << sp_c.samples[i](idx);
-        acc_wel_c2.accumulate(sp_c.samples[i](idxs), idxs);
+// Test static vector double accumulation.
+TEST_F(SimplemcAccs, CovarAccStaticVectorDouble) {
+    covar_acc_static<double, 3, standard> acc_std;
+    covar_acc_static<double, 3, welford> acc_wel;
+    for (const auto& v : vec_d_data) {
+        acc_std << v;
+        acc_wel << v;
     }
 
-    // check count
-    ASSERT_EQ(acc_std_d1.count(), merge_size);
-    ASSERT_EQ(acc_wel_d1.count(), merge_size);
-    ASSERT_EQ(acc_std_c1.count(), merge_size);
-    ASSERT_EQ(acc_wel_c1.count(), merge_size);
-    ASSERT_EQ(acc_std_d2.count(), steps - merge_size);
-    ASSERT_EQ(acc_wel_d2.count(), steps - merge_size);
-    ASSERT_EQ(acc_std_c2.count(), steps - merge_size);
-    ASSERT_EQ(acc_wel_c2.count(), steps - merge_size);
+    ASSERT_EQ(acc_std.count(), vec_d_n);
+    ASSERT_EQ(acc_wel.count(), vec_d_n);
 
-    // merge accumulators
-    acc_std_d1 << acc_std_d2;
-    acc_wel_d1 << acc_wel_d2;
-    acc_std_c1 << acc_std_c2;
-    acc_wel_c1 << acc_wel_c2;
+    // mean
+    check_range_near(acc_std.mean(), vec_d_mean, 1e-14);
+    check_range_near(acc_wel.mean(), vec_d_mean, 1e-14);
 
-    // check mean and variance
-    using simplemc::make_span;
-    auto m_std_d = sample_mean(sp_d);
-    auto c_std_d = sample_covariance(sp_d);
-    auto m_std_c = sample_mean(sp_c);
-    auto [r_std_c, i_std_c, ri_std_c] = sample_covariance(sp_c);
-    auto [m_wel_d, c_wel_d] = std::tuple(m_std_d, c_std_d);
-    auto [m_wel_c, r_wel_c, i_wel_c, ri_wel_c] = std::tuple(m_std_c, r_std_c, i_std_c, ri_std_c);
-    for (int i = 0; i < size; ++i) {
-        if (i != idx) {
-            m_std_d(i) = 0.0;
-            c_std_d.row(i) = 0.0;
-            c_std_d.col(i) = 0.0;
-            m_std_c(i) = { 0.0, 0.0 };
-            r_std_c.row(i) = 0.0;
-            r_std_c.col(i) = 0.0;
-            i_std_c.row(i) = 0.0;
-            i_std_c.col(i) = 0.0;
-            ri_std_c.row(i) = 0.0;
-            ri_std_c.col(i) = 0.0;
-        }
-    }
-    check_range_near(acc_std_d1.mean(), m_std_d, tol);
-    check_range_near(make_span(acc_std_d1.covariance_of_data()), make_span(c_std_d), tol);
-    check_range_near(acc_std_c1.mean(), m_std_c, tol);
-    check_range_near(make_span(acc_std_c1.covariance_of_real_data()), make_span(r_std_c), tol);
-    check_range_near(make_span(acc_std_c1.covariance_of_imag_data()), make_span(i_std_c), tol);
-    check_range_near(make_span(acc_std_c1.covariance_of_real_and_imag_data()), make_span(ri_std_c), tol);
-    for (int i = 1; i < size - 1; ++i) {
-        m_wel_d(i) = 0.0;
-        c_wel_d.row(i) = 0.0;
-        c_wel_d.col(i) = 0.0;
-        m_wel_c(i) = { 0.0, 0.0 };
-        r_wel_c.row(i) = 0.0;
-        r_wel_c.col(i) = 0.0;
-        i_wel_c.row(i) = 0.0;
-        i_wel_c.col(i) = 0.0;
-        ri_wel_c.row(i) = 0.0;
-        ri_wel_c.col(i) = 0.0;
-    }
-    check_range_near(acc_wel_d1.mean(), m_wel_d, tol);
-    check_range_near(make_span(acc_wel_d1.covariance_of_data()), make_span(c_wel_d), tol);
-    check_range_near(acc_wel_c1.mean(), m_wel_c, tol);
-    check_range_near(make_span(acc_wel_c1.covariance_of_real_data()), make_span(r_wel_c), tol);
-    check_range_near(make_span(acc_wel_c1.covariance_of_imag_data()), make_span(i_wel_c), tol);
-    check_range_near(make_span(acc_wel_c1.covariance_of_real_and_imag_data()), make_span(ri_wel_c), tol);
+    // full covariance of data (3x3 matrix)
+    check_mat_near(acc_std.covariance_of_data(), vec_d_cov, 1e-14);
+    check_mat_near(acc_wel.covariance_of_data(), vec_d_cov, 1e-14);
+
+    // covariance of the mean = cov_data / N
+    Eigen::Matrix3d expect_cov_mean = vec_d_cov / static_cast<double>(vec_d_n);
+    check_mat_near(acc_std.covariance(), expect_cov_mean, 1e-14);
+    check_mat_near(acc_wel.covariance(), expect_cov_mean, 1e-14);
+
+    // variance = diagonal of covariance (vector)
+    Eigen::Vector3d expect_var = vec_d_var / static_cast<double>(vec_d_n);
+    check_range_near(acc_std.variance(), expect_var, 1e-14);
+    check_range_near(acc_wel.variance(), expect_var, 1e-14);
 }
 
-// Check blocked covariance accumulator.
-TEST_F(SimplemcAccs, CovarAccBlocked) {
-    // general set up
-    using namespace simplemc;
-    using block_acc_type = block_acc<covar_acc_static<double, size, welford>>;
-    const auto eff_steps = 1000;
-    const auto block_size = steps / eff_steps;
-    block_acc_type acc_wel_d1(block_size), acc_wel_d2(block_size);
-
-    // fill accumulators
-    const auto merge_size = steps / 2;
-    std::vector<long> idxs(3);
-    std::iota(idxs.begin(), idxs.end(), 0l);
-    for (int i = 0; i < merge_size; ++i) {
-        acc_wel_d1 << sp_d.samples[i].matrix();
-    }
-    for (int i = merge_size; i < steps; ++i) {
-        acc_wel_d2.accumulate(sp_d.samples[i], idxs);
+// Test static vector complex accumulation.
+TEST_F(SimplemcAccs, CovarAccStaticVectorComplex) {
+    covar_acc_static<cplx, 2, standard> acc_std;
+    covar_acc_static<cplx, 2, welford> acc_wel;
+    for (const auto& v : vec_c_data) {
+        acc_std << v;
+        acc_wel << v;
     }
 
-    // check count
-    ASSERT_EQ(acc_wel_d1.count(), eff_steps / 2);
-    ASSERT_EQ(acc_wel_d2.count(), eff_steps / 2);
-    ASSERT_EQ(acc_wel_d1.total_count(), merge_size);
-    ASSERT_EQ(acc_wel_d2.total_count(), steps - merge_size);
+    ASSERT_EQ(acc_std.count(), vec_c_n);
+    ASSERT_EQ(acc_wel.count(), vec_c_n);
 
-    // merge accumulators
-    acc_wel_d1 << acc_wel_d2;
+    // mean
+    check_range_near(acc_std.mean(), vec_c_mean, 1e-14);
+    check_range_near(acc_wel.mean(), vec_c_mean, 1e-14);
 
-    // factory function
-    auto dview = simplemc::ranges::transform_view(sp_d.samples, [](const auto& s) { return Eigen::Vector3d(s); });
-    auto acc_wel_d3 = make_block_covar_acc(dview, block_size);
-
-    // check mean and variance
-    using simplemc::make_span;
-    auto bsp_d = block_samples(sp_d, block_size);
-    const auto m_d = sample_mean(bsp_d);
-    const auto c_d = sample_covariance(bsp_d);
-    check_range_near(acc_wel_d1.accumulator().mean(), m_d, tol);
-    check_range_near(make_span(acc_wel_d1.accumulator().covariance_of_data()), make_span(c_d), tol);
-    check_range_near(acc_wel_d3.accumulator().mean(), m_d, tol);
-    check_range_near(make_span(acc_wel_d3.accumulator().covariance_of_data()), make_span(c_d), tol);
+    // component covariance matrices
+    check_mat_near(acc_std.covariance_of_real_data(), vec_c_cov_rr, 1e-14);
+    check_mat_near(acc_std.covariance_of_imag_data(), vec_c_cov_ii, 1e-14);
+    check_mat_near(acc_std.covariance_of_real_and_imag_data(), vec_c_cov_ri, 1e-14);
+    check_mat_near(acc_wel.covariance_of_real_data(), vec_c_cov_rr, 1e-14);
+    check_mat_near(acc_wel.covariance_of_imag_data(), vec_c_cov_ii, 1e-14);
+    check_mat_near(acc_wel.covariance_of_real_and_imag_data(), vec_c_cov_ri, 1e-14);
 }
 
-// Check autocorrelation wrapper of covariance accumulator.
-TEST_F(SimplemcAccs, CovarAccAutocorrelation) {
-    // general set up
-    using namespace simplemc;
-    autocorr_acc<covar_acc_static<double, size, welford>> acc_vec, acc_acc1, acc_acc2;
-    autocorr_acc<covar_acc<double, welford>> acc_single(1, 2, 5);
-
-    // fill accumulators
-    std::vector<long> idxs(3);
-    std::iota(idxs.begin(), idxs.end(), 0l);
-    for (int i = 0; i < steps; ++i) {
-        acc_vec << sp_d.samples[i];
-        acc_acc1.accumulate(sp_d.samples[i], idxs);
-        acc_acc2.accumulate(sp_d.samples[i], 0);
-        acc_single << sp_d.samples[i](0);
+// Test dynamic vector double accumulation.
+TEST_F(SimplemcAccs, CovarAccDynamicVectorDouble) {
+    covar_acc_dynamic<double, standard> acc_std(3);
+    covar_acc_dynamic<double, welford> acc_wel(3);
+    for (const auto& v : vec_d_data) {
+        acc_std << v;
+        acc_wel << v;
     }
 
-    // factory function
-    auto dview = simplemc::ranges::transform_view(sp_d.samples, [](const auto& s) { return Eigen::VectorXd(s); });
-    auto acc_vec2 = make_autocorr_covar_acc(dview);
+    ASSERT_EQ(acc_std.count(), vec_d_n);
+    ASSERT_EQ(acc_wel.count(), vec_d_n);
+    ASSERT_EQ(acc_std.size(), 3);
 
-    // check block variance accumulators with increasing block sizes and autocorrelation times
-    using simplemc::make_span;
-    using simplemc::accs::tau;
-    auto [bsp_d, btau_v, btau_c] = blocking_autocorr(sp_d);
-    const auto max_level = acc_vec.find_level(2);
-    auto check_level = [&bsp_d, &btau_c](const auto& acc, auto i) {
-        const auto c_d = sample_covariance(bsp_d[i]);
-        const auto ac0_d = acc.accumulators()[0].covariance_of_data();
-        const auto ac_d = acc.accumulators()[i].covariance_of_data();
-        const auto blsize = acc.block_sizes()[i];
-        if constexpr (std::decay_t<decltype(acc)>::static_size == 1) {
-            check_near(acc.accumulators()[i].covariance_of_data(), c_d(0, 0), tol);
-            check_near(tau(ac0_d, ac_d, blsize), btau_c[i](0, 0), tol);
-        } else {
-            check_range_near(make_span(acc.accumulators()[i].covariance_of_data()), make_span(c_d), tol);
-            check_range_near(make_span(tau(ac0_d, ac_d, blsize)), make_span(btau_c[i]), tol);
-        }
-    };
-    for (std::size_t i = 0; i < max_level; ++i) {
-        check_level(acc_single, i);
-        check_level(acc_vec, i);
-        check_level(acc_vec2, i);
-        check_level(acc_acc1, i);
-        check_level(acc_acc2, i);
-    }
+    // mean
+    check_range_near(acc_std.mean(), vec_d_mean, 1e-14);
+    check_range_near(acc_wel.mean(), vec_d_mean, 1e-14);
+
+    // covariance of data
+    check_mat_near(acc_std.covariance_of_data(), vec_d_cov, 1e-14);
+    check_mat_near(acc_wel.covariance_of_data(), vec_d_cov, 1e-14);
 }
 
-// Check construction from pre-existing accumulated data.
+// Test dynamic vector complex accumulation.
+TEST_F(SimplemcAccs, CovarAccDynamicVectorComplex) {
+    covar_acc_dynamic<cplx, standard> acc_std(2);
+    covar_acc_dynamic<cplx, welford> acc_wel(2);
+    for (const auto& v : vec_c_data) {
+        acc_std << v;
+        acc_wel << v;
+    }
+
+    ASSERT_EQ(acc_std.count(), vec_c_n);
+    ASSERT_EQ(acc_wel.count(), vec_c_n);
+    ASSERT_EQ(acc_std.size(), 2);
+
+    // mean
+    check_range_near(acc_std.mean(), vec_c_mean, 1e-14);
+    check_range_near(acc_wel.mean(), vec_c_mean, 1e-14);
+
+    // component covariance matrices
+    check_mat_near(acc_std.covariance_of_real_data(), vec_c_cov_rr, 1e-14);
+    check_mat_near(acc_std.covariance_of_imag_data(), vec_c_cov_ii, 1e-14);
+    check_mat_near(acc_std.covariance_of_real_and_imag_data(), vec_c_cov_ri, 1e-14);
+    check_mat_near(acc_wel.covariance_of_real_data(), vec_c_cov_rr, 1e-14);
+    check_mat_near(acc_wel.covariance_of_imag_data(), vec_c_cov_ii, 1e-14);
+    check_mat_near(acc_wel.covariance_of_real_and_imag_data(), vec_c_cov_ri, 1e-14);
+}
+
+// Test merging two covar_acc accumulators.
+TEST_F(SimplemcAccs, CovarAccMergeScalar) {
+    // split dbl_5 into two halves, merge, verify
+    covar_acc<double, standard> acc1_std, acc2_std;
+    covar_acc<double, welford> acc1_wel, acc2_wel;
+    for (int i = 0; i < 3; ++i) {
+        acc1_std << dbl_5[i];
+        acc1_wel << dbl_5[i];
+    }
+    for (int i = 3; i < 5; ++i) {
+        acc2_std << dbl_5[i];
+        acc2_wel << dbl_5[i];
+    }
+    ASSERT_EQ(acc1_std.count(), 3);
+    ASSERT_EQ(acc2_std.count(), 2);
+    ASSERT_EQ(acc1_wel.count(), 3);
+    ASSERT_EQ(acc2_wel.count(), 2);
+
+    acc1_std << acc2_std;
+    acc1_wel << acc2_wel;
+    ASSERT_EQ(acc1_std.count(), dbl_5_n);
+    ASSERT_EQ(acc2_std.count(), 2);
+    ASSERT_EQ(acc1_wel.count(), dbl_5_n);
+    ASSERT_EQ(acc2_wel.count(), 2);
+    check_near(acc1_std.mean(), dbl_5_mean, 1e-14);
+    check_near(acc1_wel.mean(), dbl_5_mean, 1e-14);
+    check_near(acc1_std.covariance_of_data(), dbl_5_var_data, 1e-14);
+    check_near(acc1_wel.covariance_of_data(), dbl_5_var_data, 1e-14);
+}
+
+TEST_F(SimplemcAccs, CovarAccMergeVector) {
+    // split vec_d_data into two halves, merge, verify
+    covar_acc_static<double, 3, standard> acc1_std, acc2_std;
+    covar_acc_dynamic<double, welford> acc1_wel(3), acc2_wel(3);
+    for (int i = 0; i < 2; ++i) {
+        acc1_std << vec_d_data[i];
+        acc1_wel << vec_d_data[i];
+        acc2_std << vec_d_data[i + 2];
+        acc2_wel << vec_d_data[i + 2];
+    }
+    ASSERT_EQ(acc1_std.count(), 2);
+    ASSERT_EQ(acc2_std.count(), 2);
+    ASSERT_EQ(acc1_wel.count(), 2);
+    ASSERT_EQ(acc2_wel.count(), 2);
+
+    acc1_std << acc2_std;
+    acc1_wel << acc2_wel;
+    ASSERT_EQ(acc1_std.count(), vec_d_n);
+    ASSERT_EQ(acc2_std.count(), 2);
+    ASSERT_EQ(acc1_wel.count(), vec_d_n);
+    ASSERT_EQ(acc2_wel.count(), 2);
+    check_range_near(acc1_std.mean(), vec_d_mean, 1e-14);
+    check_range_near(acc1_wel.mean(), vec_d_mean, 1e-14);
+    check_mat_near(acc1_std.covariance_of_data(), vec_d_cov, 1e-14);
+    check_mat_near(acc1_wel.covariance_of_data(), vec_d_cov, 1e-14);
+}
+
+// Test reseting an accumulator.
+TEST_F(SimplemcAccs, CovarAccReset) {
+    covar_acc<double> acc;
+    for (const auto& x : dbl_5) {
+        acc << x;
+    }
+    ASSERT_FALSE(acc.empty());
+
+    acc.reset();
+    check_empty(acc);
+}
+
+// Test constructing a covar_acc from data and count.
 TEST_F(SimplemcAccs, CovarAccDataConstructor) {
-    using namespace simplemc;
-
-    // real vector: static
-    covar_acc_static<double, size> acc_d;
-    for (int i = 0; i < 10; ++i) {
-        acc_d << sp_d.samples[i].matrix();
+    // scalar data constructor (valid case)
+    covar_acc<double> acc;
+    for (const auto& x : dbl_5) {
+        acc << x;
     }
-    covar_acc_static<double, size> acc_d_copy(acc_d.mdata(), acc_d.cdata(), acc_d.count());
-    ASSERT_EQ(acc_d_copy.count(), acc_d.count());
-    ASSERT_FALSE(acc_d_copy.empty());
-    ASSERT_EQ(acc_d_copy.mdata(), acc_d.mdata());
-    ASSERT_EQ(acc_d_copy.cdata(), acc_d.cdata());
+    covar_acc<double> acc_copy(acc.mdata(), acc.cdata(), acc.count());
+    ASSERT_EQ(acc_copy.count(), acc.count());
+    ASSERT_EQ(acc_copy.mdata(), acc.mdata());
+    ASSERT_EQ(acc_copy.cdata(), acc.cdata());
+    check_near(acc_copy.mean(), dbl_5_mean, 1e-14);
+    check_near(acc_copy.covariance_of_data(), dbl_5_var_data, 1e-14);
 
-    // complex vector: static
-    covar_acc_static<std::complex<double>, size> acc_c;
-    for (int i = 0; i < 10; ++i) {
-        acc_c << sp_c.samples[i].matrix();
+    // scalar complex data constructor
+    covar_acc<cplx> acc_c;
+    for (const auto& z : cplx_5) {
+        acc_c << z;
     }
-    covar_acc_static<std::complex<double>, size> acc_c_copy(
+    covar_acc<cplx> acc_c_copy(
         acc_c.mdata(), acc_c.rdata(), acc_c.idata(), acc_c.cdata(), acc_c.count());
     ASSERT_EQ(acc_c_copy.count(), acc_c.count());
-    ASSERT_FALSE(acc_c_copy.empty());
     ASSERT_EQ(acc_c_copy.mdata(), acc_c.mdata());
     ASSERT_EQ(acc_c_copy.rdata(), acc_c.rdata());
     ASSERT_EQ(acc_c_copy.idata(), acc_c.idata());
     ASSERT_EQ(acc_c_copy.cdata(), acc_c.cdata());
+    check_near(acc_c_copy.mean(), cplx_5_mean, 1e-14);
+    check_near(acc_c_copy.covariance_of_real_data(), cplx_5_var_re, 1e-14);
+    check_near(acc_c_copy.covariance_of_imag_data(), cplx_5_var_im, 1e-14);
 
-    // real vector: dynamic
-    covar_acc_dynamic<double> acc_dyn(size);
-    for (int i = 0; i < 10; ++i) {
-        acc_dyn << sp_d.samples[i].matrix();
+    // dynamic double data constructor
+    covar_acc_dynamic<double> acc_dyn(3);
+    for (const auto& v : vec_d_data) {
+        acc_dyn << v;
     }
     covar_acc_dynamic<double> acc_dyn_copy(acc_dyn.mdata(), acc_dyn.cdata(), acc_dyn.count());
     ASSERT_EQ(acc_dyn_copy.count(), acc_dyn.count());
-    ASSERT_EQ(acc_dyn_copy.mdata(), acc_dyn.mdata());
-    ASSERT_EQ(acc_dyn_copy.cdata(), acc_dyn.cdata());
+    ASSERT_TRUE(acc_dyn_copy.mdata() == acc_dyn.mdata());
+    ASSERT_TRUE(acc_dyn_copy.cdata() == acc_dyn.cdata());
+    check_range_near(acc_dyn_copy.mean(), vec_d_mean, 1e-14);
+    check_mat_near(acc_dyn_copy.covariance_of_data(), vec_d_cov, 1e-14);
+
+    // dynamic complex data constructor
+    covar_acc_dynamic<cplx> acc_dyn_c(2);
+    for (const auto& v : vec_c_data) {
+        acc_dyn_c << v;
+    }
+    covar_acc_dynamic<cplx> acc_dyn_c_copy(
+        acc_dyn_c.mdata(), acc_dyn_c.rdata(), acc_dyn_c.idata(), acc_dyn_c.cdata(), acc_dyn_c.count());
+    ASSERT_EQ(acc_dyn_c_copy.count(), acc_dyn_c.count());
+    ASSERT_TRUE(acc_dyn_c_copy.mdata() == acc_dyn_c.mdata());
+    ASSERT_TRUE(acc_dyn_c_copy.rdata() == acc_dyn_c.rdata());
+    ASSERT_TRUE(acc_dyn_c_copy.idata() == acc_dyn_c.idata());
+    ASSERT_TRUE(acc_dyn_c_copy.cdata() == acc_dyn_c.cdata());
+    check_range_near(acc_dyn_c_copy.mean(), vec_c_mean, 1e-14);
+    check_mat_near(acc_dyn_c_copy.covariance_of_real_data(), vec_c_cov_rr, 1e-14);
+    check_mat_near(acc_dyn_c_copy.covariance_of_imag_data(), vec_c_cov_ii, 1e-14);
+    check_mat_near(acc_dyn_c_copy.covariance_of_real_and_imag_data(), vec_c_cov_ri, 1e-14);
 }
 
-// Check that dynamic size validation works for valid sizes.
-// NOTE: The size check in the constructor body is currently unreachable because
-// vec_type::Zero(m) in the member initializer list triggers an Eigen assertion
-// before the body runs. This should be fixed by validating m before the initializer
-// list (e.g. via a static helper). For now, we only test valid construction.
-TEST_F(SimplemcAccs, CovarAccDynamicSizeValidation) {
-    using namespace simplemc;
+// Test that constructing dynamic covar_acc with invalid sizes throws.
+// Note: only m == 0 is tested here; m < 0 would trigger an Eigen internal assertion
+// (in the member initializer) before our check runs.
+TEST_F(SimplemcAccs, CovarAccDynamicConstructorInvalid) {
+    EXPECT_THROW(covar_acc_dynamic<double>(0), simplemc_exception);
 
-    // valid dynamic construction
-    ASSERT_NO_THROW(covar_acc_dynamic<double>(1));
-    ASSERT_NO_THROW(covar_acc_dynamic<double>(100));
-    ASSERT_NO_THROW(covar_acc_dynamic<std::complex<double>>(5));
+    // data constructor: zero-size vec_type triggers the same exception
+    Eigen::VectorXd empty_vec(0);
+    Eigen::MatrixXd empty_mat(0, 0);
+    EXPECT_THROW((covar_acc_dynamic<double>(empty_vec, empty_mat, 0)), simplemc_exception);
+}
+
+// Test factory function for covar_acc.
+TEST_F(SimplemcAccs, CovarAccFactory) {
+    // default (welford) varalg
+    auto acc_wel = make_covar_acc(dbl_5);
+    ASSERT_EQ(acc_wel.count(), dbl_5_n);
+    check_near(acc_wel.mean(), dbl_5_mean, 1e-14);
+    check_near(acc_wel.covariance_of_data(), dbl_5_var_data, 1e-14);
+
+    // explicit standard varalg
+    auto acc_std = make_covar_acc<standard>(dbl_5);
+    ASSERT_EQ(acc_std.count(), dbl_5_n);
+    check_near(acc_std.mean(), dbl_5_mean, 1e-14);
+    check_near(acc_std.covariance_of_data(), dbl_5_var_data, 1e-14);
+
+    // with a non-null shift t
+    const double shift = 1.0;
+    auto acc_shifted = make_covar_acc(dbl_5, std::optional<double>(shift));
+    ASSERT_EQ(acc_shifted.count(), dbl_5_n);
+    check_near(acc_shifted.mean() + shift, dbl_5_mean, 1e-14);
+}
+
+TEST_F(SimplemcAccs, CovarAccFactoryVector) {
+    // default (welford) varalg
+    auto acc_wel = make_covar_acc(vec_d_data);
+    ASSERT_EQ(acc_wel.count(), vec_d_n);
+    check_range_near(acc_wel.mean(), vec_d_mean, 1e-14);
+    check_mat_near(acc_wel.covariance_of_data(), vec_d_cov, 1e-14);
+
+    // explicit standard varalg
+    auto acc_std = make_covar_acc<standard>(vec_d_data);
+    ASSERT_EQ(acc_std.count(), vec_d_n);
+    check_range_near(acc_std.mean(), vec_d_mean, 1e-14);
+    check_mat_near(acc_std.covariance_of_data(), vec_d_cov, 1e-14);
+
+    // with a non-null vector shift t
+    const Eigen::Vector3d shift(1.0, 1.0, 1.0);
+    auto acc_shifted = make_covar_acc(vec_d_data, std::optional<Eigen::Vector3d>(shift));
+    ASSERT_EQ(acc_shifted.count(), vec_d_n);
+    const Eigen::Vector3d shifted_mean = (acc_shifted.mean() + shift).eval();
+    check_range_near(shifted_mean, vec_d_mean, 1e-14);
+}
+
+// Test that make_covar_acc throws on an empty range (detail::make_acc exception path).
+TEST_F(SimplemcAccs, CovarAccFactoryEmptyRange) {
+    std::vector<double> empty;
+    EXPECT_THROW((void)make_covar_acc(empty), simplemc_exception);
+    std::vector<Eigen::Vector3d> empty_vec;
+    EXPECT_THROW((void)make_covar_acc(empty_vec), simplemc_exception);
+}
+
+// Test block_acc wrapping covar_acc.
+TEST_F(SimplemcAccs, CovarAccBlockScalar) {
+    // dbl_5 = {1,2,3,4,5} with block_size = 2:
+    //   Block 1: mean(1,2) = 1.5
+    //   Block 2: mean(3,4) = 3.5
+    //   Sample 5 in incomplete block (not flushed).
+    // Inner acc gets {1.5, 3.5}:
+    //   cov_data = var = 2.0
+    block_acc<covar_acc<double>> bacc(2);
+    for (const auto& x : dbl_5) {
+        bacc << x;
+    }
+
+    ASSERT_EQ(bacc.block_size(), 2UL);
+    ASSERT_EQ(bacc.count(), 2UL);
+    ASSERT_EQ(bacc.total_count(), 5UL);
+    ASSERT_FALSE(bacc.empty());
+
+    check_near(bacc.mean(), 2.5, 1e-14);
+    check_near(bacc.accumulator().covariance_of_data(), 2.0, 1e-14);
+    check_near(bacc.covariance(), 1.0, 1e-14);
+}
+
+TEST_F(SimplemcAccs, CovarAccBlockEmpty) {
+    block_acc<covar_acc<double>> bacc(3);
+    ASSERT_TRUE(bacc.empty());
+    ASSERT_EQ(bacc.count(), 0UL);
+    ASSERT_EQ(bacc.block_size(), 3UL);
+}
+
+TEST_F(SimplemcAccs, CovarAccBlockFactory) {
+    auto bacc = make_block_covar_acc(dbl_5, 2);
+    ASSERT_EQ(bacc.count(), 2UL);
+    check_near(bacc.mean(), 2.5, 1e-14);
+}
+
+// Test autocorr_acc wrapping covar_acc.
+TEST_F(SimplemcAccs, CovarAccAutocorrStructural) {
+    // Feed dbl_5 into autocorr_acc with factor 2.
+    autocorr_acc<covar_acc<double>> aacc(1, 2);
+    for (const auto& x : dbl_5) {
+        aacc << x;
+    }
+
+    ASSERT_FALSE(aacc.empty());
+    ASSERT_EQ(aacc.factor(), 2UL);
+    ASSERT_GE(aacc.num_levels(), 2UL);
+
+    // Level 0 gets all samples directly.
+    ASSERT_EQ(aacc.count(0), dbl_5_n);
+    check_near(aacc.mean(), dbl_5_mean, 1e-14);
+    check_near(aacc.covariance(), dbl_5_var_mean, 1e-14);
+
+    // Higher levels have fewer completed blocks.
+    ASSERT_LE(aacc.count(1), aacc.count(0));
+}
+
+TEST_F(SimplemcAccs, CovarAccAutocorrFactory) {
+    auto aacc = make_autocorr_covar_acc(dbl_5);
+    ASSERT_EQ(aacc.count(0), dbl_5_n);
+    check_near(aacc.mean(), dbl_5_mean, 1e-14);
+}
+
+// Test index-based accumulation for covar_acc.
+TEST_F(SimplemcAccs, CovarAccIndexBased) {
+    // accumulate only element 0 of 3-element accumulator
+    covar_acc_static<double, 3> acc;
+    for (const auto& v : vec_d_data) {
+        acc[0] << v[0];
+    }
+
+    // only element 0 should have the correct mean, others are 0
+    ASSERT_EQ(acc.count(), vec_d_n);
+    check_near(acc.mean()[0], vec_d_mean[0], 1e-14);
+    check_near(acc.mean()[1], 0.0, 1e-14);
+    check_near(acc.mean()[2], 0.0, 1e-14);
+}
+
+TEST_F(SimplemcAccs, CovarAccAccumulateWithIndices) {
+    // use accumulate(range, indices) to accumulate only element 0 and 2 of 3-element accumulator
+    covar_acc_static<double, 3> acc_wel;
+    covar_acc_static<double, 3, standard> acc_std;
+    std::vector<long> idxs = { 0, 2 };
+    for (const auto& v : vec_d_data) {
+        Eigen::Vector2d sub(v[0], v[2]);
+        acc_wel.accumulate(sub, idxs);
+        acc_std.accumulate(sub, idxs);
+    }
+
+    // only elements 0 and 2 should have the correct mean, element 1 is 0
+    ASSERT_EQ(acc_wel.count(), vec_d_n);
+    ASSERT_EQ(acc_std.count(), vec_d_n);
+    Eigen::Vector3d expected = { vec_d_mean[0], 0.0, vec_d_mean[2] };
+    check_range_near(acc_wel.mean(), expected, 1e-14);
+    check_range_near(acc_std.mean(), expected, 1e-14);
+}
+
+TEST_F(SimplemcAccs, CovarAccAccumulateConsecutive) {
+    // use accumulate(range, start_index) to accumulate elements 1 and 2 of 3-element accumulator
+    covar_acc_static<double, 3> acc_wel;
+    covar_acc_static<double, 3, standard> acc_std;
+    for (const auto& v : vec_d_data) {
+        std::vector<double> sub = { v[1], v[2] };
+        acc_wel.accumulate(sub, 1);
+        acc_std.accumulate(sub, 1);
+    }
+
+    // only elements 1 and 2 should have the correct mean, element 0 is 0
+    ASSERT_EQ(acc_wel.count(), vec_d_n);
+    ASSERT_EQ(acc_std.count(), vec_d_n);
+    Eigen::Vector3d expected = { 0.0, vec_d_mean[1], vec_d_mean[2] };
+    check_range_near(acc_wel.mean(), expected, 1e-14);
+    check_range_near(acc_std.mean(), expected, 1e-14);
 }

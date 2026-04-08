@@ -63,6 +63,14 @@ void check_range_equal(simplemc::ranges::input_range auto&& rg, simplemc::ranges
     }
 }
 
+// Check that range elements fulfill a predicate.
+template <typename F>
+void check_range_pred(simplemc::ranges::input_range auto&& rg, F pred) {
+    for (auto&& x : rg) {
+        ASSERT_TRUE(pred(x));
+    }
+}
+
 // Check if a value is NaN.
 void check_isnan(auto val) {
     if constexpr (std::is_same_v<std::remove_reference_t<decltype(val)>, double>) {

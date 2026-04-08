@@ -5,6 +5,8 @@
 #include <simplemc/accs/concepts.hpp>
 #include <simplemc/accs/covar_acc.hpp>
 
+#include <simplemc/utils/ranges.hpp>
+
 #include <complex>
 #include <numeric>
 #include <tuple>
@@ -20,92 +22,6 @@ constexpr auto welford = varalg::welford;
 constexpr double tol = 1e-10;
 
 } // namespace
-
-// Check that accumulator concepts are satisfied.
-TEST_F(SimplemcAccsAdvanced, CovarAccConcepts) {
-    using namespace simplemc;
-
-    // covar_acc with scalar types
-    static_assert(covariance_accumulator<covar_acc<double>>);
-    static_assert(covariance_accumulator<covar_acc<std::complex<double>>>);
-
-    // covar_acc with static vector types
-    static_assert(covariance_accumulator<covar_acc_static<double, 3>>);
-    static_assert(covariance_accumulator<covar_acc_static<std::complex<double>, 3>>);
-
-    // covar_acc with dynamic vector types
-    static_assert(covariance_accumulator<covar_acc_dynamic<double>>);
-    static_assert(covariance_accumulator<covar_acc_dynamic<std::complex<double>>>);
-
-    // block_acc wrapping covar_acc
-    static_assert(covariance_accumulator<block_acc<covar_acc<double>>>);
-    static_assert(covariance_accumulator<block_acc<covar_acc<std::complex<double>>>>);
-    static_assert(covariance_accumulator<block_acc<covar_acc_static<double, 3>>>);
-    static_assert(covariance_accumulator<block_acc<covar_acc_static<std::complex<double>, 3>>>);
-    static_assert(covariance_accumulator<block_acc<covar_acc_dynamic<double>>>);
-    static_assert(covariance_accumulator<block_acc<covar_acc_dynamic<std::complex<double>>>>);
-
-    // autocorr_acc wrapping covar_acc
-    static_assert(covariance_accumulator<autocorr_acc<covar_acc<double>>>);
-    static_assert(covariance_accumulator<autocorr_acc<covar_acc<std::complex<double>>>>);
-    static_assert(covariance_accumulator<autocorr_acc<covar_acc_static<double, 3>>>);
-    static_assert(covariance_accumulator<autocorr_acc<covar_acc_static<std::complex<double>, 3>>>);
-    static_assert(covariance_accumulator<autocorr_acc<covar_acc_dynamic<double>>>);
-    static_assert(covariance_accumulator<autocorr_acc<covar_acc_dynamic<std::complex<double>>>>);
-}
-
-// Check empty accumulators.
-TEST_F(SimplemcAccsAdvanced, CovarAccEmpty) {
-    using namespace simplemc;
-
-    covar_acc<double> acc_sd;
-    ASSERT_EQ(acc_sd.size(), 1);
-    check_empty(acc_sd);
-    acc_sd << acc_sd;
-    check_empty(acc_sd);
-    static_assert(!acc_sd.is_dynamic);
-    static_assert(acc_sd.static_size == 1);
-
-    covar_acc<std::complex<double>, standard> acc_sc;
-    ASSERT_EQ(acc_sc.size(), 1);
-    check_empty(acc_sc);
-    acc_sc << acc_sc;
-    check_empty(acc_sc);
-    static_assert(!acc_sc.is_dynamic);
-    static_assert(acc_sc.static_size == 1);
-
-    covar_acc_static<double, 5> acc_st_d;
-    ASSERT_EQ(acc_st_d.size(), 5);
-    check_empty(acc_st_d);
-    acc_st_d << acc_st_d;
-    check_empty(acc_st_d);
-    static_assert(!acc_st_d.is_dynamic);
-    static_assert(acc_st_d.static_size == 5);
-
-    covar_acc_static<std::complex<double>, 5, standard> acc_st_c;
-    ASSERT_EQ(acc_st_c.size(), 5);
-    check_empty(acc_st_c);
-    acc_st_c << acc_st_c;
-    check_empty(acc_st_c);
-    static_assert(!acc_st_c.is_dynamic);
-    static_assert(acc_st_c.static_size == 5);
-
-    covar_acc_dynamic<double> acc_dyn_d(5);
-    ASSERT_EQ(acc_dyn_d.size(), 5);
-    check_empty(acc_dyn_d);
-    acc_dyn_d << acc_dyn_d;
-    check_empty(acc_dyn_d);
-    static_assert(acc_dyn_d.is_dynamic);
-    static_assert(acc_dyn_d.static_size == Eigen::Dynamic);
-
-    covar_acc_dynamic<std::complex<double>, standard> acc_dyn_c(5);
-    ASSERT_EQ(acc_dyn_c.size(), 5);
-    check_empty(acc_dyn_c);
-    acc_dyn_c << acc_dyn_c;
-    check_empty(acc_dyn_c);
-    static_assert(acc_dyn_c.is_dynamic);
-    static_assert(acc_dyn_c.static_size == Eigen::Dynamic);
-}
 
 // Check covariance accumulator of size 1.
 TEST_F(SimplemcAccsAdvanced, CovarAccSingle) {
@@ -184,6 +100,16 @@ TEST_F(SimplemcAccsAdvanced, CovarAccSingle) {
     check_near(acc_wel_c3.covariance_of_real_data(), r_c(0, 0), tol);
     check_near(acc_wel_c3.covariance_of_imag_data(), i_c(0, 0), tol);
     check_near(acc_wel_c3.covariance_of_real_and_imag_data(), ri_c(0, 0), tol);
+
+    // reset and verify empty
+    acc_std_d1.reset();
+    acc_wel_d1.reset();
+    acc_std_c1.reset();
+    acc_wel_c1.reset();
+    check_empty(acc_std_d1);
+    check_empty(acc_wel_d1);
+    check_empty(acc_std_c1);
+    check_empty(acc_wel_c1);
 }
 
 // Check covariance accumulator using the full random vectors.
@@ -266,6 +192,16 @@ TEST_F(SimplemcAccsAdvanced, CovarAccVector) {
     check_range_near(make_span(acc_wel_c3.covariance_of_real_data()), make_span(r_c), tol);
     check_range_near(make_span(acc_wel_c3.covariance_of_imag_data()), make_span(i_c), tol);
     check_range_near(make_span(acc_wel_c3.covariance_of_real_and_imag_data()), make_span(ri_c), tol);
+
+    // reset and verify empty
+    acc_std_d1.reset();
+    acc_wel_d1.reset();
+    acc_std_c1.reset();
+    acc_wel_c1.reset();
+    check_empty(acc_std_d1);
+    check_empty(acc_wel_d1);
+    check_empty(acc_std_c1);
+    check_empty(acc_wel_c1);
 }
 
 // Check covariance accumulator using only part of random vectors.
