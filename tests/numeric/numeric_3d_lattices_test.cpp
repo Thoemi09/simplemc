@@ -22,10 +22,10 @@ TEST(SimplemcNumeric, CubicLattice) {
     // real and reciprocal space basis
     matrix_type exp_real_lat;
     exp_real_lat << 2.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 2.0;
-    check_range_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
+    check_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
     matrix_type exp_rec_lat;
     exp_rec_lat << pi, 0.0, 0.0, 0.0, pi, 0.0, 0.0, 0.0, pi;
-    check_range_near(make_span(exp_rec_lat), make_span(lat.reciprocal_lattice_vectors()), tol);
+    check_near(make_span(exp_rec_lat), make_span(lat.reciprocal_lattice_vectors()), tol);
 
     // real and reciprocal space unit cell volumes
     double exp_real_vol = 8.0;
@@ -48,10 +48,10 @@ TEST(SimplemcNumeric, FCCLattice) {
     // real and reciprocal space basis
     matrix_type exp_real_lat;
     exp_real_lat << 0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 0.0;
-    check_range_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
+    check_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
     matrix_type exp_rec_lat;
     exp_rec_lat << -pi, pi, pi, pi, -pi, pi, pi, pi, -pi;
-    check_range_near(make_span(exp_rec_lat), make_span(lat.reciprocal_lattice_vectors()), tol);
+    check_near(make_span(exp_rec_lat), make_span(lat.reciprocal_lattice_vectors()), tol);
 
     // real and reciprocal space unit cell volumes
     double exp_real_vol = 2.0;
@@ -74,10 +74,10 @@ TEST(SimplemcNumeric, BCCLattice) {
     // real and reciprocal space basis
     matrix_type exp_real_lat;
     exp_real_lat << -1.0, 1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, -1.0;
-    check_range_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
+    check_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
     matrix_type exp_rec_lat;
     exp_rec_lat << 0, pi, pi, pi, 0, pi, pi, pi, 0;
-    check_range_near(make_span(exp_rec_lat), make_span(lat.reciprocal_lattice_vectors()), tol);
+    check_near(make_span(exp_rec_lat), make_span(lat.reciprocal_lattice_vectors()), tol);
 
     // real and reciprocal space unit cell volumes
     double exp_real_vol = 4.0;
@@ -101,10 +101,10 @@ TEST(SimplemcNumeric, Hexagonal3dLattice) {
     // real and reciprocal space basis
     matrix_type exp_real_lat;
     exp_real_lat << 1.0, 1.0, 0.0, -sqrt3, sqrt3, 0.0, 0.0, 0.0, 4.0;
-    check_range_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
+    check_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
     matrix_type exp_rec_lat;
     exp_rec_lat << pi, pi, 0, -1.81379936, 1.81379936, 0, 0, 0, pi / 2;
-    check_range_near(make_span(exp_rec_lat), make_span(lat.reciprocal_lattice_vectors()), tol);
+    check_near(make_span(exp_rec_lat), make_span(lat.reciprocal_lattice_vectors()), tol);
 
     // real and reciprocal space unit cell volumes
     double exp_real_vol = 13.856406460551018;
@@ -128,10 +128,10 @@ TEST(SimplemcNumeric, RhombohedralLattice) {
     // real and reciprocal space basis
     matrix_type exp_real_lat;
     exp_real_lat << 1, 0, -1, -inv_sqrt3, 1.15470054, -inv_sqrt3, 1.33333333, 1.33333333, 1.33333333;
-    check_range_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
+    check_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
     matrix_type exp_rec_lat;
     exp_rec_lat << pi, 0, -pi, -1.81379936, 3.62759873, -1.81379936, 1.57079633, 1.57079633, 1.57079633;
-    check_range_near(make_span(exp_rec_lat), make_span(lat.reciprocal_lattice_vectors()), tol);
+    check_near(make_span(exp_rec_lat), make_span(lat.reciprocal_lattice_vectors()), tol);
 
     // real and reciprocal space unit cell volumes
     double exp_real_vol = 4.618802153517007;
@@ -154,10 +154,10 @@ TEST(SimplemcNumeric, TetragonalLattice) {
     // real and reciprocal space basis
     matrix_type exp_real_lat;
     exp_real_lat << 2.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 4.0;
-    check_range_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
+    check_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
     matrix_type exp_rec_lat;
     exp_rec_lat << pi, 0.0, 0.0, 0.0, pi, 0.0, 0.0, 0.0, pi / 2;
-    check_range_near(make_span(exp_rec_lat), make_span(lat.reciprocal_lattice_vectors()), tol);
+    check_near(make_span(exp_rec_lat), make_span(lat.reciprocal_lattice_vectors()), tol);
 
     // real and reciprocal space unit cell volumes
     double exp_real_vol = 16.0;
@@ -180,10 +180,10 @@ TEST(SimplemcNumeric, TetragonalBCLattice) {
     // real and reciprocal space basis
     matrix_type exp_real_lat;
     exp_real_lat << -1, 1, 1, 1, -1, 1, 2, 2, -2;
-    check_range_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
+    check_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
     matrix_type exp_rec_lat;
     exp_rec_lat << 0, pi, pi, pi, 0, pi, pi / 2, pi / 2, 0;
-    check_range_near(make_span(exp_rec_lat), make_span(lat.reciprocal_lattice_vectors()), tol);
+    check_near(make_span(exp_rec_lat), make_span(lat.reciprocal_lattice_vectors()), tol);
 
     // real and reciprocal space unit cell volumes
     double exp_real_vol = 8.0;
@@ -206,10 +206,10 @@ TEST(SimplemcNumeric, OrthorhombicLattice) {
     // real and reciprocal space basis
     matrix_type exp_real_lat;
     exp_real_lat << 2.0, 0.0, 0.0, 0.0, 3.0, 0.0, 0.0, 0.0, 4.0;
-    check_range_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
+    check_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
     matrix_type exp_rec_lat;
     exp_rec_lat << pi, 0.0, 0.0, 0.0, 2 * pi / 3, 0.0, 0.0, 0.0, pi / 2;
-    check_range_near(make_span(exp_rec_lat), make_span(lat.reciprocal_lattice_vectors()), tol);
+    check_near(make_span(exp_rec_lat), make_span(lat.reciprocal_lattice_vectors()), tol);
 
     // real and reciprocal space unit cell volumes
     double exp_real_vol = 24.0;
@@ -232,10 +232,10 @@ TEST(SimplemcNumeric, OrthorhombicFCLattice) {
     // real and reciprocal space basis
     matrix_type exp_real_lat;
     exp_real_lat << 0, 1, 1, 1.5, 0, 1.5, 2, 2, 0;
-    check_range_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
+    check_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
     matrix_type exp_rec_lat;
     exp_rec_lat << -pi, pi, pi, 2 * pi / 3, -2 * pi / 3, 2 * pi / 3, pi / 2, pi / 2, -pi / 2;
-    check_range_near(make_span(exp_rec_lat), make_span(lat.reciprocal_lattice_vectors()), tol);
+    check_near(make_span(exp_rec_lat), make_span(lat.reciprocal_lattice_vectors()), tol);
 
     // real and reciprocal space unit cell volumes
     double exp_real_vol = 6.0;
@@ -258,10 +258,10 @@ TEST(SimplemcNumeric, OrthorhombicBCLattice) {
     // real and reciprocal space basis
     matrix_type exp_real_lat;
     exp_real_lat << -1, 1, 1, 1.5, -1.5, 1.5, 2, 2, -2;
-    check_range_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
+    check_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
     matrix_type exp_rec_lat;
     exp_rec_lat << 0, pi, pi, 2 * pi / 3, 0, 2 * pi / 3, pi / 2, pi / 2, 0;
-    check_range_near(make_span(exp_rec_lat), make_span(lat.reciprocal_lattice_vectors()), tol);
+    check_near(make_span(exp_rec_lat), make_span(lat.reciprocal_lattice_vectors()), tol);
 
     // real and reciprocal space unit cell volumes
     double exp_real_vol = 12.0;
@@ -284,10 +284,10 @@ TEST(SimplemcNumeric, OrthorhombicBaseCenteredLattice) {
     // real and reciprocal space basis
     matrix_type exp_real_lat;
     exp_real_lat << 1, 1, 0, -1.5, 1.5, 0, 0, 0, 4;
-    check_range_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
+    check_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
     matrix_type exp_rec_lat;
     exp_rec_lat << pi, pi, 0, -2 * pi / 3, 2 * pi / 3, 0, 0, 0, pi / 2;
-    check_range_near(make_span(exp_rec_lat), make_span(lat.reciprocal_lattice_vectors()), tol);
+    check_near(make_span(exp_rec_lat), make_span(lat.reciprocal_lattice_vectors()), tol);
 
     // real and reciprocal space unit cell volumes
     double exp_real_vol = 12.0;
@@ -310,10 +310,10 @@ TEST(SimplemcNumeric, MonoclinicLattice) {
     // real and reciprocal space basis
     matrix_type exp_real_lat;
     exp_real_lat << 2.0, 0.0, 3.51033025, 0.0, 3.0, 0.0, 0.0, 0.0, 1.91770215;
-    check_range_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
+    check_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
     matrix_type exp_rec_lat;
     exp_rec_lat << pi, 0, 0, 0, 2 * pi / 3, 0, -5.75064678, 0, 3.27641354;
-    check_range_near(make_span(exp_rec_lat), make_span(lat.reciprocal_lattice_vectors()), tol);
+    check_near(make_span(exp_rec_lat), make_span(lat.reciprocal_lattice_vectors()), tol);
 
     // real and reciprocal space unit cell volumes
     double exp_real_vol = 11.506212926500872;
@@ -336,10 +336,10 @@ TEST(SimplemcNumeric, MonoclinicBaseCenteredLattice) {
     // real and reciprocal space basis
     matrix_type exp_real_lat;
     exp_real_lat << 1, 1, 3.51033025, -1.5, 1.5, 0, 0, 0, 1.91770215;
-    check_range_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
+    check_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
     matrix_type exp_rec_lat;
     exp_rec_lat << pi, pi, 0, -2 * pi / 3, 2 * pi / 3, 0, -5.75064678, -5.75064678, 3.27641354;
-    check_range_near(make_span(exp_rec_lat), make_span(lat.reciprocal_lattice_vectors()), tol);
+    check_near(make_span(exp_rec_lat), make_span(lat.reciprocal_lattice_vectors()), tol);
 
     // real and reciprocal space unit cell volumes
     double exp_real_vol = 5.753106463250437;
@@ -362,10 +362,10 @@ TEST(SimplemcNumeric, TriclinicLattice) {
     // real and reciprocal space basis
     matrix_type exp_real_lat;
     exp_real_lat << 2.0, 0.21221161, 2.16120922, 0, 2.99248496, 3.36588394, 0, 0, 5.65685425;
-    check_range_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
+    check_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
     matrix_type exp_rec_lat;
     exp_rec_lat << pi, 0, 0, -2.22785554e-01, 2.09965477, 0, -1.06769035, -1.24931525, 1.11072073;
-    check_range_near(make_span(exp_rec_lat), make_span(lat.reciprocal_lattice_vectors()), tol);
+    check_near(make_span(exp_rec_lat), make_span(lat.reciprocal_lattice_vectors()), tol);
 
     // real and reciprocal space unit cell volumes
     double exp_real_vol = 33.85610252291094;

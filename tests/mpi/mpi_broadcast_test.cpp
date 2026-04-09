@@ -163,7 +163,7 @@ TEST(SimplemcMPI, BroadcastLargeArray) {
         simplemc::ranges::copy(iota, arr.begin());
     }
     simplemc::mpi::broadcast(arr, root, comm);
-    check_range_equal(arr, iota);
+    check_equal(arr, iota);
 }
 
 TEST(SimplemcMPI, BroadcastWithSplitCommunicator) {

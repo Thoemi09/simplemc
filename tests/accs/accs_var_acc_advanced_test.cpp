@@ -105,10 +105,10 @@ TEST_F(SimplemcAccsAdvanced, VarAccSingle) {
     acc_wel_d1.reset();
     acc_std_c1.reset();
     acc_wel_c1.reset();
-    check_empty(acc_std_d1);
-    check_empty(acc_wel_d1);
-    check_empty(acc_std_c1);
-    check_empty(acc_wel_c1);
+    check_acc_empty(acc_std_d1);
+    check_acc_empty(acc_wel_d1);
+    check_acc_empty(acc_std_c1);
+    check_acc_empty(acc_wel_c1);
 }
 
 // Check variance accumulator using the full random vectors.
@@ -166,40 +166,40 @@ TEST_F(SimplemcAccsAdvanced, VarAccVector) {
     const auto v_d = sample_variance(sp_d);
     const auto m_c = sample_mean(sp_c);
     const auto [r_c, i_c, ri_c] = sample_variance(sp_c);
-    check_range_near(acc_std_d1.mean(), m_d, tol);
-    check_range_near(acc_std_d1.variance_of_data(), v_d, tol);
-    check_range_near(acc_wel_d1.mean(), m_d, tol);
-    check_range_near(acc_wel_d1.variance_of_data(), v_d, tol);
-    check_range_near(acc_std_d3.mean(), m_d, tol);
-    check_range_near(acc_std_d3.variance_of_data(), v_d, tol);
-    check_range_near(acc_wel_d3.mean(), m_d, tol);
-    check_range_near(acc_wel_d3.variance_of_data(), v_d, tol);
-    check_range_near(acc_std_c1.mean(), m_c, tol);
-    check_range_near(acc_std_c1.variance_of_real_data(), r_c, tol);
-    check_range_near(acc_std_c1.variance_of_imag_data(), i_c, tol);
-    check_range_near(acc_std_c1.covariance_of_real_and_imag_data(), ri_c, tol);
-    check_range_near(acc_wel_c1.mean(), m_c, tol);
-    check_range_near(acc_wel_c1.variance_of_real_data(), r_c, tol);
-    check_range_near(acc_wel_c1.variance_of_imag_data(), i_c, tol);
-    check_range_near(acc_wel_c1.covariance_of_real_and_imag_data(), ri_c, tol);
-    check_range_near(acc_std_c3.mean(), m_c, tol);
-    check_range_near(acc_std_c3.variance_of_real_data(), r_c, tol);
-    check_range_near(acc_std_c3.variance_of_imag_data(), i_c, tol);
-    check_range_near(acc_std_c3.covariance_of_real_and_imag_data(), ri_c, tol);
-    check_range_near(acc_wel_c3.mean(), m_c, tol);
-    check_range_near(acc_wel_c3.variance_of_real_data(), r_c, tol);
-    check_range_near(acc_wel_c3.variance_of_imag_data(), i_c, tol);
-    check_range_near(acc_wel_c3.covariance_of_real_and_imag_data(), ri_c, tol);
+    check_near(acc_std_d1.mean(), m_d, tol);
+    check_near(acc_std_d1.variance_of_data(), v_d, tol);
+    check_near(acc_wel_d1.mean(), m_d, tol);
+    check_near(acc_wel_d1.variance_of_data(), v_d, tol);
+    check_near(acc_std_d3.mean(), m_d, tol);
+    check_near(acc_std_d3.variance_of_data(), v_d, tol);
+    check_near(acc_wel_d3.mean(), m_d, tol);
+    check_near(acc_wel_d3.variance_of_data(), v_d, tol);
+    check_near(acc_std_c1.mean(), m_c, tol);
+    check_near(acc_std_c1.variance_of_real_data(), r_c, tol);
+    check_near(acc_std_c1.variance_of_imag_data(), i_c, tol);
+    check_near(acc_std_c1.covariance_of_real_and_imag_data(), ri_c, tol);
+    check_near(acc_wel_c1.mean(), m_c, tol);
+    check_near(acc_wel_c1.variance_of_real_data(), r_c, tol);
+    check_near(acc_wel_c1.variance_of_imag_data(), i_c, tol);
+    check_near(acc_wel_c1.covariance_of_real_and_imag_data(), ri_c, tol);
+    check_near(acc_std_c3.mean(), m_c, tol);
+    check_near(acc_std_c3.variance_of_real_data(), r_c, tol);
+    check_near(acc_std_c3.variance_of_imag_data(), i_c, tol);
+    check_near(acc_std_c3.covariance_of_real_and_imag_data(), ri_c, tol);
+    check_near(acc_wel_c3.mean(), m_c, tol);
+    check_near(acc_wel_c3.variance_of_real_data(), r_c, tol);
+    check_near(acc_wel_c3.variance_of_imag_data(), i_c, tol);
+    check_near(acc_wel_c3.covariance_of_real_and_imag_data(), ri_c, tol);
 
     // reset and check empty again
     acc_std_d1.reset();
     acc_wel_d1.reset();
     acc_std_c1.reset();
     acc_wel_c1.reset();
-    check_empty(acc_std_d1);
-    check_empty(acc_wel_d1);
-    check_empty(acc_std_c1);
-    check_empty(acc_wel_c1);
+    check_acc_empty(acc_std_d1);
+    check_acc_empty(acc_wel_d1);
+    check_acc_empty(acc_std_c1);
+    check_acc_empty(acc_wel_c1);
 }
 
 // Check variance accumulator using only part of random vectors.
@@ -267,12 +267,12 @@ TEST_F(SimplemcAccsAdvanced, VarAccIndividualIndices) {
             ri_std_c(i) = 0.0;
         }
     }
-    check_range_near(acc_std_d1.mean(), m_std_d, tol);
-    check_range_near(acc_std_d1.variance_of_data(), v_std_d, tol);
-    check_range_near(acc_std_c1.mean(), m_std_c, tol);
-    check_range_near(acc_std_c1.variance_of_real_data(), r_std_c, tol);
-    check_range_near(acc_std_c1.variance_of_imag_data(), i_std_c, tol);
-    check_range_near(acc_std_c1.covariance_of_real_and_imag_data(), ri_std_c, tol);
+    check_near(acc_std_d1.mean(), m_std_d, tol);
+    check_near(acc_std_d1.variance_of_data(), v_std_d, tol);
+    check_near(acc_std_c1.mean(), m_std_c, tol);
+    check_near(acc_std_c1.variance_of_real_data(), r_std_c, tol);
+    check_near(acc_std_c1.variance_of_imag_data(), i_std_c, tol);
+    check_near(acc_std_c1.covariance_of_real_and_imag_data(), ri_std_c, tol);
     for (int i = 1; i < size - 1; ++i) {
         m_wel_d(i) = 0.0;
         v_wel_d(i) = 0.0;
@@ -281,12 +281,12 @@ TEST_F(SimplemcAccsAdvanced, VarAccIndividualIndices) {
         i_wel_c(i) = 0.0;
         ri_wel_c(i) = 0.0;
     }
-    check_range_near(acc_wel_d1.mean(), m_wel_d, tol);
-    check_range_near(acc_wel_d1.variance_of_data(), v_wel_d, tol);
-    check_range_near(acc_wel_c1.mean(), m_wel_c, tol);
-    check_range_near(acc_wel_c1.variance_of_real_data(), r_wel_c, tol);
-    check_range_near(acc_wel_c1.variance_of_imag_data(), i_wel_c, tol);
-    check_range_near(acc_wel_c1.covariance_of_real_and_imag_data(), ri_wel_c, tol);
+    check_near(acc_wel_d1.mean(), m_wel_d, tol);
+    check_near(acc_wel_d1.variance_of_data(), v_wel_d, tol);
+    check_near(acc_wel_c1.mean(), m_wel_c, tol);
+    check_near(acc_wel_c1.variance_of_real_data(), r_wel_c, tol);
+    check_near(acc_wel_c1.variance_of_imag_data(), i_wel_c, tol);
+    check_near(acc_wel_c1.covariance_of_real_and_imag_data(), ri_wel_c, tol);
 }
 
 // Check blocked variance accumulator.
@@ -326,10 +326,10 @@ TEST_F(SimplemcAccsAdvanced, VarAccBlocked) {
     auto bsp_d = block_samples(sp_d, block_size);
     const auto m_d = sample_mean(bsp_d);
     const auto v_d = sample_variance(bsp_d);
-    check_range_near(acc_wel_d1.accumulator().mean(), m_d, tol);
-    check_range_near(acc_wel_d1.accumulator().variance_of_data(), v_d, tol);
-    check_range_near(acc_wel_d3.accumulator().mean(), m_d, tol);
-    check_range_near(acc_wel_d3.accumulator().variance_of_data(), v_d, tol);
+    check_near(acc_wel_d1.accumulator().mean(), m_d, tol);
+    check_near(acc_wel_d1.accumulator().variance_of_data(), v_d, tol);
+    check_near(acc_wel_d3.accumulator().mean(), m_d, tol);
+    check_near(acc_wel_d3.accumulator().variance_of_data(), v_d, tol);
 }
 
 // Check autocorrelation wrapper of variance accumulator.
@@ -366,8 +366,8 @@ TEST_F(SimplemcAccsAdvanced, VarAccAutocorrelation) {
             check_near(acc.accumulators()[i].variance_of_data(), v_d(0), tol);
             check_near(tau(av0_d, av_d, blsize), btau_v[i](0), tol);
         } else {
-            check_range_near(acc.accumulators()[i].variance_of_data(), v_d, tol);
-            check_range_near(tau(av0_d, av_d, blsize), btau_v[i], tol);
+            check_near(acc.accumulators()[i].variance_of_data(), v_d, tol);
+            check_near(tau(av0_d, av_d, blsize), btau_v[i], tol);
         }
     };
     for (std::size_t i = 0; i < max_level; ++i) {

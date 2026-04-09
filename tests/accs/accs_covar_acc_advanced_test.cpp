@@ -106,10 +106,10 @@ TEST_F(SimplemcAccsAdvanced, CovarAccSingle) {
     acc_wel_d1.reset();
     acc_std_c1.reset();
     acc_wel_c1.reset();
-    check_empty(acc_std_d1);
-    check_empty(acc_wel_d1);
-    check_empty(acc_std_c1);
-    check_empty(acc_wel_c1);
+    check_acc_empty(acc_std_d1);
+    check_acc_empty(acc_wel_d1);
+    check_acc_empty(acc_std_c1);
+    check_acc_empty(acc_wel_c1);
 }
 
 // Check covariance accumulator using the full random vectors.
@@ -168,40 +168,40 @@ TEST_F(SimplemcAccsAdvanced, CovarAccVector) {
     const auto c_d = sample_covariance(sp_d);
     const auto m_c = sample_mean(sp_c);
     const auto [r_c, i_c, ri_c] = sample_covariance(sp_c);
-    check_range_near(acc_std_d1.mean(), m_d, tol);
-    check_range_near(make_span(acc_std_d1.covariance_of_data()), make_span(c_d), tol);
-    check_range_near(acc_wel_d1.mean(), m_d, tol);
-    check_range_near(make_span(acc_wel_d1.covariance_of_data()), make_span(c_d), tol);
-    check_range_near(acc_std_d3.mean(), m_d, tol);
-    check_range_near(make_span(acc_std_d3.covariance_of_data()), make_span(c_d), tol);
-    check_range_near(acc_wel_d3.mean(), m_d, tol);
-    check_range_near(make_span(acc_wel_d3.covariance_of_data()), make_span(c_d), tol);
-    check_range_near(acc_std_c1.mean(), m_c, tol);
-    check_range_near(make_span(acc_std_c1.covariance_of_real_data()), make_span(r_c), tol);
-    check_range_near(make_span(acc_std_c1.covariance_of_imag_data()), make_span(i_c), tol);
-    check_range_near(make_span(acc_std_c1.covariance_of_real_and_imag_data()), make_span(ri_c), tol);
-    check_range_near(acc_wel_c1.mean(), m_c, tol);
-    check_range_near(make_span(acc_wel_c1.covariance_of_real_data()), make_span(r_c), tol);
-    check_range_near(make_span(acc_wel_c1.covariance_of_imag_data()), make_span(i_c), tol);
-    check_range_near(make_span(acc_wel_c1.covariance_of_real_and_imag_data()), make_span(ri_c), tol);
-    check_range_near(acc_std_c3.mean(), m_c, tol);
-    check_range_near(make_span(acc_std_c3.covariance_of_real_data()), make_span(r_c), tol);
-    check_range_near(make_span(acc_std_c3.covariance_of_imag_data()), make_span(i_c), tol);
-    check_range_near(make_span(acc_std_c3.covariance_of_real_and_imag_data()), make_span(ri_c), tol);
-    check_range_near(acc_wel_c3.mean(), m_c, tol);
-    check_range_near(make_span(acc_wel_c3.covariance_of_real_data()), make_span(r_c), tol);
-    check_range_near(make_span(acc_wel_c3.covariance_of_imag_data()), make_span(i_c), tol);
-    check_range_near(make_span(acc_wel_c3.covariance_of_real_and_imag_data()), make_span(ri_c), tol);
+    check_near(acc_std_d1.mean(), m_d, tol);
+    check_near(make_span(acc_std_d1.covariance_of_data()), make_span(c_d), tol);
+    check_near(acc_wel_d1.mean(), m_d, tol);
+    check_near(make_span(acc_wel_d1.covariance_of_data()), make_span(c_d), tol);
+    check_near(acc_std_d3.mean(), m_d, tol);
+    check_near(make_span(acc_std_d3.covariance_of_data()), make_span(c_d), tol);
+    check_near(acc_wel_d3.mean(), m_d, tol);
+    check_near(make_span(acc_wel_d3.covariance_of_data()), make_span(c_d), tol);
+    check_near(acc_std_c1.mean(), m_c, tol);
+    check_near(make_span(acc_std_c1.covariance_of_real_data()), make_span(r_c), tol);
+    check_near(make_span(acc_std_c1.covariance_of_imag_data()), make_span(i_c), tol);
+    check_near(make_span(acc_std_c1.covariance_of_real_and_imag_data()), make_span(ri_c), tol);
+    check_near(acc_wel_c1.mean(), m_c, tol);
+    check_near(make_span(acc_wel_c1.covariance_of_real_data()), make_span(r_c), tol);
+    check_near(make_span(acc_wel_c1.covariance_of_imag_data()), make_span(i_c), tol);
+    check_near(make_span(acc_wel_c1.covariance_of_real_and_imag_data()), make_span(ri_c), tol);
+    check_near(acc_std_c3.mean(), m_c, tol);
+    check_near(make_span(acc_std_c3.covariance_of_real_data()), make_span(r_c), tol);
+    check_near(make_span(acc_std_c3.covariance_of_imag_data()), make_span(i_c), tol);
+    check_near(make_span(acc_std_c3.covariance_of_real_and_imag_data()), make_span(ri_c), tol);
+    check_near(acc_wel_c3.mean(), m_c, tol);
+    check_near(make_span(acc_wel_c3.covariance_of_real_data()), make_span(r_c), tol);
+    check_near(make_span(acc_wel_c3.covariance_of_imag_data()), make_span(i_c), tol);
+    check_near(make_span(acc_wel_c3.covariance_of_real_and_imag_data()), make_span(ri_c), tol);
 
     // reset and verify empty
     acc_std_d1.reset();
     acc_wel_d1.reset();
     acc_std_c1.reset();
     acc_wel_c1.reset();
-    check_empty(acc_std_d1);
-    check_empty(acc_wel_d1);
-    check_empty(acc_std_c1);
-    check_empty(acc_wel_c1);
+    check_acc_empty(acc_std_d1);
+    check_acc_empty(acc_wel_d1);
+    check_acc_empty(acc_std_c1);
+    check_acc_empty(acc_wel_c1);
 }
 
 // Check covariance accumulator using only part of random vectors.
@@ -268,12 +268,12 @@ TEST_F(SimplemcAccsAdvanced, CovarAccIndividualIndices) {
             ri_std_c.col(i) = 0.0;
         }
     }
-    check_range_near(acc_std_d1.mean(), m_std_d, tol);
-    check_range_near(make_span(acc_std_d1.covariance_of_data()), make_span(c_std_d), tol);
-    check_range_near(acc_std_c1.mean(), m_std_c, tol);
-    check_range_near(make_span(acc_std_c1.covariance_of_real_data()), make_span(r_std_c), tol);
-    check_range_near(make_span(acc_std_c1.covariance_of_imag_data()), make_span(i_std_c), tol);
-    check_range_near(make_span(acc_std_c1.covariance_of_real_and_imag_data()), make_span(ri_std_c), tol);
+    check_near(acc_std_d1.mean(), m_std_d, tol);
+    check_near(make_span(acc_std_d1.covariance_of_data()), make_span(c_std_d), tol);
+    check_near(acc_std_c1.mean(), m_std_c, tol);
+    check_near(make_span(acc_std_c1.covariance_of_real_data()), make_span(r_std_c), tol);
+    check_near(make_span(acc_std_c1.covariance_of_imag_data()), make_span(i_std_c), tol);
+    check_near(make_span(acc_std_c1.covariance_of_real_and_imag_data()), make_span(ri_std_c), tol);
     for (int i = 1; i < size - 1; ++i) {
         m_wel_d(i) = 0.0;
         c_wel_d.row(i) = 0.0;
@@ -286,12 +286,12 @@ TEST_F(SimplemcAccsAdvanced, CovarAccIndividualIndices) {
         ri_wel_c.row(i) = 0.0;
         ri_wel_c.col(i) = 0.0;
     }
-    check_range_near(acc_wel_d1.mean(), m_wel_d, tol);
-    check_range_near(make_span(acc_wel_d1.covariance_of_data()), make_span(c_wel_d), tol);
-    check_range_near(acc_wel_c1.mean(), m_wel_c, tol);
-    check_range_near(make_span(acc_wel_c1.covariance_of_real_data()), make_span(r_wel_c), tol);
-    check_range_near(make_span(acc_wel_c1.covariance_of_imag_data()), make_span(i_wel_c), tol);
-    check_range_near(make_span(acc_wel_c1.covariance_of_real_and_imag_data()), make_span(ri_wel_c), tol);
+    check_near(acc_wel_d1.mean(), m_wel_d, tol);
+    check_near(make_span(acc_wel_d1.covariance_of_data()), make_span(c_wel_d), tol);
+    check_near(acc_wel_c1.mean(), m_wel_c, tol);
+    check_near(make_span(acc_wel_c1.covariance_of_real_data()), make_span(r_wel_c), tol);
+    check_near(make_span(acc_wel_c1.covariance_of_imag_data()), make_span(i_wel_c), tol);
+    check_near(make_span(acc_wel_c1.covariance_of_real_and_imag_data()), make_span(ri_wel_c), tol);
 }
 
 // Check blocked covariance accumulator.
@@ -332,10 +332,10 @@ TEST_F(SimplemcAccsAdvanced, CovarAccBlocked) {
     auto bsp_d = block_samples(sp_d, block_size);
     const auto m_d = sample_mean(bsp_d);
     const auto c_d = sample_covariance(bsp_d);
-    check_range_near(acc_wel_d1.accumulator().mean(), m_d, tol);
-    check_range_near(make_span(acc_wel_d1.accumulator().covariance_of_data()), make_span(c_d), tol);
-    check_range_near(acc_wel_d3.accumulator().mean(), m_d, tol);
-    check_range_near(make_span(acc_wel_d3.accumulator().covariance_of_data()), make_span(c_d), tol);
+    check_near(acc_wel_d1.accumulator().mean(), m_d, tol);
+    check_near(make_span(acc_wel_d1.accumulator().covariance_of_data()), make_span(c_d), tol);
+    check_near(acc_wel_d3.accumulator().mean(), m_d, tol);
+    check_near(make_span(acc_wel_d3.accumulator().covariance_of_data()), make_span(c_d), tol);
 }
 
 // Check autocorrelation wrapper of covariance accumulator.
@@ -373,8 +373,8 @@ TEST_F(SimplemcAccsAdvanced, CovarAccAutocorrelation) {
             check_near(acc.accumulators()[i].covariance_of_data(), c_d(0, 0), tol);
             check_near(tau(ac0_d, ac_d, blsize), btau_c[i](0, 0), tol);
         } else {
-            check_range_near(make_span(acc.accumulators()[i].covariance_of_data()), make_span(c_d), tol);
-            check_range_near(make_span(tau(ac0_d, ac_d, blsize)), make_span(btau_c[i]), tol);
+            check_near(make_span(acc.accumulators()[i].covariance_of_data()), make_span(c_d), tol);
+            check_near(make_span(tau(ac0_d, ac_d, blsize)), make_span(btau_c[i]), tol);
         }
     };
     for (std::size_t i = 0; i < max_level; ++i) {

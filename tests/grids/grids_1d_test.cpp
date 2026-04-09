@@ -49,10 +49,10 @@ void test_1d_grids(const auto& g, auto a, auto b, auto&& view, auto&& view_cente
     ASSERT_DOUBLE_EQ(g.at(g.size() - 1), b);
 
     // views
-    check_range_near(g, view);
-    check_range_near(simplemc::grid_view(g), view);
-    check_range_near(simplemc::bin_center_view(g), view_center);
-    check_range_near(simplemc::bin_volume_view(g), view_vols);
+    check_near(g, view);
+    check_near(simplemc::grid_view(g), view);
+    check_near(simplemc::bin_center_view(g), view_center);
+    check_near(simplemc::bin_volume_view(g), view_vols);
 }
 
 // Test concept.
@@ -215,8 +215,8 @@ TEST(SimplemcGrids, SymmetricPowerGridIncreasing) {
     power_grid g1 { begin, mid, mid_idx, power };
     power_grid g2 { end, mid, mid_idx, power };
     symmetric_power_grid pg { begin, end, size, power };
-    check_range_near(grid_view(pg.grid1()), grid_view(g1));
-    check_range_near(grid_view(pg.grid2()), grid_view(g2));
+    check_near(grid_view(pg.grid1()), grid_view(g1));
+    check_near(grid_view(pg.grid2()), grid_view(g2));
     auto view = concat(grid_view(g1), rgs::drop_view(rgs::reverse_view(grid_view(g2)), 1));
     auto view_center = concat(bin_center_view(g1), rgs::reverse_view(bin_center_view(g2)));
     auto view_vols = concat(bin_volume_view(g1), rgs::reverse_view(bin_volume_view(g2)));
@@ -238,8 +238,8 @@ TEST(SimplemcGrids, SymmetricPowerGridDecreasing) {
     simplemc::power_grid g1 { begin, mid, mid_idx, power };
     simplemc::power_grid g2 { end, mid, mid_idx, power };
     simplemc::symmetric_power_grid pg { begin, end, size, power };
-    check_range_near(grid_view(pg.grid1()), grid_view(g1));
-    check_range_near(grid_view(pg.grid2()), grid_view(g2));
+    check_near(grid_view(pg.grid1()), grid_view(g1));
+    check_near(grid_view(pg.grid2()), grid_view(g2));
     auto view = concat(grid_view(g1), rgs::drop_view(rgs::reverse_view(grid_view(g2)), 1));
     auto view_center = concat(bin_center_view(g1), rgs::reverse_view(bin_center_view(g2)));
     auto view_vols = concat(bin_volume_view(g1), rgs::reverse_view(bin_volume_view(g2)));

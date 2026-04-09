@@ -22,10 +22,10 @@ TEST(SimplemcNumeric, LinearLattice) {
     // real and reciprocal space basis
     Eigen::Matrix<double, 1, 1> exp_real_lat;
     exp_real_lat << 2.0;
-    check_range_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
+    check_near(make_span(lat.real_lattice_vectors()), make_span(exp_real_lat), tol);
     Eigen::Matrix<double, 1, 1> exp_rec_lat;
     exp_rec_lat << pi;
-    check_range_near(make_span(lat.reciprocal_lattice_vectors()), make_span(exp_rec_lat), tol);
+    check_near(make_span(lat.reciprocal_lattice_vectors()), make_span(exp_rec_lat), tol);
 
     // real and reciprocal space unit cell volumes
     double exp_real_vol = 2.0;

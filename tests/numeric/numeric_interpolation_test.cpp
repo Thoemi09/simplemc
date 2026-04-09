@@ -340,8 +340,8 @@ TEST(SimplemcNumeric, LinearInterpolationAccessors) {
     auto f = std::vector<double> { 0.0, 0.25, 0.5, 0.75, 1.0 };
     auto li = simplemc::linear_interpolation { xgrid, f };
     ASSERT_EQ(li.dim(), 1);
-    check_range_equal(li.grid(), xgrid);
-    check_range_equal(li.function_values(), f);
+    check_equal(li.grid(), xgrid);
+    check_equal(li.function_values(), f);
 }
 
 // Test linear_interpolation_nd accessors.
@@ -352,9 +352,9 @@ TEST(SimplemcNumeric, LinearInterpolationNdAccessors) {
     auto f = std::vector<double>(12, 1.0);
     auto bi = simplemc::linear_interpolation_nd { grid_2d, f };
     ASSERT_EQ(bi.dim(), 2);
-    check_range_equal(std::get<0>(bi.grid().grids()), xgrid);
-    check_range_equal(std::get<1>(bi.grid().grids()), ygrid);
-    check_range_equal(bi.function_values(), f);
+    check_equal(std::get<0>(bi.grid().grids()), xgrid);
+    check_equal(std::get<1>(bi.grid().grids()), ygrid);
+    check_equal(bi.function_values(), f);
 }
 
 // Test polynomial_interpolation accessors.
@@ -364,8 +364,8 @@ TEST(SimplemcNumeric, PolynomialInterpolationAccessors) {
     auto pi = simplemc::polynomial_interpolation { xgrid, f, 3 };
     ASSERT_EQ(pi.dim(), 1);
     ASSERT_EQ(pi.degree(), 3);
-    check_range_equal(pi.grid(), xgrid);
-    check_range_equal(pi.function_values(), f);
+    check_equal(pi.grid(), xgrid);
+    check_equal(pi.function_values(), f);
 }
 
 // Test polynomial_interpolation_nd accessors.
@@ -376,9 +376,9 @@ TEST(SimplemcNumeric, PolynomialInterpolationNdAccessors) {
     auto pi = simplemc::polynomial_interpolation_nd { grid_2d, f, 2 };
     ASSERT_EQ(pi.dim(), 2);
     ASSERT_EQ(pi.degree(), 2);
-    check_range_equal(std::get<0>(pi.grid().grids()), xgrid);
-    check_range_equal(std::get<1>(pi.grid().grids()), xgrid);
-    check_range_equal(pi.function_values(), f);
+    check_equal(std::get<0>(pi.grid().grids()), xgrid);
+    check_equal(std::get<1>(pi.grid().grids()), xgrid);
+    check_equal(pi.function_values(), f);
 }
 
 // Test cubic_spline_interpolation accessors.
@@ -387,8 +387,8 @@ TEST(SimplemcNumeric, CubicSplineInterpolationAccessors) {
     auto f = std::vector<double>(10, 1.0);
     auto ci = simplemc::cubic_spline_interpolation { xgrid, f };
     ASSERT_EQ(ci.dim(), 1);
-    check_range_equal(ci.grid(), xgrid);
-    check_range_equal(ci.function_values(), f);
+    check_equal(ci.grid(), xgrid);
+    check_equal(ci.function_values(), f);
 }
 
 // Test linear_interpolation exception on size mismatch.

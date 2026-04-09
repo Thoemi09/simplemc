@@ -83,10 +83,10 @@ TEST_F(SimplemcAccsAdvanced, MeanAccSingle) {
     acc_wel_d1.reset();
     acc_std_c1.reset();
     acc_wel_c1.reset();
-    check_empty(acc_std_d1);
-    check_empty(acc_wel_d1);
-    check_empty(acc_std_c1);
-    check_empty(acc_wel_c1);
+    check_acc_empty(acc_std_d1);
+    check_acc_empty(acc_wel_d1);
+    check_acc_empty(acc_std_c1);
+    check_acc_empty(acc_wel_c1);
 }
 
 // Check mean accumulator using the full random vectors.
@@ -142,24 +142,24 @@ TEST_F(SimplemcAccsAdvanced, MeanAccVector) {
     // check mean
     const auto m_d = sample_mean(sp_d);
     const auto m_c = sample_mean(sp_c);
-    check_range_near(acc_std_d1.mean(), m_d, tol);
-    check_range_near(acc_wel_d1.mean(), m_d, tol);
-    check_range_near(acc_std_d3.mean(), m_d, tol);
-    check_range_near(acc_wel_d3.mean(), m_d, tol);
-    check_range_near(acc_std_c1.mean(), m_c, tol);
-    check_range_near(acc_wel_c1.mean(), m_c, tol);
-    check_range_near(acc_std_c3.mean(), m_c, tol);
-    check_range_near(acc_wel_c3.mean(), m_c, tol);
+    check_near(acc_std_d1.mean(), m_d, tol);
+    check_near(acc_wel_d1.mean(), m_d, tol);
+    check_near(acc_std_d3.mean(), m_d, tol);
+    check_near(acc_wel_d3.mean(), m_d, tol);
+    check_near(acc_std_c1.mean(), m_c, tol);
+    check_near(acc_wel_c1.mean(), m_c, tol);
+    check_near(acc_std_c3.mean(), m_c, tol);
+    check_near(acc_wel_c3.mean(), m_c, tol);
 
     // reset and check empty again
     acc_std_d1.reset();
     acc_wel_d1.reset();
     acc_std_c1.reset();
     acc_wel_c1.reset();
-    check_empty(acc_std_d1);
-    check_empty(acc_wel_d1);
-    check_empty(acc_std_c1);
-    check_empty(acc_wel_c1);
+    check_acc_empty(acc_std_d1);
+    check_acc_empty(acc_wel_d1);
+    check_acc_empty(acc_std_c1);
+    check_acc_empty(acc_wel_c1);
 }
 
 // Check mean accumulator using only part of random vectors.
@@ -220,7 +220,7 @@ TEST_F(SimplemcAccsAdvanced, MeanAccIndividualIndices) {
         m_wel_c(i) = { 0.0, 0.0 };
     }
     check_near(acc_std_d1.mean()(idx), m_d(idx), tol);
-    check_range_near(acc_wel_d1.mean(), m_wel_d, tol);
+    check_near(acc_wel_d1.mean(), m_wel_d, tol);
     check_near(acc_std_c1.mean()(idx), m_c(idx), tol);
-    check_range_near(acc_wel_c1.mean(), m_wel_c, tol);
+    check_near(acc_wel_c1.mean(), m_wel_c, tol);
 }

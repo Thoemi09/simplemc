@@ -99,22 +99,22 @@ TEST_F(SimplemcAccsMPIAdvanced, MeanAccumulator) {
     // double standard
     auto res_macc_std_d = mpi_collect(comm, macc_std_d);
     EXPECT_EQ(res_macc_std_d.count(), steps);
-    check_range_near(res_macc_std_d.mdata(), exp_macc_std_d.mdata(), tol);
+    check_near(res_macc_std_d.mdata(), exp_macc_std_d.mdata(), tol);
 
     // double welford
     auto res_macc_wel_d = mpi_collect(comm, macc_wel_d);
     EXPECT_EQ(res_macc_wel_d.count(), steps);
-    check_range_near(res_macc_wel_d.mdata(), exp_macc_wel_d.mdata(), tol);
+    check_near(res_macc_wel_d.mdata(), exp_macc_wel_d.mdata(), tol);
 
     // complex standard
     auto res_macc_std_c = mpi_collect(comm, macc_std_c);
     EXPECT_EQ(res_macc_std_c.count(), steps);
-    check_range_near(res_macc_std_c.mdata(), exp_macc_std_c.mdata(), tol);
+    check_near(res_macc_std_c.mdata(), exp_macc_std_c.mdata(), tol);
 
     // complex welford
     auto res_macc_wel_c = mpi_collect(comm, macc_wel_c);
     EXPECT_EQ(res_macc_wel_c.count(), steps);
-    check_range_near(res_macc_wel_c.mdata(), exp_macc_wel_c.mdata(), tol);
+    check_near(res_macc_wel_c.mdata(), exp_macc_wel_c.mdata(), tol);
 }
 
 // Test MPI routines for var_acc.
@@ -131,30 +131,30 @@ TEST_F(SimplemcAccsMPIAdvanced, VarianceAccumulator) {
     // double standard
     auto res_vacc_std_d = mpi_collect(comm, vacc_std_d);
     EXPECT_EQ(res_vacc_std_d.count(), steps);
-    check_range_near(res_vacc_std_d.mdata(), exp_vacc_std_d.mdata(), tol);
-    check_range_near(res_vacc_std_d.cdata(), exp_vacc_std_d.cdata(), tol);
+    check_near(res_vacc_std_d.mdata(), exp_vacc_std_d.mdata(), tol);
+    check_near(res_vacc_std_d.cdata(), exp_vacc_std_d.cdata(), tol);
 
     // double welford
     auto res_vacc_wel_d = mpi_collect(comm, vacc_wel_d);
     EXPECT_EQ(res_vacc_wel_d.count(), steps);
-    check_range_near(res_vacc_wel_d.mdata(), exp_vacc_wel_d.mdata(), tol);
-    check_range_near(res_vacc_wel_d.cdata(), exp_vacc_wel_d.cdata(), tol);
+    check_near(res_vacc_wel_d.mdata(), exp_vacc_wel_d.mdata(), tol);
+    check_near(res_vacc_wel_d.cdata(), exp_vacc_wel_d.cdata(), tol);
 
     // complex standard
     auto res_vacc_std_c = mpi_collect(comm, vacc_std_c);
     EXPECT_EQ(res_vacc_std_c.count(), steps);
-    check_range_near(res_vacc_std_c.mdata(), exp_vacc_std_c.mdata(), tol);
-    check_range_near(res_vacc_std_c.rdata(), exp_vacc_std_c.rdata(), tol);
-    check_range_near(res_vacc_std_c.idata(), exp_vacc_std_c.idata(), tol);
-    check_range_near(res_vacc_std_c.cdata(), exp_vacc_std_c.cdata(), tol);
+    check_near(res_vacc_std_c.mdata(), exp_vacc_std_c.mdata(), tol);
+    check_near(res_vacc_std_c.rdata(), exp_vacc_std_c.rdata(), tol);
+    check_near(res_vacc_std_c.idata(), exp_vacc_std_c.idata(), tol);
+    check_near(res_vacc_std_c.cdata(), exp_vacc_std_c.cdata(), tol);
 
     // complex welford
     auto res_vacc_wel_c = mpi_collect(comm, vacc_wel_c);
     EXPECT_EQ(res_vacc_wel_c.count(), steps);
-    check_range_near(res_vacc_wel_c.mdata(), exp_vacc_wel_c.mdata(), tol);
-    check_range_near(res_vacc_wel_c.rdata(), exp_vacc_wel_c.rdata(), tol);
-    check_range_near(res_vacc_wel_c.idata(), exp_vacc_wel_c.idata(), tol);
-    check_range_near(res_vacc_wel_c.cdata(), exp_vacc_wel_c.cdata(), tol);
+    check_near(res_vacc_wel_c.mdata(), exp_vacc_wel_c.mdata(), tol);
+    check_near(res_vacc_wel_c.rdata(), exp_vacc_wel_c.rdata(), tol);
+    check_near(res_vacc_wel_c.idata(), exp_vacc_wel_c.idata(), tol);
+    check_near(res_vacc_wel_c.cdata(), exp_vacc_wel_c.cdata(), tol);
 }
 
 // Test MPI routines for covar_acc.
@@ -172,30 +172,30 @@ TEST_F(SimplemcAccsMPIAdvanced, CovarianceAccumulator) {
     // double standard
     auto res_cacc_std_d = mpi_collect(comm, cacc_std_d);
     EXPECT_EQ(res_cacc_std_d.count(), steps);
-    check_range_near(res_cacc_std_d.mdata(), exp_cacc_std_d.mdata(), tol);
-    check_range_near(make_span(res_cacc_std_d.cdata()), make_span(exp_cacc_std_d.cdata()), tol);
+    check_near(res_cacc_std_d.mdata(), exp_cacc_std_d.mdata(), tol);
+    check_near(make_span(res_cacc_std_d.cdata()), make_span(exp_cacc_std_d.cdata()), tol);
 
     // double welford
     auto res_cacc_wel_d = mpi_collect(comm, cacc_wel_d);
     EXPECT_EQ(res_cacc_wel_d.count(), steps);
-    check_range_near(res_cacc_wel_d.mdata(), exp_cacc_wel_d.mdata(), tol);
-    check_range_near(make_span(res_cacc_wel_d.cdata()), make_span(exp_cacc_wel_d.cdata()), tol);
+    check_near(res_cacc_wel_d.mdata(), exp_cacc_wel_d.mdata(), tol);
+    check_near(make_span(res_cacc_wel_d.cdata()), make_span(exp_cacc_wel_d.cdata()), tol);
 
     // complex standard
     auto res_cacc_std_c = mpi_collect(comm, cacc_std_c);
     EXPECT_EQ(res_cacc_std_c.count(), steps);
-    check_range_near(res_cacc_std_c.mdata(), exp_cacc_std_c.mdata(), tol);
-    check_range_near(make_span(res_cacc_std_c.rdata()), make_span(exp_cacc_std_c.rdata()), tol);
-    check_range_near(make_span(res_cacc_std_c.idata()), make_span(exp_cacc_std_c.idata()), tol);
-    check_range_near(make_span(res_cacc_std_c.cdata()), make_span(exp_cacc_std_c.cdata()), tol);
+    check_near(res_cacc_std_c.mdata(), exp_cacc_std_c.mdata(), tol);
+    check_near(make_span(res_cacc_std_c.rdata()), make_span(exp_cacc_std_c.rdata()), tol);
+    check_near(make_span(res_cacc_std_c.idata()), make_span(exp_cacc_std_c.idata()), tol);
+    check_near(make_span(res_cacc_std_c.cdata()), make_span(exp_cacc_std_c.cdata()), tol);
 
     // complex welford
     auto res_cacc_wel_c = mpi_collect(comm, cacc_wel_c);
     EXPECT_EQ(res_cacc_wel_c.count(), steps);
-    check_range_near(res_cacc_wel_c.mdata(), exp_cacc_wel_c.mdata(), tol);
-    check_range_near(make_span(res_cacc_wel_c.rdata()), make_span(exp_cacc_wel_c.rdata()), tol);
-    check_range_near(make_span(res_cacc_wel_c.idata()), make_span(exp_cacc_wel_c.idata()), tol);
-    check_range_near(make_span(res_cacc_wel_c.cdata()), make_span(exp_cacc_wel_c.cdata()), tol);
+    check_near(res_cacc_wel_c.mdata(), exp_cacc_wel_c.mdata(), tol);
+    check_near(make_span(res_cacc_wel_c.rdata()), make_span(exp_cacc_wel_c.rdata()), tol);
+    check_near(make_span(res_cacc_wel_c.idata()), make_span(exp_cacc_wel_c.idata()), tol);
+    check_near(make_span(res_cacc_wel_c.cdata()), make_span(exp_cacc_wel_c.cdata()), tol);
 }
 
 // Test MPI routines for block_acc.
@@ -206,8 +206,8 @@ TEST_F(SimplemcAccsMPIAdvanced, BlockAccumulator) {
     // double welford
     auto res_blacc_wel_d = mpi_collect(comm, blacc_wel_d);
     EXPECT_EQ(res_blacc_wel_d.total_count(), steps);
-    check_range_near(res_blacc_wel_d.accumulator().mdata(), exp_blacc_wel_d.accumulator().mdata(), tol);
-    check_range_near(res_blacc_wel_d.accumulator().cdata(), exp_blacc_wel_d.accumulator().cdata(), tol);
+    check_near(res_blacc_wel_d.accumulator().mdata(), exp_blacc_wel_d.accumulator().mdata(), tol);
+    check_near(res_blacc_wel_d.accumulator().cdata(), exp_blacc_wel_d.accumulator().cdata(), tol);
 }
 
 // Test MPI routines for batch_acc.

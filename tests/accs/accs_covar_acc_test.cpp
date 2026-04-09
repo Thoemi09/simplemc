@@ -17,18 +17,6 @@ using namespace simplemc;
 constexpr auto standard = varalg::standard;
 constexpr auto welford = varalg::welford;
 
-/// @brief Check two Eigen matrices for element-wise nearness.
-template <typename M1, typename M2>
-void check_mat_near(const M1& lhs, const M2& rhs, double eps = 1e-14) {
-    ASSERT_EQ(lhs.rows(), rhs.rows());
-    ASSERT_EQ(lhs.cols(), rhs.cols());
-    for (int i = 0; i < lhs.rows(); ++i) {
-        for (int j = 0; j < lhs.cols(); ++j) {
-            check_near(lhs(i, j), rhs(i, j), eps);
-        }
-    }
-}
-
 } // namespace
 
 // Test accumulator concepts.
@@ -74,49 +62,49 @@ TEST_F(SimplemcAccs, CovarAccConcepts) {
 TEST_F(SimplemcAccs, CovarAccEmpty) {
     covar_acc<double> acc_sd;
     ASSERT_EQ(acc_sd.size(), 1);
-    check_empty(acc_sd);
+    check_acc_empty(acc_sd);
     acc_sd << acc_sd;
-    check_empty(acc_sd);
+    check_acc_empty(acc_sd);
     static_assert(!acc_sd.is_dynamic);
     static_assert(acc_sd.static_size == 1);
 
     covar_acc<std::complex<double>, standard> acc_sc;
     ASSERT_EQ(acc_sc.size(), 1);
-    check_empty(acc_sc);
+    check_acc_empty(acc_sc);
     acc_sc << acc_sc;
-    check_empty(acc_sc);
+    check_acc_empty(acc_sc);
     static_assert(!acc_sc.is_dynamic);
     static_assert(acc_sc.static_size == 1);
 
     covar_acc_static<double, 5> acc_st_d;
     ASSERT_EQ(acc_st_d.size(), 5);
-    check_empty(acc_st_d);
+    check_acc_empty(acc_st_d);
     acc_st_d << acc_st_d;
-    check_empty(acc_st_d);
+    check_acc_empty(acc_st_d);
     static_assert(!acc_st_d.is_dynamic);
     static_assert(acc_st_d.static_size == 5);
 
     covar_acc_static<std::complex<double>, 5, standard> acc_st_c;
     ASSERT_EQ(acc_st_c.size(), 5);
-    check_empty(acc_st_c);
+    check_acc_empty(acc_st_c);
     acc_st_c << acc_st_c;
-    check_empty(acc_st_c);
+    check_acc_empty(acc_st_c);
     static_assert(!acc_st_c.is_dynamic);
     static_assert(acc_st_c.static_size == 5);
 
     covar_acc_dynamic<double> acc_dyn_d(5);
     ASSERT_EQ(acc_dyn_d.size(), 5);
-    check_empty(acc_dyn_d);
+    check_acc_empty(acc_dyn_d);
     acc_dyn_d << acc_dyn_d;
-    check_empty(acc_dyn_d);
+    check_acc_empty(acc_dyn_d);
     static_assert(acc_dyn_d.is_dynamic);
     static_assert(acc_dyn_d.static_size == Eigen::Dynamic);
 
     covar_acc_dynamic<std::complex<double>, standard> acc_dyn_c(5);
     ASSERT_EQ(acc_dyn_c.size(), 5);
-    check_empty(acc_dyn_c);
+    check_acc_empty(acc_dyn_c);
     acc_dyn_c << acc_dyn_c;
-    check_empty(acc_dyn_c);
+    check_acc_empty(acc_dyn_c);
     static_assert(acc_dyn_c.is_dynamic);
     static_assert(acc_dyn_c.static_size == Eigen::Dynamic);
 }
@@ -195,22 +183,22 @@ TEST_F(SimplemcAccs, CovarAccStaticVectorDouble) {
     ASSERT_EQ(acc_wel.count(), vec_d_n);
 
     // mean
-    check_range_near(acc_std.mean(), vec_d_mean, 1e-14);
-    check_range_near(acc_wel.mean(), vec_d_mean, 1e-14);
+    check_near(acc_std.mean(), vec_d_mean, 1e-14);
+    check_near(acc_wel.mean(), vec_d_mean, 1e-14);
 
     // full covariance of data (3x3 matrix)
-    check_mat_near(acc_std.covariance_of_data(), vec_d_cov, 1e-14);
-    check_mat_near(acc_wel.covariance_of_data(), vec_d_cov, 1e-14);
+    check_near(acc_std.covariance_of_data(), vec_d_cov, 1e-14);
+    check_near(acc_wel.covariance_of_data(), vec_d_cov, 1e-14);
 
     // covariance of the mean = cov_data / N
     Eigen::Matrix3d expect_cov_mean = vec_d_cov / static_cast<double>(vec_d_n);
-    check_mat_near(acc_std.covariance(), expect_cov_mean, 1e-14);
-    check_mat_near(acc_wel.covariance(), expect_cov_mean, 1e-14);
+    check_near(acc_std.covariance(), expect_cov_mean, 1e-14);
+    check_near(acc_wel.covariance(), expect_cov_mean, 1e-14);
 
     // variance = diagonal of covariance (vector)
     Eigen::Vector3d expect_var = vec_d_var / static_cast<double>(vec_d_n);
-    check_range_near(acc_std.variance(), expect_var, 1e-14);
-    check_range_near(acc_wel.variance(), expect_var, 1e-14);
+    check_near(acc_std.variance(), expect_var, 1e-14);
+    check_near(acc_wel.variance(), expect_var, 1e-14);
 }
 
 // Test static vector complex accumulation.
@@ -226,16 +214,16 @@ TEST_F(SimplemcAccs, CovarAccStaticVectorComplex) {
     ASSERT_EQ(acc_wel.count(), vec_c_n);
 
     // mean
-    check_range_near(acc_std.mean(), vec_c_mean, 1e-14);
-    check_range_near(acc_wel.mean(), vec_c_mean, 1e-14);
+    check_near(acc_std.mean(), vec_c_mean, 1e-14);
+    check_near(acc_wel.mean(), vec_c_mean, 1e-14);
 
     // component covariance matrices
-    check_mat_near(acc_std.covariance_of_real_data(), vec_c_cov_rr, 1e-14);
-    check_mat_near(acc_std.covariance_of_imag_data(), vec_c_cov_ii, 1e-14);
-    check_mat_near(acc_std.covariance_of_real_and_imag_data(), vec_c_cov_ri, 1e-14);
-    check_mat_near(acc_wel.covariance_of_real_data(), vec_c_cov_rr, 1e-14);
-    check_mat_near(acc_wel.covariance_of_imag_data(), vec_c_cov_ii, 1e-14);
-    check_mat_near(acc_wel.covariance_of_real_and_imag_data(), vec_c_cov_ri, 1e-14);
+    check_near(acc_std.covariance_of_real_data(), vec_c_cov_rr, 1e-14);
+    check_near(acc_std.covariance_of_imag_data(), vec_c_cov_ii, 1e-14);
+    check_near(acc_std.covariance_of_real_and_imag_data(), vec_c_cov_ri, 1e-14);
+    check_near(acc_wel.covariance_of_real_data(), vec_c_cov_rr, 1e-14);
+    check_near(acc_wel.covariance_of_imag_data(), vec_c_cov_ii, 1e-14);
+    check_near(acc_wel.covariance_of_real_and_imag_data(), vec_c_cov_ri, 1e-14);
 }
 
 // Test dynamic vector double accumulation.
@@ -252,12 +240,12 @@ TEST_F(SimplemcAccs, CovarAccDynamicVectorDouble) {
     ASSERT_EQ(acc_std.size(), 3);
 
     // mean
-    check_range_near(acc_std.mean(), vec_d_mean, 1e-14);
-    check_range_near(acc_wel.mean(), vec_d_mean, 1e-14);
+    check_near(acc_std.mean(), vec_d_mean, 1e-14);
+    check_near(acc_wel.mean(), vec_d_mean, 1e-14);
 
     // covariance of data
-    check_mat_near(acc_std.covariance_of_data(), vec_d_cov, 1e-14);
-    check_mat_near(acc_wel.covariance_of_data(), vec_d_cov, 1e-14);
+    check_near(acc_std.covariance_of_data(), vec_d_cov, 1e-14);
+    check_near(acc_wel.covariance_of_data(), vec_d_cov, 1e-14);
 }
 
 // Test dynamic vector complex accumulation.
@@ -274,16 +262,16 @@ TEST_F(SimplemcAccs, CovarAccDynamicVectorComplex) {
     ASSERT_EQ(acc_std.size(), 2);
 
     // mean
-    check_range_near(acc_std.mean(), vec_c_mean, 1e-14);
-    check_range_near(acc_wel.mean(), vec_c_mean, 1e-14);
+    check_near(acc_std.mean(), vec_c_mean, 1e-14);
+    check_near(acc_wel.mean(), vec_c_mean, 1e-14);
 
     // component covariance matrices
-    check_mat_near(acc_std.covariance_of_real_data(), vec_c_cov_rr, 1e-14);
-    check_mat_near(acc_std.covariance_of_imag_data(), vec_c_cov_ii, 1e-14);
-    check_mat_near(acc_std.covariance_of_real_and_imag_data(), vec_c_cov_ri, 1e-14);
-    check_mat_near(acc_wel.covariance_of_real_data(), vec_c_cov_rr, 1e-14);
-    check_mat_near(acc_wel.covariance_of_imag_data(), vec_c_cov_ii, 1e-14);
-    check_mat_near(acc_wel.covariance_of_real_and_imag_data(), vec_c_cov_ri, 1e-14);
+    check_near(acc_std.covariance_of_real_data(), vec_c_cov_rr, 1e-14);
+    check_near(acc_std.covariance_of_imag_data(), vec_c_cov_ii, 1e-14);
+    check_near(acc_std.covariance_of_real_and_imag_data(), vec_c_cov_ri, 1e-14);
+    check_near(acc_wel.covariance_of_real_data(), vec_c_cov_rr, 1e-14);
+    check_near(acc_wel.covariance_of_imag_data(), vec_c_cov_ii, 1e-14);
+    check_near(acc_wel.covariance_of_real_and_imag_data(), vec_c_cov_ri, 1e-14);
 }
 
 // Test merging two covar_acc accumulators.
@@ -337,10 +325,10 @@ TEST_F(SimplemcAccs, CovarAccMergeVector) {
     ASSERT_EQ(acc2_std.count(), 2);
     ASSERT_EQ(acc1_wel.count(), vec_d_n);
     ASSERT_EQ(acc2_wel.count(), 2);
-    check_range_near(acc1_std.mean(), vec_d_mean, 1e-14);
-    check_range_near(acc1_wel.mean(), vec_d_mean, 1e-14);
-    check_mat_near(acc1_std.covariance_of_data(), vec_d_cov, 1e-14);
-    check_mat_near(acc1_wel.covariance_of_data(), vec_d_cov, 1e-14);
+    check_near(acc1_std.mean(), vec_d_mean, 1e-14);
+    check_near(acc1_wel.mean(), vec_d_mean, 1e-14);
+    check_near(acc1_std.covariance_of_data(), vec_d_cov, 1e-14);
+    check_near(acc1_wel.covariance_of_data(), vec_d_cov, 1e-14);
 }
 
 // Test reseting an accumulator.
@@ -352,7 +340,7 @@ TEST_F(SimplemcAccs, CovarAccReset) {
     ASSERT_FALSE(acc.empty());
 
     acc.reset();
-    check_empty(acc);
+    check_acc_empty(acc);
 }
 
 // Test constructing a covar_acc from data and count.
@@ -394,8 +382,8 @@ TEST_F(SimplemcAccs, CovarAccDataConstructor) {
     ASSERT_EQ(acc_dyn_copy.count(), acc_dyn.count());
     ASSERT_TRUE(acc_dyn_copy.mdata() == acc_dyn.mdata());
     ASSERT_TRUE(acc_dyn_copy.cdata() == acc_dyn.cdata());
-    check_range_near(acc_dyn_copy.mean(), vec_d_mean, 1e-14);
-    check_mat_near(acc_dyn_copy.covariance_of_data(), vec_d_cov, 1e-14);
+    check_near(acc_dyn_copy.mean(), vec_d_mean, 1e-14);
+    check_near(acc_dyn_copy.covariance_of_data(), vec_d_cov, 1e-14);
 
     // dynamic complex data constructor
     covar_acc_dynamic<cplx> acc_dyn_c(2);
@@ -409,10 +397,10 @@ TEST_F(SimplemcAccs, CovarAccDataConstructor) {
     ASSERT_TRUE(acc_dyn_c_copy.rdata() == acc_dyn_c.rdata());
     ASSERT_TRUE(acc_dyn_c_copy.idata() == acc_dyn_c.idata());
     ASSERT_TRUE(acc_dyn_c_copy.cdata() == acc_dyn_c.cdata());
-    check_range_near(acc_dyn_c_copy.mean(), vec_c_mean, 1e-14);
-    check_mat_near(acc_dyn_c_copy.covariance_of_real_data(), vec_c_cov_rr, 1e-14);
-    check_mat_near(acc_dyn_c_copy.covariance_of_imag_data(), vec_c_cov_ii, 1e-14);
-    check_mat_near(acc_dyn_c_copy.covariance_of_real_and_imag_data(), vec_c_cov_ri, 1e-14);
+    check_near(acc_dyn_c_copy.mean(), vec_c_mean, 1e-14);
+    check_near(acc_dyn_c_copy.covariance_of_real_data(), vec_c_cov_rr, 1e-14);
+    check_near(acc_dyn_c_copy.covariance_of_imag_data(), vec_c_cov_ii, 1e-14);
+    check_near(acc_dyn_c_copy.covariance_of_real_and_imag_data(), vec_c_cov_ri, 1e-14);
 }
 
 // Test that constructing dynamic covar_acc with invalid sizes throws.
@@ -452,21 +440,21 @@ TEST_F(SimplemcAccs, CovarAccFactoryVector) {
     // default (welford) varalg
     auto acc_wel = make_covar_acc(vec_d_data);
     ASSERT_EQ(acc_wel.count(), vec_d_n);
-    check_range_near(acc_wel.mean(), vec_d_mean, 1e-14);
-    check_mat_near(acc_wel.covariance_of_data(), vec_d_cov, 1e-14);
+    check_near(acc_wel.mean(), vec_d_mean, 1e-14);
+    check_near(acc_wel.covariance_of_data(), vec_d_cov, 1e-14);
 
     // explicit standard varalg
     auto acc_std = make_covar_acc<standard>(vec_d_data);
     ASSERT_EQ(acc_std.count(), vec_d_n);
-    check_range_near(acc_std.mean(), vec_d_mean, 1e-14);
-    check_mat_near(acc_std.covariance_of_data(), vec_d_cov, 1e-14);
+    check_near(acc_std.mean(), vec_d_mean, 1e-14);
+    check_near(acc_std.covariance_of_data(), vec_d_cov, 1e-14);
 
     // with a non-null vector shift t
     const Eigen::Vector3d shift(1.0, 1.0, 1.0);
     auto acc_shifted = make_covar_acc(vec_d_data, std::optional<Eigen::Vector3d>(shift));
     ASSERT_EQ(acc_shifted.count(), vec_d_n);
     const Eigen::Vector3d shifted_mean = (acc_shifted.mean() + shift).eval();
-    check_range_near(shifted_mean, vec_d_mean, 1e-14);
+    check_near(shifted_mean, vec_d_mean, 1e-14);
 }
 
 // Test that make_covar_acc throws on an empty range (detail::make_acc exception path).
@@ -570,8 +558,8 @@ TEST_F(SimplemcAccs, CovarAccAccumulateWithIndices) {
     ASSERT_EQ(acc_wel.count(), vec_d_n);
     ASSERT_EQ(acc_std.count(), vec_d_n);
     Eigen::Vector3d expected = { vec_d_mean[0], 0.0, vec_d_mean[2] };
-    check_range_near(acc_wel.mean(), expected, 1e-14);
-    check_range_near(acc_std.mean(), expected, 1e-14);
+    check_near(acc_wel.mean(), expected, 1e-14);
+    check_near(acc_std.mean(), expected, 1e-14);
 }
 
 TEST_F(SimplemcAccs, CovarAccAccumulateConsecutive) {
@@ -588,6 +576,6 @@ TEST_F(SimplemcAccs, CovarAccAccumulateConsecutive) {
     ASSERT_EQ(acc_wel.count(), vec_d_n);
     ASSERT_EQ(acc_std.count(), vec_d_n);
     Eigen::Vector3d expected = { 0.0, vec_d_mean[1], vec_d_mean[2] };
-    check_range_near(acc_wel.mean(), expected, 1e-14);
-    check_range_near(acc_std.mean(), expected, 1e-14);
+    check_near(acc_wel.mean(), expected, 1e-14);
+    check_near(acc_std.mean(), expected, 1e-14);
 }

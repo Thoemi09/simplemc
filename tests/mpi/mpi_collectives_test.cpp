@@ -231,18 +231,18 @@ TEST(SimplemcMPI, ReduceVector) {
     // allreduce
     std::vector<std::complex<double>> res(data.size());
     simplemc::mpi::all_reduce(data, res, MPI_SUM, comm);
-    check_range_near(res, exp);
+    check_near(res, exp);
 
     // allreduce in place
     res = data;
     simplemc::mpi::all_reduce_in_place(res, MPI_SUM, comm);
-    check_range_near(res, exp);
+    check_near(res, exp);
 
     // reduce
     res.assign(2, 0.0);
     simplemc::mpi::reduce(data, res, MPI_SUM, root, comm);
     if (rank == root) {
-        check_range_near(res, exp);
+        check_near(res, exp);
     } else {
         for (auto z : res) {
             check_near(z, std::complex<double> { 0, 0 });
@@ -253,9 +253,9 @@ TEST(SimplemcMPI, ReduceVector) {
     res = data;
     simplemc::mpi::reduce_in_place(res, MPI_SUM, root, comm);
     if (rank == root) {
-        check_range_near(res, exp);
+        check_near(res, exp);
     } else {
-        check_range_near(res, data);
+        check_near(res, data);
     }
 }
 

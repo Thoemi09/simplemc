@@ -138,8 +138,8 @@ TEST_F(SimplemcAccs, BatchAccStaticVectorDouble) {
 
     ASSERT_EQ(acc_std.count(), vec_d_n);
     ASSERT_EQ(acc_wel.count(), vec_d_n);
-    check_range_near(acc_std.mean(), vec_d_mean, 1e-14);
-    check_range_near(acc_wel.mean(), vec_d_mean, 1e-14);
+    check_near(acc_std.mean(), vec_d_mean, 1e-14);
+    check_near(acc_wel.mean(), vec_d_mean, 1e-14);
 }
 
 // Test static vector complex accumulation.
@@ -153,8 +153,8 @@ TEST_F(SimplemcAccs, BatchAccStaticVectorComplex) {
 
     ASSERT_EQ(acc_std.count(), vec_c_n);
     ASSERT_EQ(acc_wel.count(), vec_c_n);
-    check_range_near(acc_std.mean(), vec_c_mean, 1e-14);
-    check_range_near(acc_wel.mean(), vec_c_mean, 1e-14);
+    check_near(acc_std.mean(), vec_c_mean, 1e-14);
+    check_near(acc_wel.mean(), vec_c_mean, 1e-14);
 }
 
 // Test dynamic vector double accumulation.
@@ -170,8 +170,8 @@ TEST_F(SimplemcAccs, BatchAccDynamicVectorDouble) {
     ASSERT_EQ(acc_wel.count(), vec_d_n);
     ASSERT_EQ(acc_std.size(), 3);
     ASSERT_EQ(acc_wel.size(), 3);
-    check_range_near(acc_std.mean(), vec_d_mean, 1e-14);
-    check_range_near(acc_wel.mean(), vec_d_mean, 1e-14);
+    check_near(acc_std.mean(), vec_d_mean, 1e-14);
+    check_near(acc_wel.mean(), vec_d_mean, 1e-14);
 }
 
 // Test dynamic vector complex accumulation.
@@ -187,8 +187,8 @@ TEST_F(SimplemcAccs, BatchAccDynamicVectorComplex) {
     ASSERT_EQ(acc_wel.count(), vec_c_n);
     ASSERT_EQ(acc_std.size(), 2);
     ASSERT_EQ(acc_wel.size(), 2);
-    check_range_near(acc_std.mean(), vec_c_mean, 1e-14);
-    check_range_near(acc_wel.mean(), vec_c_mean, 1e-14);
+    check_near(acc_std.mean(), vec_c_mean, 1e-14);
+    check_near(acc_wel.mean(), vec_c_mean, 1e-14);
 }
 
 // Test batch mechanics: count, num_full_batches, batch_count.
@@ -270,19 +270,19 @@ TEST_F(SimplemcAccs, BatchAccFactoryVector) {
     // default (welford) varalg
     auto acc_wel = make_batch_acc(vec_d_data, 2);
     ASSERT_EQ(acc_wel.count(), vec_d_n);
-    check_range_near(acc_wel.mean(), vec_d_mean, 1e-14);
+    check_near(acc_wel.mean(), vec_d_mean, 1e-14);
 
     // explicit standard varalg
     auto acc_std = make_batch_acc<standard>(vec_d_data, 2);
     ASSERT_EQ(acc_std.count(), vec_d_n);
-    check_range_near(acc_std.mean(), vec_d_mean, 1e-14);
+    check_near(acc_std.mean(), vec_d_mean, 1e-14);
 
     // with a non-null vector shift t
     const Eigen::Vector3d shift(1.0, 1.0, 1.0);
     auto acc_shifted = make_batch_acc(vec_d_data, 2, std::optional<Eigen::Vector3d>(shift));
     ASSERT_EQ(acc_shifted.count(), vec_d_n);
     const Eigen::Vector3d shifted_mean = (acc_shifted.mean() + shift).eval();
-    check_range_near(shifted_mean, vec_d_mean, 1e-14);
+    check_near(shifted_mean, vec_d_mean, 1e-14);
 }
 
 // Test that make_batch_acc throws on an empty range.
@@ -323,8 +323,8 @@ TEST_F(SimplemcAccs, BatchAccAccumulateWithIndices) {
     ASSERT_EQ(acc_wel.count(), vec_d_n);
     ASSERT_EQ(acc_std.count(), vec_d_n);
     Eigen::Vector3d expected = { vec_d_mean[0], 0.0, vec_d_mean[2] };
-    check_range_near(acc_wel.mean(), expected, 1e-14);
-    check_range_near(acc_std.mean(), expected, 1e-14);
+    check_near(acc_wel.mean(), expected, 1e-14);
+    check_near(acc_std.mean(), expected, 1e-14);
 }
 
 // Test accumulate(range, start_index) for batch_acc.
@@ -342,8 +342,8 @@ TEST_F(SimplemcAccs, BatchAccAccumulateConsecutive) {
     ASSERT_EQ(acc_wel.count(), vec_d_n);
     ASSERT_EQ(acc_std.count(), vec_d_n);
     Eigen::Vector3d expected = { 0.0, vec_d_mean[1], vec_d_mean[2] };
-    check_range_near(acc_wel.mean(), expected, 1e-14);
-    check_range_near(acc_std.mean(), expected, 1e-14);
+    check_near(acc_wel.mean(), expected, 1e-14);
+    check_near(acc_std.mean(), expected, 1e-14);
 }
 
 // Test multivalue_acc wrapper for batch_acc.
@@ -360,5 +360,5 @@ TEST_F(SimplemcAccs, BatchAccMultivalue) {
     }
 
     ASSERT_EQ(acc.count(), vec_d_n);
-    check_range_near(acc.mean(), vec_d_mean, 1e-14);
+    check_near(acc.mean(), vec_d_mean, 1e-14);
 }

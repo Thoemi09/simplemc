@@ -40,7 +40,7 @@ TEST_F(SimplemcAccsMPI, MeanAccCollectVector) {
     // With 4 ranks, each feeding one of the 4 vec_d_data
     // samples, the mean should converge to vec_d_mean.
     if (size_ == vec_d_n) {
-        check_range_near(res.mean(), vec_d_mean, 1e-14);
+        check_near(res.mean(), vec_d_mean, 1e-14);
     }
 }
 
@@ -83,8 +83,8 @@ TEST_F(SimplemcAccsMPI, VarAccCollectVector) {
     ASSERT_EQ(res.count(), static_cast<std::uint64_t>(size_));
 
     if (size_ == vec_d_n) {
-        check_range_near(res.mean(), vec_d_mean, 1e-14);
-        check_range_near(
+        check_near(res.mean(), vec_d_mean, 1e-14);
+        check_near(
             res.variance_of_data(), vec_d_var, 1e-14);
     }
 }
@@ -131,7 +131,7 @@ TEST_F(SimplemcAccsMPI, CovarAccCollectVector) {
     ASSERT_EQ(res.count(), static_cast<std::uint64_t>(size_));
 
     if (size_ == vec_d_n) {
-        check_range_near(res.mean(), vec_d_mean, 1e-14);
+        check_near(res.mean(), vec_d_mean, 1e-14);
         // Check full covariance matrix.
         auto cov = res.covariance_of_data();
         for (int i = 0; i < 3; ++i) {

@@ -54,8 +54,8 @@ TEST_F(SimplemcAccsAdvanced, BatchAccSingle) {
         const auto lvl = acc_autocorr.find_level(vacc.count());
         const auto& vacc_exp = acc_autocorr.accumulators()[lvl];
         EXPECT_EQ(vacc.count(), vacc_exp.count());
-        check_range_near(vacc.mdata(), vacc_exp.mdata(), tol);
-        check_range_near(vacc.cdata(), vacc_exp.cdata(), tol);
+        check_near(vacc.mdata(), vacc_exp.mdata(), tol);
+        check_near(vacc.cdata(), vacc_exp.cdata(), tol);
     }
 
     // check combining full batches
@@ -74,18 +74,18 @@ TEST_F(SimplemcAccsAdvanced, BatchAccSingle) {
     EXPECT_EQ(vacc_32.count(), vacc_256_c8.count());
     EXPECT_EQ(vacc_64.count(), vacc_256_c4.count());
     EXPECT_EQ(vacc_128.count(), vacc_256_c2.count());
-    check_range_near(vacc_32.mdata(), vacc_64_c2.mdata(), tol);
-    check_range_near(vacc_32.cdata(), vacc_64_c2.cdata(), tol);
-    check_range_near(vacc_32.mdata(), vacc_128_c4.mdata(), tol);
-    check_range_near(vacc_32.cdata(), vacc_128_c4.cdata(), tol);
-    check_range_near(vacc_32.mdata(), vacc_256_c8.mdata(), tol);
-    check_range_near(vacc_32.cdata(), vacc_256_c8.cdata(), tol);
-    check_range_near(vacc_64.mdata(), vacc_128_c2.mdata(), tol);
-    check_range_near(vacc_64.cdata(), vacc_128_c2.cdata(), tol);
-    check_range_near(vacc_64.mdata(), vacc_256_c4.mdata(), tol);
-    check_range_near(vacc_64.cdata(), vacc_256_c4.cdata(), tol);
-    check_range_near(vacc_128.mdata(), vacc_256_c2.mdata(), tol);
-    check_range_near(vacc_128.cdata(), vacc_256_c2.cdata(), tol);
+    check_near(vacc_32.mdata(), vacc_64_c2.mdata(), tol);
+    check_near(vacc_32.cdata(), vacc_64_c2.cdata(), tol);
+    check_near(vacc_32.mdata(), vacc_128_c4.mdata(), tol);
+    check_near(vacc_32.cdata(), vacc_128_c4.cdata(), tol);
+    check_near(vacc_32.mdata(), vacc_256_c8.mdata(), tol);
+    check_near(vacc_32.cdata(), vacc_256_c8.cdata(), tol);
+    check_near(vacc_64.mdata(), vacc_128_c2.mdata(), tol);
+    check_near(vacc_64.cdata(), vacc_128_c2.cdata(), tol);
+    check_near(vacc_64.mdata(), vacc_256_c4.mdata(), tol);
+    check_near(vacc_64.cdata(), vacc_256_c4.cdata(), tol);
+    check_near(vacc_128.mdata(), vacc_256_c2.mdata(), tol);
+    check_near(vacc_128.cdata(), vacc_256_c2.cdata(), tol);
 
     // reset and verify empty
     acc_vec[0].reset();
@@ -128,14 +128,14 @@ TEST_F(SimplemcAccsAdvanced, BatchAccVec) {
     for (const auto& bacc : acc_vec) {
         EXPECT_EQ(bacc.count(), steps);
         const auto macc = bacc.mean_accumulator();
-        check_range_near(macc.mean(), acc_autocorr.mean(), tol);
+        check_near(macc.mean(), acc_autocorr.mean(), tol);
         const auto cacc = bacc.covar_accumulator();
         const auto lvl = acc_autocorr.find_level(cacc.count());
         const auto& cacc_exp = acc_autocorr.accumulators()[lvl];
         EXPECT_EQ(cacc.count(), cacc_exp.count());
-        check_range_near(cacc.mdata(), cacc_exp.mdata(), tol);
-        check_range_near(simplemc::make_span(cacc.rdata()), simplemc::make_span(cacc_exp.rdata()), tol);
-        check_range_near(simplemc::make_span(cacc.idata()), simplemc::make_span(cacc_exp.idata()), tol);
+        check_near(cacc.mdata(), cacc_exp.mdata(), tol);
+        check_near(simplemc::make_span(cacc.rdata()), simplemc::make_span(cacc_exp.rdata()), tol);
+        check_near(simplemc::make_span(cacc.idata()), simplemc::make_span(cacc_exp.idata()), tol);
     }
 
     // reset and verify empty
@@ -179,13 +179,13 @@ TEST_F(SimplemcAccsAdvanced, BatchAccIndividualIndices) {
     for (const auto& bacc : acc_vec) {
         EXPECT_EQ(bacc.count(), steps);
         const auto macc = bacc.mean_accumulator();
-        check_range_near(macc.mean(), acc_autocorr.mean(), tol);
+        check_near(macc.mean(), acc_autocorr.mean(), tol);
         const auto cacc = bacc.covar_accumulator();
         const auto lvl = acc_autocorr.find_level(cacc.count());
         const auto& cacc_exp = acc_autocorr.accumulators()[lvl];
         EXPECT_EQ(cacc.count(), cacc_exp.count());
-        check_range_near(cacc.mdata(), cacc_exp.mdata(), tol);
-        check_range_near(simplemc::make_span(cacc.rdata()), simplemc::make_span(cacc_exp.rdata()), tol);
-        check_range_near(simplemc::make_span(cacc.idata()), simplemc::make_span(cacc_exp.idata()), tol);
+        check_near(cacc.mdata(), cacc_exp.mdata(), tol);
+        check_near(simplemc::make_span(cacc.rdata()), simplemc::make_span(cacc_exp.rdata()), tol);
+        check_near(simplemc::make_span(cacc.idata()), simplemc::make_span(cacc_exp.idata()), tol);
     }
 }

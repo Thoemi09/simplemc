@@ -235,20 +235,20 @@ TEST(SimplemcNumeric, PolarCartesianConversion) {
     // 1D (identity transformation)
     Eigen::Matrix<double, 1, 1> v1_c { 3.14 };
     Eigen::Matrix<double, 1, 1> v1_p { 3.14 };
-    check_range_near(simplemc::cartesian_to_polar(v1_c), v1_p);
-    check_range_near(simplemc::polar_to_cartesian(v1_p), v1_c);
+    check_near(simplemc::cartesian_to_polar(v1_c), v1_p);
+    check_near(simplemc::polar_to_cartesian(v1_p), v1_c);
 
     // 2D
     Eigen::Vector2d v2_p { std::numbers::sqrt2, std::numbers::pi / 4 };
     Eigen::Vector2d v2_c { 1.0, 1.0 };
-    check_range_near(simplemc::polar_to_cartesian(v2_p), v2_c);
-    check_range_near(simplemc::cartesian_to_polar(v2_c), v2_p);
+    check_near(simplemc::polar_to_cartesian(v2_p), v2_c);
+    check_near(simplemc::cartesian_to_polar(v2_c), v2_p);
 
     // 3D
     Eigen::Vector3d v3_c { 1.0, 0.0, 0.0 };
     Eigen::Vector3d v3_p { 1.0, std::numbers::pi / 2, 0.0 };
-    check_range_near(simplemc::cartesian_to_polar(v3_c), v3_p);
-    check_range_near(simplemc::polar_to_cartesian(v3_p), v3_c);
+    check_near(simplemc::cartesian_to_polar(v3_c), v3_p);
+    check_near(simplemc::polar_to_cartesian(v3_p), v3_c);
 }
 
 // Test the angle between two vectors.

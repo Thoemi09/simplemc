@@ -68,7 +68,7 @@ TEST(SimplemcJson, RangeSerialization) {
     auto arr_span = std::span(arr);
     simplemc::range_to_json(j["arr"], arr_span);
     simplemc::range_from_json(j["arr"], arr_rev | ranges::views::reverse);
-    check_range_equal(arr | ranges::views::reverse, arr_rev);
+    check_equal(arr | ranges::views::reverse, arr_rev);
 }
 
 // Test JSON file IO.

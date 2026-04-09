@@ -44,49 +44,49 @@ TEST_F(SimplemcAccs, MeanAccConcepts) {
 TEST_F(SimplemcAccs, MeanAccEmpty) {
     mean_acc<double> acc_sd;
     ASSERT_EQ(acc_sd.size(), 1);
-    check_empty(acc_sd);
+    check_acc_empty(acc_sd);
     acc_sd << acc_sd;
-    check_empty(acc_sd);
+    check_acc_empty(acc_sd);
     static_assert(!acc_sd.is_dynamic);
     static_assert(acc_sd.static_size == 1);
 
     mean_acc<std::complex<double>, standard> acc_sc;
     ASSERT_EQ(acc_sc.size(), 1);
-    check_empty(acc_sc);
+    check_acc_empty(acc_sc);
     acc_sc << acc_sc;
-    check_empty(acc_sc);
+    check_acc_empty(acc_sc);
     static_assert(!acc_sc.is_dynamic);
     static_assert(acc_sc.static_size == 1);
 
     mean_acc_static<double, 5> acc_st_d;
     ASSERT_EQ(acc_st_d.size(), 5);
-    check_empty(acc_st_d);
+    check_acc_empty(acc_st_d);
     acc_st_d << acc_st_d;
-    check_empty(acc_st_d);
+    check_acc_empty(acc_st_d);
     static_assert(!acc_st_d.is_dynamic);
     static_assert(acc_st_d.static_size == 5);
 
     mean_acc_static<std::complex<double>, 5, standard> acc_st_c;
     ASSERT_EQ(acc_st_c.size(), 5);
-    check_empty(acc_st_c);
+    check_acc_empty(acc_st_c);
     acc_st_c << acc_st_c;
-    check_empty(acc_st_c);
+    check_acc_empty(acc_st_c);
     static_assert(!acc_st_c.is_dynamic);
     static_assert(acc_st_c.static_size == 5);
 
     mean_acc_dynamic<double> acc_dyn_d(5);
     ASSERT_EQ(acc_dyn_d.size(), 5);
-    check_empty(acc_dyn_d);
+    check_acc_empty(acc_dyn_d);
     acc_dyn_d << acc_dyn_d;
-    check_empty(acc_dyn_d);
+    check_acc_empty(acc_dyn_d);
     static_assert(acc_dyn_d.is_dynamic);
     static_assert(acc_dyn_d.static_size == Eigen::Dynamic);
 
     mean_acc_dynamic<std::complex<double>, standard> acc_dyn_c(5);
     ASSERT_EQ(acc_dyn_c.size(), 5);
-    check_empty(acc_dyn_c);
+    check_acc_empty(acc_dyn_c);
     acc_dyn_c << acc_dyn_c;
-    check_empty(acc_dyn_c);
+    check_acc_empty(acc_dyn_c);
     static_assert(acc_dyn_c.is_dynamic);
     static_assert(acc_dyn_c.static_size == Eigen::Dynamic);
 }
@@ -134,8 +134,8 @@ TEST_F(SimplemcAccs, MeanAccStaticVectorDouble) {
 
     ASSERT_EQ(acc_wel.count(), vec_d_n);
     ASSERT_EQ(acc_std.count(), vec_d_n);
-    check_range_near(acc_wel.mean(), vec_d_mean, 1e-14);
-    check_range_near(acc_std.mean(), vec_d_mean, 1e-14);
+    check_near(acc_wel.mean(), vec_d_mean, 1e-14);
+    check_near(acc_std.mean(), vec_d_mean, 1e-14);
 }
 
 // Test static vector complex accumulation.
@@ -149,8 +149,8 @@ TEST_F(SimplemcAccs, MeanAccStaticVectorComplex) {
 
     ASSERT_EQ(acc_std.count(), vec_c_n);
     ASSERT_EQ(acc_wel.count(), vec_c_n);
-    check_range_near(acc_std.mean(), vec_c_mean, 1e-14);
-    check_range_near(acc_wel.mean(), vec_c_mean, 1e-14);
+    check_near(acc_std.mean(), vec_c_mean, 1e-14);
+    check_near(acc_wel.mean(), vec_c_mean, 1e-14);
 }
 
 // Test dynamic vector double accumulation.
@@ -164,8 +164,8 @@ TEST_F(SimplemcAccs, MeanAccDynamicVectorDouble) {
 
     ASSERT_EQ(acc_wel.count(), vec_d_n);
     ASSERT_EQ(acc_std.count(), vec_d_n);
-    check_range_near(acc_wel.mean(), vec_d_mean, 1e-14);
-    check_range_near(acc_std.mean(), vec_d_mean, 1e-14);
+    check_near(acc_wel.mean(), vec_d_mean, 1e-14);
+    check_near(acc_std.mean(), vec_d_mean, 1e-14);
 }
 
 // Test dynamic vector complex accumulation.
@@ -179,8 +179,8 @@ TEST_F(SimplemcAccs, MeanAccDynamicVectorComplex) {
 
     ASSERT_EQ(acc_std.count(), vec_c_n);
     ASSERT_EQ(acc_wel.count(), vec_c_n);
-    check_range_near(acc_std.mean(), vec_c_mean, 1e-14);
-    check_range_near(acc_wel.mean(), vec_c_mean, 1e-14);
+    check_near(acc_std.mean(), vec_c_mean, 1e-14);
+    check_near(acc_wel.mean(), vec_c_mean, 1e-14);
 }
 
 // Test merging two mean_acc accumulators.
@@ -232,8 +232,8 @@ TEST_F(SimplemcAccs, MeanAccMergeVector) {
     ASSERT_EQ(acc2_std.count(), 2);
     ASSERT_EQ(acc1_wel.count(), vec_d_n);
     ASSERT_EQ(acc2_wel.count(), 2);
-    check_range_near(acc1_std.mean(), vec_d_mean, 1e-14);
-    check_range_near(acc1_wel.mean(), vec_d_mean, 1e-14);
+    check_near(acc1_std.mean(), vec_d_mean, 1e-14);
+    check_near(acc1_wel.mean(), vec_d_mean, 1e-14);
 }
 
 // Test reseting an accumulator.
@@ -245,7 +245,7 @@ TEST_F(SimplemcAccs, MeanAccReset) {
     ASSERT_FALSE(acc.empty());
 
     acc.reset();
-    check_empty(acc);
+    check_acc_empty(acc);
 }
 
 // Test constructing a mean_acc from mdata and count.
@@ -268,7 +268,7 @@ TEST_F(SimplemcAccs, MeanAccDataConstructor) {
     mean_acc_dynamic<double> acc_dyn_copy(acc_dyn.mdata(), acc_dyn.count());
     ASSERT_EQ(acc_dyn_copy.count(), acc_dyn.count());
     ASSERT_TRUE(acc_dyn_copy.mdata() == acc_dyn.mdata());
-    check_range_near(acc_dyn_copy.mean(), vec_d_mean, 1e-14);
+    check_near(acc_dyn_copy.mean(), vec_d_mean, 1e-14);
 }
 
 // Test that constructing dynamic mean_acc with invalid sizes throws.
@@ -293,7 +293,7 @@ TEST_F(SimplemcAccs, MeanAccIndexBased) {
     // only element 1 should have the correct mean, others are 0
     ASSERT_EQ(acc.count(), vec_d_n);
     Eigen::Vector3d expected = { 0.0, vec_d_mean[1], 0.0 };
-    check_range_near(acc.mean(), expected, 1e-14);
+    check_near(acc.mean(), expected, 1e-14);
 }
 
 TEST_F(SimplemcAccs, MeanAccAccumulateWithIndices) {
@@ -311,8 +311,8 @@ TEST_F(SimplemcAccs, MeanAccAccumulateWithIndices) {
     ASSERT_EQ(acc_wel.count(), vec_d_n);
     ASSERT_EQ(acc_std.count(), vec_d_n);
     Eigen::Vector3d expected = { vec_d_mean[0], 0.0, vec_d_mean[2] };
-    check_range_near(acc_wel.mean(), expected, 1e-14);
-    check_range_near(acc_std.mean(), expected, 1e-14);
+    check_near(acc_wel.mean(), expected, 1e-14);
+    check_near(acc_std.mean(), expected, 1e-14);
 }
 
 TEST_F(SimplemcAccs, MeanAccAccumulateConsecutive) {
@@ -329,8 +329,8 @@ TEST_F(SimplemcAccs, MeanAccAccumulateConsecutive) {
     ASSERT_EQ(acc_wel.count(), vec_d_n);
     ASSERT_EQ(acc_std.count(), vec_d_n);
     Eigen::Vector3d expected = { 0.0, vec_d_mean[1], vec_d_mean[2] };
-    check_range_near(acc_wel.mean(), expected, 1e-14);
-    check_range_near(acc_std.mean(), expected, 1e-14);
+    check_near(acc_wel.mean(), expected, 1e-14);
+    check_near(acc_std.mean(), expected, 1e-14);
 }
 
 // Test factory function for mean_acc.
@@ -356,19 +356,19 @@ TEST_F(SimplemcAccs, MeanAccFactoryVector) {
     // default (welford) varalg
     auto acc_wel = make_mean_acc(vec_d_data);
     ASSERT_EQ(acc_wel.count(), vec_d_n);
-    check_range_near(acc_wel.mean(), vec_d_mean, 1e-14);
+    check_near(acc_wel.mean(), vec_d_mean, 1e-14);
 
     // explicit standard varalg
     auto acc_std = make_mean_acc<standard>(vec_d_data);
     ASSERT_EQ(acc_std.count(), vec_d_n);
-    check_range_near(acc_std.mean(), vec_d_mean, 1e-14);
+    check_near(acc_std.mean(), vec_d_mean, 1e-14);
 
     // with a non-null vector shift t
     const Eigen::Vector3d shift(1.0, 1.0, 1.0);
     auto acc_shifted = make_mean_acc(vec_d_data, std::optional<Eigen::Vector3d>(shift));
     ASSERT_EQ(acc_shifted.count(), vec_d_n);
     const Eigen::Vector3d shifted_mean = (acc_shifted.mean() + shift).eval();
-    check_range_near(shifted_mean, vec_d_mean, 1e-14);
+    check_near(shifted_mean, vec_d_mean, 1e-14);
 }
 
 // Test that make_mean_acc throws on an empty range (detail::make_acc exception path).
@@ -398,8 +398,8 @@ TEST_F(SimplemcAccs, MeanAccMultivalue) {
 
     ASSERT_EQ(acc_wel.count(), vec_d_n);
     ASSERT_EQ(acc_std.count(), vec_d_n);
-    check_range_near(acc_wel.mean(), vec_d_mean, 1e-14);
-    check_range_near(acc_std.mean(), vec_d_mean, 1e-14);
+    check_near(acc_wel.mean(), vec_d_mean, 1e-14);
+    check_near(acc_std.mean(), vec_d_mean, 1e-14);
 }
 
 // Test multivalue_acc vector stream operator (operator<<(W v)).
@@ -413,7 +413,7 @@ TEST_F(SimplemcAccs, MeanAccMultivalueVectorStream) {
     }
 
     ASSERT_EQ(acc.count(), vec_d_n);
-    check_range_near(acc.mean(), vec_d_mean, 1e-14);
+    check_near(acc.mean(), vec_d_mean, 1e-14);
 }
 
 // Test multivalue_acc accumulate with consecutive indices.
@@ -429,7 +429,7 @@ TEST_F(SimplemcAccs, MeanAccMultivalueAccumulateConsecutive) {
 
     ASSERT_EQ(acc.count(), vec_d_n);
     Eigen::Vector3d expected = { 0.0, vec_d_mean[1], vec_d_mean[2] };
-    check_range_near(acc.mean(), expected, 1e-14);
+    check_near(acc.mean(), expected, 1e-14);
 }
 
 // Test multivalue_acc accumulate with arbitrary indices.
@@ -446,7 +446,7 @@ TEST_F(SimplemcAccs, MeanAccMultivalueAccumulateWithIndices) {
 
     ASSERT_EQ(acc.count(), vec_d_n);
     Eigen::Vector3d expected = { vec_d_mean[0], 0.0, vec_d_mean[2] };
-    check_range_near(acc.mean(), expected, 1e-14);
+    check_near(acc.mean(), expected, 1e-14);
 }
 
 // Test multivalue_acc accessors: size(), count(), empty(), accumulator().

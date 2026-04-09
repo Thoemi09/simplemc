@@ -57,13 +57,13 @@ TEST_F(SimplemcAccs, UtilsMeanStandard) {
     }
 
     const auto result = accs::mean<standard>(mdata, vec_d_n);
-    check_range_near(result, vec_d_mean, 1e-14);
+    check_near(result, vec_d_mean, 1e-14);
 }
 
 TEST_F(SimplemcAccs, UtilsMeanWelford) {
     // for welford algorithm, mdata = running mean
     const auto result = accs::mean<welford>(vec_d_mean, vec_d_n);
-    check_range_near(result, vec_d_mean, 1e-14);
+    check_near(result, vec_d_mean, 1e-14);
 }
 
 TEST_F(SimplemcAccs, UtilsMeanEmpty) {
@@ -84,7 +84,7 @@ TEST_F(SimplemcAccs, UtilsDiagCovarianceStandard) {
     }
 
     const auto result = accs::diag_covariance<standard>(mdata, mdata, cdata, vec_d_n);
-    check_range_near(result, vec_d_var, 1e-14);
+    check_near(result, vec_d_var, 1e-14);
 }
 
 TEST_F(SimplemcAccs, UtilsDiagCovarianceWelford) {
@@ -99,7 +99,7 @@ TEST_F(SimplemcAccs, UtilsDiagCovarianceWelford) {
     }
 
     const auto result = accs::diag_covariance<welford>(mdata, mdata, cdata, vec_d_n);
-    check_range_near(result, vec_d_var, 1e-14);
+    check_near(result, vec_d_var, 1e-14);
 }
 
 TEST_F(SimplemcAccs, UtilsDiagCovarianceEdgeCases) {
@@ -122,7 +122,7 @@ TEST_F(SimplemcAccs, UtilsCovarianceStandard) {
     }
 
     const auto result = accs::covariance<standard>(mdata, mdata, cdata, vec_d_n);
-    check_range_near(make_span(result), make_span(vec_d_cov), 1e-14);
+    check_near(make_span(result), make_span(vec_d_cov), 1e-14);
 }
 
 TEST_F(SimplemcAccs, UtilsCovarianceWelford) {
@@ -137,7 +137,7 @@ TEST_F(SimplemcAccs, UtilsCovarianceWelford) {
     }
 
     const auto result = accs::covariance<welford>(mdata, mdata, cdata, vec_d_n);
-    check_range_near(make_span(result), make_span(vec_d_cov), 1e-14);
+    check_near(make_span(result), make_span(vec_d_cov), 1e-14);
 }
 
 TEST_F(SimplemcAccs, UtilsCovarianceEdgeCases) {
@@ -177,7 +177,7 @@ TEST_F(SimplemcAccs, UtilsTauMatrix) {
     // = 0.5 * (2 * 3 - 1) = 2.5 for all elements (since ratio is 2 everywhere).
     Eigen::Matrix2d expected = Eigen::Matrix2d::Constant(2.5);
     auto result = accs::tau(s_naive, s_blocked, b);
-    check_range_near(make_span(result), make_span(expected), 1e-14);
+    check_near(make_span(result), make_span(expected), 1e-14);
 }
 
 // Test other utility functions.
@@ -207,5 +207,5 @@ TEST_F(SimplemcAccs, UtilsZeroSample) {
     Eigen::Vector3d v3 = Eigen::Vector3d::Ones();
     auto z3 = zero_sample(v3);
     EXPECT_EQ(z3.size(), 3);
-    check_range_equal(z3, Eigen::Vector3d::Zero());
+    check_equal(z3, Eigen::Vector3d::Zero());
 }

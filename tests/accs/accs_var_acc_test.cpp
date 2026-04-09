@@ -62,49 +62,49 @@ TEST_F(SimplemcAccs, VarAccConcepts) {
 TEST_F(SimplemcAccs, VarAccEmpty) {
     var_acc<double> acc_sd;
     ASSERT_EQ(acc_sd.size(), 1);
-    check_empty(acc_sd);
+    check_acc_empty(acc_sd);
     acc_sd << acc_sd;
-    check_empty(acc_sd);
+    check_acc_empty(acc_sd);
     static_assert(!acc_sd.is_dynamic);
     static_assert(acc_sd.static_size == 1);
 
     var_acc<std::complex<double>, standard> acc_sc;
     ASSERT_EQ(acc_sc.size(), 1);
-    check_empty(acc_sc);
+    check_acc_empty(acc_sc);
     acc_sc << acc_sc;
-    check_empty(acc_sc);
+    check_acc_empty(acc_sc);
     static_assert(!acc_sc.is_dynamic);
     static_assert(acc_sc.static_size == 1);
 
     var_acc_static<double, 5> acc_st_d;
     ASSERT_EQ(acc_st_d.size(), 5);
-    check_empty(acc_st_d);
+    check_acc_empty(acc_st_d);
     acc_st_d << acc_st_d;
-    check_empty(acc_st_d);
+    check_acc_empty(acc_st_d);
     static_assert(!acc_st_d.is_dynamic);
     static_assert(acc_st_d.static_size == 5);
 
     var_acc_static<std::complex<double>, 5, standard> acc_st_c;
     ASSERT_EQ(acc_st_c.size(), 5);
-    check_empty(acc_st_c);
+    check_acc_empty(acc_st_c);
     acc_st_c << acc_st_c;
-    check_empty(acc_st_c);
+    check_acc_empty(acc_st_c);
     static_assert(!acc_st_c.is_dynamic);
     static_assert(acc_st_c.static_size == 5);
 
     var_acc_dynamic<double> acc_dyn_d(5);
     ASSERT_EQ(acc_dyn_d.size(), 5);
-    check_empty(acc_dyn_d);
+    check_acc_empty(acc_dyn_d);
     acc_dyn_d << acc_dyn_d;
-    check_empty(acc_dyn_d);
+    check_acc_empty(acc_dyn_d);
     static_assert(acc_dyn_d.is_dynamic);
     static_assert(acc_dyn_d.static_size == Eigen::Dynamic);
 
     var_acc_dynamic<std::complex<double>, standard> acc_dyn_c(5);
     ASSERT_EQ(acc_dyn_c.size(), 5);
-    check_empty(acc_dyn_c);
+    check_acc_empty(acc_dyn_c);
     acc_dyn_c << acc_dyn_c;
-    check_empty(acc_dyn_c);
+    check_acc_empty(acc_dyn_c);
     static_assert(acc_dyn_c.is_dynamic);
     static_assert(acc_dyn_c.static_size == Eigen::Dynamic);
 }
@@ -184,17 +184,17 @@ TEST_F(SimplemcAccs, VarAccStaticVectorDouble) {
     ASSERT_EQ(acc_wel.count(), vec_d_n);
 
     // mean
-    check_range_near(acc_std.mean(), vec_d_mean, 1e-14);
-    check_range_near(acc_wel.mean(), vec_d_mean, 1e-14);
+    check_near(acc_std.mean(), vec_d_mean, 1e-14);
+    check_near(acc_wel.mean(), vec_d_mean, 1e-14);
 
     // variance of data
-    check_range_near(acc_std.variance_of_data(), vec_d_var, 1e-14);
-    check_range_near(acc_wel.variance_of_data(), vec_d_var, 1e-14);
+    check_near(acc_std.variance_of_data(), vec_d_var, 1e-14);
+    check_near(acc_wel.variance_of_data(), vec_d_var, 1e-14);
 
     // variance of the mean = var / N
     Eigen::Vector3d expect_var_mean = vec_d_var / static_cast<double>(vec_d_n);
-    check_range_near(acc_std.variance(), expect_var_mean, 1e-14);
-    check_range_near(acc_wel.variance(), expect_var_mean, 1e-14);
+    check_near(acc_std.variance(), expect_var_mean, 1e-14);
+    check_near(acc_wel.variance(), expect_var_mean, 1e-14);
 }
 
 // Test static vector complex accumulation.
@@ -210,28 +210,28 @@ TEST_F(SimplemcAccs, VarAccStaticVectorComplex) {
     ASSERT_EQ(acc_wel.count(), vec_c_n);
 
     // mean
-    check_range_near(acc_std.mean(), vec_c_mean, 1e-14);
-    check_range_near(acc_wel.mean(), vec_c_mean, 1e-14);
+    check_near(acc_std.mean(), vec_c_mean, 1e-14);
+    check_near(acc_wel.mean(), vec_c_mean, 1e-14);
 
     // variance of real/imaginary parts
-    check_range_near(acc_std.variance_of_real_data(), vec_c_var_re, 1e-14);
-    check_range_near(acc_std.variance_of_imag_data(), vec_c_var_im, 1e-14);
-    check_range_near(acc_wel.variance_of_real_data(), vec_c_var_re, 1e-14);
-    check_range_near(acc_wel.variance_of_imag_data(), vec_c_var_im, 1e-14);
+    check_near(acc_std.variance_of_real_data(), vec_c_var_re, 1e-14);
+    check_near(acc_std.variance_of_imag_data(), vec_c_var_im, 1e-14);
+    check_near(acc_wel.variance_of_real_data(), vec_c_var_re, 1e-14);
+    check_near(acc_wel.variance_of_imag_data(), vec_c_var_im, 1e-14);
 
     // cross-covariance diagonal
-    check_range_near(acc_std.covariance_of_real_and_imag_data(), vec_c_cov_re_im_diag, 1e-14);
-    check_range_near(acc_wel.covariance_of_real_and_imag_data(), vec_c_cov_re_im_diag, 1e-14);
+    check_near(acc_std.covariance_of_real_and_imag_data(), vec_c_cov_re_im_diag, 1e-14);
+    check_near(acc_wel.covariance_of_real_and_imag_data(), vec_c_cov_re_im_diag, 1e-14);
 
     // total variance of data = var_re + var_im (component-wise)
     Eigen::Vector2d expect_var_data = vec_c_var_re + vec_c_var_im;
-    check_range_near(acc_std.variance_of_data(), expect_var_data, 1e-14);
-    check_range_near(acc_wel.variance_of_data(), expect_var_data, 1e-14);
+    check_near(acc_std.variance_of_data(), expect_var_data, 1e-14);
+    check_near(acc_wel.variance_of_data(), expect_var_data, 1e-14);
 
     // variance of the mean = (var_re + var_im) / N
     Eigen::Vector2d expect_var = expect_var_data / static_cast<double>(vec_c_n);
-    check_range_near(acc_std.variance(), expect_var, 1e-14);
-    check_range_near(acc_wel.variance(), expect_var, 1e-14);
+    check_near(acc_std.variance(), expect_var, 1e-14);
+    check_near(acc_wel.variance(), expect_var, 1e-14);
 }
 
 // Test dynamic vector double accumulation.
@@ -247,17 +247,17 @@ TEST_F(SimplemcAccs, VarAccDynamicVectorDouble) {
     ASSERT_EQ(acc_wel.count(), vec_d_n);
 
     // mean
-    check_range_near(acc_std.mean(), vec_d_mean, 1e-14);
-    check_range_near(acc_wel.mean(), vec_d_mean, 1e-14);
+    check_near(acc_std.mean(), vec_d_mean, 1e-14);
+    check_near(acc_wel.mean(), vec_d_mean, 1e-14);
 
     // variance of data
-    check_range_near(acc_std.variance_of_data(), vec_d_var, 1e-14);
-    check_range_near(acc_wel.variance_of_data(), vec_d_var, 1e-14);
+    check_near(acc_std.variance_of_data(), vec_d_var, 1e-14);
+    check_near(acc_wel.variance_of_data(), vec_d_var, 1e-14);
 
     // variance of the mean = var / N
     Eigen::Vector3d expect_var_mean = vec_d_var / static_cast<double>(vec_d_n);
-    check_range_near(acc_std.variance(), expect_var_mean, 1e-14);
-    check_range_near(acc_wel.variance(), expect_var_mean, 1e-14);
+    check_near(acc_std.variance(), expect_var_mean, 1e-14);
+    check_near(acc_wel.variance(), expect_var_mean, 1e-14);
 }
 
 // Test dynamic vector complex accumulation.
@@ -273,28 +273,28 @@ TEST_F(SimplemcAccs, VarAccDynamicVectorComplex) {
     ASSERT_EQ(acc_wel.count(), vec_c_n);
 
     // mean
-    check_range_near(acc_std.mean(), vec_c_mean, 1e-14);
-    check_range_near(acc_wel.mean(), vec_c_mean, 1e-14);
+    check_near(acc_std.mean(), vec_c_mean, 1e-14);
+    check_near(acc_wel.mean(), vec_c_mean, 1e-14);
 
     // variance of real/imaginary parts
-    check_range_near(acc_std.variance_of_real_data(), vec_c_var_re, 1e-14);
-    check_range_near(acc_std.variance_of_imag_data(), vec_c_var_im, 1e-14);
-    check_range_near(acc_wel.variance_of_real_data(), vec_c_var_re, 1e-14);
-    check_range_near(acc_wel.variance_of_imag_data(), vec_c_var_im, 1e-14);
+    check_near(acc_std.variance_of_real_data(), vec_c_var_re, 1e-14);
+    check_near(acc_std.variance_of_imag_data(), vec_c_var_im, 1e-14);
+    check_near(acc_wel.variance_of_real_data(), vec_c_var_re, 1e-14);
+    check_near(acc_wel.variance_of_imag_data(), vec_c_var_im, 1e-14);
 
     // cross-covariance diagonal
-    check_range_near(acc_std.covariance_of_real_and_imag_data(), vec_c_cov_re_im_diag, 1e-14);
-    check_range_near(acc_wel.covariance_of_real_and_imag_data(), vec_c_cov_re_im_diag, 1e-14);
+    check_near(acc_std.covariance_of_real_and_imag_data(), vec_c_cov_re_im_diag, 1e-14);
+    check_near(acc_wel.covariance_of_real_and_imag_data(), vec_c_cov_re_im_diag, 1e-14);
 
     // total variance of data = var_re + var_im (component-wise)
     Eigen::Vector2d expect_var_data = vec_c_var_re + vec_c_var_im;
-    check_range_near(acc_std.variance_of_data(), expect_var_data, 1e-14);
-    check_range_near(acc_wel.variance_of_data(), expect_var_data, 1e-14);
+    check_near(acc_std.variance_of_data(), expect_var_data, 1e-14);
+    check_near(acc_wel.variance_of_data(), expect_var_data, 1e-14);
 
     // variance of the mean = (var_re + var_im) / N
     Eigen::Vector2d expect_var = expect_var_data / static_cast<double>(vec_c_n);
-    check_range_near(acc_std.variance(), expect_var, 1e-14);
-    check_range_near(acc_wel.variance(), expect_var, 1e-14);
+    check_near(acc_std.variance(), expect_var, 1e-14);
+    check_near(acc_wel.variance(), expect_var, 1e-14);
 }
 
 // Test merging two var_acc accumulators.
@@ -348,10 +348,10 @@ TEST_F(SimplemcAccs, VarAccMergeVector) {
     ASSERT_EQ(acc2_std.count(), 2);
     ASSERT_EQ(acc1_wel.count(), vec_d_n);
     ASSERT_EQ(acc2_wel.count(), 2);
-    check_range_near(acc1_std.mean(), vec_d_mean, 1e-14);
-    check_range_near(acc1_wel.mean(), vec_d_mean, 1e-14);
-    check_range_near(acc1_std.variance_of_data(), vec_d_var, 1e-14);
-    check_range_near(acc1_wel.variance_of_data(), vec_d_var, 1e-14);
+    check_near(acc1_std.mean(), vec_d_mean, 1e-14);
+    check_near(acc1_wel.mean(), vec_d_mean, 1e-14);
+    check_near(acc1_std.variance_of_data(), vec_d_var, 1e-14);
+    check_near(acc1_wel.variance_of_data(), vec_d_var, 1e-14);
 }
 
 // Test reseting an accumulator.
@@ -363,7 +363,7 @@ TEST_F(SimplemcAccs, VarAccReset) {
     ASSERT_FALSE(acc.empty());
 
     acc.reset();
-    check_empty(acc);
+    check_acc_empty(acc);
 }
 
 // Test constructing a var_acc from data and count.
@@ -389,8 +389,8 @@ TEST_F(SimplemcAccs, VarAccDataConstructorDouble) {
     ASSERT_EQ(acc_dyn_copy.count(), acc_dyn.count());
     ASSERT_TRUE(acc_dyn_copy.mdata() == acc_dyn.mdata());
     ASSERT_TRUE(acc_dyn_copy.cdata() == acc_dyn.cdata());
-    check_range_near(acc_dyn_copy.mean(), vec_d_mean, 1e-14);
-    check_range_near(acc_dyn_copy.variance_of_data(), vec_d_var, 1e-14);
+    check_near(acc_dyn_copy.mean(), vec_d_mean, 1e-14);
+    check_near(acc_dyn_copy.variance_of_data(), vec_d_var, 1e-14);
 
     // dynamic complex data constructor
     var_acc_dynamic<cplx> acc_dyn_c(2);
@@ -404,9 +404,9 @@ TEST_F(SimplemcAccs, VarAccDataConstructorDouble) {
     ASSERT_TRUE(acc_dyn_c_copy.rdata() == acc_dyn_c.rdata());
     ASSERT_TRUE(acc_dyn_c_copy.idata() == acc_dyn_c.idata());
     ASSERT_TRUE(acc_dyn_c_copy.cdata() == acc_dyn_c.cdata());
-    check_range_near(acc_dyn_c_copy.mean(), vec_c_mean, 1e-14);
-    check_range_near(acc_dyn_c_copy.variance_of_real_data(), vec_c_var_re, 1e-14);
-    check_range_near(acc_dyn_c_copy.variance_of_imag_data(), vec_c_var_im, 1e-14);
+    check_near(acc_dyn_c_copy.mean(), vec_c_mean, 1e-14);
+    check_near(acc_dyn_c_copy.variance_of_real_data(), vec_c_var_re, 1e-14);
+    check_near(acc_dyn_c_copy.variance_of_imag_data(), vec_c_var_im, 1e-14);
 }
 
 TEST_F(SimplemcAccs, VarAccDataConstructorComplex) {
@@ -437,9 +437,9 @@ TEST_F(SimplemcAccs, VarAccDataConstructorComplex) {
     ASSERT_TRUE(acc_dyn_c_copy.rdata() == acc_dyn_c.rdata());
     ASSERT_TRUE(acc_dyn_c_copy.idata() == acc_dyn_c.idata());
     ASSERT_TRUE(acc_dyn_c_copy.cdata() == acc_dyn_c.cdata());
-    check_range_near(acc_dyn_c_copy.mean(), vec_c_mean, 1e-14);
-    check_range_near(acc_dyn_c_copy.variance_of_real_data(), vec_c_var_re, 1e-14);
-    check_range_near(acc_dyn_c_copy.variance_of_imag_data(), vec_c_var_im, 1e-14);
+    check_near(acc_dyn_c_copy.mean(), vec_c_mean, 1e-14);
+    check_near(acc_dyn_c_copy.variance_of_real_data(), vec_c_var_re, 1e-14);
+    check_near(acc_dyn_c_copy.variance_of_imag_data(), vec_c_var_im, 1e-14);
 }
 
 // Test that constructing dynamic var_acc with invalid sizes throws.
@@ -478,21 +478,21 @@ TEST_F(SimplemcAccs, VarAccFactoryVector) {
     // default (welford) varalg
     auto acc_wel = make_var_acc(vec_d_data);
     ASSERT_EQ(acc_wel.count(), vec_d_n);
-    check_range_near(acc_wel.mean(), vec_d_mean, 1e-14);
-    check_range_near(acc_wel.variance_of_data(), vec_d_var, 1e-14);
+    check_near(acc_wel.mean(), vec_d_mean, 1e-14);
+    check_near(acc_wel.variance_of_data(), vec_d_var, 1e-14);
 
     // explicit standard varalg
     auto acc_std = make_var_acc<standard>(vec_d_data);
     ASSERT_EQ(acc_std.count(), vec_d_n);
-    check_range_near(acc_std.mean(), vec_d_mean, 1e-14);
-    check_range_near(acc_std.variance_of_data(), vec_d_var, 1e-14);
+    check_near(acc_std.mean(), vec_d_mean, 1e-14);
+    check_near(acc_std.variance_of_data(), vec_d_var, 1e-14);
 
     // with a non-null vector shift t
     const Eigen::Vector3d shift(1.0, 1.0, 1.0);
     auto acc_shifted = make_var_acc(vec_d_data, std::optional<Eigen::Vector3d>(shift));
     ASSERT_EQ(acc_shifted.count(), vec_d_n);
     const Eigen::Vector3d shifted_mean = (acc_shifted.mean() + shift).eval();
-    check_range_near(shifted_mean, vec_d_mean, 1e-14);
+    check_near(shifted_mean, vec_d_mean, 1e-14);
 }
 
 // Test that make_var_acc throws on an empty range (detail::make_acc exception path).
@@ -593,10 +593,10 @@ TEST_F(SimplemcAccs, VarAccAccumulateWithIndices) {
     ASSERT_EQ(acc_std.count(), vec_d_n);
     Eigen::Vector3d expected_mean = { vec_d_mean[0], 0.0, vec_d_mean[2] };
     Eigen::Vector3d expected_var = { vec_d_var[0], 0.0, vec_d_var[2] };
-    check_range_near(acc_wel.mean(), expected_mean, 1e-14);
-    check_range_near(acc_std.mean(), expected_mean, 1e-14);
-    check_range_near(acc_wel.variance_of_data(), expected_var, 1e-14);
-    check_range_near(acc_std.variance_of_data(), expected_var, 1e-14);
+    check_near(acc_wel.mean(), expected_mean, 1e-14);
+    check_near(acc_std.mean(), expected_mean, 1e-14);
+    check_near(acc_wel.variance_of_data(), expected_var, 1e-14);
+    check_near(acc_std.variance_of_data(), expected_var, 1e-14);
 }
 
 TEST_F(SimplemcAccs, VarAccAccumulateConsecutive) {
@@ -614,10 +614,10 @@ TEST_F(SimplemcAccs, VarAccAccumulateConsecutive) {
     ASSERT_EQ(acc_std.count(), vec_d_n);
     Eigen::Vector3d expected_mean = { 0.0, vec_d_mean[1], vec_d_mean[2] };
     Eigen::Vector3d expected_var = { 0.0, vec_d_var[1], vec_d_var[2] };
-    check_range_near(acc_wel.mean(), expected_mean, 1e-14);
-    check_range_near(acc_std.mean(), expected_mean, 1e-14);
-    check_range_near(acc_wel.variance_of_data(), expected_var, 1e-14);
-    check_range_near(acc_std.variance_of_data(), expected_var, 1e-14);
+    check_near(acc_wel.mean(), expected_mean, 1e-14);
+    check_near(acc_std.mean(), expected_mean, 1e-14);
+    check_near(acc_wel.variance_of_data(), expected_var, 1e-14);
+    check_near(acc_std.variance_of_data(), expected_var, 1e-14);
 }
 
 // Test multivalue_acc wrapper for var_acc.
@@ -639,10 +639,10 @@ TEST_F(SimplemcAccs, VarAccMultivalue) {
 
     ASSERT_EQ(acc_wel.count(), vec_d_n);
     ASSERT_EQ(acc_std.count(), vec_d_n);
-    check_range_near(acc_wel.mean(), vec_d_mean, 1e-14);
-    check_range_near(acc_std.mean(), vec_d_mean, 1e-14);
-    check_range_near(acc_wel.variance_of_data(), vec_d_var, 1e-14);
-    check_range_near(acc_std.variance_of_data(), vec_d_var, 1e-14);
+    check_near(acc_wel.mean(), vec_d_mean, 1e-14);
+    check_near(acc_std.mean(), vec_d_mean, 1e-14);
+    check_near(acc_wel.variance_of_data(), vec_d_var, 1e-14);
+    check_near(acc_std.variance_of_data(), vec_d_var, 1e-14);
 }
 
 // Test multivalue_acc vector stream operator (operator<<(W v)).
@@ -656,8 +656,8 @@ TEST_F(SimplemcAccs, VarAccMultivalueVectorStream) {
     }
 
     ASSERT_EQ(acc.count(), vec_d_n);
-    check_range_near(acc.mean(), vec_d_mean, 1e-14);
-    check_range_near(acc.variance_of_data(), vec_d_var, 1e-14);
+    check_near(acc.mean(), vec_d_mean, 1e-14);
+    check_near(acc.variance_of_data(), vec_d_var, 1e-14);
 }
 
 // Test multivalue_acc accumulate with consecutive indices.
@@ -673,7 +673,7 @@ TEST_F(SimplemcAccs, VarAccMultivalueAccumulateConsecutive) {
 
     ASSERT_EQ(acc.count(), vec_d_n);
     Eigen::Vector3d expected = { 0.0, vec_d_mean[1], vec_d_mean[2] };
-    check_range_near(acc.mean(), expected, 1e-14);
+    check_near(acc.mean(), expected, 1e-14);
 }
 
 // Test multivalue_acc accumulate with arbitrary indices.
@@ -690,7 +690,7 @@ TEST_F(SimplemcAccs, VarAccMultivalueAccumulateWithIndices) {
 
     ASSERT_EQ(acc.count(), vec_d_n);
     Eigen::Vector3d expected = { vec_d_mean[0], 0.0, vec_d_mean[2] };
-    check_range_near(acc.mean(), expected, 1e-14);
+    check_near(acc.mean(), expected, 1e-14);
 }
 
 // Test multivalue_acc accessors: size(), count(), empty(), accumulator().

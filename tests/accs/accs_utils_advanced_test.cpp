@@ -71,19 +71,19 @@ TEST_F(SimplemcAccsAdvanced, UtilsMean) {
 
     // standard, double, zero shift
     auto mdata_d = mean_data<standard>(sp_d);
-    check_range_near(mean<standard>(mdata_d, sp_d.total_count), sm_d, tol);
+    check_near(mean<standard>(mdata_d, sp_d.total_count), sm_d, tol);
 
     // welford, double, zero shift
     mdata_d = mean_data<welford>(sp_d);
-    check_range_near(mean<welford>(mdata_d, sp_d.total_count), sm_d, tol);
+    check_near(mean<welford>(mdata_d, sp_d.total_count), sm_d, tol);
 
     // standard, complex, zero shift
     auto mdata_c = mean_data<standard>(sp_c);
-    check_range_near(mean<standard>(mdata_c, sp_c.total_count), sm_c, tol);
+    check_near(mean<standard>(mdata_c, sp_c.total_count), sm_c, tol);
 
     // welford, complex, zero shift
     mdata_c = mean_data<welford>(sp_c);
-    check_range_near(mean<welford>(mdata_c, sp_c.total_count), sm_c, tol);
+    check_near(mean<welford>(mdata_c, sp_c.total_count), sm_c, tol);
 }
 
 // Test the diag_covariance function.
@@ -94,12 +94,12 @@ TEST_F(SimplemcAccsAdvanced, UtilsDiagCovariance) {
 
     // standard, double, zero shift
     auto [mdata_d, cdata_d] = accumulate_data<standard>(sp_d);
-    check_range_near(
+    check_near(
         diag_covariance<standard>(mdata_d, mdata_d, dbl_vec_type(cdata_d.diagonal()), sp_d.total_count), sv_d, tol);
 
     // welford, double, zero shift
     std::tie(mdata_d, cdata_d) = accumulate_data<welford>(sp_d);
-    check_range_near(
+    check_near(
         diag_covariance<welford>(mdata_d, mdata_d, dbl_vec_type(cdata_d.diagonal()), sp_d.total_count), sv_d, tol);
 }
 
@@ -112,12 +112,12 @@ TEST_F(SimplemcAccsAdvanced, UtilsCovariance) {
     // standard, double, zero shift
     using simplemc::make_span;
     auto [mdata_d, cdata_d] = accumulate_data<standard>(sp_d);
-    check_range_near(
+    check_near(
         make_span(covariance<standard>(mdata_d, mdata_d, cdata_d, sp_d.total_count)), make_span(scv_d), tol);
 
     // welford, double, zero shift
     std::tie(mdata_d, cdata_d) = accumulate_data<welford>(sp_d);
-    check_range_near(
+    check_near(
         make_span(covariance<welford>(mdata_d, mdata_d, cdata_d, sp_d.total_count)), make_span(scv_d), tol);
 }
 
@@ -140,12 +140,12 @@ TEST_F(SimplemcAccsAdvanced, UtilsTauBlocking) {
 
         // tau_v[1] = 0.5 * (s_blocked * b / s_naive - 1)
         const auto computed_tau_v = tau(Eigen::MatrixXd(s_naive_v), Eigen::MatrixXd(s_blocked_v_1), b1);
-        check_range_near(simplemc::make_span(computed_tau_v), simplemc::make_span(Eigen::MatrixXd(taus_v[1])), tol);
+        check_near(simplemc::make_span(computed_tau_v), simplemc::make_span(Eigen::MatrixXd(taus_v[1])), tol);
 
         // similarly for covariance
         const auto computed_tau_c =
             tau(Eigen::MatrixXd(s_naive_c.matrix()), Eigen::MatrixXd(s_blocked_c_1.matrix()), b1);
-        check_range_near(
+        check_near(
             simplemc::make_span(computed_tau_c), simplemc::make_span(Eigen::MatrixXd(taus_c[1].matrix())), tol);
     }
 }
