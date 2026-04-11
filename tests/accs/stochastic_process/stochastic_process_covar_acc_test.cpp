@@ -1,4 +1,4 @@
-#include "./accs_fixture_advanced.hpp"
+#include "./stochastic_process_fixture.hpp"
 
 #include <simplemc/accs/autocorr_acc.hpp>
 #include <simplemc/accs/block_acc.hpp>
@@ -24,7 +24,7 @@ constexpr double tol = 1e-10;
 } // namespace
 
 // Check covariance accumulator of size 1.
-TEST_F(SimplemcAccsAdvanced, CovarAccSingle) {
+TEST_F(SimplemcAccsStochasticProcess, CovarAccSingle) {
     // general set up
     using namespace simplemc;
     covar_acc<double, standard> acc_std_d1, acc_std_d2;
@@ -113,7 +113,7 @@ TEST_F(SimplemcAccsAdvanced, CovarAccSingle) {
 }
 
 // Check covariance accumulator using the full random vectors.
-TEST_F(SimplemcAccsAdvanced, CovarAccVector) {
+TEST_F(SimplemcAccsStochasticProcess, CovarAccVector) {
     // general set up
     using namespace simplemc;
     covar_acc_static<double, size, standard> acc_std_d1, acc_std_d2;
@@ -205,7 +205,7 @@ TEST_F(SimplemcAccsAdvanced, CovarAccVector) {
 }
 
 // Check covariance accumulator using only part of random vectors.
-TEST_F(SimplemcAccsAdvanced, CovarAccIndividualIndices) {
+TEST_F(SimplemcAccsStochasticProcess, CovarAccIndividualIndices) {
     // general set up
     using namespace simplemc;
     covar_acc_static<double, size, standard> acc_std_d1, acc_std_d2;
@@ -295,7 +295,7 @@ TEST_F(SimplemcAccsAdvanced, CovarAccIndividualIndices) {
 }
 
 // Check blocked covariance accumulator.
-TEST_F(SimplemcAccsAdvanced, CovarAccBlocked) {
+TEST_F(SimplemcAccsStochasticProcess, CovarAccBlocked) {
     // general set up
     using namespace simplemc;
     using block_acc_type = block_acc<covar_acc_static<double, size, welford>>;
@@ -339,7 +339,7 @@ TEST_F(SimplemcAccsAdvanced, CovarAccBlocked) {
 }
 
 // Check autocorrelation wrapper of covariance accumulator.
-TEST_F(SimplemcAccsAdvanced, CovarAccAutocorrelation) {
+TEST_F(SimplemcAccsStochasticProcess, CovarAccAutocorrelation) {
     // general set up
     using namespace simplemc;
     autocorr_acc<covar_acc_static<double, size, welford>> acc_vec, acc_acc1, acc_acc2;
@@ -387,7 +387,7 @@ TEST_F(SimplemcAccsAdvanced, CovarAccAutocorrelation) {
 }
 
 // Check construction from pre-existing accumulated data.
-TEST_F(SimplemcAccsAdvanced, CovarAccDataConstructor) {
+TEST_F(SimplemcAccsStochasticProcess, CovarAccDataConstructor) {
     using namespace simplemc;
 
     // real vector: static
@@ -431,7 +431,7 @@ TEST_F(SimplemcAccsAdvanced, CovarAccDataConstructor) {
 // vec_type::Zero(m) in the member initializer list triggers an Eigen assertion
 // before the body runs. This should be fixed by validating m before the initializer
 // list (e.g. via a static helper). For now, we only test valid construction.
-TEST_F(SimplemcAccsAdvanced, CovarAccDynamicSizeValidation) {
+TEST_F(SimplemcAccsStochasticProcess, CovarAccDynamicSizeValidation) {
     using namespace simplemc;
 
     // valid dynamic construction

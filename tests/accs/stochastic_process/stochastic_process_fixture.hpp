@@ -2,7 +2,7 @@
 #define SIMPLEMC_TESTS_ACCS_FIXTURE_ADVANCED_HPP
 
 #include "./stochastic_process.hpp"
-#include "../test_utils.hpp"
+#include "../../test_utils.hpp"
 
 #include <simplemc/utils/fmt_complex.hpp>
 #include <simplemc/utils/to_string.hpp>
@@ -13,7 +13,7 @@
 #include <complex>
 
 // Test fixture for the advanced accumulator tests (stochastic process based).
-class SimplemcAccsAdvanced : public ::testing::Test {
+class SimplemcAccsStochasticProcess : public ::testing::Test {
 protected:
     constexpr static long size = 3;
     using proc_d = stochastic_process<double, size>;

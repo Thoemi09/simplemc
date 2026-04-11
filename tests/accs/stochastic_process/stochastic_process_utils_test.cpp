@@ -1,4 +1,4 @@
-#include "./accs_fixture_advanced.hpp"
+#include "./stochastic_process_fixture.hpp"
 
 #include <simplemc/accs/utils.hpp>
 #include <simplemc/accs/varalg.hpp>
@@ -57,12 +57,12 @@ template <simplemc::varalg A, typename S>
 }
 
 // Print analytic results of the stochastic processes in the fixture.
-TEST_F(SimplemcAccsAdvanced, PrintAnalyticResults) {
+TEST_F(SimplemcAccsStochasticProcess, PrintAnalyticResults) {
     print_analytic_results();
 }
 
 // Test the mean function.
-TEST_F(SimplemcAccsAdvanced, UtilsMean) {
+TEST_F(SimplemcAccsStochasticProcess, UtilsMean) {
     using namespace simplemc::accs;
     using dbl_vec_type = Eigen::VectorXd;
     using cplx_vec_type = Eigen::VectorXcd;
@@ -87,7 +87,7 @@ TEST_F(SimplemcAccsAdvanced, UtilsMean) {
 }
 
 // Test the diag_covariance function.
-TEST_F(SimplemcAccsAdvanced, UtilsDiagCovariance) {
+TEST_F(SimplemcAccsStochasticProcess, UtilsDiagCovariance) {
     using namespace simplemc::accs;
     using dbl_vec_type = Eigen::VectorXd;
     const dbl_vec_type sv_d = sample_variance(sp_d);
@@ -104,7 +104,7 @@ TEST_F(SimplemcAccsAdvanced, UtilsDiagCovariance) {
 }
 
 // Test the covariance function.
-TEST_F(SimplemcAccsAdvanced, UtilsCovariance) {
+TEST_F(SimplemcAccsStochasticProcess, UtilsCovariance) {
     using namespace simplemc::accs;
     using dbl_mat_type = Eigen::MatrixXd;
     const dbl_mat_type scv_d = sample_covariance(sp_d);
@@ -112,17 +112,15 @@ TEST_F(SimplemcAccsAdvanced, UtilsCovariance) {
     // standard, double, zero shift
     using simplemc::make_span;
     auto [mdata_d, cdata_d] = accumulate_data<standard>(sp_d);
-    check_near(
-        make_span(covariance<standard>(mdata_d, mdata_d, cdata_d, sp_d.total_count)), make_span(scv_d), tol);
+    check_near(make_span(covariance<standard>(mdata_d, mdata_d, cdata_d, sp_d.total_count)), make_span(scv_d), tol);
 
     // welford, double, zero shift
     std::tie(mdata_d, cdata_d) = accumulate_data<welford>(sp_d);
-    check_near(
-        make_span(covariance<welford>(mdata_d, mdata_d, cdata_d, sp_d.total_count)), make_span(scv_d), tol);
+    check_near(make_span(covariance<welford>(mdata_d, mdata_d, cdata_d, sp_d.total_count)), make_span(scv_d), tol);
 }
 
 // Test tau with real stochastic process data using blocking method.
-TEST_F(SimplemcAccsAdvanced, UtilsTauBlocking) {
+TEST_F(SimplemcAccsStochasticProcess, UtilsTauBlocking) {
     using namespace simplemc::accs;
 
     // use the blocking_autocorr function from the fixture to get blocked samples
@@ -145,7 +143,6 @@ TEST_F(SimplemcAccsAdvanced, UtilsTauBlocking) {
         // similarly for covariance
         const auto computed_tau_c =
             tau(Eigen::MatrixXd(s_naive_c.matrix()), Eigen::MatrixXd(s_blocked_c_1.matrix()), b1);
-        check_near(
-            simplemc::make_span(computed_tau_c), simplemc::make_span(Eigen::MatrixXd(taus_c[1].matrix())), tol);
+        check_near(simplemc::make_span(computed_tau_c), simplemc::make_span(Eigen::MatrixXd(taus_c[1].matrix())), tol);
     }
 }

@@ -1,4 +1,4 @@
-#include "./accs_fixture_advanced.hpp"
+#include "./stochastic_process_fixture.hpp"
 
 #include <simplemc/accs/mean_acc.hpp>
 #include <simplemc/accs/multivalue_acc.hpp>
@@ -19,7 +19,7 @@ constexpr double tol = 1e-10;
 } // namespace
 
 // Check mean accumulator of size 1.
-TEST_F(SimplemcAccsAdvanced, MeanAccSingle) {
+TEST_F(SimplemcAccsStochasticProcess, MeanAccSingle) {
     // general set up
     using namespace simplemc;
     mean_acc<double, standard> acc_std_d1, acc_std_d2;
@@ -90,7 +90,7 @@ TEST_F(SimplemcAccsAdvanced, MeanAccSingle) {
 }
 
 // Check mean accumulator using the full random vectors.
-TEST_F(SimplemcAccsAdvanced, MeanAccVector) {
+TEST_F(SimplemcAccsStochasticProcess, MeanAccVector) {
     // general set up
     using namespace simplemc;
     mean_acc_static<double, size, standard> acc_std_d1, acc_std_d2;
@@ -163,7 +163,7 @@ TEST_F(SimplemcAccsAdvanced, MeanAccVector) {
 }
 
 // Check mean accumulator using only part of random vectors.
-TEST_F(SimplemcAccsAdvanced, MeanAccIndividualIndices) {
+TEST_F(SimplemcAccsStochasticProcess, MeanAccIndividualIndices) {
     // general set up
     using namespace simplemc;
     mean_acc_static<double, size, standard> acc_std_d1, acc_std_d2;

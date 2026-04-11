@@ -1,4 +1,4 @@
-#include "./accs_fixture_advanced.hpp"
+#include "./stochastic_process_fixture.hpp"
 
 #include <simplemc/accs/autocorr_acc.hpp>
 #include <simplemc/accs/batch_acc.hpp>
@@ -21,7 +21,7 @@ constexpr double tol = 1e-10;
 } // namespace
 
 // Check batch accumulator of size 1.
-TEST_F(SimplemcAccsAdvanced, BatchAccSingle) {
+TEST_F(SimplemcAccsStochasticProcess, BatchAccSingle) {
     // general set up
     using namespace simplemc;
     std::vector<std::size_t> num_vec { 32, 64, 128 };
@@ -94,7 +94,7 @@ TEST_F(SimplemcAccsAdvanced, BatchAccSingle) {
 }
 
 // Check batch accumulator using the full random vectors.
-TEST_F(SimplemcAccsAdvanced, BatchAccVec) {
+TEST_F(SimplemcAccsStochasticProcess, BatchAccVec) {
     // general set up
     using namespace simplemc;
     std::vector<std::size_t> num_vec { 32, 64, 128 };
@@ -145,7 +145,7 @@ TEST_F(SimplemcAccsAdvanced, BatchAccVec) {
 }
 
 // Check batch accumulator using only part of random vectors.
-TEST_F(SimplemcAccsAdvanced, BatchAccIndividualIndices) {
+TEST_F(SimplemcAccsStochasticProcess, BatchAccIndividualIndices) {
     // general set up
     using namespace simplemc;
     std::vector<std::size_t> num_vec { 32, 64, 128 };

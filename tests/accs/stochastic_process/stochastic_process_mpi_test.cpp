@@ -1,5 +1,5 @@
-#include "./accs_fixture_advanced.hpp"
-#include "../gtest-mpi-listener.hpp"
+#include "./stochastic_process_fixture.hpp"
+#include "../../gtest-mpi-listener.hpp"
 
 #include <simplemc/accs.hpp>
 #include <simplemc/mpi.hpp>
@@ -15,10 +15,10 @@ constexpr double tol = 1e-7;
 } // namespace
 
 // Fixture class for testing the MPI interface of the simplemc-accs library.
-class SimplemcAccsMPIAdvanced : public SimplemcAccsAdvanced {
+class SimplemcAccsMPIStochasticProcess : public SimplemcAccsStochasticProcess {
 protected:
     void SetUp() override {
-        SimplemcAccsAdvanced::SetUp();
+        SimplemcAccsStochasticProcess::SetUp();
         const auto rank = comm.rank();
         nsamples = steps / comm.size();
         for (int i = 0; i < steps; ++i) {
@@ -86,7 +86,7 @@ protected:
 };
 
 // Test MPI routines for mean_acc.
-TEST_F(SimplemcAccsMPIAdvanced, MeanAccumulator) {
+TEST_F(SimplemcAccsMPIStochasticProcess, MeanAccumulator) {
     EXPECT_EQ(macc_std_d.count(), nsamples);
     EXPECT_EQ(macc_wel_d.count(), nsamples);
     EXPECT_EQ(macc_std_c.count(), nsamples);
@@ -118,7 +118,7 @@ TEST_F(SimplemcAccsMPIAdvanced, MeanAccumulator) {
 }
 
 // Test MPI routines for var_acc.
-TEST_F(SimplemcAccsMPIAdvanced, VarianceAccumulator) {
+TEST_F(SimplemcAccsMPIStochasticProcess, VarianceAccumulator) {
     EXPECT_EQ(vacc_std_d.count(), nsamples);
     EXPECT_EQ(vacc_wel_d.count(), nsamples);
     EXPECT_EQ(vacc_std_c.count(), nsamples);
@@ -158,7 +158,7 @@ TEST_F(SimplemcAccsMPIAdvanced, VarianceAccumulator) {
 }
 
 // Test MPI routines for covar_acc.
-TEST_F(SimplemcAccsMPIAdvanced, CovarianceAccumulator) {
+TEST_F(SimplemcAccsMPIStochasticProcess, CovarianceAccumulator) {
     using namespace simplemc;
     EXPECT_EQ(cacc_std_d.count(), nsamples);
     EXPECT_EQ(cacc_wel_d.count(), nsamples);
@@ -199,7 +199,7 @@ TEST_F(SimplemcAccsMPIAdvanced, CovarianceAccumulator) {
 }
 
 // Test MPI routines for block_acc.
-TEST_F(SimplemcAccsMPIAdvanced, BlockAccumulator) {
+TEST_F(SimplemcAccsMPIStochasticProcess, BlockAccumulator) {
     EXPECT_EQ(blacc_wel_d.total_count(), nsamples);
     EXPECT_EQ(exp_blacc_wel_d.total_count(), steps);
 
@@ -211,7 +211,7 @@ TEST_F(SimplemcAccsMPIAdvanced, BlockAccumulator) {
 }
 
 // Test MPI routines for batch_acc.
-TEST_F(SimplemcAccsMPIAdvanced, BatchAccumulator) {
+TEST_F(SimplemcAccsMPIStochasticProcess, BatchAccumulator) {
     const auto rank = comm.rank();
     const auto size = comm.size();
     const auto nbatches = 4;

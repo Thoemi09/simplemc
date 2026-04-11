@@ -10,7 +10,7 @@
 # SIMPLEMC_FETCH_EIGEN3: Fetch Eigen3 from gitlab.
 # SIMPLEMC_FETCH_NLOHMANN_JSON: Fetch nlohmann_json from github.
 # SIMPLEMC_DISABLE_WARNINGS: Disable stricter compilation warnings.
-# SIMPLEMC_BUILD_ADVANCED_TESTS: Build advanced tests.
+# SIMPLEMC_BUILD_STOCHASTIC_PROCESS_TESTS: Build stochastic process tests.
 
 cmake_minimum_required(VERSION 3.24)
 project(simplemc
@@ -50,7 +50,7 @@ option(SIMPLEMC_FETCH_RANGEV3 "Fetch range-v3 from github" ON)
 option(SIMPLEMC_FETCH_EIGEN3 "Fetch Eigen3 from gitlab" ON)
 option(SIMPLEMC_FETCH_NLOHMANN_JSON "Fetch nlohmann_json from github" ON)
 option(SIMPLEMC_DISABLE_WARNINGS "Disable stricter compilation warnings" ON)
-option(SIMPLEMC_BUILD_ADVANCED_TESTS "Build advanced tests" OFF)
+option(SIMPLEMC_BUILD_STOCHASTIC_PROCESS_TESTS "Build stochastic process tests" OFF)
 
 # output user options
 message(STATUS "===============================================")
@@ -71,7 +71,7 @@ message(STATUS "Fetch range-v3: ${SIMPLEMC_FETCH_RANGEV3}")
 message(STATUS "Fetch Eigen3: ${SIMPLEMC_FETCH_EIGEN3}")
 message(STATUS "Fetch nlohmann_json: ${SIMPLEMC_FETCH_NLOHMANN_JSON}")
 message(STATUS "Disable stricter compiler warnings: ${SIMPLEMC_DISABLE_WARNINGS}")
-message(STATUS "Build advanced tests: ${SIMPLEMC_BUILD_ADVANCED_TESTS}")
+message(STATUS "Build stochastic process tests: ${SIMPLEMC_BUILD_STOCHASTIC_PROCESS_TESTS}")
 message(STATUS "-----------------------------------------------")
 
 #########################
