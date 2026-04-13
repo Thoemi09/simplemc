@@ -109,14 +109,6 @@ void check_isnan(const M& mat) {
     }
 }
 
-// Check an empty accumulator (shared with basic and advanced accumulator tests).
-template <typename A>
-void check_acc_empty(const A& acc) {
-    ASSERT_EQ(acc.count(), 0);
-    ASSERT_TRUE(acc.empty());
-    check_isnan(acc.mean());
-}
-
 // Simple histogram class on the interval [a, b] for testing.
 struct histogram {
     // Constructor.

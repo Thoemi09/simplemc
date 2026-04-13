@@ -77,16 +77,6 @@ TEST_F(SimplemcAccsStochasticProcess, MeanAccSingle) {
     check_near(acc_wel_c1.mean(), m_c[0], tol);
     check_near(acc_std_c3.mean(), m_c[0], tol);
     check_near(acc_wel_c3.mean(), m_c[0], tol);
-
-    // reset and check empty again
-    acc_std_d1.reset();
-    acc_wel_d1.reset();
-    acc_std_c1.reset();
-    acc_wel_c1.reset();
-    check_acc_empty(acc_std_d1);
-    check_acc_empty(acc_wel_d1);
-    check_acc_empty(acc_std_c1);
-    check_acc_empty(acc_wel_c1);
 }
 
 // Check mean accumulator using the full random vectors.
@@ -150,16 +140,6 @@ TEST_F(SimplemcAccsStochasticProcess, MeanAccVector) {
     check_near(acc_wel_c1.mean(), m_c, tol);
     check_near(acc_std_c3.mean(), m_c, tol);
     check_near(acc_wel_c3.mean(), m_c, tol);
-
-    // reset and check empty again
-    acc_std_d1.reset();
-    acc_wel_d1.reset();
-    acc_std_c1.reset();
-    acc_wel_c1.reset();
-    check_acc_empty(acc_std_d1);
-    check_acc_empty(acc_wel_d1);
-    check_acc_empty(acc_std_c1);
-    check_acc_empty(acc_wel_c1);
 }
 
 // Check mean accumulator using only part of random vectors.

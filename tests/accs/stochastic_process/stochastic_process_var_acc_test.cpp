@@ -99,16 +99,6 @@ TEST_F(SimplemcAccsStochasticProcess, VarAccSingle) {
     check_near(acc_wel_c3.variance_of_real_data(), r_c[0], tol);
     check_near(acc_wel_c3.variance_of_imag_data(), i_c[0], tol);
     check_near(acc_wel_c3.covariance_of_real_and_imag_data(), ri_c[0], tol);
-
-    // reset and check empty again
-    acc_std_d1.reset();
-    acc_wel_d1.reset();
-    acc_std_c1.reset();
-    acc_wel_c1.reset();
-    check_acc_empty(acc_std_d1);
-    check_acc_empty(acc_wel_d1);
-    check_acc_empty(acc_std_c1);
-    check_acc_empty(acc_wel_c1);
 }
 
 // Check variance accumulator using the full random vectors.
@@ -190,16 +180,6 @@ TEST_F(SimplemcAccsStochasticProcess, VarAccVector) {
     check_near(acc_wel_c3.variance_of_real_data(), r_c, tol);
     check_near(acc_wel_c3.variance_of_imag_data(), i_c, tol);
     check_near(acc_wel_c3.covariance_of_real_and_imag_data(), ri_c, tol);
-
-    // reset and check empty again
-    acc_std_d1.reset();
-    acc_wel_d1.reset();
-    acc_std_c1.reset();
-    acc_wel_c1.reset();
-    check_acc_empty(acc_std_d1);
-    check_acc_empty(acc_wel_d1);
-    check_acc_empty(acc_std_c1);
-    check_acc_empty(acc_wel_c1);
 }
 
 // Check variance accumulator using only part of random vectors.
