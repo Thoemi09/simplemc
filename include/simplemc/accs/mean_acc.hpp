@@ -24,7 +24,6 @@
 #include <cstdint>
 #include <optional>
 #include <type_traits>
-#include <vector>
 
 namespace simplemc {
 
@@ -136,7 +135,7 @@ public:
 
     /* Friend declarations. */
     friend class multivalue_acc<mean_acc>;
-    friend std::vector<mean_acc> mpi_collect(const mpi::communicator&, const batch_acc<sample_type, varalg()>&, bool);
+    friend class batch_acc<sample_type, varalg()>;
 
 private:
     // Add a single value to the accumulator without increasing the count (the given count is assumed
