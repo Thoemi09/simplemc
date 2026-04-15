@@ -1,219 +1,272 @@
-#include "./accs_fixture.hpp"
+#include "./accs_test_traits.hpp"
 #include "../gtest-mpi-listener.hpp"
 
 #include <simplemc/accs.hpp>
 #include <simplemc/accs/concepts.hpp>
 #include <simplemc/mpi.hpp>
 
+#include <cstddef>
+#include <vector>
+
 namespace {
 
 using namespace simplemc;
-constexpr auto standard = varalg::standard;
-constexpr auto welford = varalg::welford;
+using namespace test_detail;
 
 } // namespace
 
-// MPI fixture: distributes fixture data across ranks
-// and provides the communicator.
-class SimplemcAccsMPI : public SimplemcAccs {
+// MPI fixture: provides the communicator and rank info.
+template <typename Tag>
+class SimplemcAccsMPI : public ::testing::Test {
 protected:
     void SetUp() override {
-        SimplemcAccs::SetUp();
-        rank_ = comm_.rank();
-        size_ = comm_.size();
+        rank = comm.rank();
+        size = comm.size();
     }
 
-    simplemc::mpi::communicator comm_;
-    int rank_ { 0 };
-    int size_ { 0 };
+    simplemc::mpi::communicator comm;
+    int rank { 0 };
+    int size { 0 };
 };
+TYPED_TEST_SUITE(SimplemcAccsMPI, AllAccTypes);
 
-// Test mpi_collect for mean_acc with static vectors.
-TEST_F(SimplemcAccsMPI, MeanAccCollectVector) {
-    // Each rank gets vec_d_data[rank % 4].
-    mean_acc_static<double, 3> acc;
-    acc << vec_d_data[rank_ % vec_d_n];
+// Mean accumulator MPI test.
+// Each rank accumulates one sample.
+TYPED_TEST(SimplemcAccsMPI, MeanAccCollectSingleSample) {
+    using T = typename TypeParam::sample_t;
+    constexpr auto A = TypeParam::alg;
+    using acc_t = mean_acc<T, A>;
 
-    auto res = mpi_collect(comm_, acc);
-    ASSERT_EQ(res.count(), static_cast<std::uint64_t>(size_));
+    auto data = make_data<T>();
+    auto acc = make_empty<acc_t, T>();
+    acc << data[this->rank % N];
 
-    // With 4 ranks, each feeding one of the 4 vec_d_data
-    // samples, the mean should converge to vec_d_mean.
-    if (size_ == vec_d_n) {
-        check_near(res.mean(), vec_d_mean, 1e-14);
+    auto res = mpi_collect(this->comm, acc);
+
+    auto ref = make_empty<acc_t, T>();
+    for (int r = 0; r < this->size; ++r) {
+        ref << data[r % N];
     }
+    check_acc_equal(res, ref);
 }
 
-// Test mpi_collect for mean_acc with scalar double.
-TEST_F(SimplemcAccsMPI, MeanAccCollectScalar) {
-    // Each rank accumulates one scalar.
-    mean_acc<double> acc;
-    acc << static_cast<double>(rank_ + 1);
+// Mean accumulator MPI test.
+// Each rank accumulates strided samples.
+TYPED_TEST(SimplemcAccsMPI, MeanAccCollectStrided) {
+    using T = typename TypeParam::sample_t;
+    constexpr auto A = TypeParam::alg;
+    using acc_t = mean_acc<T, A>;
 
-    auto res = mpi_collect(comm_, acc);
-    ASSERT_EQ(res.count(), static_cast<std::uint64_t>(size_));
-
-    // Mean of {1, 2, ..., size} = (size+1)/2.
-    const double expected_mean =
-        (static_cast<double>(size_) + 1.0) / 2.0;
-    check_near(res.mean(), expected_mean, 1e-14);
-}
-
-// Test mpi_collect for mean_acc with scalar complex.
-TEST_F(SimplemcAccsMPI, MeanAccCollectComplex) {
-    // Each rank gets cplx_5[rank % 5].
-    mean_acc<cplx> acc;
-    acc << cplx_5[rank_ % cplx_5_n];
-
-    auto res = mpi_collect(comm_, acc);
-    ASSERT_EQ(res.count(), static_cast<std::uint64_t>(size_));
-
-    if (size_ == cplx_5_n) {
-        check_near(res.mean(), cplx_5_mean, 1e-14);
+    auto data = make_data<T>();
+    auto acc = make_empty<acc_t, T>();
+    for (int i = this->rank; i < N; i += this->size) {
+        acc << data[i];
     }
-}
 
-// Test mpi_collect for var_acc with static vectors.
-TEST_F(SimplemcAccsMPI, VarAccCollectVector) {
-    // Each rank gets vec_d_data[rank % 4].
-    var_acc_static<double, 3> acc;
-    acc << vec_d_data[rank_ % vec_d_n];
+    auto res = mpi_collect(this->comm, acc);
 
-    auto res = mpi_collect(comm_, acc);
-    ASSERT_EQ(res.count(), static_cast<std::uint64_t>(size_));
-
-    if (size_ == vec_d_n) {
-        check_near(res.mean(), vec_d_mean, 1e-14);
-        check_near(
-            res.variance_of_data(), vec_d_var, 1e-14);
+    auto ref = make_empty<acc_t, T>();
+    for (int i = 0; i < N; ++i) {
+        ref << data[i];
     }
+    check_acc_equal(res, ref);
 }
 
-// Test mpi_collect for var_acc with scalar double.
-TEST_F(SimplemcAccsMPI, VarAccCollectScalar) {
-    // Each rank accumulates one scalar.
-    var_acc<double> acc;
-    acc << static_cast<double>(rank_ + 1);
+// Mean accumulator MPI test.
+// Only rank 0 accumulates all samples, others are empty.
+TYPED_TEST(SimplemcAccsMPI, MeanAccCollectAsymmetric) {
+    using T = typename TypeParam::sample_t;
+    constexpr auto A = TypeParam::alg;
+    using acc_t = mean_acc<T, A>;
 
-    auto res = mpi_collect(comm_, acc);
-    ASSERT_EQ(res.count(), static_cast<std::uint64_t>(size_));
-
-    // Mean of {1, 2, ..., size} = (size+1)/2.
-    const double expected_mean =
-        (static_cast<double>(size_) + 1.0) / 2.0;
-    check_near(res.mean(), expected_mean, 1e-14);
-}
-
-// Test mpi_collect for var_acc with scalar complex.
-TEST_F(SimplemcAccsMPI, VarAccCollectComplex) {
-    // Each rank gets cplx_5[rank % 5].
-    var_acc<cplx> acc;
-    acc << cplx_5[rank_ % cplx_5_n];
-
-    auto res = mpi_collect(comm_, acc);
-    ASSERT_EQ(res.count(), static_cast<std::uint64_t>(size_));
-
-    if (size_ == cplx_5_n) {
-        check_near(res.mean(), cplx_5_mean, 1e-14);
-        check_near(res.variance_of_real_data(),
-            cplx_5_var_re, 1e-14);
-        check_near(res.variance_of_imag_data(),
-            cplx_5_var_im, 1e-14);
-    }
-}
-
-// Test mpi_collect for covar_acc with static vectors.
-TEST_F(SimplemcAccsMPI, CovarAccCollectVector) {
-    covar_acc_static<double, 3> acc;
-    acc << vec_d_data[rank_ % vec_d_n];
-
-    auto res = mpi_collect(comm_, acc);
-    ASSERT_EQ(res.count(), static_cast<std::uint64_t>(size_));
-
-    if (size_ == vec_d_n) {
-        check_near(res.mean(), vec_d_mean, 1e-14);
-        // Check full covariance matrix.
-        auto cov = res.covariance_of_data();
-        for (int i = 0; i < 3; ++i) {
-            for (int j = 0; j < 3; ++j) {
-                check_near(cov(i, j), vec_d_cov(i, j), 1e-14);
-            }
+    auto data = make_data<T>();
+    auto acc = make_empty<acc_t, T>();
+    if (this->rank == 0) {
+        for (const auto& x : data) {
+            acc << x;
         }
     }
-}
 
-// Test mpi_collect for covar_acc with scalar complex.
-TEST_F(SimplemcAccsMPI, CovarAccCollectComplex) {
-    // Each rank gets cplx_5[rank % 5].
-    covar_acc<cplx> acc;
-    acc << cplx_5[rank_ % cplx_5_n];
+    auto res = mpi_collect(this->comm, acc);
 
-    auto res = mpi_collect(comm_, acc);
-    ASSERT_EQ(res.count(), static_cast<std::uint64_t>(size_));
-
-    if (size_ == cplx_5_n) {
-        check_near(res.mean(), cplx_5_mean, 1e-14);
+    auto ref = make_empty<acc_t, T>();
+    for (const auto& x : data) {
+        ref << x;
     }
+    check_acc_equal(res, ref);
 }
 
-// Test mpi_collect for block_acc<var_acc>.
-TEST_F(SimplemcAccsMPI, BlockVarAccCollect) {
-    // Each rank accumulates 2 samples with block_size = 1
-    // so each block is a single sample.
-    block_acc<var_acc<double>> acc(1);
+// Variance accumulator MPI test.
+// Each rank accumulates one sample.
+TYPED_TEST(SimplemcAccsMPI, VarAccCollectSingleSample) {
+    using T = typename TypeParam::sample_t;
+    constexpr auto A = TypeParam::alg;
+    using acc_t = var_acc<T, A>;
 
-    // Rank 0: {1,2}, Rank 1: {3,4}, etc.
-    for (int i = 0; i < 2; ++i) {
-        const auto idx = rank_ * 2 + i;
-        // Use modular indexing for safety with different
-        // rank counts.
-        acc << dbl_5[idx % dbl_5_n];
+    auto data = make_data<T>();
+    auto acc = make_empty<acc_t, T>();
+    acc << data[this->rank % N];
+
+    auto res = mpi_collect(this->comm, acc);
+
+    auto ref = make_empty<acc_t, T>();
+    for (int r = 0; r < this->size; ++r) {
+        ref << data[r % N];
     }
-
-    auto res = mpi_collect(comm_, acc);
-    // After collecting, total_count should increase.
-    ASSERT_GE(res.total_count(), acc.total_count());
+    check_acc_equal(res, ref);
 }
 
-// Test mpi_collect for block_acc<covar_acc>.
-TEST_F(SimplemcAccsMPI, BlockCovarAccCollect) {
-    // Each rank accumulates 2 samples with block_size = 1.
-    block_acc<covar_acc<double>> acc(1);
+// Variance accumulator MPI test.
+// Each rank accumulates strided samples.
+TYPED_TEST(SimplemcAccsMPI, VarAccCollectStrided) {
+    using T = typename TypeParam::sample_t;
+    constexpr auto A = TypeParam::alg;
+    using acc_t = var_acc<T, A>;
 
-    for (int i = 0; i < 2; ++i) {
-        const auto idx = rank_ * 2 + i;
-        acc << dbl_5[idx % dbl_5_n];
+    auto data = make_data<T>();
+    auto acc = make_empty<acc_t, T>();
+    for (int i = this->rank; i < N; i += this->size) {
+        acc << data[i];
     }
 
-    auto res = mpi_collect(comm_, acc);
-    ASSERT_GE(res.total_count(), acc.total_count());
+    auto res = mpi_collect(this->comm, acc);
+
+    auto ref = make_empty<acc_t, T>();
+    for (int i = 0; i < N; ++i) {
+        ref << data[i];
+    }
+    check_acc_equal(res, ref);
 }
 
-// Test mpi_collect for batch_acc.
-TEST_F(SimplemcAccsMPI, BatchAccCollect) {
-    // Each rank accumulates enough samples to produce full batches.
-    batch_acc<double> acc(1, 2);
+// Covariance accumulator MPI test.
+// Each rank accumulates one sample.
+TYPED_TEST(SimplemcAccsMPI, CovarAccCollectSingleSample) {
+    using T = typename TypeParam::sample_t;
+    constexpr auto A = TypeParam::alg;
+    using acc_t = covar_acc<T, A>;
+
+    auto data = make_data<T>();
+    auto acc = make_empty<acc_t, T>();
+    acc << data[this->rank % N];
+
+    auto res = mpi_collect(this->comm, acc);
+
+    auto ref = make_empty<acc_t, T>();
+    for (int r = 0; r < this->size; ++r) {
+        ref << data[r % N];
+    }
+    check_acc_equal(res, ref);
+}
+
+// Covariance accumulator MPI test.
+// Each rank accumulates strided samples.
+TYPED_TEST(SimplemcAccsMPI, CovarAccCollectStrided) {
+    using T = typename TypeParam::sample_t;
+    constexpr auto A = TypeParam::alg;
+    using acc_t = covar_acc<T, A>;
+
+    auto data = make_data<T>();
+    auto acc = make_empty<acc_t, T>();
+    for (int i = this->rank; i < N; i += this->size) {
+        acc << data[i];
+    }
+
+    auto res = mpi_collect(this->comm, acc);
+
+    auto ref = make_empty<acc_t, T>();
+    for (int i = 0; i < N; ++i) {
+        ref << data[i];
+    }
+    check_acc_equal(res, ref);
+}
+
+// Block accumulator MPI test.
+// block_acc<var_acc> with strided data distribution.
+TYPED_TEST(SimplemcAccsMPI, BlockVarAccCollect) {
+    using T = typename TypeParam::sample_t;
+    constexpr auto A = TypeParam::alg;
+    using inner_t = var_acc<T, A>;
+    using acc_t = block_acc<inner_t>;
+
+    auto data = make_data<T>();
+    auto acc = make_empty_block<acc_t, T>(5);
+    for (int i = this->rank; i < N; i += this->size) {
+        acc << data[i];
+    }
+
+    auto res = mpi_collect(this->comm, acc);
+
+    // build reference: simulate per-rank blocking, then merge inner accumulators
+    auto ref = make_empty<inner_t, T>();
+    for (int r = 0; r < this->size; ++r) {
+        auto local = make_empty_block<acc_t, T>(5);
+        for (int i = r; i < N; i += this->size) {
+            local << data[i];
+        }
+        ref << local.accumulator();
+    }
+    check_acc_equal(res.accumulator(), ref);
+}
+
+// Block accumulator MPI test.
+// block_acc<covar_acc> with strided data distribution.
+TYPED_TEST(SimplemcAccsMPI, BlockCovarAccCollect) {
+    using T = typename TypeParam::sample_t;
+    constexpr auto A = TypeParam::alg;
+    using inner_t = covar_acc<T, A>;
+    using acc_t = block_acc<inner_t>;
+
+    auto data = make_data<T>();
+    auto acc = make_empty_block<acc_t, T>(5);
+    for (int i = this->rank; i < N; i += this->size) {
+        acc << data[i];
+    }
+
+    auto res = mpi_collect(this->comm, acc);
+
+    // build reference: simulate per-rank blocking, then merge inner accumulators
+    auto ref = make_empty<inner_t, T>();
+    for (int r = 0; r < this->size; ++r) {
+        auto local = make_empty_block<acc_t, T>(5);
+        for (int i = r; i < N; i += this->size) {
+            local << data[i];
+        }
+        ref << local.accumulator();
+    }
+    check_acc_equal(res.accumulator(), ref);
+}
+
+// Batch accumulator MPI test.
+// Each rank adds 4 rank-specific samples, collect and compare.
+TYPED_TEST(SimplemcAccsMPI, BatchAccCollect) {
+    using T = typename TypeParam::sample_t;
+    constexpr auto A = TypeParam::alg;
+    using acc_t = batch_acc<T, A>;
+    using macc_t = typename acc_t::mean_acc_type;
+
+    auto acc = make_empty_batch<acc_t, T>(2);
     for (int i = 0; i < 4; ++i) {
-        acc << static_cast<double>(rank_ * 4 + i + 1);
+        acc << make_sample<T>(this->rank * 4 + i);
     }
 
-    auto res = mpi_collect(comm_, acc, false);
-    // Each rank contributes its full batches.
-    ASSERT_FALSE(res.empty());
-}
+    auto res = mpi_collect(this->comm, acc, false);
 
-// Test multiple samples per rank with merging.
-TEST_F(SimplemcAccsMPI, MeanAccMultipleSamples) {
-    // Rank 0: all 5 dbl_5 samples.
-    // Other ranks: empty.
-    mean_acc<double> acc;
-    if (rank_ == 0) {
-        for (const auto& x : dbl_5) { acc << x; }
+    // build reference: simulate each rank's batch_acc and collect all batches
+    std::vector<macc_t> ref_batches;
+    for (int r = 0; r < this->size; ++r) {
+        auto local = make_empty_batch<acc_t, T>(2);
+        for (int i = 0; i < 4; ++i) {
+            local << make_sample<T>(r * 4 + i);
+        }
+        for (const auto& b : local.batches()) {
+            ref_batches.push_back(b);
+        }
     }
 
-    auto res = mpi_collect(comm_, acc);
-    ASSERT_EQ(res.count(), dbl_5_n);
-    check_near(res.mean(), dbl_5_mean, 1e-14);
+    ASSERT_EQ(res.size(), ref_batches.size());
+    for (std::size_t i = 0; i < res.size(); ++i) {
+        check_acc_equal(res[i], ref_batches[i]);
+    }
 }
 
 // Custom main for MPI.
@@ -222,18 +275,13 @@ int main(int argc, char** argv) {
 
     MPI_Init(&argc, &argv);
 
-    ::testing::AddGlobalTestEnvironment(
-        new GTestMPIListener::MPIEnvironment);
+    ::testing::AddGlobalTestEnvironment(new GTestMPIListener::MPIEnvironment);
 
-    ::testing::TestEventListeners& listeners =
-        ::testing::UnitTest::GetInstance()->listeners();
+    ::testing::TestEventListeners& listeners = ::testing::UnitTest::GetInstance()->listeners();
 
-    ::testing::TestEventListener* l =
-        listeners.Release(listeners.default_result_printer());
+    ::testing::TestEventListener* l = listeners.Release(listeners.default_result_printer());
 
-    listeners.Append(
-        new GTestMPIListener::MPIWrapperPrinter(
-            l, MPI_COMM_WORLD));
+    listeners.Append(new GTestMPIListener::MPIWrapperPrinter(l, MPI_COMM_WORLD));
 
     return RUN_ALL_TESTS();
 }
