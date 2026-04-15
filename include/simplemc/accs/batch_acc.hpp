@@ -219,8 +219,8 @@ public:
         acc_batches_(std::move(acc_batches)),
         bcount_(full_batches_[0].count() == 0 ? 1 : full_batches_[0].count()) {
         // find the accumulating batch, i.e. the first batch with count < bcount_
-        auto it = std::upper_bound(acc_batches_.begin(), acc_batches_.end(), bcount_,
-            [](auto val, const auto& acc) { return val < acc.count(); });
+        auto it = std::find_if(acc_batches_.begin(), acc_batches_.end(),
+            [this](const auto& acc) { return acc.count() < bcount_; });
         bidx_ = static_cast<std::size_t>(std::distance(acc_batches_.begin(), it));
 
         // check the batches
