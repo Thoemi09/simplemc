@@ -2,6 +2,7 @@
 
 #include <simplemc/accs/concepts.hpp>
 #include <simplemc/accs/utils.hpp>
+#include <simplemc/accs/var_acc.hpp>
 #include <simplemc/accs/varalg.hpp>
 #include <simplemc/numeric/eigen.hpp>
 #include <simplemc/utils/ranges.hpp>
@@ -190,4 +191,34 @@ TEST(SimplemcAccsUtils, ZeroSample) {
     auto z3 = zero_sample(v3);
     EXPECT_EQ(z3.size(), 3);
     check_equal(z3, Eigen::Vector3d::Zero());
+}
+
+// Standard error tests.
+template <typename Tag>
+class SimplemcAccsStderror : public ::testing::Test {};
+TYPED_TEST_SUITE(SimplemcAccsStderror, AllAccTypes);
+
+TYPED_TEST(SimplemcAccsStderror, StderrorEqualsSqrtVariance) {
+    using T = typename TypeParam::sample_t;
+    constexpr varalg A = TypeParam::alg;
+
+    auto data = make_data<T>();
+    auto acc = make_empty<var_acc<T, A>, T>();
+    for (const auto& x : data) {
+        acc << x;
+    }
+
+    auto se = stderror(acc);
+    auto var = acc.variance();
+
+    if constexpr (is_scalar_sample_v<T>) {
+        EXPECT_DOUBLE_EQ(se, std::sqrt(var));
+        EXPECT_GT(se, 0.0);
+    } else {
+        auto expected_se = var.cwiseSqrt().eval();
+        check_near(se, expected_se, 1e-14);
+        for (long j = 0; j < se.size(); ++j) {
+            EXPECT_GT(se(j), 0.0);
+        }
+    }
 }

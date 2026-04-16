@@ -1195,10 +1195,10 @@
  * @details Often we are interested in functions of expectation values and not just the expectation
  * values themselves, i.e.
  * \f[
- *   f(\mathrm{E}[\mathbf{Z}_1], \mathrm{E}[\mathbf{Z}_2], \dots) \approx
- *   f(\overline{\mathbf{z}_1}^{(N)}, \overline{\mathbf{z}_2}^{(N)}, \dots) \; .
+ *   f_{\text{exact}} = f(\mathrm{E}[\mathbf{Z}_1], \mathrm{E}[\mathbf{Z}_2], \dots) \approx
+ *   f(\overline{\mathbf{z}_1}^{(N)}, \overline{\mathbf{z}_2}^{(N)}, \dots) = f_{\text{naive}} \; .
  * \f]
- * Here, \f$ f \f$ can be real/complex scalar/vector valued function.
+ * Here, \f$ f \f$ can a be real/complex scalar/vector valued function.
  *
  * @note It is important to distinguish between \f$ f(\mathrm{E}[\mathbf{Z}_1],
  * \mathrm{E}[\mathbf{Z}_2], \dots) \f$ and \f$ \mathrm{E}[f(\mathbf{Z}_1, \mathbf{Z}_2, \dots)] \f$.
@@ -1208,15 +1208,13 @@
  * the notation from @ref simplemc-accs-stats. Generalizations to complex and/or vector valued
  * functions are straight forward.
  *
- * It can be shown, that the approximation \f$ f(\overline{\mathbf{z}_1}^{(N)},
- * \overline{\mathbf{z}_2}^{(N)}, \dots) \f$ has a bias of order \f$ \mathcal{O}(1/N) \f$ for
- * non-linear functions \f$ f \f$. Furthermore, it is not trivial to propagate the error bars of the
- * individual expectation values to get the error bars of our estimate for \f$ f \f$, i.e. to
- * calculate
+ * It can be shown, that the approximation \f$ f_{\text{naive}} \f$ has a bias of order \f$ \mathcal{O}
+ * (1/N) \f$ for non-linear functions \f$ f \f$. Furthermore, it is not trivial to propagate the error 
+ * bars of the individual expectation values to get the error bars of our estimate for \f$ f \f$, i.e. 
+ * to calculate
  * \f[
  *   \mathrm{Var}[f(\overline{\mathbf{Z}_1}, \overline{\mathbf{Z}_2}, \dots)] =
- *   \mathrm{E}\left[ \left( f(\overline{\mathbf{z}_1}^{(N)}, \overline{\mathbf{z}_2}^{(N)}, \dots) -
- *   f(\mathrm{E}[\mathbf{Z}_1], \mathrm{E}[\mathbf{Z}_2], \dots) \right)^2 \right] \; ,
+ *   \mathrm{E}\left[ \left( f_{\text{naive}} - f_{\text{exact}}  \right)^2 \right] \; ,
  * \f]
  * because it involves evaluating derivatives of \f$ f \f$ at the expectation values and to keep track
  * of various variances and covariances.
@@ -1247,15 +1245,28 @@
  * \f[
  *   f(\mathrm{E}[\mathbf{Z}_1], \mathrm{E}[\mathbf{Z}_2], \dots) \approx N
  *   f(\overline{\mathbf{z}_1}^{(N)}, \overline{\mathbf{z}_2}^{(N)}, \dots) - (N - 1)
- *   \overline{f}_{\text{JK}} \; .
+ *   \overline{f}_{\text{JK}} = \overline{f}_{\text{corr}} \; .
  * \f]
  *
  * Additionally, we can use the \f$ f_{[i]}^{(N-1)} \f$ and \f$ \overline{f}_{\text{JK}} \f$ to
- * approximate the variance of \f$ f \f$ (similar equations hold for covariance matrices \f$
- * s_{\mathbf{f}\mathbf{f}}^2 \f$):
+ * approximate the variance of \f$ f \f$
  * \f[
  *   \mathrm{Var}[f(\overline{\mathbf{Z}_1}, \overline{\mathbf{Z}_2}, \dots)] \approx s_{f}^2 =
- *   \frac{N - 1}{N} \sum_{i=1}^N \left( f_{[i]}^{(N-1)} - \overline{f}_{\text{JK}} \right)^2 \; .
+ *   \frac{N - 1}{N} \sum_{i=1}^N \left( f_{[i]}^{(N-1)} - \overline{f}_{\text{JK}} \right)^2 \; ,
+ * \f]
+ * or the covariance matrix
+ * \f[
+ *   \mathrm{Cov}[\mathbf{f}(\overline{\mathbf{Z}_1}, \overline{\mathbf{Z}_2}, \dots), \mathbf{f}
+ *   (\overline{\mathbf{Z}_1}, \overline{\mathbf{Z}_2}, \dots)] \approx 
+ *   s_{\mathbf{f}\mathbf{f}}^2 = \frac{N - 1}{N} \sum_{i=1}^N \left( \mathbf{f}_{[i]}^{(N-1)} - 
+ *   \overline{\mathbf{f}}_{\text{JK}} \right) \left( \mathbf{f}_{[i]}^{(N-1)} - 
+ *   \overline{\mathbf{f}}_{\text{JK}} \right)^T \; .
+ * \f]
+ * 
+ * Let us also define the jackknife bias estimate
+ * \f[
+ *   b_{\text{JK}} = (N-1) \left[ \overline{f}_{\text{JK}} - f(\overline{\mathbf{z}_1}^{(N)}, 
+ *   \overline{\mathbf{z}_2}^{(N)}, \dots) \right] \; .
  * \f]
  *
  * See <a href="http://arxiv.org/abs/1210.3781v3">Peter Young's notes</a> for more information.

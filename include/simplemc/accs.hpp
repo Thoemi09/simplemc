@@ -21,4 +21,7 @@
 #include <simplemc/accs/autocorr_acc.hpp>
 #include <simplemc/accs/block_acc.hpp>
 
+// resampling
+#include <simplemc/accs/jackknife.hpp>
+
 #endif // SIMPLEMC_ACCS_HPP

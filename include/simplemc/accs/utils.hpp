@@ -16,9 +16,41 @@
 #include <Eigen/Dense>
 
 #include <cassert>
+#include <cmath>
 #include <cstdint>
 #include <optional>
 #include <utility>
+
+namespace simplemc {
+
+/**
+ * @addtogroup simplemc-accs-utils
+ * @{
+ */
+
+/**
+ * @brief Calculate the standard error of the mean from any variance accumulator.
+ *
+ * @details It computes \f$ s_{\overline{\mathbf{X}}} = \sqrt{s_{\overline{\mathbf{X}}}^2} \f$, where
+ * \f$ s_{\overline{\mathbf{X}}}^2 \f$ is the variance returned by the accumulator's `variance()`
+ * method. For vector-valued accumulators, the square root is applied component-wise.
+ *
+ * @tparam A Type satisfying simplemc::variance_accumulator.
+ * @param acc Variance accumulator.
+ * @return Standard error of the mean \f$ s_{\overline{\mathbf{X}}} \f$.
+ */
+template <variance_accumulator A>
+[[nodiscard]] auto stderror(const A& acc) {
+    if constexpr (sample_scalar<typename A::sample_type>) {
+        return std::sqrt(acc.variance());
+    } else {
+        return acc.variance().cwiseSqrt().eval();
+    }
+}
+
+/** @} */
+
+} // namespace simplemc
 
 namespace simplemc::accs {
 
@@ -103,7 +135,7 @@ template <varalg A, eigen_vector_dbl V>
  *
  * Let \f$ S_{\mathbf{X}} \f$ and \f$ S_{\mathbf{Y}} \f$ be two data sets. This function calculates
  * the full (cross-)covariance matrix \f$ s_{\mathbf{X}\mathbf{Y}}^2 \f$. In case, the two data sets
- * are the same, this corresponds to the sample covariance matrix \f$ s_{\mathbf{X}\mathbf{X}}^2 \f$ 
+ * are the same, this corresponds to the sample covariance matrix \f$ s_{\mathbf{X}\mathbf{X}}^2 \f$
  * of the data set.
  *
  * See @ref simplemc-accs-stats-covar for some background information and
