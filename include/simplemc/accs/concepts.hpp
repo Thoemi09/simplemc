@@ -168,6 +168,27 @@ concept covariance_accumulator = variance_accumulator<A> && requires(const A& ac
     { acc.covariance() };
 };
 
+/**
+ * @brief Accumulator that stores its data samples in batches.
+ *
+ * @details In addition to the requirements of simplemc::covariance_accumulator, a batch accumulator
+ * provides access to its full batches as a sized range of simplemc::mean_accumulator objects. This
+ * enables, e.g., delete-one-batch jackknife resampling.
+ *
+ * Let `acc` be an instance of `A`. The requirements for a type `A` to be a batch accumulator are the
+ * following:
+ *
+ * - `A` satisfies simplemc::covariance_accumulator
+ * - `acc.batches()` returns a sized range of simplemc::mean_accumulator objects
+ *
+ * @tparam A Type to check.
+ */
+template <typename A>
+concept batch_accumulator = covariance_accumulator<A> && requires(const A& acc) {
+    { acc.batches() } -> ranges::sized_range;
+    requires mean_accumulator<ranges::range_value_t<decltype(acc.batches())>>;
+};
+
 /** @} */
 
 } // namespace simplemc

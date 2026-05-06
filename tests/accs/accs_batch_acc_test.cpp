@@ -26,7 +26,7 @@ TYPED_TEST(SimplemcAccsBatch, Concepts) {
     using T = typename TypeParam::sample_t;
     constexpr auto A = TypeParam::alg;
 
-    static_assert(covariance_accumulator<batch_acc<T, A>>);
+    static_assert(batch_accumulator<batch_acc<T, A>>);
     static_assert(basic_accumulator<multivalue_acc<batch_acc<T, A>>>);
 }
 

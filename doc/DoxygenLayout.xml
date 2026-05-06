@@ -151,6 +151,7 @@
       <tab type="usergroup" url="@ref simplemc-accs" title="simplemc-accs">
         <tab type="usergroup" url="@ref simplemc-accs-concepts" title="Accumulator concepts">
           <tab type="user" url="@ref simplemc::basic_accumulator" title="basic_accumulator"/>
+          <tab type="user" url="@ref simplemc::batch_accumulator" title="batch_accumulator"/>
           <tab type="user" url="@ref simplemc::covariance_accumulator" title="covariance_accumulator"/>
           <tab type="user" url="@ref simplemc::mean_accumulator" title="mean_accumulator"/>
           <tab type="user" url="@ref simplemc::sample_range" title="sample_range"/>
