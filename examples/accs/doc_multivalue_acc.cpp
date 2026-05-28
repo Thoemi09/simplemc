@@ -1,5 +1,6 @@
 #include <fmt/ranges.h>
 #include <simplemc/accs.hpp>
+#include <simplemc/numeric/eigen.hpp>
 
 #include <vector>
 
@@ -17,5 +18,5 @@ int main() {
     }
 
     // print the mean of the accumulated data
-    fmt::print("Mean: {}\n", acc.mean());
+    fmt::print("Mean: {}\n", simplemc::make_span(acc.mean()));
 }

@@ -1,5 +1,6 @@
 #include <fmt/ranges.h>
 #include <simplemc/accs.hpp>
+#include <simplemc/numeric/eigen.hpp>
 #include <simplemc/utils/to_string.hpp>
 
 #include <random>
@@ -17,6 +18,6 @@ int main() {
     }
 
     // print the mean and covariance matrix of the accumulated data
-    fmt::println("Mean: {}", acc.mean());
+    fmt::println("Mean: {}", simplemc::make_span(acc.mean()));
     fmt::println("Covariance:\n{}", simplemc::to_string(acc.covariance_of_data()));
 }

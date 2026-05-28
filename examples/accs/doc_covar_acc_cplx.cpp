@@ -1,6 +1,7 @@
 #include <fmt/ranges.h>
 #include <fmt/std.h>
 #include <simplemc/accs.hpp>
+#include <simplemc/numeric/eigen.hpp>
 #include <simplemc/utils/to_string.hpp>
 
 #include <complex>
@@ -22,7 +23,7 @@ int main() {
     }
 
     // print the mean and covariance matrices of the real/imaginary parts of the accumulated data
-    fmt::println("Mean: {::.5f}", acc.mean());
+    fmt::println("Mean: {::.5f}", simplemc::make_span(acc.mean()));
     fmt::println("Covariance of real part:\n{}", simplemc::to_string(acc.covariance_of_real_data()));
     fmt::println("Covariance of imaginary part:\n{}", simplemc::to_string(acc.covariance_of_imag_data()));
 }
