@@ -106,7 +106,7 @@ simplemc_fetch_or_find_dependency(
     SHOULD_FETCH ${SIMPLEMC_FETCH_FMT}
     FETCH_CONTENT_NAME fmt
     GIT_REPO https://github.com/fmtlib/fmt
-    GIT_TAG origin/master  # b6cd3561
+    GIT_TAG origin/master  # 0acf106c
     CACHE_OPTIONS "FMT_INSTALL=OFF"
 )
 
@@ -118,7 +118,7 @@ if(NOT SIMPLEMC_USE_STD_RANGES)
         SHOULD_FETCH ${SIMPLEMC_FETCH_RANGEV3}
         FETCH_CONTENT_NAME rangev3
         GIT_REPO https://github.com/ericniebler/range-v3.git
-        GIT_TAG origin/master  # ca1388fb9
+        GIT_TAG origin/master  # 108f93c27
         CACHE_OPTIONS "RANGES_BUILD_CALENDAR_EXAMPLE=OFF"
     )
 endif()
@@ -137,7 +137,7 @@ simplemc_fetch_or_find_dependency(
     SHOULD_FETCH ${SIMPLEMC_FETCH_EIGEN3}
     FETCH_CONTENT_NAME eigen3
     GIT_REPO https://gitlab.com/libeigen/eigen.git
-    GIT_TAG 5.0  # 691009cfa
+    GIT_TAG 5.0  # fc0f148ab
     CACHE_OPTIONS "EIGEN_BUILD_TESTING=OFF"
 )
 
@@ -148,7 +148,7 @@ simplemc_fetch_or_find_dependency(
     SHOULD_FETCH ${SIMPLEMC_FETCH_NLOHMANN_JSON}
     FETCH_CONTENT_NAME nlohmann_json
     GIT_REPO https://github.com/nlohmann/json.git
-    GIT_TAG origin/develop  # 0c9b68e11
+    GIT_TAG origin/develop  # d10879bca
 )
 
 #########################
@@ -163,7 +163,7 @@ if(SIMPLEMC_BUILD_TESTS)
         SHOULD_FETCH ON
         FETCH_CONTENT_NAME googletest
         GIT_REPO https://github.com/google/googletest
-        GIT_TAG main  # 6ec14dfd
+        GIT_TAG main  # 8736d2cd
         CACHE_OPTIONS "INSTALL_GTEST=OFF;BUILD_GMOCK=OFF"
     )
 endif()
