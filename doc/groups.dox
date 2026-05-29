@@ -1192,8 +1192,12 @@
  * @ingroup simplemc-accs
  * @brief Resampling techniques to propagate error bars.
  *
- * @details Often we are interested in functions of expectation values and not just the expectation
- * values themselves, i.e.
+ * @details In the following, we assume that \f$ f : \mathbb{R}^M \to \mathbb{R} \f$ for simplicity
+ * and we use the notation from @ref simplemc-accs-stats. Generalizations to complex and/or vector
+ * valued functions are straight forward.
+ *
+ * Often we are interested in functions of expectation values and not just the expectation values
+ * themselves, i.e.
  * \f[
  *   f_{\text{exact}} = f(\mathrm{E}[\mathbf{Z}_1], \mathrm{E}[\mathbf{Z}_2], \dots) \approx
  *   f(\overline{\mathbf{z}_1}^{(N)}, \overline{\mathbf{z}_2}^{(N)}, \dots) = f_{\text{naive}} \; .
@@ -1204,14 +1208,10 @@
  * \mathrm{E}[\mathbf{Z}_2], \dots) \f$ and \f$ \mathrm{E}[f(\mathbf{Z}_1, \mathbf{Z}_2, \dots)] \f$.
  * They are in general not the same.
  *
- * In the following, we assume that \f$ f : \mathbb{R}^M \to \mathbb{R} \f$ for simplicity and we use
- * the notation from @ref simplemc-accs-stats. Generalizations to complex and/or vector valued
- * functions are straight forward.
- *
- * It can be shown, that the approximation \f$ f_{\text{naive}} \f$ has a bias of order \f$ \mathcal{O}
- * (1/N) \f$ for non-linear functions \f$ f \f$. Furthermore, it is not trivial to propagate the error 
- * bars of the individual expectation values to get the error bars of our estimate for \f$ f \f$, i.e. 
- * to calculate
+ * It can be shown, that the approximation \f$ f_{\text{naive}} \f$ has a bias of order \f$ 
+ * \mathcal{O}(1/N) \f$ for non-linear functions \f$ f \f$. Furthermore, it is not trivial to 
+ * propagate the error bars of the individual expectation values to get the error bars of our estimate 
+ * for \f$ f \f$, i.e. to calculate
  * \f[
  *   \mathrm{Var}[f(\overline{\mathbf{Z}_1}, \overline{\mathbf{Z}_2}, \dots)] =
  *   \mathrm{E}\left[ \left( f_{\text{naive}} - f_{\text{exact}}  \right)^2 \right] \; ,
@@ -1219,10 +1219,10 @@
  * because it involves evaluating derivatives of \f$ f \f$ at the expectation values and to keep track
  * of various variances and covariances.
  *
- * A much more practical approach uses resampling techniques, like the jackknife or the bootstrap
+ * A much more practical approach uses **resampling techniques**, like the jackknife or the bootstrap
  * method. In the following, we will focus on the former, since it is implemented in **simplemc**.
  *
- * In the jackknife method, one considers jackknife samples of the form
+ * In the **jackknife** method, one considers **delete-one samples** of the form
  * \f[
  *   \mathbf{z}_{[i]}^{(N-1)} = \frac{1}{N - 1} \sum_{j \neq i} \mathbf{z}^{(j)} =
  *   \overline{\mathbf{z}}^{(N)} + \frac{\overline{\mathbf{z}}^{(N)} - \mathbf{z}^{(i)}}{N - 1} \; ,
@@ -1230,46 +1230,61 @@
  * where \f$ \mathbf{z}_{[i]}^{(N-1)} \f$ is the sample mean without the i<sup>th</sup> sample and
  * we assume that the individual samples \f$ \mathbf{z}^{(j)} \f$ are statistically independent.
  *
- * The jackknife samples are then used to calculate the quantities
+ * The samples are then used to calculate \f$ N \f$ **jackknife estimates of** \f$ f \f$:
  * \f[
  *   f_{[i]}^{(N-1)} = f(\mathbf{z}_{1[i]}^{(N-1)}, \mathbf{z}_{2[i]}^{(N-1)}, \dots) \; ,
  * \f]
- * which in turn are averaged to get the jackknife estimate
+ * which in turn are averaged to get the **jackknife mean**
  * \f[
  *   \overline{f}_{\text{JK}} = \frac{1}{N} \sum_{i=1}^N f_{[i]}^{(N-1)} \; .
  * \f]
  *
- * Combining \f$ \overline{f}_{\text{JK}} \f$ with the usual estimate
- * \f$ f(\overline{\mathbf{z}_1}^{(N)}, \overline{\mathbf{z}_2}^{(N)}, \dots) \f$, allows us to get
- * rid of the leading bias term:
+ * Combining \f$ \overline{f}_{\text{JK}} \f$ with the naive estimate \f$ f_{\text{naive}} \f$, allows
+ * us to get rid of the leading bias term (**bias corrected estimate**):
  * \f[
- *   f(\mathrm{E}[\mathbf{Z}_1], \mathrm{E}[\mathbf{Z}_2], \dots) \approx N
- *   f(\overline{\mathbf{z}_1}^{(N)}, \overline{\mathbf{z}_2}^{(N)}, \dots) - (N - 1)
- *   \overline{f}_{\text{JK}} = \overline{f}_{\text{corr}} \; .
+ *   f(\mathrm{E}[\mathbf{Z}_1], \mathrm{E}[\mathbf{Z}_2], \dots) \approx
+ *   N f_{\text{naive}} - (N - 1) \overline{f}_{\text{JK}} = \overline{f}_{\text{corr}} \; .
  * \f]
  *
  * Additionally, we can use the \f$ f_{[i]}^{(N-1)} \f$ and \f$ \overline{f}_{\text{JK}} \f$ to
- * approximate the variance of \f$ f \f$
+ * approximate the **variance of** \f$ f \f$
  * \f[
  *   \mathrm{Var}[f(\overline{\mathbf{Z}_1}, \overline{\mathbf{Z}_2}, \dots)] \approx s_{f}^2 =
  *   \frac{N - 1}{N} \sum_{i=1}^N \left( f_{[i]}^{(N-1)} - \overline{f}_{\text{JK}} \right)^2 \; ,
  * \f]
- * or the covariance matrix
+ * the corresponding **standard error**
+ * \f[
+ *   s_{f} = \sqrt{s_{f}^2} \; ,
+ * \f]
+ * or the **covariance matrix of** \f$ f \f$
  * \f[
  *   \mathrm{Cov}[\mathbf{f}(\overline{\mathbf{Z}_1}, \overline{\mathbf{Z}_2}, \dots), \mathbf{f}
- *   (\overline{\mathbf{Z}_1}, \overline{\mathbf{Z}_2}, \dots)] \approx 
- *   s_{\mathbf{f}\mathbf{f}}^2 = \frac{N - 1}{N} \sum_{i=1}^N \left( \mathbf{f}_{[i]}^{(N-1)} - 
- *   \overline{\mathbf{f}}_{\text{JK}} \right) \left( \mathbf{f}_{[i]}^{(N-1)} - 
+ *   (\overline{\mathbf{Z}_1}, \overline{\mathbf{Z}_2}, \dots)] \approx
+ *   s_{\mathbf{f}\mathbf{f}}^2 = \frac{N - 1}{N} \sum_{i=1}^N \left( \mathbf{f}_{[i]}^{(N-1)} -
+ *   \overline{\mathbf{f}}_{\text{JK}} \right) \left( \mathbf{f}_{[i]}^{(N-1)} -
  *   \overline{\mathbf{f}}_{\text{JK}} \right)^T \; .
  * \f]
- * 
- * Let us also define the jackknife bias estimate
+ *
+ * Let us also define the **jackknife bias estimate**
  * \f[
- *   b_{\text{JK}} = (N-1) \left[ \overline{f}_{\text{JK}} - f(\overline{\mathbf{z}_1}^{(N)}, 
- *   \overline{\mathbf{z}_2}^{(N)}, \dots) \right] \; .
+ *   b_{\text{JK}} = (N-1) \left( \overline{f}_{\text{JK}} - f_{\text{naive}} \right) \; .
  * \f]
  *
  * See <a href="http://arxiv.org/abs/1210.3781v3">Peter Young's notes</a> for more information.
+ *
+ * @section simplemc-accs-resampling-api API
+ *
+ * **simplemc** exposes the jackknife method through two simplemc::jackknife() overloads and the
+ * simplemc::jackknife_result return type:
+ * - @ref jackknife_range_overload "simplemc::jackknife(f, rgs...)" — applies the transformation \f$
+ * f \f$ to one or more sample ranges (one delete-one jackknife estimate per data point).
+ * - @ref jackknife_batch_overload "simplemc::jackknife(f, baccs...)" — applies \f$ f \f$ to one or
+ * more simplemc::batch_acc objects (one delete-one-batch jackknife estimate per full batch).
+ * - simplemc::jackknife_result — stores \f$ f_{\text{naive}} \f$ and the covariance accumulator
+ * of the jackknife estimates; exposes simplemc::jackknife_result::naive_mean(),
+ * simplemc::jackknife_result::mean(), simplemc::jackknife_result::variance(),
+ * simplemc::jackknife_result::stderror(), simplemc::jackknife_result::covariance(),
+ * simplemc::jackknife_result::bias(), and simplemc::jackknife_result::bias_corrected_mean().
  */
 
 /**
