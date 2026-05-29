@@ -17,13 +17,14 @@
 | @ref tut_grids_2 | Showcase @ref simplemc-grids-nd |
 | @ref tut_numeric_1 | Working with @ref simplemc-numeric-lattices |
 | @ref tut_numeric_2 | Approximate a function using @ref simplemc-numeric-poly |
+| @ref tut_accs_1 | Estimating errors with @ref simplemc-accs |
 
 @section tut_compilation Compiling the tutorials
 
 All tutorials have been compiled on a MacBook Pro with an Apple M2 Max chip and clang++ v19.1.6
 together with cmake v3.31.3.
 
-Furhtermore, the following dependencies have been used:
+Furthermore, the following dependencies have been used:
 - [open-mpi](https://www.open-mpi.org/) 5.0.1 (installed with brew)
 
 Assuming that the actual tutorial code is in a file `main.cpp`, the following generic `CMakeLists.txt`
