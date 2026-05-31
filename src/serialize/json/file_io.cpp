@@ -1,13 +1,13 @@
 /**
  * @file
- * @brief JSON file IO operations.
+ * @brief JSON file IO operations for the simplemc-serialize-json sublibrary.
  */
 
-#include <simplemc/json/file_io.hpp>
-#include <simplemc/json/json.hpp>
+#include <simplemc/serialize/json/file_io.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
 #include <fmt/format.h>
+#include <nlohmann/json.hpp>
 
 #include <fstream>
 #include <iomanip>

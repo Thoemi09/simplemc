@@ -1288,16 +1288,21 @@
  */
 
 /**
- * @defgroup simplemc-json simplemc-json
- * @brief Extensions to the <a href="https://github.com/nlohmann/json">nlohmann_json</a> library.
+ * @defgroup simplemc-serialize simplemc-serialize
+ * @brief State I/O via the @ref simplemc::output_serializer / @ref simplemc::input_serializer
+ * concepts. Currently ships a JSON backend (@ref simplemc::json_serializer /
+ * @ref simplemc::json_deserializer) on top of <a href="https://github.com/nlohmann/json">
+ * nlohmann_json</a>; HDF5 backend planned.
  *
- * @details **simplemc-json** adds some additional functionality to the <a
- * href="https://github.com/nlohmann/json">nlohmann_json</a> library.
- */
-
-/**
- * @defgroup simplemc-hdf5 simplemc-hdf5
- * @brief HDF5 library.
+ * @defgroup simplemc-serialize-concepts Serializer concepts
+ * @ingroup simplemc-serialize
+ * @brief @ref simplemc::output_serializer and @ref simplemc::input_serializer concepts that backend
+ * classes must satisfy.
+ *
+ * @defgroup simplemc-serialize-json simplemc-serialize-json
+ * @ingroup simplemc-serialize
+ * @brief JSON backend — @ref simplemc::json_serializer, @ref simplemc::json_deserializer,
+ * file IO helpers, and the `nlohmann`-side adapters for `std::complex` and Eigen types.
  */
 
 /**

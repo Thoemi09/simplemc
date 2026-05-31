@@ -108,12 +108,15 @@ It provides
 modify their functionality.
 - Tools and techniques for @ref simplemc-accs-resampling.
 
-## JSON library
+## Serialization library
 
-@ref simplemc-json adds some additional functionality to the [nlohmann_json](https://github.com/nlohmann/json) library:
+@ref simplemc-serialize provides state I/O for **simplemc** types across multiple backends:
 
-- @ref simplemc::basic_json is an abstract base class that makes it easy for deriving types to be serialized/deserialized to JSON.
-- Easy to use functions for writing/reading JSON files in text as well as binary mode.
-- Specialized serializers for `std::complex` and general `std::range` types.
+- @ref simplemc::output_serializer and @ref simplemc::input_serializer concepts.
+- @ref simplemc::json_serializer / @ref simplemc::json_deserializer — JSON backend backed by [nlohmann_json](https://github.com/nlohmann/json).
+- Per-type customization via ADL free functions `simplemc_save(s, value)` / `simplemc_load(s, value)` (or friend declarations for private access).
+- Library types (accumulators, grids, lattices, RNG state) ship with `simplemc_save` / `simplemc_load` overloads in `serialize/library_serializers.hpp` so they round-trip out of the box.
+- Easy-to-use functions for writing/reading JSON files in text and binary modes.
+- Specialized serializers for `std::complex` and Eigen vector/matrix types.
 
 <!-- ## Monte Carlo library -->

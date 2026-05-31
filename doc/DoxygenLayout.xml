@@ -189,9 +189,11 @@
           <tab type="user" url="@ref simplemc::jackknife_result" title="jackknife_result"/>
         </tab>
       </tab>
-      <tab type="usergroup" url="@ref simplemc-json" title="simplemc-json">
-        <tab type="user" url="@ref nlohmann::adl_serializer< std::complex< T > >" title="nlohmann::adl_serializer"/>
-        <tab type="user" url="@ref simplemc::basic_json" title="basic_json"/>
+      <tab type="usergroup" url="@ref simplemc-serialize" title="simplemc-serialize">
+        <tab type="user" url="@ref simplemc::output_serializer" title="output_serializer"/>
+        <tab type="user" url="@ref simplemc::input_serializer" title="input_serializer"/>
+        <tab type="user" url="@ref simplemc::json_serializer" title="json_serializer"/>
+        <tab type="user" url="@ref simplemc::json_deserializer" title="json_deserializer"/>
       </tab>
       <!-- <tab type="usergroup" url="@ref simplemc-mc" title="simplemc-mc">
       </tab> -->
