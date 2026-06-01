@@ -8,7 +8,6 @@
 
 // core
 #include <simplemc/serialize/concepts.hpp>
-#include <simplemc/serialize/serialize_fwd.hpp>
 #include <simplemc/serialize/utils.hpp>
 
 // JSON backend

@@ -6,7 +6,7 @@
 #ifndef SIMPLEMC_SERIALIZE_JSON_FILE_IO_HPP
 #define SIMPLEMC_SERIALIZE_JSON_FILE_IO_HPP
 
-#include <simplemc/serialize/serialize_fwd.hpp>
+#include <nlohmann/json_fwd.hpp>
 
 #include <string>
 
