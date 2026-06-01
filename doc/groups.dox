@@ -1289,19 +1289,24 @@
 
 /**
  * @defgroup simplemc-serialize simplemc-serialize
- * @brief Generic serialization library.
+ * @brief Generic serialization framework.
  * 
- * @details **simplemc-serialize** is split into a header-only generic core and the various backends.
- * @ref simplemc-serialize-core provides the core concepts, ADL customization point, and other 
- * utilities.
+ * @details **simplemc-serialize** provides a generic setup for serializing and deserializing various
+ * **simplemc** types as well as custom user types. It is designed to be extensible and adaptable to 
+ * different serialization backends, allowing users to choose the one that best fits their needs or to 
+ * implement their own.
  * 
- * Supported backends include:
- * - @ref simplemc-serialize-json on top of <a href="https://github.com/nlohmann/json">nlohmann_json
- * </a>.
+ * The @ref simplemc-serialize-core module defines the core concepts and ADL customization point that 
+ * all backends satisfy. It forms the basis for the generic serialization interface.
+ * 
+ * The various backends sit on top of the core and provide concrete implementations of the 
+ * simplemc::serializer and simplemc::deserializer concepts. **simplemc-serialize** ships with the 
+ * following backends:
+ * - @ref simplemc-serialize-json is based on the popular <a href="https://github.com/nlohmann/json">
+ * nlohmann_json</a> library.
  */
 
 /**
- *
  * @defgroup simplemc-serialize-core Core serialization
  * @ingroup simplemc-serialize
  * @brief Header-only core: serializer/deserializer concepts, ADL customization point, and
@@ -1351,7 +1356,7 @@
  */
 
 /**
- * @defgroup simplemc-serialize-json JSON backend
+ * @defgroup simplemc-serialize-json JSON serialization
  * @ingroup simplemc-serialize
  * @brief JSON backend on top of nlohmann_json: serializer/deserializer, file I/O helpers, and
  * nlohmann adapters for non-customized types.

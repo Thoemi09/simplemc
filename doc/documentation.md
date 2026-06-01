@@ -111,18 +111,17 @@ modify their functionality.
 
 ## Serialization library
 
-@ref simplemc-serialize is a generic serialization framework for multiple backends. It is split into
-a backend-agnostic core and one backend per shipped format.
+@ref simplemc-serialize is a generic, extendable serialization framework that support multiple 
+backends. 
 
-It provides
+It is split into a backend-agnostic core library and backend-dependent sublibraries:
 
-- @ref simplemc-serialize-core — header-only core with the @ref simplemc::serializer and
-@ref simplemc::deserializer concepts, the ADL customization point
-(`simplemc_save` / `simplemc_load`), and explicit element-wise helpers for ranges and tuples.
-Library types (accumulators, grids, lattices, RNG state) ship with `simplemc_save` / `simplemc_load`
-overloads next to each class so they round-trip out of the box.
-- @ref simplemc-serialize-json — JSON backend on top of [nlohmann_json](https://github.com/nlohmann/
-json), with @ref simplemc::json_serializer / @ref simplemc::json_deserializer, text- and binary-mode
-file I/O helpers, and nlohmann-side adapters for `std::complex` and Eigen vector/matrix types.
+- The @ref simplemc-serialize-core library is header-only and contains the @ref simplemc::serializer 
+and @ref simplemc::deserializer concepts, the ADL customization point (`simplemc_save` / 
+`simplemc_load`), and other utilities.
+- The @ref simplemc-serialize-json backend is implemented on top of 
+[nlohmann_json](https://github.com/nlohmann/json) and provides @ref simplemc::json_serializer / 
+@ref simplemc::json_deserializer, text- and binary-mode file I/O helpers, and various custom nlohmann 
+adapters.
 
 <!-- ## Monte Carlo library -->
