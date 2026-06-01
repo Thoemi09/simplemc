@@ -8,6 +8,8 @@
 
 #include <simplemc/grids/concepts.hpp>
 #include <simplemc/grids/grid_iterator.hpp>
+#include <simplemc/serialize/concepts.hpp>
+#include <simplemc/serialize/utils.hpp>
 #include <simplemc/utils/ranges.hpp>
 
 #include <array>
@@ -22,11 +24,11 @@ namespace simplemc {
  *
  * @details In the following, we use the notation from @ref simplemc-grids-nd.
  *
- * A simplemc::nd_grid satisfies the simplemc::grid_nd concept. The underlying 1-dimensional grids 
- * need not be of the same type as long as they satisfy the simplemc::grid_1d concept. They are stored 
+ * A simplemc::nd_grid satisfies the simplemc::grid_nd concept. The underlying 1-dimensional grids
+ * need not be of the same type as long as they satisfy the simplemc::grid_1d concept. They are stored
  * in a `std::tuple` and can be accessed via the grids() member function.
  *
- * We use `std::array<long, N>` types to represent multi-dimensional indices \f$ \mathbf{i} = (i_1, 
+ * We use `std::array<long, N>` types to represent multi-dimensional indices \f$ \mathbf{i} = (i_1,
  * \dots, i_N) \in \mathrm{I} \f$ and `std::array<double, N>` types to represent grid points and
  * general points \f$ \mathbf{x} = (x_1, \dots, x_N) \in \mathrm{R} \f$.
  *
@@ -279,6 +281,19 @@ public:
 private:
     tuple_type grids_;
 };
+
+/// `nd_grid` is just a tuple of 1-D grids; @ref save_tuple / @ref load_tuple do the work.
+template <class S, grid_1d... Grids>
+    requires output_serializer<std::remove_cvref_t<S>>
+void simplemc_save(S&& s, const nd_grid<Grids...>& g) {
+    save_tuple(s["grids"], g.grids());
+}
+
+template <class S, grid_1d... Grids>
+    requires input_serializer<std::remove_cvref_t<S>>
+void simplemc_load(S&& s, nd_grid<Grids...>& g) {
+    load_tuple(s["grids"], g.grids());
+}
 
 } // namespace simplemc
 

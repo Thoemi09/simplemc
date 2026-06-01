@@ -15,4 +15,5 @@ target_sources(simplemc-numeric
 target_link_libraries(simplemc-numeric
     PUBLIC
         simplemc::simplemc-grids
+        simplemc::simplemc-serialize-core
         Eigen3::Eigen)

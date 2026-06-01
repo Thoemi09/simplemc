@@ -12,6 +12,7 @@
 #include <simplemc/accs/covar_acc_complex.hpp>
 #include <simplemc/accs/covar_acc_double.hpp>
 #include <simplemc/accs/covar_acc_fwd.hpp>
+#include <simplemc/serialize/concepts.hpp>
 #include <simplemc/utils/ranges.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
@@ -108,6 +109,33 @@ template <varalg A = varalg::welford, sample_range R>
 
     auto const sz = detail::random_sample_size(*ranges::begin(rg));
     return detail::make_acc<autocorr_acc<covar_acc<value_type, A>>>(rg, t, sz);
+}
+
+/**
+ * @brief Serialize a `covar_acc` as `{"count": N, "mdata": [...], "cdata": [[...]]}`.
+ *
+ * @details `cdata` is a matrix for covar_acc; the Eigen `adl_serializer` (in
+ * `serialize/json/serializers.hpp`) handles the JSON round-trip.
+ */
+template <class S, sample_type T, varalg A>
+    requires output_serializer<std::remove_cvref_t<S>>
+void simplemc_save(S&& s, const covar_acc<T, A>& a) {
+    s.save_at("count", a.count());
+    s.save_at("mdata", a.mdata());
+    s.save_at("cdata", a.cdata());
+}
+
+template <class S, sample_type T, varalg A>
+    requires input_serializer<std::remove_cvref_t<S>>
+void simplemc_load(S&& s, covar_acc<T, A>& a) {
+    using ca = covar_acc<T, A>;
+    typename ca::count_type c {};
+    auto md = a.mdata();
+    auto cd = a.cdata();
+    s.load_at("count", c);
+    s.load_at("mdata", md);
+    s.load_at("cdata", cd);
+    a = ca { md, cd, c };
 }
 
 /** @} */

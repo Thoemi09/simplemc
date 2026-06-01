@@ -13,6 +13,7 @@
 #include <simplemc/mpi.hpp>
 #include <simplemc/numeric/eigen.hpp>
 #include <simplemc/numeric/utils.hpp>
+#include <simplemc/serialize/concepts.hpp>
 #include <simplemc/utils/concepts.hpp>
 #include <simplemc/utils/ranges.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
@@ -484,6 +485,31 @@ template <varalg A = varalg::welford, sample_range R>
 
     auto const sz = detail::random_sample_size(*ranges::begin(rg));
     return detail::make_acc<mean_acc<value_type, A>>(rg, t, sz);
+}
+
+/**
+ * @brief Serialize a `mean_acc` as `{"count": N, "mdata": [...]}` via the simplemc-serialize API.
+ *
+ * @details Uses the public `count()` / `mdata()` getters and the `(mdata, count)` constructor for
+ * round-trip. The sticky streaming index is intentionally not serialized — it resets to 0 on
+ * reconstruction.
+ */
+template <class S, sample_type T, varalg A>
+    requires output_serializer<std::remove_cvref_t<S>>
+void simplemc_save(S&& s, const mean_acc<T, A>& a) {
+    s.save_at("count", a.count());
+    s.save_at("mdata", a.mdata());
+}
+
+template <class S, sample_type T, varalg A>
+    requires input_serializer<std::remove_cvref_t<S>>
+void simplemc_load(S&& s, mean_acc<T, A>& a) {
+    using ma = mean_acc<T, A>;
+    typename ma::count_type c {};
+    auto md = a.mdata();
+    s.load_at("count", c);
+    s.load_at("mdata", md);
+    a = ma { md, c };
 }
 
 /** @} */

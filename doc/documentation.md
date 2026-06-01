@@ -115,7 +115,7 @@ modify their functionality.
 - @ref simplemc::output_serializer and @ref simplemc::input_serializer concepts.
 - @ref simplemc::json_serializer / @ref simplemc::json_deserializer — JSON backend backed by [nlohmann_json](https://github.com/nlohmann/json).
 - Per-type customization via ADL free functions `simplemc_save(s, value)` / `simplemc_load(s, value)` (or friend declarations for private access).
-- Library types (accumulators, grids, lattices, RNG state) ship with `simplemc_save` / `simplemc_load` overloads in `serialize/library_serializers.hpp` so they round-trip out of the box.
+- Library types (accumulators, grids, lattices, RNG state) ship with `simplemc_save` / `simplemc_load` overloads next to each class so they round-trip out of the box.
 - Easy-to-use functions for writing/reading JSON files in text and binary modes.
 - Specialized serializers for `std::complex` and Eigen vector/matrix types.
 

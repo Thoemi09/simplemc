@@ -11,6 +11,17 @@
 
 #include "../../test_utils.hpp"
 
+#include <simplemc/accs/batch_acc.hpp>
+#include <simplemc/accs/covar_acc.hpp>
+#include <simplemc/accs/mean_acc.hpp>
+#include <simplemc/accs/var_acc.hpp>
+#include <simplemc/grids/linear_grid.hpp>
+#include <simplemc/grids/nd_grid.hpp>
+#include <simplemc/grids/power_grid.hpp>
+#include <simplemc/grids/symmetric_power_grid.hpp>
+#include <simplemc/numeric/bravais_lattice.hpp>
+#include <simplemc/random/splitmix64.hpp>
+#include <simplemc/random/xoshiro256.hpp>
 #include <simplemc/serialize.hpp>
 
 #include <Eigen/Dense>

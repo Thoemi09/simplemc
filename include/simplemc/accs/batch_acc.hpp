@@ -14,6 +14,8 @@
 #include <simplemc/accs/var_acc.hpp>
 #include <simplemc/accs/varalg.hpp>
 #include <simplemc/numeric/eigen.hpp>
+#include <simplemc/serialize/concepts.hpp>
+#include <simplemc/serialize/utils.hpp>
 #include <simplemc/utils/concepts.hpp>
 #include <simplemc/utils/ranges.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
@@ -716,6 +718,31 @@ template <varalg A = varalg::welford, sample_range R>
 
     auto const sz = detail::random_sample_size(*ranges::begin(rg));
     return detail::make_acc<batch_acc<value_type, A>>(rg, t, sz, m_b);
+}
+
+/**
+ * @brief Serialize a `batch_acc` as `{"full_batches": ..., "acc_batches": ...}`.
+ *
+ * @details Each batch vector is written element-wise via @ref save_range. The (full, acc)
+ * constructor reconstructs the internal `bcount_` / `bidx_` state from the batch counts on load.
+ */
+template <class S, sample_type T, varalg A>
+    requires output_serializer<std::remove_cvref_t<S>>
+void simplemc_save(S&& s, const batch_acc<T, A>& a) {
+    save_range(s["full_batches"], a.batch_vector_full());
+    save_range(s["acc_batches"], a.batch_vector_accumulating());
+}
+
+template <class S, sample_type T, varalg A>
+    requires input_serializer<std::remove_cvref_t<S>>
+void simplemc_load(S&& s, batch_acc<T, A>& a) {
+    using ba = batch_acc<T, A>;
+    using mac = typename ba::mean_acc_type;
+    std::vector<mac> full;
+    std::vector<mac> acc;
+    load_range(s["full_batches"], full);
+    load_range(s["acc_batches"], acc);
+    a = ba { std::move(full), std::move(acc) };
 }
 
 /** @} */

@@ -8,6 +8,7 @@
 
 #include <simplemc/grids/grid_base.hpp>
 #include <simplemc/grids/grid_iterator.hpp>
+#include <simplemc/serialize/concepts.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
 namespace simplemc {
@@ -168,6 +169,30 @@ private:
     value_type power_ { 1.0 };
     value_type scale_ { 1.0 };
 };
+
+/// `power_grid` adds the power exponent to the base grid description.
+template <class S>
+    requires output_serializer<std::remove_cvref_t<S>>
+void simplemc_save(S&& s, const power_grid& g) {
+    s.save_at("first", g.first());
+    s.save_at("last", g.last());
+    s.save_at("size", g.size());
+    s.save_at("power", g.power());
+}
+
+template <class S>
+    requires input_serializer<std::remove_cvref_t<S>>
+void simplemc_load(S&& s, power_grid& g) {
+    double first = 0;
+    double last = 0;
+    long size = 2;
+    double power = 1.0;
+    s.load_at("first", first);
+    s.load_at("last", last);
+    s.load_at("size", size);
+    s.load_at("power", power);
+    g.reset(first, last, size, power);
+}
 
 } // namespace simplemc
 

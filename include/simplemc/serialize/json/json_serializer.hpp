@@ -78,8 +78,7 @@ public:
     template <class T>
     void save_at(std::string_view key, const T& v) {
         if constexpr (detail::has_simplemc_save<T, json_serializer>) {
-            json_serializer sub = (*this)[key];
-            simplemc_save(sub, v);
+            simplemc_save((*this)[key], v);
         } else {
             (*current_)[std::string { key }] = v;
         }
@@ -131,6 +130,8 @@ public:
         }
         s.write_to_file(path);
     }
+    // NOTE: when v has simplemc_save, the helper above passes `s` as an lvalue — the forwarding-ref
+    // signature on simplemc_save accepts that as well as rvalue sub-serializers from operator[].
 
     /// Mutable access to the underlying tree (rarely needed).
     nlohmann::json& tree() { return *tree_; }

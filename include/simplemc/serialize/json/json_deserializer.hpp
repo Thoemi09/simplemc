@@ -69,8 +69,7 @@ public:
     template <class T>
     void load_at(std::string_view key, T& v) {
         if constexpr (detail::has_simplemc_load<T, json_deserializer>) {
-            json_deserializer sub = (*this)[key];
-            simplemc_load(sub, v);
+            simplemc_load((*this)[key], v);
         } else {
             current_->at(std::string { key }).get_to(v);
         }

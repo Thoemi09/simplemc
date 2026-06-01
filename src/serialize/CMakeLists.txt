@@ -13,11 +13,7 @@ add_library(simplemc-serialize-core INTERFACE)
 add_library(simplemc::simplemc-serialize-core ALIAS simplemc-serialize-core)
 target_link_libraries(simplemc-serialize-core
     INTERFACE
-        simplemc::simplemc-utils
-        simplemc::simplemc-numeric
-        simplemc::simplemc-accs
-        simplemc::simplemc-grids
-        simplemc::simplemc-random)
+        simplemc::simplemc-utils)
 
 # build backend sublibraries
 add_subdirectory(json)

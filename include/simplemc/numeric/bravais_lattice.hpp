@@ -7,6 +7,7 @@
 #define SIMPLEMC_NUMERIC_BRAVAIS_LATTICE_HPP
 
 #include <simplemc/numeric/eigen.hpp>
+#include <simplemc/serialize/concepts.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
 #include <cmath>
@@ -339,6 +340,21 @@ private:
     double volA_ { 0.0 };
     double volB_ { 0.0 };
 };
+
+/// `bravais_lattice<N>` is reconstructed from its real-space basis matrix; B/volumes are derived.
+template <class S, int N>
+    requires output_serializer<std::remove_cvref_t<S>>
+void simplemc_save(S&& s, const bravais_lattice<N>& l) {
+    s.save_at("A", l.real_lattice_vectors());
+}
+
+template <class S, int N>
+    requires input_serializer<std::remove_cvref_t<S>>
+void simplemc_load(S&& s, bravais_lattice<N>& l) {
+    typename bravais_lattice<N>::matrix_type A;
+    s.load_at("A", A);
+    l.reset(A);
+}
 
 /** @} */
 

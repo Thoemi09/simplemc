@@ -8,4 +8,5 @@ add_library(simplemc-random INTERFACE)
 add_library(simplemc::simplemc-random ALIAS simplemc-random)
 target_link_libraries(simplemc-random
     INTERFACE
-        simplemc::simplemc-utils)
+        simplemc::simplemc-utils
+        simplemc::simplemc-serialize-core)

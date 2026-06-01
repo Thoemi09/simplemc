@@ -7,6 +7,7 @@
 #define SIMPLEMC_RANDOM_XOSHIRO256_HPP
 
 #include <simplemc/random/splitmix64.hpp>
+#include <simplemc/serialize/concepts.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
 #include <array>
@@ -351,6 +352,31 @@ using xoshiro256pp = xoshiro256<xoshiro256_type::plusplus>;
  * @brief xoshiro256** RNG for general purposes.
  */
 using xoshiro256ss = xoshiro256<xoshiro256_type::starstar>;
+
+/// `xoshiro256<X>` round-trips through its 256-bit state.
+template <class S, xoshiro256_type X>
+    requires output_serializer<std::remove_cvref_t<S>>
+void simplemc_save(S&& s, const xoshiro256<X>& r) {
+    const auto& st = r.internal_state();
+    s.save_at("s0", st[0]);
+    s.save_at("s1", st[1]);
+    s.save_at("s2", st[2]);
+    s.save_at("s3", st[3]);
+}
+
+template <class S, xoshiro256_type X>
+    requires input_serializer<std::remove_cvref_t<S>>
+void simplemc_load(S&& s, xoshiro256<X>& r) {
+    std::uint64_t s0 = 0;
+    std::uint64_t s1 = 0;
+    std::uint64_t s2 = 0;
+    std::uint64_t s3 = 0;
+    s.load_at("s0", s0);
+    s.load_at("s1", s1);
+    s.load_at("s2", s2);
+    s.load_at("s3", s3);
+    r.seed(s0, s1, s2, s3);
+}
 
 /** @} */
 

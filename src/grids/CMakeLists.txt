@@ -8,4 +8,5 @@ add_library(simplemc-grids INTERFACE)
 add_library(simplemc::simplemc-grids ALIAS simplemc-grids)
 target_link_libraries(simplemc-grids
     INTERFACE
-        simplemc::simplemc-utils)
+        simplemc::simplemc-utils
+        simplemc::simplemc-serialize-core)

@@ -8,6 +8,7 @@
 
 #include <simplemc/grids/grid_iterator.hpp>
 #include <simplemc/grids/power_grid.hpp>
+#include <simplemc/serialize/concepts.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
 namespace simplemc {
@@ -204,6 +205,30 @@ private:
     power_grid g1_ { 0.0, 0.5, 2, 1 };
     power_grid g2_ { 1.0, 0.5, 2, 1 };
 };
+
+/// `symmetric_power_grid` reads the power exponent from its underlying half-grid.
+template <class S>
+    requires output_serializer<std::remove_cvref_t<S>>
+void simplemc_save(S&& s, const symmetric_power_grid& g) {
+    s.save_at("first", g.first());
+    s.save_at("last", g.last());
+    s.save_at("size", g.size());
+    s.save_at("power", g.grid1().power());
+}
+
+template <class S>
+    requires input_serializer<std::remove_cvref_t<S>>
+void simplemc_load(S&& s, symmetric_power_grid& g) {
+    double first = 0;
+    double last = 0;
+    long size = 3;
+    double power = 1.0;
+    s.load_at("first", first);
+    s.load_at("last", last);
+    s.load_at("size", size);
+    s.load_at("power", power);
+    g.reset(first, last, size, power);
+}
 
 } // namespace simplemc
 

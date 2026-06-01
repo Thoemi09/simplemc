@@ -46,13 +46,15 @@ public:
 
     bool operator==(const intrusive_point&) const = default;
 
-    template <simplemc::output_serializer S>
-    friend void simplemc_save(S& s, const intrusive_point& p) {
+    template <class S>
+        requires simplemc::output_serializer<std::remove_cvref_t<S>>
+    friend void simplemc_save(S&& s, const intrusive_point& p) {
         s.save_at("x", p.x_);
         s.save_at("y", p.y_);
     }
-    template <simplemc::input_serializer S>
-    friend void simplemc_load(S& s, intrusive_point& p) {
+    template <class S>
+        requires simplemc::input_serializer<std::remove_cvref_t<S>>
+    friend void simplemc_load(S&& s, intrusive_point& p) {
         s.load_at("x", p.x_);
         s.load_at("y", p.y_);
     }
@@ -66,13 +68,15 @@ struct nonintrusive_box {
     bool operator==(const nonintrusive_box&) const = default;
 };
 
-template <simplemc::output_serializer S>
-void simplemc_save(S& s, const nonintrusive_box& b) {
+template <class S>
+    requires simplemc::output_serializer<std::remove_cvref_t<S>>
+void simplemc_save(S&& s, const nonintrusive_box& b) {
     s.save_at("width", b.width);
     s.save_at("height", b.height);
 }
-template <simplemc::input_serializer S>
-void simplemc_load(S& s, nonintrusive_box& b) {
+template <class S>
+    requires simplemc::input_serializer<std::remove_cvref_t<S>>
+void simplemc_load(S&& s, nonintrusive_box& b) {
     s.load_at("width", b.width);
     s.load_at("height", b.height);
 }
@@ -86,14 +90,16 @@ struct composite {
     bool operator==(const composite&) const = default;
 };
 
-template <simplemc::output_serializer S>
-void simplemc_save(S& s, const composite& c) {
+template <class S>
+    requires simplemc::output_serializer<std::remove_cvref_t<S>>
+void simplemc_save(S&& s, const composite& c) {
     s.save_at("pt", c.pt);
     s.save_at("bx", c.bx);
     s.save_at("data", c.data);
 }
-template <simplemc::input_serializer S>
-void simplemc_load(S& s, composite& c) {
+template <class S>
+    requires simplemc::input_serializer<std::remove_cvref_t<S>>
+void simplemc_load(S&& s, composite& c) {
     s.load_at("pt", c.pt);
     s.load_at("bx", c.bx);
     s.load_at("data", c.data);
