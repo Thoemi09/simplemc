@@ -3,7 +3,7 @@
  * @brief Unit tests for the simplemc-serialize core + JSON backend.
  *
  * @details Covers:
- *  - `output_serializer` / `input_serializer` concept conformance (json_serializer, json_deserializer,
+ *  - `serializer` / `deserializer` concept conformance (json_serializer, json_deserializer,
  *    and a mock backend that's not JSON-shaped).
  *  - Primitive and `std::complex` / `std::vector` / `Eigen::Vector*` / `Eigen::Matrix*` round-trips
  *    through the nlohmann-fallback path.
@@ -47,13 +47,13 @@ public:
     bool operator==(const intrusive_point&) const = default;
 
     template <class S>
-        requires simplemc::output_serializer<std::remove_cvref_t<S>>
+        requires simplemc::serializer<std::remove_cvref_t<S>>
     friend void simplemc_save(S&& s, const intrusive_point& p) {
         s.save_at("x", p.x_);
         s.save_at("y", p.y_);
     }
     template <class S>
-        requires simplemc::input_serializer<std::remove_cvref_t<S>>
+        requires simplemc::deserializer<std::remove_cvref_t<S>>
     friend void simplemc_load(S&& s, intrusive_point& p) {
         s.load_at("x", p.x_);
         s.load_at("y", p.y_);
@@ -69,13 +69,13 @@ struct nonintrusive_box {
 };
 
 template <class S>
-    requires simplemc::output_serializer<std::remove_cvref_t<S>>
+    requires simplemc::serializer<std::remove_cvref_t<S>>
 void simplemc_save(S&& s, const nonintrusive_box& b) {
     s.save_at("width", b.width);
     s.save_at("height", b.height);
 }
 template <class S>
-    requires simplemc::input_serializer<std::remove_cvref_t<S>>
+    requires simplemc::deserializer<std::remove_cvref_t<S>>
 void simplemc_load(S&& s, nonintrusive_box& b) {
     s.load_at("width", b.width);
     s.load_at("height", b.height);
@@ -91,21 +91,21 @@ struct composite {
 };
 
 template <class S>
-    requires simplemc::output_serializer<std::remove_cvref_t<S>>
+    requires simplemc::serializer<std::remove_cvref_t<S>>
 void simplemc_save(S&& s, const composite& c) {
     s.save_at("pt", c.pt);
     s.save_at("bx", c.bx);
     s.save_at("data", c.data);
 }
 template <class S>
-    requires simplemc::input_serializer<std::remove_cvref_t<S>>
+    requires simplemc::deserializer<std::remove_cvref_t<S>>
 void simplemc_load(S&& s, composite& c) {
     s.load_at("pt", c.pt);
     s.load_at("bx", c.bx);
     s.load_at("data", c.data);
 }
 
-// Mock output serializer — proves the output_serializer concept doesn't bake in JSON details.
+// Mock output serializer — proves the serializer concept doesn't bake in JSON details.
 class mock_output {
 public:
     using key_type = std::string;
@@ -122,20 +122,20 @@ public:
 
     mock_output operator[](std::string_view /*key*/) { return *this; }
 };
-static_assert(simplemc::output_serializer<mock_output>);
+static_assert(simplemc::serializer<mock_output>);
 
 } // namespace test_types
 
 // ===== Concept conformance ============================================================
 
 TEST(SerializerCore, ConceptConformance) {
-    using simplemc::input_serializer;
-    using simplemc::output_serializer;
+    using simplemc::deserializer;
+    using simplemc::serializer;
     using simplemc::json_deserializer;
     using simplemc::json_serializer;
 
-    static_assert(output_serializer<json_serializer>);
-    static_assert(input_serializer<json_deserializer>);
+    static_assert(serializer<json_serializer>);
+    static_assert(deserializer<json_deserializer>);
     SUCCEED();
 }
 

@@ -355,7 +355,7 @@ using xoshiro256ss = xoshiro256<xoshiro256_type::starstar>;
 
 /// `xoshiro256<X>` round-trips through its 256-bit state.
 template <class S, xoshiro256_type X>
-    requires output_serializer<std::remove_cvref_t<S>>
+    requires serializer<std::remove_cvref_t<S>>
 void simplemc_save(S&& s, const xoshiro256<X>& r) {
     const auto& st = r.internal_state();
     s.save_at("s0", st[0]);
@@ -365,7 +365,7 @@ void simplemc_save(S&& s, const xoshiro256<X>& r) {
 }
 
 template <class S, xoshiro256_type X>
-    requires input_serializer<std::remove_cvref_t<S>>
+    requires deserializer<std::remove_cvref_t<S>>
 void simplemc_load(S&& s, xoshiro256<X>& r) {
     std::uint64_t s0 = 0;
     std::uint64_t s1 = 0;

@@ -118,7 +118,7 @@ template <varalg A = varalg::welford, sample_range R>
  * and complex specializations since both expose the same public surface.
  */
 template <class S, sample_type T, varalg A>
-    requires output_serializer<std::remove_cvref_t<S>>
+    requires serializer<std::remove_cvref_t<S>>
 void simplemc_save(S&& s, const var_acc<T, A>& a) {
     s.save_at("count", a.count());
     s.save_at("mdata", a.mdata());
@@ -126,7 +126,7 @@ void simplemc_save(S&& s, const var_acc<T, A>& a) {
 }
 
 template <class S, sample_type T, varalg A>
-    requires input_serializer<std::remove_cvref_t<S>>
+    requires deserializer<std::remove_cvref_t<S>>
 void simplemc_load(S&& s, var_acc<T, A>& a) {
     using va = var_acc<T, A>;
     typename va::count_type c {};

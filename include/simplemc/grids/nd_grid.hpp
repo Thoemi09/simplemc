@@ -284,13 +284,13 @@ private:
 
 /// `nd_grid` is just a tuple of 1-D grids; @ref save_tuple / @ref load_tuple do the work.
 template <class S, grid_1d... Grids>
-    requires output_serializer<std::remove_cvref_t<S>>
+    requires serializer<std::remove_cvref_t<S>>
 void simplemc_save(S&& s, const nd_grid<Grids...>& g) {
     save_tuple(s["grids"], g.grids());
 }
 
 template <class S, grid_1d... Grids>
-    requires input_serializer<std::remove_cvref_t<S>>
+    requires deserializer<std::remove_cvref_t<S>>
 void simplemc_load(S&& s, nd_grid<Grids...>& g) {
     load_tuple(s["grids"], g.grids());
 }

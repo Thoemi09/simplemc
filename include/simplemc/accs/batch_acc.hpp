@@ -727,14 +727,14 @@ template <varalg A = varalg::welford, sample_range R>
  * constructor reconstructs the internal `bcount_` / `bidx_` state from the batch counts on load.
  */
 template <class S, sample_type T, varalg A>
-    requires output_serializer<std::remove_cvref_t<S>>
+    requires serializer<std::remove_cvref_t<S>>
 void simplemc_save(S&& s, const batch_acc<T, A>& a) {
     save_range(s["full_batches"], a.batch_vector_full());
     save_range(s["acc_batches"], a.batch_vector_accumulating());
 }
 
 template <class S, sample_type T, varalg A>
-    requires input_serializer<std::remove_cvref_t<S>>
+    requires deserializer<std::remove_cvref_t<S>>
 void simplemc_load(S&& s, batch_acc<T, A>& a) {
     using ba = batch_acc<T, A>;
     using mac = typename ba::mean_acc_type;

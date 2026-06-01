@@ -118,7 +118,7 @@ template <varalg A = varalg::welford, sample_range R>
  * `serialize/json/serializers.hpp`) handles the JSON round-trip.
  */
 template <class S, sample_type T, varalg A>
-    requires output_serializer<std::remove_cvref_t<S>>
+    requires serializer<std::remove_cvref_t<S>>
 void simplemc_save(S&& s, const covar_acc<T, A>& a) {
     s.save_at("count", a.count());
     s.save_at("mdata", a.mdata());
@@ -126,7 +126,7 @@ void simplemc_save(S&& s, const covar_acc<T, A>& a) {
 }
 
 template <class S, sample_type T, varalg A>
-    requires input_serializer<std::remove_cvref_t<S>>
+    requires deserializer<std::remove_cvref_t<S>>
 void simplemc_load(S&& s, covar_acc<T, A>& a) {
     using ca = covar_acc<T, A>;
     typename ca::count_type c {};

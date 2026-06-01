@@ -343,13 +343,13 @@ private:
 
 /// `bravais_lattice<N>` is reconstructed from its real-space basis matrix; B/volumes are derived.
 template <class S, int N>
-    requires output_serializer<std::remove_cvref_t<S>>
+    requires serializer<std::remove_cvref_t<S>>
 void simplemc_save(S&& s, const bravais_lattice<N>& l) {
     s.save_at("A", l.real_lattice_vectors());
 }
 
 template <class S, int N>
-    requires input_serializer<std::remove_cvref_t<S>>
+    requires deserializer<std::remove_cvref_t<S>>
 void simplemc_load(S&& s, bravais_lattice<N>& l) {
     typename bravais_lattice<N>::matrix_type A;
     s.load_at("A", A);

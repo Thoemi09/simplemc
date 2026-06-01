@@ -1,7 +1,6 @@
 /**
  * @file
- * @brief JSON write-side serializer. Owns a shared `nlohmann::json` tree; `operator[]` returns a new
- * `json_serializer` sharing the tree but pointing at a sub-node.
+ * @brief JSON write-side serializer for simplemc-serialize-json.
  */
 
 #ifndef SIMPLEMC_SERIALIZE_JSON_JSON_SERIALIZER_HPP
@@ -148,7 +147,7 @@ private:
     nlohmann::json* current_;
 };
 
-static_assert(output_serializer<json_serializer>);
+static_assert(serializer<json_serializer>);
 
 /** @} */
 

@@ -1,11 +1,6 @@
 /**
  * @file
- * @brief Nlohmann-side serializers for std and Eigen types — the JSON-fallback path of the
- * simplemc-serialize-json sublibrary.
- *
- * @details These specializations and `to_json` / `from_json` overloads exist so that types without an
- * ADL `simplemc_save` (`std::complex`, `Eigen::Matrix`, sized contiguous ranges) round-trip through
- * the `json_serializer`'s nlohmann-fallback branch.
+ * @brief nlohmann-side adapters for `std::complex` and Eigen types — JSON-fallback path.
  */
 
 #ifndef SIMPLEMC_SERIALIZE_JSON_SERIALIZERS_HPP

@@ -178,7 +178,7 @@ private:
 
 /// `linear_grid` is fully described by `(first, last, size)`.
 template <class S>
-    requires output_serializer<std::remove_cvref_t<S>>
+    requires serializer<std::remove_cvref_t<S>>
 void simplemc_save(S&& s, const linear_grid& g) {
     s.save_at("first", g.first());
     s.save_at("last", g.last());
@@ -186,7 +186,7 @@ void simplemc_save(S&& s, const linear_grid& g) {
 }
 
 template <class S>
-    requires input_serializer<std::remove_cvref_t<S>>
+    requires deserializer<std::remove_cvref_t<S>>
 void simplemc_load(S&& s, linear_grid& g) {
     double first = 0;
     double last = 0;

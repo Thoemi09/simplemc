@@ -208,7 +208,7 @@ private:
 
 /// `symmetric_power_grid` reads the power exponent from its underlying half-grid.
 template <class S>
-    requires output_serializer<std::remove_cvref_t<S>>
+    requires serializer<std::remove_cvref_t<S>>
 void simplemc_save(S&& s, const symmetric_power_grid& g) {
     s.save_at("first", g.first());
     s.save_at("last", g.last());
@@ -217,7 +217,7 @@ void simplemc_save(S&& s, const symmetric_power_grid& g) {
 }
 
 template <class S>
-    requires input_serializer<std::remove_cvref_t<S>>
+    requires deserializer<std::remove_cvref_t<S>>
 void simplemc_load(S&& s, symmetric_power_grid& g) {
     double first = 0;
     double last = 0;

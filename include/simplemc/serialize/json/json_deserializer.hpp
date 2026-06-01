@@ -1,7 +1,6 @@
 /**
  * @file
- * @brief JSON read-side deserializer. Owns a shared `nlohmann::json` tree; `operator[]` returns a new
- * `json_deserializer` sharing the tree but pointing at a sub-node.
+ * @brief JSON read-side deserializer for simplemc-serialize-json.
  */
 
 #ifndef SIMPLEMC_SERIALIZE_JSON_JSON_DESERIALIZER_HPP
@@ -139,7 +138,7 @@ private:
     const nlohmann::json* current_;
 };
 
-static_assert(input_serializer<json_deserializer>);
+static_assert(deserializer<json_deserializer>);
 
 /** @} */
 

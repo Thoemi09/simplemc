@@ -495,14 +495,14 @@ template <varalg A = varalg::welford, sample_range R>
  * reconstruction.
  */
 template <class S, sample_type T, varalg A>
-    requires output_serializer<std::remove_cvref_t<S>>
+    requires serializer<std::remove_cvref_t<S>>
 void simplemc_save(S&& s, const mean_acc<T, A>& a) {
     s.save_at("count", a.count());
     s.save_at("mdata", a.mdata());
 }
 
 template <class S, sample_type T, varalg A>
-    requires input_serializer<std::remove_cvref_t<S>>
+    requires deserializer<std::remove_cvref_t<S>>
 void simplemc_load(S&& s, mean_acc<T, A>& a) {
     using ma = mean_acc<T, A>;
     typename ma::count_type c {};

@@ -1289,20 +1289,90 @@
 
 /**
  * @defgroup simplemc-serialize simplemc-serialize
- * @brief State I/O via the @ref simplemc::output_serializer / @ref simplemc::input_serializer
- * concepts. Currently ships a JSON backend (@ref simplemc::json_serializer /
- * @ref simplemc::json_deserializer) on top of <a href="https://github.com/nlohmann/json">
- * nlohmann_json</a>; HDF5 backend planned.
+ * @brief Generic serialization library.
+ * 
+ * @details **simplemc-serialize** is split into a header-only generic core and the various backends.
+ * @ref simplemc-serialize-core provides the core concepts, ADL customization point, and other 
+ * utilities.
+ * 
+ * Supported backends include:
+ * - @ref simplemc-serialize-json on top of <a href="https://github.com/nlohmann/json">nlohmann_json
+ * </a>.
+ */
+
+/**
  *
- * @defgroup simplemc-serialize-concepts Serializer concepts
+ * @defgroup simplemc-serialize-core Core serialization
  * @ingroup simplemc-serialize
- * @brief @ref simplemc::output_serializer and @ref simplemc::input_serializer concepts that backend
- * classes must satisfy.
+ * @brief Header-only core: serializer/deserializer concepts, ADL customization point, and
+ * explicit range/tuple helpers.
  *
- * @defgroup simplemc-serialize-json simplemc-serialize-json
+ * @details The core defines the two concepts that every backend satisfies —
+ * simplemc::serializer and simplemc::deserializer — and the ADL pattern that lets
+ * each user/library type carry its own state-I/O logic without coupling to a specific backend.
+ *
+ * @section simplemc-serialize-core-adl ADL customization point
+ *
+ * A type `T` opts into simplemc serialization by providing free functions discoverable by ADL:
+ * ```
+ * template <simplemc::serializer S>
+ * void simplemc_save(S& s, const T& v);
+ *
+ * template <simplemc::deserializer S>
+ * void simplemc_load(S& s, T& v);
+ * ```
+ * These may be `friend`-declared inside the class when private access is needed. Each
+ * backend's `save_at` / `load_at` dispatches to the ADL function if present (see
+ * simplemc::detail::has_simplemc_save / simplemc::detail::has_simplemc_load) and otherwise
+ * falls through to the backend's native idiom (e.g. nlohmann's `to_json` /
+ * `adl_serializer<T>` for the JSON backend).
+ *
+ * Library types in simplemc-accs, simplemc-grids, simplemc-random, and simplemc-numeric ship
+ * ADL `simplemc_save` / `simplemc_load` overloads that the core target transitively makes
+ * available to any backend.
+ *
+ * @section simplemc-serialize-core-helpers Explicit range and tuple helpers
+ *
+ * simplemc::save_range / simplemc::load_range / simplemc::save_tuple / simplemc::load_tuple
+ * are **not** ADL hooks. They are convenience functions a `simplemc_save` / `simplemc_load`
+ * implementation calls explicitly when it needs to round-trip a `std::vector<T>` of arbitrary
+ * `T` (including library types with their own `simplemc_save`) or a `std::tuple<Ts...>`
+ * element-wise.
+ *
+ * Plain calls in user code on `std::vector<int>` / `std::tuple<int, double>` should *not* go
+ * through these helpers — they hit the backend's native idiom (nlohmann's vector/tuple
+ * support for JSON; future HDF5 primitive path). This avoids "hijacking" std-container
+ * serialization across all backends.
+ *
+ * The serializer parameter is taken by forwarding reference so callers can write either
+ * `simplemc::save_range(s["full_batches"], v)` (rvalue from `operator[]`) or
+ * `auto sub = s["k"]; simplemc::save_range(sub, v);` (bound lvalue) and reuse the
+ * sub-serializer.
+ */
+
+/**
+ * @defgroup simplemc-serialize-json JSON backend
  * @ingroup simplemc-serialize
- * @brief JSON backend — @ref simplemc::json_serializer, @ref simplemc::json_deserializer,
- * file IO helpers, and the `nlohmann`-side adapters for `std::complex` and Eigen types.
+ * @brief JSON backend on top of nlohmann_json: serializer/deserializer, file I/O helpers, and
+ * nlohmann adapters for non-customized types.
+ *
+ * @details simplemc::json_serializer and simplemc::json_deserializer satisfy
+ * simplemc::serializer and simplemc::deserializer respectively. Both own a shared
+ * `nlohmann::json` tree via `std::shared_ptr` and track the current position via a raw
+ * pointer into the tree. Navigation via `operator[]` returns a new instance sharing the tree
+ * but pointing at the sub-node — there is no stack and no RAII scope. Reference semantics on
+ * copy: `auto s2 = s;` aliases the same underlying tree.
+ *
+ * Per-type customization is via the ADL pattern described in @ref simplemc-serialize-core.
+ * Types without an ADL `simplemc_save` / `simplemc_load` fall through to nlohmann's `to_json`
+ * / `from_json` / `adl_serializer<T>` machinery. The nlohmann-side specializations shipped in
+ * `serialize/json/serializers.hpp` plug `std::complex<T>` and Eigen matrices / vectors
+ * (simplemc::eigen_matrix) into that fallback path so they round-trip without needing
+ * per-type ADL hooks.
+ *
+ * File I/O helpers (simplemc::read_json_file / simplemc::write_json_file) support both text
+ * mode and the four nlohmann binary formats — BSON, CBOR, MessagePack, UBJSON — via the
+ * simplemc::json_binary_mode enum and the simplemc::json_serializer_options struct.
  */
 
 /**

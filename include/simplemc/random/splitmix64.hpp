@@ -210,13 +210,13 @@ private:
 
 /// `splitmix64` round-trips through its single 64-bit state value.
 template <class S>
-    requires output_serializer<std::remove_cvref_t<S>>
+    requires serializer<std::remove_cvref_t<S>>
 void simplemc_save(S&& s, const splitmix64& r) {
     s.save_at("state", r.internal_state());
 }
 
 template <class S>
-    requires input_serializer<std::remove_cvref_t<S>>
+    requires deserializer<std::remove_cvref_t<S>>
 void simplemc_load(S&& s, splitmix64& r) {
     std::uint64_t st = 0;
     s.load_at("state", st);
