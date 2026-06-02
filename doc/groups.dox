@@ -1377,9 +1377,9 @@
  * Per-type customization is via the ADL pattern described in @ref simplemc-serialize-adl.
  * Types without an ADL `simplemc_save` / `simplemc_load` fall through to nlohmann's `to_json`
  * / `from_json` / `adl_serializer<T>` machinery. The nlohmann-side specializations shipped in
- * `serialize/json/serializers.hpp` plug `std::complex<T>` and Eigen matrices / vectors
- * (simplemc::eigen_matrix) into that fallback path so they round-trip without needing
- * per-type ADL hooks.
+ * `serialize/json/complex.hpp` and `serialize/json/eigen.hpp` plug `std::complex<T>` and
+ * Eigen matrices / vectors (simplemc::eigen_matrix) into that fallback path so they round-trip
+ * without needing per-type ADL hooks.
  *
  * File I/O helpers (simplemc::read_json_file / simplemc::write_json_file) support both text
  * mode and the four nlohmann binary formats — BSON, CBOR, MessagePack, UBJSON — via the

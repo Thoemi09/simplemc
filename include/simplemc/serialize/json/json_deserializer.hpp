@@ -8,7 +8,6 @@
 
 #include <simplemc/serialize/concepts.hpp>
 #include <simplemc/serialize/json/file_io.hpp>
-#include <simplemc/serialize/json/serializers.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
 #include <fmt/format.h>
