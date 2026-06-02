@@ -12,7 +12,7 @@
 namespace simplemc {
 
 /**
- * @addtogroup simplemc-serialize-core
+ * @addtogroup simplemc-serialize
  * @{
  */
 
@@ -21,7 +21,7 @@ namespace simplemc {
  *
  * @details A serializer is able to write named values/objects into some hierarchical store, navigate
  * the store (downward) to sub-locations, and report the existence of sub-locations. See
- * @ref simplemc-serialize-core-model for details.
+ * @ref simplemc-serialize-model for details.
  *
  * Let `s` be an instance of `S`, `key` a `std::string_view`, and `value` an instane of type
  * `const V&`. The requirements for `S` to be a serializer are the following:
@@ -47,7 +47,7 @@ concept serializer = requires(S& s, const S& cs, const V& value) {
  *
  * @details A deserializer is able to read named values/objets from some hierarchical store, navigate
  * the store (downward) to sub-locations, and report the existence of sub-locations. See
- * @ref simplemc-serialize-core-model for details. All operations must be callable on a `const`
+ * @ref simplemc-serialize-model for details. All operations must be callable on a `const`
  * instance — a deserializer never mutates its own state.
  *
  * Let `s` be an instance of `const S`, `key` a `std::string_view`, and `value` an lvalue reference of

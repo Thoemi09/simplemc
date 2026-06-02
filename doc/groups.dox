@@ -1296,26 +1296,11 @@
  * different serialization backends, allowing users to choose the one that best fits their needs or to
  * implement their own.
  *
- * The @ref simplemc-serialize-core module defines the core concepts and ADL customization point that
- * all backends satisfy. It forms the basis for the generic serialization interface.
- *
- * The various backends sit on top of the core and provide concrete implementations of the
- * simplemc::serializer and simplemc::deserializer concepts. **simplemc-serialize** ships with the
- * following backends:
- * - @ref simplemc-serialize-json is based on the popular <a href="https://github.com/nlohmann/json">
- * nlohmann_json</a> library.
- */
-
-/**
- * @defgroup simplemc-serialize-core Core serialization
- * @ingroup simplemc-serialize
- * @brief Basic serialization interface and utilities.
- *
- * @details The core defines the concepts that every backend satisfies — simplemc::serializer and
+ * It defines the concepts that every backend satisfies — simplemc::serializer and
  * simplemc::deserializer — and the ADL pattern that lets each user/library type carry its own
  * state-I/O logic without coupling to a specific backend.
  *
- * @section simplemc-serialize-core-model What is a serializer?
+ * @section simplemc-serialize-model What is a serializer?
  *
  * A **serializer** writes named values/objects into some hierarchical store — a JSON file, an HDF5
  * file, a TOML table, etc. A **deserializer** reads them back. Both always point at one **location**
@@ -1335,7 +1320,7 @@
  * - `s.load_at(key, value)` reads from sub-location `key` into `value` and returns `s` for chaining.
  * Backends typically throw on a missing key — use `has(key)` first when the key is optional.
  *
- * The dispatch rule for `save_at` / `load_at` is described in @ref simplemc-serialize-core-adl.
+ * The dispatch rule for `save_at` / `load_at` is described in @ref simplemc-serialize-adl.
  *
  * **Examples across backends.** `s["physics"].save_at("temperature", 1.5)` produces:
  *
@@ -1345,7 +1330,7 @@
  *
  * The serializer abstracts over these — user code writes the same call regardless of backend.
  *
- * @section simplemc-serialize-core-adl ADL customization point
+ * @section simplemc-serialize-adl ADL customization point
  *
  * A type `T` opts into **simplemc** serialization by providing free functions discoverable by ADL:
  *
@@ -1366,6 +1351,14 @@
  *
  * **simplemc** library types ship `%simplemc_save` / `simplemc_load` overloads that should work for
  * any supported backend.
+ *
+ * @section simplemc-serialize-backends Backends
+ *
+ * Concrete backends sit on top of the core concepts and provide implementations of
+ * simplemc::serializer and simplemc::deserializer. **simplemc-serialize** ships with the following
+ * backends:
+ * - @ref simplemc-serialize-json is based on the popular <a href="https://github.com/nlohmann/json">
+ * nlohmann_json</a> library.
  */
 
 /**
@@ -1381,7 +1374,7 @@
  * but pointing at the sub-node — there is no stack and no RAII scope. Reference semantics on
  * copy: `auto s2 = s;` aliases the same underlying tree.
  *
- * Per-type customization is via the ADL pattern described in @ref simplemc-serialize-core.
+ * Per-type customization is via the ADL pattern described in @ref simplemc-serialize-adl.
  * Types without an ADL `simplemc_save` / `simplemc_load` fall through to nlohmann's `to_json`
  * / `from_json` / `adl_serializer<T>` machinery. The nlohmann-side specializations shipped in
  * `serialize/json/serializers.hpp` plug `std::complex<T>` and Eigen matrices / vectors
