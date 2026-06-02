@@ -112,30 +112,44 @@ template <varalg A = varalg::welford, sample_range R>
 }
 
 /**
- * @brief Serialize a `var_acc` as `{"count": N, "mdata": [...], "cdata": [...]}`.
+ * @brief Serialize a var_acc by its sample count, mean data, and variance data.
  *
- * @details Public getters + `(md, cd, n)` constructor; the template constraint allows both the real
- * and complex specializations since both expose the same public surface.
+ * @details Uses public `count()` / `mdata()` / `cdata()` getters with the `(mdata, cdata, count)`
+ * constructor. Works for both the real and complex specializations, since both expose the same
+ * public surface.
+ *
+ * @tparam S Serializer type.
+ * @tparam T Sample type.
+ * @tparam A Variance algorithm.
+ * @param s Serializer.
+ * @param acc Variance accumulator to save.
  */
-template <class S, sample_type T, varalg A>
-    requires serializer<std::remove_cvref_t<S>>
-void simplemc_save(S&& s, const var_acc<T, A>& a) {
-    s.save_at("count", a.count());
-    s.save_at("mdata", a.mdata());
-    s.save_at("cdata", a.cdata());
+template <serializer S, sample_type T, varalg A>
+void simplemc_save(S& s, const var_acc<T, A>& acc) {
+    s.save_at("count", acc.count());
+    s.save_at("mdata", acc.mdata());
+    s.save_at("cdata", acc.cdata());
 }
 
-template <class S, sample_type T, varalg A>
-    requires deserializer<std::remove_cvref_t<S>>
-void simplemc_load(S&& s, var_acc<T, A>& a) {
+/**
+ * @brief Deserialize a var_acc (inverse of @ref simplemc_save).
+ *
+ * @tparam S Deserializer type.
+ * @tparam T Sample type.
+ * @tparam A Variance algorithm.
+ * @param s Deserializer.
+ * @param acc Variance accumulator to populate.
+ */
+template <deserializer S, sample_type T, varalg A>
+void simplemc_load(const S& s, var_acc<T, A>& acc) {
     using va = var_acc<T, A>;
-    typename va::count_type c {};
-    auto md = a.mdata();
-    auto cd = a.cdata();
-    s.load_at("count", c);
-    s.load_at("mdata", md);
-    s.load_at("cdata", cd);
-    a = va { md, cd, c };
+    typename va::count_type count {};
+    auto mdata = acc.mdata();
+    auto cdata = acc.cdata();
+    s.load_at("count", count);
+    s.load_at("mdata", mdata);
+    s.load_at("cdata", cdata);
+    acc = va { mdata, cdata, count };
 }
 
 /** @} */

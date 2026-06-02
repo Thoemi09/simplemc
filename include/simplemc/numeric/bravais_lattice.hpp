@@ -341,16 +341,32 @@ private:
     double volB_ { 0.0 };
 };
 
-/// `bravais_lattice<N>` is reconstructed from its real-space basis matrix; B/volumes are derived.
-template <class S, int N>
-    requires serializer<std::remove_cvref_t<S>>
-void simplemc_save(S&& s, const bravais_lattice<N>& l) {
+/**
+ * @brief Serialize a bravais_lattice by its real-space basis matrix.
+ *
+ * @details The reciprocal-space basis and the unit-cell volumes are derived from the real-space
+ * basis on load, so they need not be stored.
+ *
+ * @tparam S Serializer type.
+ * @tparam N Spatial dimension.
+ * @param s Serializer.
+ * @param l Bravais lattice to save.
+ */
+template <serializer S, int N>
+void simplemc_save(S& s, const bravais_lattice<N>& l) {
     s.save_at("A", l.real_lattice_vectors());
 }
 
-template <class S, int N>
-    requires deserializer<std::remove_cvref_t<S>>
-void simplemc_load(S&& s, bravais_lattice<N>& l) {
+/**
+ * @brief Deserialize a bravais_lattice (inverse of @ref simplemc_save).
+ *
+ * @tparam S Deserializer type.
+ * @tparam N Spatial dimension.
+ * @param s Deserializer.
+ * @param l Bravais lattice to populate.
+ */
+template <deserializer S, int N>
+void simplemc_load(const S& s, bravais_lattice<N>& l) {
     typename bravais_lattice<N>::matrix_type A;
     s.load_at("A", A);
     l.reset(A);

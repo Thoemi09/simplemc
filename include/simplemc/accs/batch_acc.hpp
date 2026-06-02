@@ -15,7 +15,6 @@
 #include <simplemc/accs/varalg.hpp>
 #include <simplemc/numeric/eigen.hpp>
 #include <simplemc/serialize/concepts.hpp>
-#include <simplemc/serialize/utils.hpp>
 #include <simplemc/utils/concepts.hpp>
 #include <simplemc/utils/ranges.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
@@ -721,28 +720,60 @@ template <varalg A = varalg::welford, sample_range R>
 }
 
 /**
- * @brief Serialize a `batch_acc` as `{"full_batches": ..., "acc_batches": ...}`.
+ * @brief Serialize a batch_acc as the number of batches plus, for each batch, the full and
+ * accumulating mean accumulators.
  *
- * @details Each batch vector is written element-wise via @ref save_range. The (full, acc)
- * constructor reconstructs the internal `bcount_` / `bidx_` state from the batch counts on load.
+ * @details Full and accumulating batches share the same length `m_b`, so they are written together
+ * batch-by-batch. The `(full, acc)` constructor reconstructs the internal `bcount_` / `bidx_`
+ * state from the batch counts on load.
+ *
+ * @tparam S Serializer type.
+ * @tparam T Sample type.
+ * @tparam A Variance algorithm.
+ * @param s Serializer.
+ * @param acc Batch accumulator to save.
  */
-template <class S, sample_type T, varalg A>
-    requires serializer<std::remove_cvref_t<S>>
-void simplemc_save(S&& s, const batch_acc<T, A>& a) {
-    save_range(s["full_batches"], a.batch_vector_full());
-    save_range(s["acc_batches"], a.batch_vector_accumulating());
+template <serializer S, sample_type T, varalg A>
+void simplemc_save(S& s, const batch_acc<T, A>& acc) {
+    const auto& full_batches = acc.batch_vector_full();
+    const auto& acc_batches = acc.batch_vector_accumulating();
+    s.save_at("m_b", static_cast<std::size_t>(full_batches.size()));
+    for (std::size_t i = 0; i < full_batches.size(); ++i) {
+        auto sub = s[std::to_string(i)];
+        sub.save_at("full_batch", full_batches[i]);
+        sub.save_at("acc_batch", acc_batches[i]);
+    }
 }
 
-template <class S, sample_type T, varalg A>
-    requires deserializer<std::remove_cvref_t<S>>
-void simplemc_load(S&& s, batch_acc<T, A>& a) {
+/**
+ * @brief Deserialize a batch_acc (inverse of @ref simplemc_save).
+ *
+ * @tparam S Deserializer type.
+ * @tparam T Sample type.
+ * @tparam A Variance algorithm.
+ * @param s Deserializer.
+ * @param acc Batch accumulator to populate.
+ */
+template <deserializer S, sample_type T, varalg A>
+void simplemc_load(const S& s, batch_acc<T, A>& acc) {
     using ba = batch_acc<T, A>;
     using mac = typename ba::mean_acc_type;
-    std::vector<mac> full;
-    std::vector<mac> acc;
-    load_range(s["full_batches"], full);
-    load_range(s["acc_batches"], acc);
-    a = ba { std::move(full), std::move(acc) };
+    std::size_t m_b = 0;
+    s.load_at("m_b", m_b);
+    std::vector<mac> full_batches;
+    std::vector<mac> acc_batches;
+    full_batches.reserve(m_b);
+    acc_batches.reserve(m_b);
+    for (std::size_t i = 0; i < m_b; ++i) {
+        const auto sub = s[std::to_string(i)];
+        mac full_batch;
+        mac acc_batch;
+        sub.load_at("full_batch", full_batch);
+        sub.load_at("acc_batch", acc_batch);
+        full_batches.push_back(std::move(full_batch));
+        acc_batches.push_back(std::move(acc_batch));
+    }
+    acc = ba { std::move(full_batches), std::move(acc_batches) };
 }
 
 /** @} */

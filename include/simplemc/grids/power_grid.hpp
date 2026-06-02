@@ -170,19 +170,30 @@ private:
     value_type scale_ { 1.0 };
 };
 
-/// `power_grid` adds the power exponent to the base grid description.
-template <class S>
-    requires serializer<std::remove_cvref_t<S>>
-void simplemc_save(S&& s, const power_grid& g) {
+/**
+ * @brief Serialize a power_grid by its (first, last, size, power) parameters.
+ *
+ * @tparam S Serializer type.
+ * @param s Serializer.
+ * @param g Power grid to save.
+ */
+template <serializer S>
+void simplemc_save(S& s, const power_grid& g) {
     s.save_at("first", g.first());
     s.save_at("last", g.last());
     s.save_at("size", g.size());
     s.save_at("power", g.power());
 }
 
-template <class S>
-    requires deserializer<std::remove_cvref_t<S>>
-void simplemc_load(S&& s, power_grid& g) {
+/**
+ * @brief Deserialize a power_grid (inverse of @ref simplemc_save).
+ *
+ * @tparam S Deserializer type.
+ * @param s Deserializer.
+ * @param g Power grid to populate.
+ */
+template <deserializer S>
+void simplemc_load(const S& s, power_grid& g) {
     double first = 0;
     double last = 0;
     long size = 2;

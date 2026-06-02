@@ -208,19 +208,30 @@ private:
     std::uint64_t state_ { default_seed };
 };
 
-/// `splitmix64` round-trips through its single 64-bit state value.
-template <class S>
-    requires serializer<std::remove_cvref_t<S>>
-void simplemc_save(S&& s, const splitmix64& r) {
+/**
+ * @brief Serialize a splitmix64 RNG by its single 64-bit internal state.
+ *
+ * @tparam S Serializer type.
+ * @param s Serializer.
+ * @param r RNG to save.
+ */
+template <serializer S>
+void simplemc_save(S& s, const splitmix64& r) {
     s.save_at("state", r.internal_state());
 }
 
-template <class S>
-    requires deserializer<std::remove_cvref_t<S>>
-void simplemc_load(S&& s, splitmix64& r) {
-    std::uint64_t st = 0;
-    s.load_at("state", st);
-    r.seed(st);
+/**
+ * @brief Deserialize a splitmix64 RNG (inverse of @ref simplemc_save).
+ *
+ * @tparam S Deserializer type.
+ * @param s Deserializer.
+ * @param r RNG to populate.
+ */
+template <deserializer S>
+void simplemc_load(const S& s, splitmix64& r) {
+    std::uint64_t state = 0;
+    s.load_at("state", state);
+    r.seed(state);
 }
 
 /** @} */

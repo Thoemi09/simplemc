@@ -112,30 +112,44 @@ template <varalg A = varalg::welford, sample_range R>
 }
 
 /**
- * @brief Serialize a `covar_acc` as `{"count": N, "mdata": [...], "cdata": [[...]]}`.
+ * @brief Serialize a covar_acc by its sample count, mean data, and covariance matrix.
  *
- * @details `cdata` is a matrix for covar_acc; the Eigen `adl_serializer` (in
- * `serialize/json/serializers.hpp`) handles the JSON round-trip.
+ * @details Uses public `count()` / `mdata()` / `cdata()` getters with the `(mdata, cdata, count)`
+ * constructor. `cdata` is a matrix; the Eigen `adl_serializer` (in
+ * `serialize/json/serializers.hpp`) handles its JSON round-trip on the backend side.
+ *
+ * @tparam S Serializer type.
+ * @tparam T Sample type.
+ * @tparam A Variance algorithm.
+ * @param s Serializer.
+ * @param acc Covariance accumulator to save.
  */
-template <class S, sample_type T, varalg A>
-    requires serializer<std::remove_cvref_t<S>>
-void simplemc_save(S&& s, const covar_acc<T, A>& a) {
-    s.save_at("count", a.count());
-    s.save_at("mdata", a.mdata());
-    s.save_at("cdata", a.cdata());
+template <serializer S, sample_type T, varalg A>
+void simplemc_save(S& s, const covar_acc<T, A>& acc) {
+    s.save_at("count", acc.count());
+    s.save_at("mdata", acc.mdata());
+    s.save_at("cdata", acc.cdata());
 }
 
-template <class S, sample_type T, varalg A>
-    requires deserializer<std::remove_cvref_t<S>>
-void simplemc_load(S&& s, covar_acc<T, A>& a) {
+/**
+ * @brief Deserialize a covar_acc (inverse of @ref simplemc_save).
+ *
+ * @tparam S Deserializer type.
+ * @tparam T Sample type.
+ * @tparam A Variance algorithm.
+ * @param s Deserializer.
+ * @param acc Covariance accumulator to populate.
+ */
+template <deserializer S, sample_type T, varalg A>
+void simplemc_load(const S& s, covar_acc<T, A>& acc) {
     using ca = covar_acc<T, A>;
-    typename ca::count_type c {};
-    auto md = a.mdata();
-    auto cd = a.cdata();
-    s.load_at("count", c);
-    s.load_at("mdata", md);
-    s.load_at("cdata", cd);
-    a = ca { md, cd, c };
+    typename ca::count_type count {};
+    auto mdata = acc.mdata();
+    auto cdata = acc.cdata();
+    s.load_at("count", count);
+    s.load_at("mdata", mdata);
+    s.load_at("cdata", cdata);
+    acc = ca { mdata, cdata, count };
 }
 
 /** @} */

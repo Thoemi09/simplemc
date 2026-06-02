@@ -176,18 +176,29 @@ private:
     value_type step_ { 1.0 };
 };
 
-/// `linear_grid` is fully described by `(first, last, size)`.
-template <class S>
-    requires serializer<std::remove_cvref_t<S>>
-void simplemc_save(S&& s, const linear_grid& g) {
+/**
+ * @brief Serialize a linear_grid by its (first, last, size) parameters.
+ *
+ * @tparam S Serializer type.
+ * @param s Serializer.
+ * @param g Linear grid to save.
+ */
+template <serializer S>
+void simplemc_save(S& s, const linear_grid& g) {
     s.save_at("first", g.first());
     s.save_at("last", g.last());
     s.save_at("size", g.size());
 }
 
-template <class S>
-    requires deserializer<std::remove_cvref_t<S>>
-void simplemc_load(S&& s, linear_grid& g) {
+/**
+ * @brief Deserialize a linear_grid (inverse of @ref simplemc_save).
+ *
+ * @tparam S Deserializer type.
+ * @param s Deserializer.
+ * @param g Linear grid to populate.
+ */
+template <deserializer S>
+void simplemc_load(const S& s, linear_grid& g) {
     double first = 0;
     double last = 0;
     long size = 2;

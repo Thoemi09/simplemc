@@ -9,10 +9,10 @@
 #include <simplemc/grids/concepts.hpp>
 #include <simplemc/grids/grid_iterator.hpp>
 #include <simplemc/serialize/concepts.hpp>
-#include <simplemc/serialize/utils.hpp>
 #include <simplemc/utils/ranges.hpp>
 
 #include <array>
+#include <string>
 #include <utility>
 #include <tuple>
 
@@ -282,17 +282,36 @@ private:
     tuple_type grids_;
 };
 
-/// `nd_grid` is just a tuple of 1-D grids; @ref save_tuple / @ref load_tuple do the work.
-template <class S, grid_1d... Grids>
-    requires serializer<std::remove_cvref_t<S>>
-void simplemc_save(S&& s, const nd_grid<Grids...>& g) {
-    save_tuple(s["grids"], g.grids());
+/**
+ * @brief Serialize an nd_grid as a tuple of its underlying 1-D grids, indexed by position.
+ *
+ * @tparam S Serializer type.
+ * @tparam Grids 1-D grid types.
+ * @param s Serializer.
+ * @param g N-dimensional grid to save.
+ */
+template <serializer S, grid_1d... Grids>
+void simplemc_save(S& s, const nd_grid<Grids...>& g) {
+    auto sub = s["grids"];
+    [&]<std::size_t... I>(std::index_sequence<I...>) {
+        ((sub.save_at(std::to_string(I), std::get<I>(g.grids()))), ...);
+    }(std::index_sequence_for<Grids...> {});
 }
 
-template <class S, grid_1d... Grids>
-    requires deserializer<std::remove_cvref_t<S>>
-void simplemc_load(S&& s, nd_grid<Grids...>& g) {
-    load_tuple(s["grids"], g.grids());
+/**
+ * @brief Deserialize an nd_grid (inverse of @ref simplemc_save).
+ *
+ * @tparam S Deserializer type.
+ * @tparam Grids 1-D grid types.
+ * @param s Deserializer.
+ * @param g N-dimensional grid to populate.
+ */
+template <deserializer S, grid_1d... Grids>
+void simplemc_load(const S& s, nd_grid<Grids...>& g) {
+    const auto sub = s["grids"];
+    [&]<std::size_t... I>(std::index_sequence<I...>) {
+        ((sub.load_at(std::to_string(I), std::get<I>(g.grids()))), ...);
+    }(std::index_sequence_for<Grids...> {});
 }
 
 } // namespace simplemc

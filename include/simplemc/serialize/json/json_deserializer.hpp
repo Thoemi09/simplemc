@@ -57,7 +57,7 @@ public:
     }
 
     /**
-     * @brief Read sub-key `key` of the current position into `v`.
+     * @brief Read sub-key `key` of the current position into `v`; return `*this` for chaining.
      *
      * @details If `T` has an ADL `simplemc_load`, this descends into the sub-position and dispatches.
      * Otherwise the value is read via `nlohmann::json::get_to`, triggering `from_json` /
@@ -66,12 +66,14 @@ public:
      * Throws simplemc::simplemc_exception via nlohmann's `at()` if the key is missing.
      */
     template <class T>
-    void load_at(std::string_view key, T& v) {
-        if constexpr (detail::has_simplemc_load<T, json_deserializer>) {
-            simplemc_load((*this)[key], v);
+    json_deserializer load_at(std::string_view key, T& v) const {
+        if constexpr (has_simplemc_load<T, json_deserializer>) {
+            const auto sub = (*this)[key];
+            simplemc_load(sub, v);
         } else {
             current_->at(std::string { key }).get_to(v);
         }
+        return *this;
     }
 
     /**
@@ -80,7 +82,7 @@ public:
      * @details Throws simplemc::simplemc_exception if `key` is absent. Use @ref has to check
      * presence first when the key is optional.
      */
-    json_deserializer operator[](std::string_view key) {
+    json_deserializer operator[](std::string_view key) const {
         if (!current_->contains(std::string { key })) {
             throw simplemc_exception(fmt::format("missing key: '{}'", key));
         }
@@ -119,7 +121,7 @@ public:
     template <class T>
     static void load_from_file(const file_handle& path, T& v) {
         json_deserializer d { path };
-        if constexpr (detail::has_simplemc_load<T, json_deserializer>) {
+        if constexpr (has_simplemc_load<T, json_deserializer>) {
             simplemc_load(d, v);
         } else {
             d.tree().get_to(v);

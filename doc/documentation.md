@@ -111,7 +111,7 @@ modify their functionality.
 
 ## Serialization library
 
-@ref simplemc-serialize is a generic, extendable serialization framework that support multiple 
+@ref simplemc-serialize is a generic, extensible serialization framework that supports multiple 
 backends. 
 
 It is split into a backend-agnostic core library and backend-dependent sublibraries:

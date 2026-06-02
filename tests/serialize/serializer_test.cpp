@@ -46,15 +46,13 @@ public:
 
     bool operator==(const intrusive_point&) const = default;
 
-    template <class S>
-        requires simplemc::serializer<std::remove_cvref_t<S>>
-    friend void simplemc_save(S&& s, const intrusive_point& p) {
+    template <simplemc::serializer S>
+    friend void simplemc_save(S& s, const intrusive_point& p) {
         s.save_at("x", p.x_);
         s.save_at("y", p.y_);
     }
-    template <class S>
-        requires simplemc::deserializer<std::remove_cvref_t<S>>
-    friend void simplemc_load(S&& s, intrusive_point& p) {
+    template <simplemc::deserializer S>
+    friend void simplemc_load(const S& s, intrusive_point& p) {
         s.load_at("x", p.x_);
         s.load_at("y", p.y_);
     }
@@ -68,15 +66,13 @@ struct nonintrusive_box {
     bool operator==(const nonintrusive_box&) const = default;
 };
 
-template <class S>
-    requires simplemc::serializer<std::remove_cvref_t<S>>
-void simplemc_save(S&& s, const nonintrusive_box& b) {
+template <simplemc::serializer S>
+void simplemc_save(S& s, const nonintrusive_box& b) {
     s.save_at("width", b.width);
     s.save_at("height", b.height);
 }
-template <class S>
-    requires simplemc::deserializer<std::remove_cvref_t<S>>
-void simplemc_load(S&& s, nonintrusive_box& b) {
+template <simplemc::deserializer S>
+void simplemc_load(const S& s, nonintrusive_box& b) {
     s.load_at("width", b.width);
     s.load_at("height", b.height);
 }
@@ -90,16 +86,14 @@ struct composite {
     bool operator==(const composite&) const = default;
 };
 
-template <class S>
-    requires simplemc::serializer<std::remove_cvref_t<S>>
-void simplemc_save(S&& s, const composite& c) {
+template <simplemc::serializer S>
+void simplemc_save(S& s, const composite& c) {
     s.save_at("pt", c.pt);
     s.save_at("bx", c.bx);
     s.save_at("data", c.data);
 }
-template <class S>
-    requires simplemc::deserializer<std::remove_cvref_t<S>>
-void simplemc_load(S&& s, composite& c) {
+template <simplemc::deserializer S>
+void simplemc_load(const S& s, composite& c) {
     s.load_at("pt", c.pt);
     s.load_at("bx", c.bx);
     s.load_at("data", c.data);
@@ -116,13 +110,18 @@ public:
 
     mock_output() : current_ { &own_ } {}
 
-    void save_at(std::string_view key, double v) { (*current_)[std::string { key }] = v; }
+    mock_output save_at(std::string_view key, double v) {
+        (*current_)[std::string { key }] = v;
+        return *this;
+    }
     // For composite types, mock_output supports recursive ADL dispatch through key-prefixing.
     // For this test we only care about concept satisfaction.
 
     mock_output operator[](std::string_view /*key*/) { return *this; }
+
+    [[nodiscard]] bool has(std::string_view key) const { return current_->contains(std::string { key }); }
 };
-static_assert(simplemc::serializer<mock_output>);
+static_assert(simplemc::serializer<mock_output, double>);
 
 } // namespace test_types
 

@@ -1208,9 +1208,9 @@
  * \mathrm{E}[\mathbf{Z}_2], \dots) \f$ and \f$ \mathrm{E}[f(\mathbf{Z}_1, \mathbf{Z}_2, \dots)] \f$.
  * They are in general not the same.
  *
- * It can be shown, that the approximation \f$ f_{\text{naive}} \f$ has a bias of order \f$ 
- * \mathcal{O}(1/N) \f$ for non-linear functions \f$ f \f$. Furthermore, it is not trivial to 
- * propagate the error bars of the individual expectation values to get the error bars of our estimate 
+ * It can be shown, that the approximation \f$ f_{\text{naive}} \f$ has a bias of order \f$
+ * \mathcal{O}(1/N) \f$ for non-linear functions \f$ f \f$. Furthermore, it is not trivial to
+ * propagate the error bars of the individual expectation values to get the error bars of our estimate
  * for \f$ f \f$, i.e. to calculate
  * \f[
  *   \mathrm{Var}[f(\overline{\mathbf{Z}_1}, \overline{\mathbf{Z}_2}, \dots)] =
@@ -1290,17 +1290,17 @@
 /**
  * @defgroup simplemc-serialize simplemc-serialize
  * @brief Generic serialization framework.
- * 
+ *
  * @details **simplemc-serialize** provides a generic setup for serializing and deserializing various
- * **simplemc** types as well as custom user types. It is designed to be extensible and adaptable to 
- * different serialization backends, allowing users to choose the one that best fits their needs or to 
+ * **simplemc** types as well as custom user types. It is designed to be extensible and adaptable to
+ * different serialization backends, allowing users to choose the one that best fits their needs or to
  * implement their own.
- * 
- * The @ref simplemc-serialize-core module defines the core concepts and ADL customization point that 
+ *
+ * The @ref simplemc-serialize-core module defines the core concepts and ADL customization point that
  * all backends satisfy. It forms the basis for the generic serialization interface.
- * 
- * The various backends sit on top of the core and provide concrete implementations of the 
- * simplemc::serializer and simplemc::deserializer concepts. **simplemc-serialize** ships with the 
+ *
+ * The various backends sit on top of the core and provide concrete implementations of the
+ * simplemc::serializer and simplemc::deserializer concepts. **simplemc-serialize** ships with the
  * following backends:
  * - @ref simplemc-serialize-json is based on the popular <a href="https://github.com/nlohmann/json">
  * nlohmann_json</a> library.
@@ -1309,50 +1309,63 @@
 /**
  * @defgroup simplemc-serialize-core Core serialization
  * @ingroup simplemc-serialize
- * @brief Header-only core: serializer/deserializer concepts, ADL customization point, and
- * explicit range/tuple helpers.
+ * @brief Basic serialization interface and utilities.
  *
- * @details The core defines the two concepts that every backend satisfies —
- * simplemc::serializer and simplemc::deserializer — and the ADL pattern that lets
- * each user/library type carry its own state-I/O logic without coupling to a specific backend.
+ * @details The core defines the concepts that every backend satisfies — simplemc::serializer and
+ * simplemc::deserializer — and the ADL pattern that lets each user/library type carry its own
+ * state-I/O logic without coupling to a specific backend.
+ *
+ * @section simplemc-serialize-core-model What is a serializer?
+ *
+ * A **serializer** writes named values/objects into some hierarchical store — a JSON file, an HDF5
+ * file, a TOML table, etc. A **deserializer** reads them back. Both always point at one **location**
+ * inside the store; everything you save or load happens at (or below) that location.
+ *
+ * There are four basic operations every (de)serializer is required to support. Let `s` be a
+ * (de)serializer object and let `key` be a `std::string_view` and let `value` be an instance of some
+ * type `T`:
+ *
+ * - `s[key]` returns another serializer / deserializer of the same type, pointing one level
+ * deeper at the sub-location `key` than the current location. The store itself is not duplicated —
+ * `s` and the returned instance write into the same underlying file or object.
+ * - `s.has(key)` returns true if `key` exists at the current location.
+ * - `s.save_at(key, value)` writes `value` into the store at sub-location `key` relative to the
+ * current location and returns `s` (or a reference to it). That means calls can be chained:
+ * `s.save_at("a", a).save_at("b", b);`.
+ * - `s.load_at(key, value)` reads from sub-location `key` into `value` and returns `s` for chaining.
+ * Backends typically throw on a missing key — use `has(key)` first when the key is optional.
+ *
+ * The dispatch rule for `save_at` / `load_at` is described in @ref simplemc-serialize-core-adl.
+ *
+ * **Examples across backends.** `s["physics"].save_at("temperature", 1.5)` produces:
+ *
+ * - *JSON*: `{"physics": {"temperature": 1.5}}`
+ * - *HDF5*: a dataset `/physics/temperature` containing `1.5`
+ * - *TOML*: `[physics]\ntemperature = 1.5`
+ *
+ * The serializer abstracts over these — user code writes the same call regardless of backend.
  *
  * @section simplemc-serialize-core-adl ADL customization point
  *
- * A type `T` opts into simplemc serialization by providing free functions discoverable by ADL:
+ * A type `T` opts into **simplemc** serialization by providing free functions discoverable by ADL:
+ *
  * ```
  * template <simplemc::serializer S>
  * void simplemc_save(S& s, const T& v);
  *
  * template <simplemc::deserializer S>
- * void simplemc_load(S& s, T& v);
+ * void simplemc_load(const S& s, T& v);
  * ```
- * These may be `friend`-declared inside the class when private access is needed. Each
- * backend's `save_at` / `load_at` dispatches to the ADL function if present (see
- * simplemc::detail::has_simplemc_save / simplemc::detail::has_simplemc_load) and otherwise
- * falls through to the backend's native idiom (e.g. nlohmann's `to_json` /
- * `adl_serializer<T>` for the JSON backend).
  *
- * Library types in simplemc-accs, simplemc-grids, simplemc-random, and simplemc-numeric ship
- * ADL `simplemc_save` / `simplemc_load` overloads that the core target transitively makes
- * available to any backend.
+ * These may be `friend`-declared inside the class when private access is needed.
  *
- * @section simplemc-serialize-core-helpers Explicit range and tuple helpers
+ * As described above, `save_at` / `load_at` look up `%simplemc_save` / `simplemc_load` using ADL. If
+ * no matching overload can be found (see simplemc::has_simplemc_save / simplemc::has_simplemc_load),
+ * the (de)serializer might fall through to the backend's native idiom (e.g. nlohmann's `to_json` /
+ * `from_json` for the JSON backend). See specific backend documentation for details.
  *
- * simplemc::save_range / simplemc::load_range / simplemc::save_tuple / simplemc::load_tuple
- * are **not** ADL hooks. They are convenience functions a `simplemc_save` / `simplemc_load`
- * implementation calls explicitly when it needs to round-trip a `std::vector<T>` of arbitrary
- * `T` (including library types with their own `simplemc_save`) or a `std::tuple<Ts...>`
- * element-wise.
- *
- * Plain calls in user code on `std::vector<int>` / `std::tuple<int, double>` should *not* go
- * through these helpers — they hit the backend's native idiom (nlohmann's vector/tuple
- * support for JSON; future HDF5 primitive path). This avoids "hijacking" std-container
- * serialization across all backends.
- *
- * The serializer parameter is taken by forwarding reference so callers can write either
- * `simplemc::save_range(s["full_batches"], v)` (rvalue from `operator[]`) or
- * `auto sub = s["k"]; simplemc::save_range(sub, v);` (bound lvalue) and reuse the
- * sub-serializer.
+ * **simplemc** library types ship `%simplemc_save` / `simplemc_load` overloads that should work for
+ * any supported backend.
  */
 
 /**

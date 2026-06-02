@@ -488,28 +488,41 @@ template <varalg A = varalg::welford, sample_range R>
 }
 
 /**
- * @brief Serialize a `mean_acc` as `{"count": N, "mdata": [...]}` via the simplemc-serialize API.
+ * @brief Serialize a mean_acc by its sample count and mean data.
  *
  * @details Uses the public `count()` / `mdata()` getters and the `(mdata, count)` constructor for
  * round-trip. The sticky streaming index is intentionally not serialized — it resets to 0 on
  * reconstruction.
+ *
+ * @tparam S Serializer type.
+ * @tparam T Sample type.
+ * @tparam A Variance algorithm.
+ * @param s Serializer.
+ * @param acc Mean accumulator to save.
  */
-template <class S, sample_type T, varalg A>
-    requires serializer<std::remove_cvref_t<S>>
-void simplemc_save(S&& s, const mean_acc<T, A>& a) {
-    s.save_at("count", a.count());
-    s.save_at("mdata", a.mdata());
+template <serializer S, sample_type T, varalg A>
+void simplemc_save(S& s, const mean_acc<T, A>& acc) {
+    s.save_at("count", acc.count());
+    s.save_at("mdata", acc.mdata());
 }
 
-template <class S, sample_type T, varalg A>
-    requires deserializer<std::remove_cvref_t<S>>
-void simplemc_load(S&& s, mean_acc<T, A>& a) {
+/**
+ * @brief Deserialize a mean_acc (inverse of @ref simplemc_save).
+ *
+ * @tparam S Deserializer type.
+ * @tparam T Sample type.
+ * @tparam A Variance algorithm.
+ * @param s Deserializer.
+ * @param acc Mean accumulator to populate.
+ */
+template <deserializer S, sample_type T, varalg A>
+void simplemc_load(const S& s, mean_acc<T, A>& acc) {
     using ma = mean_acc<T, A>;
-    typename ma::count_type c {};
-    auto md = a.mdata();
-    s.load_at("count", c);
-    s.load_at("mdata", md);
-    a = ma { md, c };
+    typename ma::count_type count {};
+    auto mdata = acc.mdata();
+    s.load_at("count", count);
+    s.load_at("mdata", mdata);
+    acc = ma { mdata, count };
 }
 
 /** @} */

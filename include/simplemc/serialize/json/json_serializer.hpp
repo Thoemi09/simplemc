@@ -68,19 +68,21 @@ public:
         current_ { tree_.get() } {}
 
     /**
-     * @brief Write `v` at sub-key `key` of the current position.
+     * @brief Write `v` at sub-key `key` of the current position; return `*this` for chaining.
      *
      * @details If `T` has an ADL `simplemc_save`, this descends into the sub-position (creating it if
      * needed) and dispatches. Otherwise the value is written directly via nlohmann assignment,
      * triggering `to_json` / `adl_serializer<T>` if defined.
      */
     template <class T>
-    void save_at(std::string_view key, const T& v) {
-        if constexpr (detail::has_simplemc_save<T, json_serializer>) {
-            simplemc_save((*this)[key], v);
+    json_serializer save_at(std::string_view key, const T& v) {
+        if constexpr (has_simplemc_save<T, json_serializer>) {
+            auto sub = (*this)[key];
+            simplemc_save(sub, v);
         } else {
             (*current_)[std::string { key }] = v;
         }
+        return *this;
     }
 
     /**
@@ -95,6 +97,11 @@ public:
             sub = nlohmann::json::object();
         }
         return json_serializer { tree_, &sub, opts_ };
+    }
+
+    /// Test whether the current position contains `key`.
+    [[nodiscard]] bool has(std::string_view key) const {
+        return current_->contains(std::string { key });
     }
 
     /**
@@ -122,7 +129,7 @@ public:
     template <class T>
     static void save_to_file(const file_handle& path, const T& v, options opts = {}) {
         json_serializer s { opts };
-        if constexpr (detail::has_simplemc_save<T, json_serializer>) {
+        if constexpr (has_simplemc_save<T, json_serializer>) {
             simplemc_save(s, v);
         } else {
             *s.tree_ = v;

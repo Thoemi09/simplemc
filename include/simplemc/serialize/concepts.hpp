@@ -7,68 +7,70 @@
 #define SIMPLEMC_SERIALIZE_CONCEPTS_HPP
 
 #include <concepts>
-#include <cstddef>
 #include <string_view>
 
 namespace simplemc {
 
 /**
- * @addtogroup simplemc-serialize-concepts
+ * @addtogroup simplemc-serialize-core
  * @{
  */
 
 /**
- * @brief Output backend for keyed state serialization.
+ * @brief Concept that specifies the requirements for a serializer backend.
  *
- * @details A type satisfies simplemc::serializer if instances of `S` can write keyed values into
- * the current position and navigate to sub-positions.
+ * @details A serializer is able to write named values/objects into some hierarchical store, navigate
+ * the store (downward) to sub-locations, and report the existence of sub-locations. See
+ * @ref simplemc-serialize-core-model for details.
  *
- * Let `s` be a serializer instance of type `S` and let `key` be a `std::string_view`. The
- * requirements for a type `S` to be a serializer are the following:
+ * Let `s` be an instance of `S`, `key` a `std::string_view`, and `value` an instane of type
+ * `const V&`. The requirements for `S` to be a serializer are the following:
  *
- * - `s.save_at(key, value)` writes `value` at sub-key `key` of the current position
- * - `s[key]` returns another `S` pointing at the sub-position `key`
+ * - `s[key]` returns a new serializer object (by value) pointing at sub-location `key` relative to
+ * the current location.
+ * - `s.has(key)` returns a boolean reporting whether `key` is a sub-location of the current location.
+ * - `s.save_at(key, value)` writes `value` at sub-location `key` of the current location and returns
+ * `s` for chaining.
  *
  * @tparam S Type to check.
+ * @tparam V Value type used in the smoke test (defaults to `int`).
  */
-template <class S>
-concept serializer = requires(S& s, int probe) {
-    { s.save_at(std::string_view {}, probe) };
+template <class S, class V = int>
+concept serializer = requires(S& s, const S& cs, const V& value) {
     { s[std::string_view {}] } -> std::same_as<S>;
+    { cs.has(std::string_view {}) } -> std::convertible_to<bool>;
+    { s.save_at(std::string_view {}, value) } -> std::same_as<S>;
 };
 
 /**
- * @brief Input backend for keyed state deserialization.
+ * @brief Concept that specifies the requirements for a deserializer backend.
  *
- * @details A type satisfies simplemc::deserializer if instances of `S` can read keyed values from
- * the current position, navigate to sub-positions, and answer schema-tolerance queries about the
- * stored data.
+ * @details A deserializer is able to read named values/objets from some hierarchical store, navigate
+ * the store (downward) to sub-locations, and report the existence of sub-locations. See
+ * @ref simplemc-serialize-core-model for details. All operations must be callable on a `const`
+ * instance — a deserializer never mutates its own state.
  *
- * Let `s` be a deserializer instance of type `S` and let `key` be a `std::string_view`. The
- * requirements for a type `S` to be a deserializer are the following:
+ * Let `s` be an instance of `const S`, `key` a `std::string_view`, and `value` an lvalue reference of
+ * type `V`. The requirements for the pair `S` to be a deserializer are the following:
  *
- * - `s.load_at(key, value_ref)` reads from sub-key `key` of the current position into `value_ref`
- * - `s[key]` returns another `S` pointing at the sub-position `key`
- * - `s.has(key)` returns a boolean indicating whether `key` is present (convertible to `bool`)
- * - `s.array_size(key)` returns the number of elements in the array at `key` (convertible to
- * `std::size_t`)
+ * - `s[key]` returns a new deserializer object (by value) pointing at sub-location `key` relative to
+ * the current location.
+ * - `s.has(key)` returns a boolean reporting whether `key` is a sub-location of the current location.
+ * - `s.load_at(key, value)` reads from sub-location `key` relative to the current location into
+ * `value` and returns `s` for chaining
  *
  * @tparam S Type to check.
+ * @tparam V Value type used in the smoke test (defaults to `int`).
  */
-template <class S>
-concept deserializer = requires(S& s, int& probe) {
-    { s.load_at(std::string_view {}, probe) };
-    { s[std::string_view {}] } -> std::same_as<S>;
-    { s.has(std::string_view {}) } -> std::convertible_to<bool>;
-    { s.array_size(std::string_view {}) } -> std::convertible_to<std::size_t>;
+template <class S, class V = int>
+concept deserializer = requires(const S& cs, V& v) {
+    { cs[std::string_view {}] } -> std::same_as<S>;
+    { cs.has(std::string_view {}) } -> std::convertible_to<bool>;
+    { cs.load_at(std::string_view {}, v) } -> std::same_as<S>;
 };
 
-/** @} */
-
-namespace detail {
-
 /**
- * @brief True when `simplemc_save(s, t)` is callable via ADL.
+ * @brief Check if type `T` is serializable by a serializer of type `S` via a call to `simplemc_save`.
  *
  * @tparam T Value type being serialized.
  * @tparam S Serializer type.
@@ -77,23 +79,16 @@ template <class T, class S>
 concept has_simplemc_save = requires(const T& t, S& s) { simplemc_save(s, t); };
 
 /**
- * @brief True when `simplemc_load(s, t)` is callable via ADL.
+ * @brief Check if type `T` is deserializable by a deserializer of type `S` via a call to 
+ * `simplemc_load`.
  *
  * @tparam T Value type being deserialized into.
  * @tparam S Deserializer type.
  */
 template <class T, class S>
-concept has_simplemc_load = requires(T& t, S& s) { simplemc_load(s, t); };
+concept has_simplemc_load = requires(T& t, const S& s) { simplemc_load(s, t); };
 
-/**
- * @brief Helper for `static_assert(detail::always_false<T>, "...")` inside templated branches.
- *
- * @tparam T Unused — the trait is `false` regardless.
- */
-template <class T>
-inline constexpr bool always_false = false;
-
-} // namespace detail
+/** @} */
 
 } // namespace simplemc
 
