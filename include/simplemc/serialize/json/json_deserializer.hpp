@@ -14,6 +14,7 @@
 #include <nlohmann/json.hpp>
 
 #include <cstddef>
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -41,13 +42,14 @@ namespace simplemc {
 class json_deserializer {
 public:
     /// File path type.
-    using file_handle = std::string;
+    using file_handle = std::filesystem::path;
     /// Configuration options type (see @ref json_io_options).
     using options = json_io_options;
 
     /// Construct by reading a JSON file from `path` using `opts` (text mode by default).
     explicit json_deserializer(const file_handle& path, options opts = {}) :
-        tree_ { std::make_shared<nlohmann::json>() }, current_ { tree_.get() } {
+        tree_ { std::make_shared<nlohmann::json>() },
+        current_ { tree_.get() } {
         simplemc::read_json_file(*tree_, path, opts);
     }
 
@@ -135,7 +137,8 @@ public:
 private:
     /// Sub-deserializer constructor — shares `tree`, points at `current`.
     json_deserializer(std::shared_ptr<nlohmann::json> tree, const nlohmann::json* current) :
-        tree_ { std::move(tree) }, current_ { current } {}
+        tree_ { std::move(tree) },
+        current_ { current } {}
 
     std::shared_ptr<nlohmann::json> tree_;
     const nlohmann::json* current_;

@@ -7,6 +7,7 @@
 #include <simplemc/utils/simplemc_exception.hpp>
 
 #include <fmt/format.h>
+#include <fmt/std.h>
 #include <nlohmann/json.hpp>
 
 #include <fstream>
@@ -14,17 +15,16 @@
 
 namespace simplemc {
 
-void write_json_file(const nlohmann::json& json, const std::string& fname,
-                     const json_io_options& opts) {
+void write_json_file(const nlohmann::json& json, const std::filesystem::path& fpath, const json_io_options& opts) {
     if (opts.mode == json_file_mode::text) {
-        std::ofstream os(fname);
+        std::ofstream os(fpath);
         os << std::setw(opts.indent) << json;
         if (!os) {
-            throw simplemc_exception(fmt::format("Writing JSON file {} in text mode failed", fname));
+            throw simplemc_exception(fmt::format("Writing JSON file {} in text mode failed", fpath));
         }
     } else {
         using nlohmann::detail::output_adapter;
-        std::ofstream os(fname, std::ios_base::binary);
+        std::ofstream os(fpath, std::ios_base::binary);
         if (opts.mode == json_file_mode::bson) {
             nlohmann::json::to_bson(json, output_adapter<char>(os));
         } else if (opts.mode == json_file_mode::cbor) {
@@ -35,19 +35,19 @@ void write_json_file(const nlohmann::json& json, const std::string& fname,
             nlohmann::json::to_ubjson(json, output_adapter<char>(os));
         }
         if (!os) {
-            throw simplemc_exception(fmt::format("Writing JSON file {} in binary mode failed", fname));
+            throw simplemc_exception(fmt::format("Writing JSON file {} in binary mode failed", fpath));
         }
     }
 }
 
-void read_json_file(nlohmann::json& json, const std::string& fname, const json_io_options& opts) {
+void read_json_file(nlohmann::json& json, const std::filesystem::path& fpath, const json_io_options& opts) {
     if (opts.mode == json_file_mode::text) {
-        std::ifstream is(fname);
+        std::ifstream is(fpath);
         if (!(is >> json)) {
-            throw simplemc_exception(fmt::format("Reading JSON file {} in text mode failed", fname));
+            throw simplemc_exception(fmt::format("Reading JSON file {} in text mode failed", fpath));
         }
     } else {
-        std::ifstream is(fname, std::ios_base::binary);
+        std::ifstream is(fpath, std::ios_base::binary);
         if (opts.mode == json_file_mode::bson) {
             json = nlohmann::json::from_bson(is);
         } else if (opts.mode == json_file_mode::cbor) {
@@ -58,7 +58,7 @@ void read_json_file(nlohmann::json& json, const std::string& fname, const json_i
             json = nlohmann::json::from_ubjson(is);
         }
         if (!is) {
-            throw simplemc_exception(fmt::format("Reading JSON file {} in binary mode failed", fname));
+            throw simplemc_exception(fmt::format("Reading JSON file {} in binary mode failed", fpath));
         }
     }
 }

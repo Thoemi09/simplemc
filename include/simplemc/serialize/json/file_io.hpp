@@ -8,7 +8,7 @@
 
 #include <nlohmann/json_fwd.hpp>
 
-#include <string>
+#include <filesystem>
 
 namespace simplemc {
 
@@ -50,10 +50,10 @@ struct json_io_options {
  * It throws a simplemc::simplemc_exception on failure.
  *
  * @param json `nlohmann::json` object to be written.
- * @param fname Name of the file.
+ * @param fpath Path to the file.
  * @param opts IO options (format and, for text, indentation).
  */
-void write_json_file(const nlohmann::json& json, const std::string& fname, const json_io_options& opts = {});
+void write_json_file(const nlohmann::json& json, const std::filesystem::path& fpath, const json_io_options& opts = {});
 
 /**
  * @brief Read a JSON file into an `nlohmann::json` object.
@@ -63,10 +63,10 @@ void write_json_file(const nlohmann::json& json, const std::string& fname, const
  * It throws a simplemc::simplemc_exception on failure.
  *
  * @param json `nlohmann::json` object to be read into.
- * @param fname Name of the file.
+ * @param fpath Path to the file.
  * @param opts IO options (format).
  */
-void read_json_file(nlohmann::json& json, const std::string& fname, const json_io_options& opts = {});
+void read_json_file(nlohmann::json& json, const std::filesystem::path& fpath, const json_io_options& opts = {});
 
 /** @} */
 

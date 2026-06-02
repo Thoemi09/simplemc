@@ -11,6 +11,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -24,33 +25,40 @@ namespace simplemc {
  */
 
 /**
- * @brief JSON write-side serializer.
+ * @brief JSON serializer.
  *
- * @details Owns the underlying `nlohmann::json` tree via a `std::shared_ptr` and tracks the current
- * position via a raw pointer into the tree. Navigation via `operator[]` returns a new
- * `json_serializer` instance sharing the tree but pointing at the sub-node — there is no stack and no
- * RAII scope.
+ * @details The JSON serializer satisfies the simplemc::serializer concept. It owns the underlying
+ * `nlohmann::json` tree via a `std::shared_ptr` and tracks the current position via a raw pointer
+ * into the tree. Navigation via `operator[]` returns a new `json_serializer` instance sharing the
+ * tree but pointing at the sub-node — there is no stack and no RAII scope.
  *
- * Per-type customization is via ADL `simplemc_save(json_serializer&, const T&)`. Types without such a
- * function fall through to `(*current)[key] = v`, which dispatches to nlohmann's `to_json` /
- * `adl_serializer<T>` machinery.
+ * Serialization/Deserialization is done via save_at()/load_at() which performs the following
+ * dispatch:
+ * - If ADL finds an overload of `simplemc_save(json_serializer&, const T&)` /
+ * `simplemc_load(const json_serializer&, T&)` for the type `T` being serialized/deserialized, it is
+ * invoked with a sub-serializer at the given key (created if needed).
+ * - Otherwise, it falls back to direct assignment/access via nlohmann.
  *
- * @note Reference semantics on copy: `auto s2 = s;` aliases the same underlying tree. Users who need
- * a fresh tree default-construct a new `json_serializer`.
+ * @note Reference semantics on copy are being used, i.e. a copy will refer to the same underlying
+ * `nlohmann::json` object. Users who need a fresh tree should default-construct a new serializer
+ * object.
  */
 class json_serializer {
 public:
     /// File path type.
-    using file_handle = std::string;
+    using file_handle = std::filesystem::path;
     /// Configuration options type (see @ref json_io_options).
     using options = json_io_options;
 
     /// Default-construct a fresh root serializer with default options.
-    json_serializer() : tree_ { std::make_shared<nlohmann::json>(nlohmann::json::object()) }, current_ { tree_.get() } {}
+    json_serializer() :
+        tree_ { std::make_shared<nlohmann::json>(nlohmann::json::object()) },
+        current_ { tree_.get() } {}
 
     /// Construct a fresh root serializer with the given options.
     explicit json_serializer(options opts) :
-        opts_ { opts }, tree_ { std::make_shared<nlohmann::json>(nlohmann::json::object()) },
+        opts_ { opts },
+        tree_ { std::make_shared<nlohmann::json>(nlohmann::json::object()) },
         current_ { tree_.get() } {}
 
     /**
@@ -86,9 +94,7 @@ public:
     }
 
     /// Test whether the current position contains `key`.
-    [[nodiscard]] bool has(std::string_view key) const {
-        return current_->contains(std::string { key });
-    }
+    [[nodiscard]] bool has(std::string_view key) const { return current_->contains(std::string { key }); }
 
     /**
      * @brief Write the full tree to a file.
@@ -96,9 +102,7 @@ public:
      * @details Always writes from the root (regardless of which sub-serializer this is called on),
      * since the tree is shared. Uses the configured `options::mode` and `options::indent`.
      */
-    void write_to_file(const file_handle& path) const {
-        simplemc::write_json_file(*tree_, path, opts_);
-    }
+    void write_to_file(const file_handle& path) const { simplemc::write_json_file(*tree_, path, opts_); }
 
     /**
      * @brief One-shot helper: serialize `v` into a fresh JSON tree and write it to `path`.
@@ -128,7 +132,9 @@ public:
 private:
     /// Sub-serializer constructor — shares `tree`, points at `current`.
     json_serializer(std::shared_ptr<nlohmann::json> tree, nlohmann::json* current, options opts) :
-        opts_ { opts }, tree_ { std::move(tree) }, current_ { current } {}
+        opts_ { opts },
+        tree_ { std::move(tree) },
+        current_ { current } {}
 
     options opts_ {};
     std::shared_ptr<nlohmann::json> tree_;
