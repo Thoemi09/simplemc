@@ -14,7 +14,11 @@
 namespace simplemc {
 
 /**
- * @ingroup simplemc-grids-1d
+ * @addtogroup simplemc-grids-1d
+ * @{
+ */
+
+/**
  * @brief 1-dimensional symmetric power grid.
  *
  * @details In the following, we use the notation from @ref simplemc-grids-1d.
@@ -207,14 +211,14 @@ private:
 };
 
 /**
- * @brief Serialize a symmetric_power_grid by its (first, last, size, power) parameters.
+ * @brief Serialize a simplemc::symmetric_power_grid.
  *
- * @details The power exponent is read from the grid's first half (`grid1().power()`); the second
- * half mirrors it.
+ * @details It serializes the first and last grid points, \f$ a \f$ and \f$ b \f$, the number of grid
+ * points \f$ M \f$ and the power exponent \f$ p \f$.
  *
- * @tparam S Serializer type.
- * @param s Serializer.
- * @param g Symmetric power grid to save.
+ * @tparam S simplemc::serializer type.
+ * @param s Serializer object.
+ * @param g Symmetric power grid to serialize.
  */
 template <serializer S>
 void simplemc_save(S& s, const symmetric_power_grid& g) {
@@ -225,11 +229,15 @@ void simplemc_save(S& s, const symmetric_power_grid& g) {
 }
 
 /**
- * @brief Deserialize a symmetric_power_grid (inverse of @ref simplemc_save).
+ * @brief Deserialize a simplemc::symmetric_power_grid.
  *
- * @tparam S Deserializer type.
- * @param s Deserializer.
- * @param g Symmetric power grid to populate.
+ * @details It first deserializes the first and last grid points, \f$ a \f$ and \f$ b \f$, the number
+ * of grid points \f$ M \f$ and the power exponent \f$ p \f$. It then uses them to reset the grid
+ * (see simplemc::symmetric_power_grid::reset).
+ *
+ * @tparam S simplemc::deserializer type.
+ * @param s Deserializer object.
+ * @param g Symmetric power grid to deserialize into.
  */
 template <deserializer S>
 void simplemc_load(const S& s, symmetric_power_grid& g) {
@@ -243,6 +251,8 @@ void simplemc_load(const S& s, symmetric_power_grid& g) {
     s.load_at("power", power);
     g.reset(first, last, size, power);
 }
+
+/** @} */
 
 } // namespace simplemc
 

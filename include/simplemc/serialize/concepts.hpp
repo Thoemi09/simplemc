@@ -79,7 +79,7 @@ template <class T, class S>
 concept has_simplemc_save = requires(const T& t, S& s) { simplemc_save(s, t); };
 
 /**
- * @brief Check if type `T` is deserializable by a deserializer of type `S` via a call to 
+ * @brief Check if type `T` is deserializable by a deserializer of type `S` via a call to
  * `simplemc_load`.
  *
  * @tparam T Value type being deserialized into.

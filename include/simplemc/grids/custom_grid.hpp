@@ -8,6 +8,7 @@
 
 #include <simplemc/grids/grid_base.hpp>
 #include <simplemc/grids/grid_iterator.hpp>
+#include <simplemc/serialize/concepts.hpp>
 
 #include <algorithm>
 #include <functional>
@@ -18,7 +19,11 @@
 namespace simplemc {
 
 /**
- * @ingroup simplemc-grids-1d
+ * @addtogroup simplemc-grids-1d
+ * @{
+ */
+
+/**
  * @brief 1-dimensional custom grid.
  *
  * @details In the following, we use the notation from @ref simplemc-grids-1d.
@@ -73,7 +78,7 @@ public:
      *
      * @param x Ordered array of grid points.
      */
-    constexpr custom_grid(std::vector<value_type> x) { reset(std::move(x)); }
+    explicit constexpr custom_grid(std::vector<value_type> x) { reset(std::move(x)); }
 
     /**
      * @brief Reset the custom grid by specifying the grid points.
@@ -157,6 +162,39 @@ public:
 private:
     std::vector<value_type> x_ { 0.0, 1.0 };
 };
+
+/**
+ * @brief Serialize a simplemc::custom_grid.
+ *
+ * @details It serializes the ordered array of grid points \f$ \mathbf{x} \f$.
+ *
+ * @tparam S simplemc::serializer type.
+ * @param s Serializer object.
+ * @param g Custom grid to serialize.
+ */
+template <serializer S>
+void simplemc_save(S& s, const custom_grid& g) {
+    s.save_at("x", g.grid_points());
+}
+
+/**
+ * @brief Deserialize a simplemc::custom_grid.
+ *
+ * @details It first deserializes the ordered array of grid points \f$ \mathbf{x} \f$ and then uses it
+ * to reset the grid (see simplemc::custom_grid::reset).
+ *
+ * @tparam S simplemc::deserializer type.
+ * @param s Deserializer object.
+ * @param g Custom grid to deserialize into.
+ */
+template <deserializer S>
+void simplemc_load(const S& s, custom_grid& g) {
+    auto x = std::vector<custom_grid::value_type> {};
+    s.load_at("x", x);
+    g.reset(std::move(x));
+}
+
+/** @} */
 
 } // namespace simplemc
 

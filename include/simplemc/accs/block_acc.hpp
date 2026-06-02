@@ -9,6 +9,7 @@
 #include <simplemc/accs/concepts.hpp>
 #include <simplemc/accs/mean_acc.hpp>
 #include <simplemc/accs/utils.hpp>
+#include <simplemc/serialize/concepts.hpp>
 #include <simplemc/utils/ranges.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
@@ -417,6 +418,48 @@ private:
     mean_acc_type block_;
     count_type blsize_ { 1 };
 };
+
+/**
+ * @brief Serialize a simplemc::block_acc.
+ *
+ * @details It serializes the block size \f$ B \f$ together with the wrapped accumulator and the
+ * simplemc::mean_acc holding the current block data.
+ *
+ * @tparam S simplemc::serializer type.
+ * @tparam A Wrapped accumulator type of the block accumulator.
+ * @param s Serializer object.
+ * @param acc Block accumulator to serialize.
+ */
+template <serializer S, typename A>
+void simplemc_save(S& s, const block_acc<A>& acc) {
+    s.save_at("block_size", acc.block_size());
+    s.save_at("acc", acc.accumulator());
+    s.save_at("block", acc.block());
+}
+
+/**
+ * @brief Deserialize a simplemc::block_acc.
+ *
+ * @details It first serializes the block size \f$ B \f$ together with the wrapped accumulator and the
+ * simplemc::mean_acc holding the current block data. It then uses them to construct the block
+ * accumulator (see simplemc::block_acc(const acc_type&, const mean_acc_type&, count_type)).
+ *
+ * @tparam S simplemc::deserializer type.
+ * @tparam A Wrapped accumulator type of the block accumulator.
+ * @param s Deserializer object.
+ * @param acc Block accumulator to deserialize into.
+ */
+template <deserializer S, typename A>
+void simplemc_load(const S& s, block_acc<A>& acc) {
+    using acc_type = block_acc<A>;
+    auto blsize = typename acc_type::count_type {};
+    auto inner_acc = acc.accumulator();
+    auto inner_block = acc.block();
+    s.load_at("block_size", blsize);
+    s.load_at("acc", inner_acc);
+    s.load_at("block", inner_block);
+    acc = acc_type { inner_acc, inner_block, blsize };
+}
 
 /** @} */
 

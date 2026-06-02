@@ -14,7 +14,11 @@
 namespace simplemc {
 
 /**
- * @ingroup simplemc-grids-1d
+ * @addtogroup simplemc-grids-1d
+ * @{
+ */
+
+/**
  * @brief 1-dimensional power grid.
  *
  * @details In the following, we use the notation from @ref simplemc-grids-1d.
@@ -171,11 +175,14 @@ private:
 };
 
 /**
- * @brief Serialize a power_grid by its (first, last, size, power) parameters.
+ * @brief Serialize a simplemc::power_grid.
  *
- * @tparam S Serializer type.
- * @param s Serializer.
- * @param g Power grid to save.
+ * @details It serializes the first and last grid points, \f$ a \f$ and \f$ b \f$, the number of grid 
+ * points \f$ M \f$ and the power exponent \f$ p \f$.
+ *
+ * @tparam S simplemc::serializer type.
+ * @param s Serializer object.
+ * @param g Power grid to serialize.
  */
 template <serializer S>
 void simplemc_save(S& s, const power_grid& g) {
@@ -186,11 +193,15 @@ void simplemc_save(S& s, const power_grid& g) {
 }
 
 /**
- * @brief Deserialize a power_grid (inverse of @ref simplemc_save).
+ * @brief Deserialize a simplemc::power_grid.
  *
- * @tparam S Deserializer type.
- * @param s Deserializer.
- * @param g Power grid to populate.
+ * @details It first deserializes the first and last grid points, \f$ a \f$ and \f$ b \f$, the number 
+ * of grid points \f$ M \f$ and the power exponent \f$ p \f$. It then uses them to reset the grid 
+ * (see simplemc::power_grid::reset).
+ *
+ * @tparam S simplemc::deserializer type.
+ * @param s Deserializer object.
+ * @param g Power grid to deserialize into.
  */
 template <deserializer S>
 void simplemc_load(const S& s, power_grid& g) {
@@ -204,6 +215,8 @@ void simplemc_load(const S& s, power_grid& g) {
     s.load_at("power", power);
     g.reset(first, last, size, power);
 }
+
+/** @} */
 
 } // namespace simplemc
 

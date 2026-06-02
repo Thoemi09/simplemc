@@ -342,15 +342,14 @@ private:
 };
 
 /**
- * @brief Serialize a bravais_lattice by its real-space basis matrix.
+ * @brief Serialize a simplemc::bravais_lattice.
  *
- * @details The reciprocal-space basis and the unit-cell volumes are derived from the real-space
- * basis on load, so they need not be stored.
+ * @details It serializes the real-space basis matrix \f$ A \f$.
  *
- * @tparam S Serializer type.
- * @tparam N Spatial dimension.
- * @param s Serializer.
- * @param l Bravais lattice to save.
+ * @tparam S simplemc::serializer type.
+ * @tparam N Spatial dimension of the Bravais lattice.
+ * @param s Serializer object.
+ * @param l Bravais lattice to serialize.
  */
 template <serializer S, int N>
 void simplemc_save(S& s, const bravais_lattice<N>& l) {
@@ -358,16 +357,19 @@ void simplemc_save(S& s, const bravais_lattice<N>& l) {
 }
 
 /**
- * @brief Deserialize a bravais_lattice (inverse of @ref simplemc_save).
+ * @brief Deserialize a simplemc::bravais_lattice.
  *
- * @tparam S Deserializer type.
- * @tparam N Spatial dimension.
- * @param s Deserializer.
- * @param l Bravais lattice to populate.
+ * @details It deserializes the real-space basis matrix \f$ A \f$ and uses it to reset the lattice
+ * (see simplemc::bravais_lattice::reset).
+ *
+ * @tparam S simplemc::deserializer type.
+ * @tparam N Spatial dimension of the Bravais lattice.
+ * @param s Deserializer object.
+ * @param l Bravais lattice to deserialize into.
  */
 template <deserializer S, int N>
 void simplemc_load(const S& s, bravais_lattice<N>& l) {
-    typename bravais_lattice<N>::matrix_type A;
+    auto A = typename bravais_lattice<N>::matrix_type {};
     s.load_at("A", A);
     l.reset(A);
 }

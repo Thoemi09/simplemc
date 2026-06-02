@@ -220,8 +220,8 @@ public:
         acc_batches_(std::move(acc_batches)),
         bcount_(full_batches_[0].count() == 0 ? 1 : full_batches_[0].count()) {
         // find the accumulating batch, i.e. the first batch with count < bcount_
-        auto it = std::find_if(acc_batches_.begin(), acc_batches_.end(),
-            [this](const auto& acc) { return acc.count() < bcount_; });
+        auto it = std::find_if(
+            acc_batches_.begin(), acc_batches_.end(), [this](const auto& acc) { return acc.count() < bcount_; });
         bidx_ = static_cast<std::size_t>(std::distance(acc_batches_.begin(), it));
 
         // check the batches
@@ -720,24 +720,23 @@ template <varalg A = varalg::welford, sample_range R>
 }
 
 /**
- * @brief Serialize a batch_acc as the number of batches plus, for each batch, the full and
- * accumulating mean accumulators.
+ * @brief Serialize a simplemc::batch_acc.
  *
- * @details Full and accumulating batches share the same length `m_b`, so they are written together
- * batch-by-batch. The `(full, acc)` constructor reconstructs the internal `bcount_` / `bidx_`
- * state from the batch counts on load.
+ * @details It serializes the number of batches \f$ M_b \f$ together with the vectors of full and
+ * accumulating batches.
  *
- * @tparam S Serializer type.
- * @tparam T Sample type.
- * @tparam A Variance algorithm.
- * @param s Serializer.
- * @param acc Batch accumulator to save.
+ * @tparam S simplemc::serializer type.
+ * @tparam T simplemc::sample_type of the batch accumulator.
+ * @tparam A simplemc::varalg algorithm of the batch accumulator.
+ * @param s Serializer object.
+ * @param acc Batch accumulator to serialize.
  */
 template <serializer S, sample_type T, varalg A>
 void simplemc_save(S& s, const batch_acc<T, A>& acc) {
     const auto& full_batches = acc.batch_vector_full();
     const auto& acc_batches = acc.batch_vector_accumulating();
-    s.save_at("m_b", static_cast<std::size_t>(full_batches.size()));
+    const auto& m_b = full_batches.size();
+    s.save_at("m_b", m_b);
     for (std::size_t i = 0; i < full_batches.size(); ++i) {
         auto sub = s[std::to_string(i)];
         sub.save_at("full_batch", full_batches[i]);
@@ -746,34 +745,31 @@ void simplemc_save(S& s, const batch_acc<T, A>& acc) {
 }
 
 /**
- * @brief Deserialize a batch_acc (inverse of @ref simplemc_save).
+ * @brief Deserialize a simplemc::batch_acc.
  *
- * @tparam S Deserializer type.
- * @tparam T Sample type.
- * @tparam A Variance algorithm.
- * @param s Deserializer.
- * @param acc Batch accumulator to populate.
+ * @details It first deserializes the number of batches \f$ M_b \f$ together with the vectors of full
+ * and accumulating batches and then uses them to construct the batch accumulator (see
+ * simplemc::batch_acc(std::vector<mean_acc_type>, std::vector<mean_acc_type>)).
+ *
+ * @tparam S simplemc::deserializer type.
+ * @tparam T simplemc::sample_type of the batch accumulator.
+ * @tparam A simplemc::varalg algorithm of the batch accumulator.
+ * @param s Deserializer object.
+ * @param acc Batch accumulator to deserialize into.
  */
 template <deserializer S, sample_type T, varalg A>
 void simplemc_load(const S& s, batch_acc<T, A>& acc) {
-    using ba = batch_acc<T, A>;
-    using mac = typename ba::mean_acc_type;
+    using mean_acc_type = typename batch_acc<T, A>::mean_acc_type;
     std::size_t m_b = 0;
     s.load_at("m_b", m_b);
-    std::vector<mac> full_batches;
-    std::vector<mac> acc_batches;
-    full_batches.reserve(m_b);
-    acc_batches.reserve(m_b);
+    auto full_batches = std::vector<mean_acc_type>(m_b);
+    auto acc_batches = std::vector<mean_acc_type>(m_b);
     for (std::size_t i = 0; i < m_b; ++i) {
         const auto sub = s[std::to_string(i)];
-        mac full_batch;
-        mac acc_batch;
-        sub.load_at("full_batch", full_batch);
-        sub.load_at("acc_batch", acc_batch);
-        full_batches.push_back(std::move(full_batch));
-        acc_batches.push_back(std::move(acc_batch));
+        sub.load_at("full_batch", full_batches[i]);
+        sub.load_at("acc_batch", acc_batches[i]);
     }
-    acc = ba { std::move(full_batches), std::move(acc_batches) };
+    acc = batch_acc<T, A> { std::move(full_batches), std::move(acc_batches) };
 }
 
 /** @} */

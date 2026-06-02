@@ -10,6 +10,7 @@
 #include <simplemc/accs/mean_acc.hpp>
 #include <simplemc/accs/utils.hpp>
 #include <simplemc/numeric/eigen.hpp>
+#include <simplemc/serialize/concepts.hpp>
 #include <simplemc/utils/ranges.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
@@ -22,7 +23,11 @@
 namespace simplemc {
 
 /**
- * @ingroup simplemc-accs-wrappers
+ * @addtogroup simplemc-accs-wrappers
+ * @{
+ */
+
+/**
  * @brief Wrapper for simplemc::var_acc and simplemc::covar_acc to estimate the integrated
  * autocorrelation time.
  *
@@ -375,6 +380,13 @@ public:
     [[nodiscard]] auto factor() const noexcept { return fac_; }
 
     /**
+     * @brief Get the minimum number of levels \f$ L_{\text{min}} \f$.
+     *
+     * @return Minimum number of levels.
+     */
+    [[nodiscard]] auto min_levels() const noexcept { return min_levels_; }
+
+    /**
      * @brief Get the number \f$ L \f$ of levels.
      *
      * @return Current number of levels.
@@ -551,6 +563,67 @@ private:
     count_type fac_ { 2 };
     std::size_t min_levels_ { 2 };
 };
+
+/**
+ * @brief Serialize a simplemc::autocorr_acc.
+ *
+ * @details It serializes the multiplication factor \f$ c \f$, the minimum number of levels \f$
+ * L_{\text{min}} \f$ and the current number of levels \f$ L \f$ together with the (co)variance
+ * accumulator and the mean accumulator of each level.
+ *
+ * @tparam S simplemc::serializer type.
+ * @tparam A Wrapped (co)variance accumulator type of the autocorrelation accumulator.
+ * @param s Serializer object.
+ * @param acc Autocorrelation accumulator to serialize.
+ */
+template <serializer S, typename A>
+void simplemc_save(S& s, const autocorr_acc<A>& acc) {
+    const auto num_levels = acc.num_levels();
+    s.save_at("factor", acc.factor());
+    s.save_at("min_levels", acc.min_levels());
+    s.save_at("num_levels", num_levels);
+    for (std::size_t l = 0; l < num_levels; ++l) {
+        auto sub = s[std::to_string(l)];
+        sub.save_at("acc", acc.accumulators()[l]);
+        sub.save_at("block", acc.blocks()[l]);
+    }
+}
+
+/**
+ * @brief Deserialize a simplemc::autocorr_acc.
+ *
+ * @details It first deserializes the multiplication factor \f$ c \f$, the minimum number of levels
+ * \f$ L_{\text{min}} \f$ and the current number of levels \f$ L \f$ together with the (co)variance
+ * accumulator and the mean accumulator of each level. Then it uses them to construct the
+ * autocorrelation accumulator (see simplemc::autocorr_acc(std::vector<acc_type>,
+ * std::vector<mean_acc_type>, count_type, std::size_t)).
+ *
+ * @tparam S simplemc::deserializer type.
+ * @tparam A Wrapped (co)variance accumulator type of the autocorrelation accumulator.
+ * @param s Deserializer object.
+ * @param acc Autocorrelation accumulator to deserialize into.
+ */
+template <deserializer S, typename A>
+void simplemc_load(const S& s, autocorr_acc<A>& acc) {
+    using wrapped_acc_type = typename autocorr_acc<A>::acc_type;
+    using mean_acc_type = typename autocorr_acc<A>::mean_acc_type;
+    auto factor = typename autocorr_acc<A>::count_type {};
+    std::size_t min_levels = 0;
+    std::size_t num_levels = 0;
+    s.load_at("factor", factor);
+    s.load_at("min_levels", min_levels);
+    s.load_at("num_levels", num_levels);
+    auto accs = std::vector<wrapped_acc_type>(num_levels, wrapped_acc_type { acc.size() });
+    auto blocks = std::vector<mean_acc_type>(num_levels, mean_acc_type { acc.size() });
+    for (std::size_t l = 0; l < num_levels; ++l) {
+        const auto sub = s[std::to_string(l)];
+        sub.load_at("acc", accs[l]);
+        sub.load_at("block", blocks[l]);
+    }
+    acc = autocorr_acc<A> { std::move(accs), std::move(blocks), factor, min_levels };
+}
+
+/** @} */
 
 } // namespace simplemc
 

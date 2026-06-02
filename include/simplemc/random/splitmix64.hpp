@@ -209,11 +209,13 @@ private:
 };
 
 /**
- * @brief Serialize a splitmix64 RNG by its single 64-bit internal state.
+ * @brief Serialize a simplemc::splitmix64.
  *
- * @tparam S Serializer type.
- * @param s Serializer.
- * @param r RNG to save.
+ * @details It serializes the single 64-bit internal state of the RNG.
+ *
+ * @tparam S simplemc::serializer type.
+ * @param s Serializer object.
+ * @param r RNG to serialize.
  */
 template <serializer S>
 void simplemc_save(S& s, const splitmix64& r) {
@@ -221,11 +223,14 @@ void simplemc_save(S& s, const splitmix64& r) {
 }
 
 /**
- * @brief Deserialize a splitmix64 RNG (inverse of @ref simplemc_save).
+ * @brief Deserialize a simplemc::splitmix64.
  *
- * @tparam S Deserializer type.
- * @param s Deserializer.
- * @param r RNG to populate.
+ * @details It deserializes the 64-bit internal state and uses it to seed the RNG (see
+ * simplemc::splitmix64::seed).
+ *
+ * @tparam S simplemc::deserializer type.
+ * @param s Deserializer object.
+ * @param r RNG to deserialize into.
  */
 template <deserializer S>
 void simplemc_load(const S& s, splitmix64& r) {

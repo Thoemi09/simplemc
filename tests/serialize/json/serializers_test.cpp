@@ -11,10 +11,13 @@
 
 #include "../../test_utils.hpp"
 
+#include <simplemc/accs/autocorr_acc.hpp>
 #include <simplemc/accs/batch_acc.hpp>
+#include <simplemc/accs/block_acc.hpp>
 #include <simplemc/accs/covar_acc.hpp>
 #include <simplemc/accs/mean_acc.hpp>
 #include <simplemc/accs/var_acc.hpp>
+#include <simplemc/grids/custom_grid.hpp>
 #include <simplemc/grids/linear_grid.hpp>
 #include <simplemc/grids/nd_grid.hpp>
 #include <simplemc/grids/power_grid.hpp>
@@ -74,6 +77,59 @@ TEST(SerializersJson, VarAccScalar) {
     check_near(b.variance(), a.variance());
 }
 
+TEST(SerializersJson, VarAccVector) {
+    using vec_t = Eigen::Vector3d;
+    simplemc::var_acc<vec_t, simplemc::varalg::welford> a {};
+    a << vec_t { 1.0, 2.0, 3.0 } << vec_t { 4.0, 5.0, 6.0 } << vec_t { -1.0, 0.5, 2.0 };
+
+    simplemc::json_serializer::save_to_file("var_acc_vec.json", a);
+
+    simplemc::var_acc<vec_t, simplemc::varalg::welford> b {};
+    simplemc::json_deserializer::load_from_file("var_acc_vec.json", b);
+
+    EXPECT_EQ(b.count(), a.count());
+    check_near(b.mean(), a.mean());
+    check_near(b.variance(), a.variance());
+}
+
+TEST(SerializersJson, VarAccComplexScalar) {
+    using cplx = std::complex<double>;
+    simplemc::var_acc<cplx, simplemc::varalg::welford> a {};
+    a << cplx { 1.0, -1.0 } << cplx { 2.0, 0.5 } << cplx { 3.0, 1.5 } << cplx { -1.0, 2.0 };
+
+    simplemc::json_serializer::save_to_file("var_acc_cplx.json", a);
+
+    simplemc::var_acc<cplx, simplemc::varalg::welford> b {};
+    simplemc::json_deserializer::load_from_file("var_acc_cplx.json", b);
+
+    EXPECT_EQ(b.count(), a.count());
+    check_near(b.mean(), a.mean());
+    check_near(b.variance(), a.variance());
+    check_near(b.variance_of_real_data(), a.variance_of_real_data());
+    check_near(b.variance_of_imag_data(), a.variance_of_imag_data());
+    check_near(b.covariance_of_real_and_imag_data(), a.covariance_of_real_and_imag_data());
+}
+
+TEST(SerializersJson, VarAccComplexVector) {
+    using vec_t = Eigen::Vector2cd;
+    using cplx = std::complex<double>;
+    simplemc::var_acc<vec_t, simplemc::varalg::standard> a {};
+    a << vec_t { cplx { 1.0, 2.0 }, cplx { -1.0, 0.5 } };
+    a << vec_t { cplx { 3.0, -2.0 }, cplx { 2.0, 1.0 } };
+    a << vec_t { cplx { 0.5, 0.5 }, cplx { 1.5, -0.5 } };
+
+    simplemc::json_serializer::save_to_file("var_acc_cplx_vec.json", a);
+
+    simplemc::var_acc<vec_t, simplemc::varalg::standard> b {};
+    simplemc::json_deserializer::load_from_file("var_acc_cplx_vec.json", b);
+
+    EXPECT_EQ(b.count(), a.count());
+    check_near(b.mean(), a.mean());
+    check_near(b.variance(), a.variance());
+    check_near(b.variance_of_real_data(), a.variance_of_real_data());
+    check_near(b.variance_of_imag_data(), a.variance_of_imag_data());
+}
+
 TEST(SerializersJson, CovarAccScalar) {
     simplemc::covar_acc<double, simplemc::varalg::welford> a {};
     a << 1.0 << 2.0 << 3.0 << 4.0;
@@ -82,6 +138,52 @@ TEST(SerializersJson, CovarAccScalar) {
 
     simplemc::covar_acc<double, simplemc::varalg::welford> b {};
     simplemc::json_deserializer::load_from_file("covar_acc.json", b);
+
+    EXPECT_EQ(b.count(), a.count());
+    check_near(b.mean(), a.mean());
+}
+
+TEST(SerializersJson, CovarAccVector) {
+    using vec_t = Eigen::Vector2d;
+    simplemc::covar_acc<vec_t, simplemc::varalg::welford> a {};
+    a << vec_t { 1.0, 2.0 } << vec_t { 4.0, 5.0 } << vec_t { -1.0, 0.5 };
+
+    simplemc::json_serializer::save_to_file("covar_acc_vec.json", a);
+
+    simplemc::covar_acc<vec_t, simplemc::varalg::welford> b {};
+    simplemc::json_deserializer::load_from_file("covar_acc_vec.json", b);
+
+    EXPECT_EQ(b.count(), a.count());
+    check_near(b.mean(), a.mean());
+    check_near(b.covariance(), a.covariance());
+}
+
+TEST(SerializersJson, CovarAccComplexScalar) {
+    using cplx = std::complex<double>;
+    simplemc::covar_acc<cplx, simplemc::varalg::welford> a {};
+    a << cplx { 1.0, -1.0 } << cplx { 2.0, 0.5 } << cplx { 3.0, 1.5 } << cplx { -1.0, 2.0 };
+
+    simplemc::json_serializer::save_to_file("covar_acc_cplx.json", a);
+
+    simplemc::covar_acc<cplx, simplemc::varalg::welford> b {};
+    simplemc::json_deserializer::load_from_file("covar_acc_cplx.json", b);
+
+    EXPECT_EQ(b.count(), a.count());
+    check_near(b.mean(), a.mean());
+}
+
+TEST(SerializersJson, CovarAccComplexVector) {
+    using vec_t = Eigen::Vector2cd;
+    using cplx = std::complex<double>;
+    simplemc::covar_acc<vec_t, simplemc::varalg::standard> a {};
+    a << vec_t { cplx { 1.0, 2.0 }, cplx { -1.0, 0.5 } };
+    a << vec_t { cplx { 3.0, -2.0 }, cplx { 2.0, 1.0 } };
+    a << vec_t { cplx { 0.5, 0.5 }, cplx { 1.5, -0.5 } };
+
+    simplemc::json_serializer::save_to_file("covar_acc_cplx_vec.json", a);
+
+    simplemc::covar_acc<vec_t, simplemc::varalg::standard> b {};
+    simplemc::json_deserializer::load_from_file("covar_acc_cplx_vec.json", b);
 
     EXPECT_EQ(b.count(), a.count());
     check_near(b.mean(), a.mean());
@@ -100,6 +202,121 @@ TEST(SerializersJson, BatchAccScalar) {
 
     EXPECT_EQ(b.count(), a.count());
     check_near(b.mean(), a.mean());
+}
+
+TEST(SerializersJson, BlockAccVar) {
+    simplemc::block_acc<simplemc::var_acc<double, simplemc::varalg::welford>> a { 4 };
+    for (int i = 0; i < 17; ++i) {
+        a << static_cast<double>(i);
+    }
+
+    simplemc::json_serializer::save_to_file("block_var_acc.json", a);
+
+    simplemc::block_acc<simplemc::var_acc<double, simplemc::varalg::welford>> b { 4 };
+    simplemc::json_deserializer::load_from_file("block_var_acc.json", b);
+
+    EXPECT_EQ(b.block_size(), a.block_size());
+    EXPECT_EQ(b.count(), a.count());
+    EXPECT_EQ(b.total_count(), a.total_count());
+    check_near(b.mean(), a.mean());
+    check_near(b.variance(), a.variance());
+}
+
+TEST(SerializersJson, BlockAccCovar) {
+    using vec_t = Eigen::Vector2d;
+    simplemc::block_acc<simplemc::covar_acc<vec_t, simplemc::varalg::welford>> a { 3, 2 };
+    for (int i = 0; i < 13; ++i) {
+        a << vec_t { static_cast<double>(i), static_cast<double>(2 * i + 1) };
+    }
+
+    simplemc::json_serializer::save_to_file("block_covar_acc.json", a);
+
+    simplemc::block_acc<simplemc::covar_acc<vec_t, simplemc::varalg::welford>> b { 3, 2 };
+    simplemc::json_deserializer::load_from_file("block_covar_acc.json", b);
+
+    EXPECT_EQ(b.block_size(), a.block_size());
+    EXPECT_EQ(b.count(), a.count());
+    check_near(b.mean(), a.mean());
+    check_near(b.covariance(), a.covariance());
+}
+
+TEST(SerializersJson, BlockAccVarComplex) {
+    using cplx = std::complex<double>;
+    simplemc::block_acc<simplemc::var_acc<cplx, simplemc::varalg::welford>> a { 4 };
+    for (int i = 0; i < 17; ++i) {
+        a << cplx { static_cast<double>(i), static_cast<double>(-i) };
+    }
+
+    simplemc::json_serializer::save_to_file("block_var_acc_cplx.json", a);
+
+    simplemc::block_acc<simplemc::var_acc<cplx, simplemc::varalg::welford>> b { 4 };
+    simplemc::json_deserializer::load_from_file("block_var_acc_cplx.json", b);
+
+    EXPECT_EQ(b.block_size(), a.block_size());
+    EXPECT_EQ(b.count(), a.count());
+    check_near(b.mean(), a.mean());
+    check_near(b.variance(), a.variance());
+}
+
+TEST(SerializersJson, AutocorrAccVar) {
+    simplemc::autocorr_acc<simplemc::var_acc<double, simplemc::varalg::welford>> a {};
+    // Use enough samples to grow several levels (default factor=2, min_levels=2).
+    for (int i = 0; i < 1000; ++i) {
+        a << static_cast<double>(i);
+    }
+
+    simplemc::json_serializer::save_to_file("autocorr_var_acc.json", a);
+
+    simplemc::autocorr_acc<simplemc::var_acc<double, simplemc::varalg::welford>> b {};
+    simplemc::json_deserializer::load_from_file("autocorr_var_acc.json", b);
+
+    EXPECT_EQ(b.factor(), a.factor());
+    EXPECT_EQ(b.min_levels(), a.min_levels());
+    EXPECT_EQ(b.num_levels(), a.num_levels());
+    for (std::size_t l = 0; l < a.num_levels(); ++l) {
+        EXPECT_EQ(b.count(l), a.count(l));
+        EXPECT_EQ(b.block_size(l), a.block_size(l));
+    }
+    check_near(b.mean(), a.mean());
+    check_near(b.variance(), a.variance());
+}
+
+TEST(SerializersJson, AutocorrAccCovar) {
+    using vec_t = Eigen::Vector2d;
+    simplemc::autocorr_acc<simplemc::covar_acc<vec_t, simplemc::varalg::welford>> a { 2 };
+    for (int i = 0; i < 512; ++i) {
+        a << vec_t { static_cast<double>(i), static_cast<double>(0.5 * i) };
+    }
+
+    simplemc::json_serializer::save_to_file("autocorr_covar_acc.json", a);
+
+    simplemc::autocorr_acc<simplemc::covar_acc<vec_t, simplemc::varalg::welford>> b { 2 };
+    simplemc::json_deserializer::load_from_file("autocorr_covar_acc.json", b);
+
+    EXPECT_EQ(b.factor(), a.factor());
+    EXPECT_EQ(b.min_levels(), a.min_levels());
+    EXPECT_EQ(b.num_levels(), a.num_levels());
+    check_near(b.mean(), a.mean());
+    check_near(b.covariance(), a.covariance());
+}
+
+TEST(SerializersJson, AutocorrAccVarComplex) {
+    using cplx = std::complex<double>;
+    simplemc::autocorr_acc<simplemc::var_acc<cplx, simplemc::varalg::welford>> a {};
+    for (int i = 0; i < 512; ++i) {
+        a << cplx { static_cast<double>(i), static_cast<double>(-i) };
+    }
+
+    simplemc::json_serializer::save_to_file("autocorr_var_acc_cplx.json", a);
+
+    simplemc::autocorr_acc<simplemc::var_acc<cplx, simplemc::varalg::welford>> b {};
+    simplemc::json_deserializer::load_from_file("autocorr_var_acc_cplx.json", b);
+
+    EXPECT_EQ(b.factor(), a.factor());
+    EXPECT_EQ(b.min_levels(), a.min_levels());
+    EXPECT_EQ(b.num_levels(), a.num_levels());
+    check_near(b.mean(), a.mean());
+    check_near(b.variance(), a.variance());
 }
 
 // ===== Grids ===========================================================================
@@ -127,6 +344,19 @@ TEST(SerializersJson, PowerGrid) {
     EXPECT_DOUBLE_EQ(h.last(), g.last());
     EXPECT_EQ(h.size(), g.size());
     EXPECT_DOUBLE_EQ(h.power(), g.power());
+}
+
+TEST(SerializersJson, CustomGrid) {
+    simplemc::custom_grid g { std::vector<double> { 0.0, 0.1, 0.5, 1.7, 3.14, 10.0 } };
+    simplemc::json_serializer::save_to_file("custom_grid.json", g);
+
+    simplemc::custom_grid h;
+    simplemc::json_deserializer::load_from_file("custom_grid.json", h);
+
+    EXPECT_DOUBLE_EQ(h.first(), g.first());
+    EXPECT_DOUBLE_EQ(h.last(), g.last());
+    EXPECT_EQ(h.size(), g.size());
+    check_near(h.grid_points(), g.grid_points());
 }
 
 TEST(SerializersJson, SymmetricPowerGrid) {

@@ -19,7 +19,11 @@
 namespace simplemc {
 
 /**
- * @ingroup simplemc-grids-nd
+ * @addtogroup simplemc-grids-nd
+ * @{
+ */
+
+/**
  * @brief Generic N-dimensional grid consisting of \f$ N \f$ @ref simplemc-grids-1d.
  *
  * @details In the following, we use the notation from @ref simplemc-grids-nd.
@@ -283,12 +287,15 @@ private:
 };
 
 /**
- * @brief Serialize an nd_grid as a tuple of its underlying 1-D grids, indexed by position.
+ * @brief Serialize a simplemc::nd_grid.
  *
- * @tparam S Serializer type.
- * @tparam Grids 1-D grid types.
- * @param s Serializer.
- * @param g N-dimensional grid to save.
+ * @details It serializes the underlying 1-D grids as subobjects indexed by their position in the
+ * tuple.
+ *
+ * @tparam S simplemc::serializer type.
+ * @tparam Grids simplemc::grid_1d types of the N-dimensional grid.
+ * @param s Serializer object.
+ * @param g N-dimensional grid to serialize.
  */
 template <serializer S, grid_1d... Grids>
 void simplemc_save(S& s, const nd_grid<Grids...>& g) {
@@ -299,12 +306,14 @@ void simplemc_save(S& s, const nd_grid<Grids...>& g) {
 }
 
 /**
- * @brief Deserialize an nd_grid (inverse of @ref simplemc_save).
+ * @brief Deserialize a simplemc::nd_grid.
  *
- * @tparam S Deserializer type.
- * @tparam Grids 1-D grid types.
- * @param s Deserializer.
- * @param g N-dimensional grid to populate.
+ * @details It deserializes each underlying 1-D grid in place from its tuple position subobject.
+ *
+ * @tparam S simplemc::deserializer type.
+ * @tparam Grids simplemc::grid_1d types of the N-dimensional grid.
+ * @param s Deserializer object.
+ * @param g N-dimensional grid to deserialize into.
  */
 template <deserializer S, grid_1d... Grids>
 void simplemc_load(const S& s, nd_grid<Grids...>& g) {
@@ -313,6 +322,8 @@ void simplemc_load(const S& s, nd_grid<Grids...>& g) {
         ((sub.load_at(std::to_string(I), std::get<I>(g.grids()))), ...);
     }(std::index_sequence_for<Grids...> {});
 }
+
+/** @} */
 
 } // namespace simplemc
 

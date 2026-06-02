@@ -112,44 +112,61 @@ template <varalg A = varalg::welford, sample_range R>
 }
 
 /**
- * @brief Serialize a covar_acc by its sample count, mean data, and covariance matrix.
+ * @brief Serialize a simplemc::covar_acc.
  *
- * @details Uses public `count()` / `mdata()` / `cdata()` getters with the `(mdata, cdata, count)`
- * constructor. `cdata` is a matrix; the Eigen `adl_serializer` (in
- * `serialize/json/serializers.hpp`) handles its JSON round-trip on the backend side.
+ * @details It serializes the number of accumulated samples \f$ N \f$ together with the accumulated
+ * mean data and covariance data.
  *
- * @tparam S Serializer type.
- * @tparam T Sample type.
- * @tparam A Variance algorithm.
- * @param s Serializer.
- * @param acc Covariance accumulator to save.
+ * @tparam S simplemc::serializer type.
+ * @tparam T simplemc::sample_type of the covariance accumulator.
+ * @tparam A simplemc::varalg algorithm of the covariance accumulator.
+ * @param s Serializer object.
+ * @param acc Covariance accumulator to serialize.
  */
 template <serializer S, sample_type T, varalg A>
 void simplemc_save(S& s, const covar_acc<T, A>& acc) {
     s.save_at("count", acc.count());
     s.save_at("mdata", acc.mdata());
     s.save_at("cdata", acc.cdata());
+    if constexpr (std::same_as<T, std::complex<double>> || eigen_vector_cplx<T>) {
+        s.save_at("rdata", acc.rdata());
+        s.save_at("idata", acc.idata());
+    }
 }
 
 /**
- * @brief Deserialize a covar_acc (inverse of @ref simplemc_save).
+ * @brief Deserialize a simplemc::covar_acc.
  *
- * @tparam S Deserializer type.
- * @tparam T Sample type.
- * @tparam A Variance algorithm.
- * @param s Deserializer.
- * @param acc Covariance accumulator to populate.
+ * @details It first deserializes the number of accumulated samples \f$ N \f$ together with the
+ * accumulated mean data and covariance data and then uses them to construct the covariance
+ * accumulator (see simplemc::covar_acc(const dbl_vec_type&, const dbl_mat_type&, count_type) for real
+ * samples and simplemc::covar_acc(const cplx_vec_type&, const dbl_mat_type&, const dbl_mat_type&,
+ * const dbl_mat_type&, count_type) for complex samples).
+ *
+ * @tparam S simplemc::deserializer type.
+ * @tparam T simplemc::sample_type of the covariance accumulator.
+ * @tparam A simplemc::varalg algorithm of the covariance accumulator.
+ * @param s Deserializer object.
+ * @param acc Covariance accumulator to deserialize into.
  */
 template <deserializer S, sample_type T, varalg A>
 void simplemc_load(const S& s, covar_acc<T, A>& acc) {
-    using ca = covar_acc<T, A>;
-    typename ca::count_type count {};
+    using acc_type = covar_acc<T, A>;
+    auto count = typename acc_type::count_type {};
     auto mdata = acc.mdata();
     auto cdata = acc.cdata();
     s.load_at("count", count);
     s.load_at("mdata", mdata);
     s.load_at("cdata", cdata);
-    acc = ca { mdata, cdata, count };
+    if constexpr (std::same_as<T, std::complex<double>> || eigen_vector_cplx<T>) {
+        auto rdata = acc.rdata();
+        auto idata = acc.idata();
+        s.load_at("rdata", rdata);
+        s.load_at("idata", idata);
+        acc = acc_type { mdata, rdata, idata, cdata, count };
+    } else {
+        acc = acc_type { mdata, cdata, count };
+    }
 }
 
 /** @} */

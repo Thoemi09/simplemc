@@ -488,17 +488,16 @@ template <varalg A = varalg::welford, sample_range R>
 }
 
 /**
- * @brief Serialize a mean_acc by its sample count and mean data.
+ * @brief Serialize a simplemc::mean_acc.
  *
- * @details Uses the public `count()` / `mdata()` getters and the `(mdata, count)` constructor for
- * round-trip. The sticky streaming index is intentionally not serialized — it resets to 0 on
- * reconstruction.
+ * @details It serializes the number of accumulated samples \f$ N \f$ together with the accumulated
+ * mean data.
  *
- * @tparam S Serializer type.
- * @tparam T Sample type.
- * @tparam A Variance algorithm.
- * @param s Serializer.
- * @param acc Mean accumulator to save.
+ * @tparam S simplemc::serializer type.
+ * @tparam T simplemc::sample_type of the mean accumulator.
+ * @tparam A simplemc::varalg algorithm of the mean accumulator.
+ * @param s Serializer object.
+ * @param acc Mean accumulator to serialize.
  */
 template <serializer S, sample_type T, varalg A>
 void simplemc_save(S& s, const mean_acc<T, A>& acc) {
@@ -507,22 +506,26 @@ void simplemc_save(S& s, const mean_acc<T, A>& acc) {
 }
 
 /**
- * @brief Deserialize a mean_acc (inverse of @ref simplemc_save).
+ * @brief Deserialize a simplemc::mean_acc.
  *
- * @tparam S Deserializer type.
- * @tparam T Sample type.
- * @tparam A Variance algorithm.
- * @param s Deserializer.
- * @param acc Mean accumulator to populate.
+ * @details It first deserializes the number of accumulated samples \f$ N \f$ together with the
+ * accumulated mean data and then uses them to construct the mean accumulator (see
+ * simplemc::mean_acc(const vec_type&, count_type)).
+ *
+ * @tparam S simplemc::deserializer type.
+ * @tparam T simplemc::sample_type of the mean accumulator.
+ * @tparam A simplemc::varalg algorithm of the mean accumulator.
+ * @param s Deserializer object.
+ * @param acc Mean accumulator to deserialize into.
  */
 template <deserializer S, sample_type T, varalg A>
 void simplemc_load(const S& s, mean_acc<T, A>& acc) {
-    using ma = mean_acc<T, A>;
-    typename ma::count_type count {};
+    using acc_type = mean_acc<T, A>;
+    auto count = typename acc_type::count_type {};
     auto mdata = acc.mdata();
     s.load_at("count", count);
     s.load_at("mdata", mdata);
-    acc = ma { mdata, count };
+    acc = acc_type { mdata, count };
 }
 
 /** @} */

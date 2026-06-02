@@ -354,12 +354,14 @@ using xoshiro256pp = xoshiro256<xoshiro256_type::plusplus>;
 using xoshiro256ss = xoshiro256<xoshiro256_type::starstar>;
 
 /**
- * @brief Serialize an xoshiro256 RNG by its four 64-bit state words (s0..s3).
+ * @brief Serialize a simplemc::xoshiro256.
  *
- * @tparam S Serializer type.
- * @tparam X xoshiro256 variant.
- * @param s Serializer.
- * @param r RNG to save.
+ * @details It serializes the four 64-bit state words of the RNG.
+ *
+ * @tparam S simplemc::serializer type.
+ * @tparam X simplemc::xoshiro256_type variant of the RNG.
+ * @param s Serializer object.
+ * @param r RNG to serialize.
  */
 template <serializer S, xoshiro256_type X>
 void simplemc_save(S& s, const xoshiro256<X>& r) {
@@ -371,12 +373,15 @@ void simplemc_save(S& s, const xoshiro256<X>& r) {
 }
 
 /**
- * @brief Deserialize an xoshiro256 RNG (inverse of @ref simplemc_save).
+ * @brief Deserialize a simplemc::xoshiro256.
  *
- * @tparam S Deserializer type.
- * @tparam X xoshiro256 variant.
- * @param s Deserializer.
- * @param r RNG to populate.
+ * @details It deserializes the four 64-bit state words and uses them to seed the RNG (see
+ * simplemc::xoshiro256::seed).
+ *
+ * @tparam S simplemc::deserializer type.
+ * @tparam X simplemc::xoshiro256_type variant of the RNG.
+ * @param s Deserializer object.
+ * @param r RNG to deserialize into.
  */
 template <deserializer S, xoshiro256_type X>
 void simplemc_load(const S& s, xoshiro256<X>& r) {

@@ -13,7 +13,11 @@
 namespace simplemc {
 
 /**
- * @ingroup simplemc-grids-1d
+ * @addtogroup simplemc-grids-1d
+ * @{
+ */
+
+/**
  * @brief 1-dimensional linear grid.
  *
  * @details In the following, we use the notation from @ref simplemc-grids-1d.
@@ -177,11 +181,14 @@ private:
 };
 
 /**
- * @brief Serialize a linear_grid by its (first, last, size) parameters.
+ * @brief Serialize a simplemc::linear_grid.
  *
- * @tparam S Serializer type.
- * @param s Serializer.
- * @param g Linear grid to save.
+ * @details It serializes the first and last grid points, \f$ a \f$ and \f$ b \f$, together with the
+ * number of grid points \f$ M \f$.
+ *
+ * @tparam S simplemc::serializer type.
+ * @param s Serializer object.
+ * @param g Linear grid to serialize.
  */
 template <serializer S>
 void simplemc_save(S& s, const linear_grid& g) {
@@ -191,11 +198,15 @@ void simplemc_save(S& s, const linear_grid& g) {
 }
 
 /**
- * @brief Deserialize a linear_grid (inverse of @ref simplemc_save).
+ * @brief Deserialize a simplemc::linear_grid.
  *
- * @tparam S Deserializer type.
- * @param s Deserializer.
- * @param g Linear grid to populate.
+ * @details It first deserializes the first and last grid points, \f$ a \f$ and \f$ b \f$, together
+ * with the number of grid points \f$ M \f$ and then uses them to reset the grid (see
+ * simplemc::linear_grid::reset).
+ *
+ * @tparam S simplemc::deserializer type.
+ * @param s Deserializer object.
+ * @param g Linear grid to deserialize into.
  */
 template <deserializer S>
 void simplemc_load(const S& s, linear_grid& g) {
@@ -207,6 +218,8 @@ void simplemc_load(const S& s, linear_grid& g) {
     s.load_at("size", size);
     g.reset(first, last, size);
 }
+
+/** @} */
 
 } // namespace simplemc
 
