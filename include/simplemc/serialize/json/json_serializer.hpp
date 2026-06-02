@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief JSON write-side serializer for simplemc-serialize-json.
+ * @brief JSON serializer for simplemc-serialize-json.
  */
 
 #ifndef SIMPLEMC_SERIALIZE_JSON_JSON_SERIALIZER_HPP
@@ -16,7 +16,6 @@
 #include <string>
 #include <string_view>
 #include <utility>
-#include <vector>
 
 namespace simplemc {
 
@@ -24,18 +23,6 @@ namespace simplemc {
  * @addtogroup simplemc-serialize-json
  * @{
  */
-
-/**
- * @brief Configuration options for @ref json_serializer.
- */
-struct json_serializer_options {
-    /// Indentation width when writing as text (0 for compact output).
-    int indent = 0;
-    /// Binary mode used when @c text_mode is false.
-    json_binary_mode binary_mode = json_binary_mode::bson;
-    /// When true, `write_to_file` emits text JSON; otherwise binary.
-    bool text_mode = true;
-};
 
 /**
  * @brief JSON write-side serializer.
@@ -56,8 +43,8 @@ class json_serializer {
 public:
     /// File path type.
     using file_handle = std::string;
-    /// Configuration options type (see @ref json_serializer_options).
-    using options = json_serializer_options;
+    /// Configuration options type (see @ref json_io_options).
+    using options = json_io_options;
 
     /// Default-construct a fresh root serializer with default options.
     json_serializer() : tree_ { std::make_shared<nlohmann::json>(nlohmann::json::object()) }, current_ { tree_.get() } {}
@@ -108,15 +95,10 @@ public:
      * @brief Write the full tree to a file.
      *
      * @details Always writes from the root (regardless of which sub-serializer this is called on),
-     * since the tree is shared. Uses the configured `options::text_mode` and `options::indent` /
-     * `options::binary_mode`.
+     * since the tree is shared. Uses the configured `options::mode` and `options::indent`.
      */
     void write_to_file(const file_handle& path) const {
-        if (opts_.text_mode) {
-            simplemc::write_json_file(*tree_, path, opts_.indent);
-        } else {
-            simplemc::write_json_file(*tree_, path, opts_.binary_mode);
-        }
+        simplemc::write_json_file(*tree_, path, opts_);
     }
 
     /**

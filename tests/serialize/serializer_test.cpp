@@ -343,37 +343,30 @@ TEST(SerializerJson, SchemaTolerance_ArrayShape) {
 
 // ===== File IO binary modes (relocated coverage from old json/file_io tests) =========
 
-// Check if file IO in text mode works.
-static void check_file_io(const nlohmann::json& j, const std::string& fname, int w) {
-    simplemc::write_json_file(j, fname, w);
+// Check if file IO round-trips a JSON object under the given options.
+static void check_file_io(const nlohmann::json& j, const std::string& fname,
+                          const simplemc::json_io_options& opts) {
+    simplemc::write_json_file(j, fname, opts);
     nlohmann::json j2;
     ASSERT_NE(j, j2);
-    simplemc::read_json_file(j2, fname);
-    ASSERT_EQ(j, j2);
-}
-
-// Check if file IO in binary mode works.
-static void check_file_io(const nlohmann::json& j, const std::string& fname, simplemc::json_binary_mode m) {
-    simplemc::write_json_file(j, fname, m);
-    nlohmann::json j2;
-    ASSERT_NE(j, j2);
-    simplemc::read_json_file(j2, fname, m);
+    simplemc::read_json_file(j2, fname, opts);
     ASSERT_EQ(j, j2);
 }
 
 TEST(SerializerJson, FileIOModes) {
+    using simplemc::json_file_mode;
     nlohmann::json j;
     j["int"] = 1;
     j["double"] = 3.14;
     j["string"] = "my string";
     j["complex"] = std::complex<double> { 1.0, 2.0 };
     j["array"] = std::vector<int> { 1, 2, 3 };
-    check_file_io(j, "text_0.json", 0);
-    check_file_io(j, "text_4.json", 4);
-    check_file_io(j, "binary.bson", simplemc::json_binary_mode::bson);
-    check_file_io(j, "binary.cbor", simplemc::json_binary_mode::cbor);
-    check_file_io(j, "binary.msgpack", simplemc::json_binary_mode::msgpack);
-    check_file_io(j, "binary.ubjson", simplemc::json_binary_mode::ubjson);
+    check_file_io(j, "text_0.json", { .mode = json_file_mode::text, .indent = 0 });
+    check_file_io(j, "text_4.json", { .mode = json_file_mode::text, .indent = 4 });
+    check_file_io(j, "binary.bson", { .mode = json_file_mode::bson });
+    check_file_io(j, "binary.cbor", { .mode = json_file_mode::cbor });
+    check_file_io(j, "binary.msgpack", { .mode = json_file_mode::msgpack });
+    check_file_io(j, "binary.ubjson", { .mode = json_file_mode::ubjson });
 }
 
 // ===== Range helpers (relocated from json/range.hpp tests) =====================

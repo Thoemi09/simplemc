@@ -43,11 +43,13 @@ class json_deserializer {
 public:
     /// File path type.
     using file_handle = std::string;
+    /// Configuration options type (see @ref json_io_options).
+    using options = json_io_options;
 
-    /// Construct by reading a JSON text file from `path`.
-    explicit json_deserializer(const file_handle& path) :
+    /// Construct by reading a JSON file from `path` using `opts` (text mode by default).
+    explicit json_deserializer(const file_handle& path, options opts = {}) :
         tree_ { std::make_shared<nlohmann::json>() }, current_ { tree_.get() } {
-        simplemc::read_json_file(*tree_, path);
+        simplemc::read_json_file(*tree_, path, opts);
     }
 
     /// Factory: construct from an in-memory JSON tree (moved in).
@@ -119,8 +121,8 @@ public:
      * nlohmann, which dispatches to `from_json` / `adl_serializer<T>`.
      */
     template <class T>
-    static void load_from_file(const file_handle& path, T& v) {
-        json_deserializer d { path };
+    static void load_from_file(const file_handle& path, T& v, options opts = {}) {
+        json_deserializer d { path, opts };
         if constexpr (has_simplemc_load<T, json_deserializer>) {
             simplemc_load(d, v);
         } else {

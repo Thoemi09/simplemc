@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief JSON file IO operations for the simplemc-serialize-json sublibrary.
+ * @brief JSON file IO operations.
  */
 
 #ifndef SIMPLEMC_SERIALIZE_JSON_FILE_IO_HPP
@@ -18,58 +18,55 @@ namespace simplemc {
  */
 
 /**
- * @brief Enumerate possible binary IO strategies for JSON files.
+ * @brief Enumerate the on-disk formats supported by simplemc::write_json_file and
+ * simplemc::read_json_file.
  *
- * @details The following binary formats are supported: BSON (bson), CBOR (cbor), MessagePack
- * (msgpack), and UBJSON (ubjson).
+ * @details The supported formats are:
+ * - `text`: human-readable text JSON (default)
+ * - `bson`: binary JSON (BSON)
+ * - `cbor`: Concise Binary Object Representation (CBOR)
+ * - `msgpack`: MessagePack
+ * - `ubjson`: Universal Binary JSON (UBJSON)
  */
-enum class json_binary_mode { bson, cbor, msgpack, ubjson };
+enum class json_file_mode { text, bson, cbor, msgpack, ubjson };
 
 /**
- * @brief Write a `nlohmann::json` object to a file in text mode.
+ * @brief Options passed to simplemc::write_json_file and simplemc::read_json_file.
+ */
+struct json_io_options {
+    /// On-disk format. Defaults to human-readable text JSON.
+    json_file_mode mode = json_file_mode::text;
+
+    /// Indentation width for text mode (\f$ 0 \f$ for compact output). Ignored for binary modes.
+    int indent = 0;
+};
+
+/**
+ * @brief Write an `nlohmann::json` object to file.
  *
- * @details The file is opened in `std::ios_base::out` mode — any content of an existing file will be
- * truncated before writing. Throws a simplemc::simplemc_exception on failure.
+ * @details The file is truncated before writing. The provided simplemc::json_io_options determine the
+ * format of the written file.
+ *
+ * It throws a simplemc::simplemc_exception on failure.
  *
  * @param json `nlohmann::json` object to be written.
  * @param fname Name of the file.
- * @param width Indentation width (0 for compact output).
+ * @param opts IO options (format and, for text, indentation).
  */
-void write_json_file(const nlohmann::json& json, const std::string& fname, int width = 0);
+void write_json_file(const nlohmann::json& json, const std::string& fname, const json_io_options& opts = {});
 
 /**
- * @brief Write a `nlohmann::json` object to a file in binary mode.
+ * @brief Read a JSON file into an `nlohmann::json` object.
  *
- * @details The file is opened in `std::ios_base::binary` mode — any content of an existing file will
- * be truncated before writing. Throws a simplemc::simplemc_exception on failure.
+ * @details The provided simplemc::json_io_options determine the expected format of the file.
  *
- * @param json `nlohmann::json` object to be written.
- * @param fname Name of the file.
- * @param mode Specific JSON binary mode.
- */
-void write_json_file(const nlohmann::json& json, const std::string& fname, json_binary_mode mode);
-
-/**
- * @brief Read a JSON text file into a `nlohmann::json` object.
- *
- * @details Throws a simplemc::simplemc_exception on failure.
+ * It throws a simplemc::simplemc_exception on failure.
  *
  * @param json `nlohmann::json` object to be read into.
  * @param fname Name of the file.
+ * @param opts IO options (format).
  */
-void read_json_file(nlohmann::json& json, const std::string& fname);
-
-/**
- * @brief Read a JSON binary file into a `nlohmann::json` object.
- *
- * @details The specified binary mode has to be the same that was used to write the file in the first
- * place. Throws a simplemc::simplemc_exception on failure.
- *
- * @param json `nlohmann::json` object to be read into.
- * @param fname Name of the file.
- * @param mode Specific JSON binary mode.
- */
-void read_json_file(nlohmann::json& json, const std::string& fname, json_binary_mode mode);
+void read_json_file(nlohmann::json& json, const std::string& fname, const json_io_options& opts = {});
 
 /** @} */
 
