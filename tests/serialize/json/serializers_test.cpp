@@ -32,6 +32,7 @@
 
 #include <complex>
 #include <random>
+#include <utility>
 #include <vector>
 
 // ===== Accumulators ====================================================================
@@ -42,10 +43,12 @@ TEST(SerializersJson, MeanAccScalar) {
 
     simplemc::json_serializer s;
     simplemc_save(s, a);
-    s.write_to_file("mean_acc.json");
+    simplemc::write_json_file(s.root(), "mean_acc.json");
 
     simplemc::mean_acc<double, simplemc::varalg::welford> b {};
-    simplemc::json_deserializer d { "mean_acc.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "mean_acc.json");
+    const simplemc::json_serializer d { std::move(doc) };
     simplemc_load(d, b);
 
     EXPECT_EQ(b.count(), a.count());
@@ -59,10 +62,12 @@ TEST(SerializersJson, MeanAccVector) {
 
     simplemc::json_serializer s;
     simplemc_save(s, a);
-    s.write_to_file("mean_acc_vec.json");
+    simplemc::write_json_file(s.root(), "mean_acc_vec.json");
 
     simplemc::mean_acc<vec_t, simplemc::varalg::welford> b {};
-    simplemc::json_deserializer d { "mean_acc_vec.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "mean_acc_vec.json");
+    const simplemc::json_serializer d { std::move(doc) };
     simplemc_load(d, b);
 
     EXPECT_EQ(b.count(), a.count());
@@ -75,10 +80,12 @@ TEST(SerializersJson, VarAccScalar) {
 
     simplemc::json_serializer s;
     simplemc_save(s, a);
-    s.write_to_file("var_acc.json");
+    simplemc::write_json_file(s.root(), "var_acc.json");
 
     simplemc::var_acc<double, simplemc::varalg::welford> b {};
-    simplemc::json_deserializer d { "var_acc.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "var_acc.json");
+    const simplemc::json_serializer d { std::move(doc) };
     simplemc_load(d, b);
 
     EXPECT_EQ(b.count(), a.count());
@@ -93,10 +100,12 @@ TEST(SerializersJson, VarAccVector) {
 
     simplemc::json_serializer s;
     simplemc_save(s, a);
-    s.write_to_file("var_acc_vec.json");
+    simplemc::write_json_file(s.root(), "var_acc_vec.json");
 
     simplemc::var_acc<vec_t, simplemc::varalg::welford> b {};
-    simplemc::json_deserializer d { "var_acc_vec.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "var_acc_vec.json");
+    const simplemc::json_serializer d { std::move(doc) };
     simplemc_load(d, b);
 
     EXPECT_EQ(b.count(), a.count());
@@ -111,10 +120,12 @@ TEST(SerializersJson, VarAccComplexScalar) {
 
     simplemc::json_serializer s;
     simplemc_save(s, a);
-    s.write_to_file("var_acc_cplx.json");
+    simplemc::write_json_file(s.root(), "var_acc_cplx.json");
 
     simplemc::var_acc<cplx, simplemc::varalg::welford> b {};
-    simplemc::json_deserializer d { "var_acc_cplx.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "var_acc_cplx.json");
+    const simplemc::json_serializer d { std::move(doc) };
     simplemc_load(d, b);
 
     EXPECT_EQ(b.count(), a.count());
@@ -135,10 +146,12 @@ TEST(SerializersJson, VarAccComplexVector) {
 
     simplemc::json_serializer s;
     simplemc_save(s, a);
-    s.write_to_file("var_acc_cplx_vec.json");
+    simplemc::write_json_file(s.root(), "var_acc_cplx_vec.json");
 
     simplemc::var_acc<vec_t, simplemc::varalg::standard> b {};
-    simplemc::json_deserializer d { "var_acc_cplx_vec.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "var_acc_cplx_vec.json");
+    const simplemc::json_serializer d { std::move(doc) };
     simplemc_load(d, b);
 
     EXPECT_EQ(b.count(), a.count());
@@ -154,10 +167,12 @@ TEST(SerializersJson, CovarAccScalar) {
 
     simplemc::json_serializer s;
     simplemc_save(s, a);
-    s.write_to_file("covar_acc.json");
+    simplemc::write_json_file(s.root(), "covar_acc.json");
 
     simplemc::covar_acc<double, simplemc::varalg::welford> b {};
-    simplemc::json_deserializer d { "covar_acc.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "covar_acc.json");
+    const simplemc::json_serializer d { std::move(doc) };
     simplemc_load(d, b);
 
     EXPECT_EQ(b.count(), a.count());
@@ -171,10 +186,12 @@ TEST(SerializersJson, CovarAccVector) {
 
     simplemc::json_serializer s;
     simplemc_save(s, a);
-    s.write_to_file("covar_acc_vec.json");
+    simplemc::write_json_file(s.root(), "covar_acc_vec.json");
 
     simplemc::covar_acc<vec_t, simplemc::varalg::welford> b {};
-    simplemc::json_deserializer d { "covar_acc_vec.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "covar_acc_vec.json");
+    const simplemc::json_serializer d { std::move(doc) };
     simplemc_load(d, b);
 
     EXPECT_EQ(b.count(), a.count());
@@ -189,10 +206,12 @@ TEST(SerializersJson, CovarAccComplexScalar) {
 
     simplemc::json_serializer s;
     simplemc_save(s, a);
-    s.write_to_file("covar_acc_cplx.json");
+    simplemc::write_json_file(s.root(), "covar_acc_cplx.json");
 
     simplemc::covar_acc<cplx, simplemc::varalg::welford> b {};
-    simplemc::json_deserializer d { "covar_acc_cplx.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "covar_acc_cplx.json");
+    const simplemc::json_serializer d { std::move(doc) };
     simplemc_load(d, b);
 
     EXPECT_EQ(b.count(), a.count());
@@ -209,10 +228,12 @@ TEST(SerializersJson, CovarAccComplexVector) {
 
     simplemc::json_serializer s;
     simplemc_save(s, a);
-    s.write_to_file("covar_acc_cplx_vec.json");
+    simplemc::write_json_file(s.root(), "covar_acc_cplx_vec.json");
 
     simplemc::covar_acc<vec_t, simplemc::varalg::standard> b {};
-    simplemc::json_deserializer d { "covar_acc_cplx_vec.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "covar_acc_cplx_vec.json");
+    const simplemc::json_serializer d { std::move(doc) };
     simplemc_load(d, b);
 
     EXPECT_EQ(b.count(), a.count());
@@ -227,10 +248,12 @@ TEST(SerializersJson, BatchAccScalar) {
 
     simplemc::json_serializer s;
     simplemc_save(s, a);
-    s.write_to_file("batch_acc.json");
+    simplemc::write_json_file(s.root(), "batch_acc.json");
 
     simplemc::batch_acc<double, simplemc::varalg::welford> b { 1, 8 };
-    simplemc::json_deserializer d { "batch_acc.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "batch_acc.json");
+    const simplemc::json_serializer d { std::move(doc) };
     simplemc_load(d, b);
 
     EXPECT_EQ(b.count(), a.count());
@@ -245,10 +268,12 @@ TEST(SerializersJson, BlockAccVar) {
 
     simplemc::json_serializer s;
     simplemc_save(s, a);
-    s.write_to_file("block_var_acc.json");
+    simplemc::write_json_file(s.root(), "block_var_acc.json");
 
     simplemc::block_acc<simplemc::var_acc<double, simplemc::varalg::welford>> b { 4 };
-    simplemc::json_deserializer d { "block_var_acc.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "block_var_acc.json");
+    const simplemc::json_serializer d { std::move(doc) };
     simplemc_load(d, b);
 
     EXPECT_EQ(b.block_size(), a.block_size());
@@ -267,10 +292,12 @@ TEST(SerializersJson, BlockAccCovar) {
 
     simplemc::json_serializer s;
     simplemc_save(s, a);
-    s.write_to_file("block_covar_acc.json");
+    simplemc::write_json_file(s.root(), "block_covar_acc.json");
 
     simplemc::block_acc<simplemc::covar_acc<vec_t, simplemc::varalg::welford>> b { 3, 2 };
-    simplemc::json_deserializer d { "block_covar_acc.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "block_covar_acc.json");
+    const simplemc::json_serializer d { std::move(doc) };
     simplemc_load(d, b);
 
     EXPECT_EQ(b.block_size(), a.block_size());
@@ -288,10 +315,12 @@ TEST(SerializersJson, BlockAccVarComplex) {
 
     simplemc::json_serializer s;
     simplemc_save(s, a);
-    s.write_to_file("block_var_acc_cplx.json");
+    simplemc::write_json_file(s.root(), "block_var_acc_cplx.json");
 
     simplemc::block_acc<simplemc::var_acc<cplx, simplemc::varalg::welford>> b { 4 };
-    simplemc::json_deserializer d { "block_var_acc_cplx.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "block_var_acc_cplx.json");
+    const simplemc::json_serializer d { std::move(doc) };
     simplemc_load(d, b);
 
     EXPECT_EQ(b.block_size(), a.block_size());
@@ -309,10 +338,12 @@ TEST(SerializersJson, AutocorrAccVar) {
 
     simplemc::json_serializer s;
     simplemc_save(s, a);
-    s.write_to_file("autocorr_var_acc.json");
+    simplemc::write_json_file(s.root(), "autocorr_var_acc.json");
 
     simplemc::autocorr_acc<simplemc::var_acc<double, simplemc::varalg::welford>> b {};
-    simplemc::json_deserializer d { "autocorr_var_acc.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "autocorr_var_acc.json");
+    const simplemc::json_serializer d { std::move(doc) };
     simplemc_load(d, b);
 
     EXPECT_EQ(b.factor(), a.factor());
@@ -335,10 +366,12 @@ TEST(SerializersJson, AutocorrAccCovar) {
 
     simplemc::json_serializer s;
     simplemc_save(s, a);
-    s.write_to_file("autocorr_covar_acc.json");
+    simplemc::write_json_file(s.root(), "autocorr_covar_acc.json");
 
     simplemc::autocorr_acc<simplemc::covar_acc<vec_t, simplemc::varalg::welford>> b { 2 };
-    simplemc::json_deserializer d { "autocorr_covar_acc.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "autocorr_covar_acc.json");
+    const simplemc::json_serializer d { std::move(doc) };
     simplemc_load(d, b);
 
     EXPECT_EQ(b.factor(), a.factor());
@@ -357,10 +390,12 @@ TEST(SerializersJson, AutocorrAccVarComplex) {
 
     simplemc::json_serializer s;
     simplemc_save(s, a);
-    s.write_to_file("autocorr_var_acc_cplx.json");
+    simplemc::write_json_file(s.root(), "autocorr_var_acc_cplx.json");
 
     simplemc::autocorr_acc<simplemc::var_acc<cplx, simplemc::varalg::welford>> b {};
-    simplemc::json_deserializer d { "autocorr_var_acc_cplx.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "autocorr_var_acc_cplx.json");
+    const simplemc::json_serializer d { std::move(doc) };
     simplemc_load(d, b);
 
     EXPECT_EQ(b.factor(), a.factor());
@@ -376,10 +411,12 @@ TEST(SerializersJson, LinearGrid) {
     simplemc::linear_grid g { 0.0, 10.0, 11 };
     simplemc::json_serializer s;
     simplemc_save(s, g);
-    s.write_to_file("linear_grid.json");
+    simplemc::write_json_file(s.root(), "linear_grid.json");
 
     simplemc::linear_grid h;
-    simplemc::json_deserializer d { "linear_grid.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "linear_grid.json");
+    const simplemc::json_serializer d { std::move(doc) };
     simplemc_load(d, h);
 
     EXPECT_DOUBLE_EQ(h.first(), g.first());
@@ -391,10 +428,12 @@ TEST(SerializersJson, PowerGrid) {
     simplemc::power_grid g { 0.0, 1.0, 11, 2.0 };
     simplemc::json_serializer s;
     simplemc_save(s, g);
-    s.write_to_file("power_grid.json");
+    simplemc::write_json_file(s.root(), "power_grid.json");
 
     simplemc::power_grid h;
-    simplemc::json_deserializer d { "power_grid.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "power_grid.json");
+    const simplemc::json_serializer d { std::move(doc) };
     simplemc_load(d, h);
 
     EXPECT_DOUBLE_EQ(h.first(), g.first());
@@ -407,10 +446,12 @@ TEST(SerializersJson, CustomGrid) {
     simplemc::custom_grid g { std::vector<double> { 0.0, 0.1, 0.5, 1.7, 3.14, 10.0 } };
     simplemc::json_serializer s;
     simplemc_save(s, g);
-    s.write_to_file("custom_grid.json");
+    simplemc::write_json_file(s.root(), "custom_grid.json");
 
     simplemc::custom_grid h;
-    simplemc::json_deserializer d { "custom_grid.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "custom_grid.json");
+    const simplemc::json_serializer d { std::move(doc) };
     simplemc_load(d, h);
 
     EXPECT_DOUBLE_EQ(h.first(), g.first());
@@ -423,10 +464,12 @@ TEST(SerializersJson, SymmetricPowerGrid) {
     simplemc::symmetric_power_grid g { 0.0, 1.0, 9, 2.0 };
     simplemc::json_serializer s;
     simplemc_save(s, g);
-    s.write_to_file("sym_power_grid.json");
+    simplemc::write_json_file(s.root(), "sym_power_grid.json");
 
     simplemc::symmetric_power_grid h;
-    simplemc::json_deserializer d { "sym_power_grid.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "sym_power_grid.json");
+    const simplemc::json_serializer d { std::move(doc) };
     simplemc_load(d, h);
 
     EXPECT_DOUBLE_EQ(h.first(), g.first());
@@ -442,10 +485,12 @@ TEST(SerializersJson, NdGrid) {
     };
     simplemc::json_serializer s;
     simplemc_save(s, g);
-    s.write_to_file("nd_grid.json");
+    simplemc::write_json_file(s.root(), "nd_grid.json");
 
     simplemc::nd_grid<simplemc::linear_grid, simplemc::power_grid> h;
-    simplemc::json_deserializer d { "nd_grid.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "nd_grid.json");
+    const simplemc::json_serializer d { std::move(doc) };
     simplemc_load(d, h);
 
     EXPECT_DOUBLE_EQ(std::get<0>(h.grids()).first(), 0.0);
@@ -465,10 +510,12 @@ TEST(SerializersJson, BravaisLattice2D) {
     simplemc::bravais_lattice<2> lat { A };
     simplemc::json_serializer s;
     simplemc_save(s, lat);
-    s.write_to_file("lattice_2d.json");
+    simplemc::write_json_file(s.root(), "lattice_2d.json");
 
     simplemc::bravais_lattice<2> lat2;
-    simplemc::json_deserializer d { "lattice_2d.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "lattice_2d.json");
+    const simplemc::json_serializer d { std::move(doc) };
     simplemc_load(d, lat2);
 
     check_near(lat2.real_lattice_vectors(), lat.real_lattice_vectors());
@@ -486,10 +533,12 @@ TEST(SerializersJson, Xoshiro256Plus) {
     }
     simplemc::json_serializer s;
     simplemc_save(s, rng);
-    s.write_to_file("xoshiro.json");
+    simplemc::write_json_file(s.root(), "xoshiro.json");
 
     simplemc::xoshiro256p rng2 { 0ULL };
-    simplemc::json_deserializer d { "xoshiro.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "xoshiro.json");
+    const simplemc::json_serializer d { std::move(doc) };
     simplemc_load(d, rng2);
 
     EXPECT_EQ(rng, rng2);
@@ -508,10 +557,12 @@ TEST(SerializersJson, Splitmix64) {
 
     simplemc::json_serializer s;
     simplemc_save(s, rng);
-    s.write_to_file("splitmix.json");
+    simplemc::write_json_file(s.root(), "splitmix.json");
 
     simplemc::splitmix64 rng2 { 0ULL };
-    simplemc::json_deserializer d { "splitmix.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "splitmix.json");
+    const simplemc::json_serializer d { std::move(doc) };
     simplemc_load(d, rng2);
 
     EXPECT_EQ(rng2.internal_state(), state_before);

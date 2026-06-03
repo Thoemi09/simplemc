@@ -3,13 +3,13 @@
  * @brief Unit tests for the simplemc-serialize core + JSON backend.
  *
  * @details Covers:
- *  - `serializer` / `deserializer` concept conformance (json_serializer, json_deserializer,
- *    and a mock backend that's not JSON-shaped).
+ *  - `serializer` / `deserializer` concept conformance (json_serializer satisfies both, plus a
+ *    mock backend that's not JSON-shaped).
  *  - Primitive and `std::complex` / `std::vector` / `Eigen::Vector*` / `Eigen::Matrix*` round-trips
  *    through the nlohmann-fallback path.
  *  - ADL dispatch via friend `simplemc_save` (intrusive) and namespace-scope `simplemc_save` /
  *    `simplemc_load` (non-intrusive).
- *  - `operator[]` navigation produces the expected JSON tree.
+ *  - `operator[]` navigation (both overloads) produces the expected JSON tree.
  *  - `has` and direct-node access for schema-tolerance queries.
  *  - All four binary file IO modes still round-trip via the relocated file_io.
  */
@@ -25,6 +25,7 @@
 #include <map>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 // ===== Test types =====================================================================
@@ -129,12 +130,11 @@ static_assert(simplemc::serializer<mock_output, double>);
 
 TEST(SerializerCore, ConceptConformance) {
     using simplemc::deserializer;
-    using simplemc::serializer;
-    using simplemc::json_deserializer;
     using simplemc::json_serializer;
+    using simplemc::serializer;
 
     static_assert(serializer<json_serializer>);
-    static_assert(deserializer<json_deserializer>);
+    static_assert(deserializer<json_serializer>);
     SUCCEED();
 }
 
@@ -147,9 +147,12 @@ TEST(SerializerJson, PrimitiveRoundtrip) {
     s.save_at("bool", true);
     s.save_at("string", std::string { "hi" });
 
-    s.write_to_file("primitive.json");
+    simplemc::write_json_file(s.root(), "primitive.json");
 
-    simplemc::json_deserializer d { "primitive.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "primitive.json");
+    const simplemc::json_serializer d { std::move(doc) };
+
     int i = 0;
     double dbl = 0;
     bool b = false;
@@ -169,9 +172,11 @@ TEST(SerializerJson, ComplexRoundtrip) {
     const std::complex<double> z { 1.5, -2.5 };
     simplemc::json_serializer s {};
     s.save_at("z", z);
-    s.write_to_file("complex.json");
+    simplemc::write_json_file(s.root(), "complex.json");
 
-    simplemc::json_deserializer d { "complex.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "complex.json");
+    const simplemc::json_serializer d { std::move(doc) };
     std::complex<double> back;
     d.load_at("z", back);
     check_equal(back, z);
@@ -181,9 +186,11 @@ TEST(SerializerJson, VectorRoundtrip) {
     const std::vector<double> v { 1.0, 2.0, 3.0, 4.0 };
     simplemc::json_serializer s {};
     s.save_at("v", v);
-    s.write_to_file("vector.json");
+    simplemc::write_json_file(s.root(), "vector.json");
 
-    simplemc::json_deserializer d { "vector.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "vector.json");
+    const simplemc::json_serializer d { std::move(doc) };
     std::vector<double> back;
     d.load_at("v", back);
     check_equal(back, v);
@@ -194,9 +201,11 @@ TEST(SerializerJson, EigenVectorRoundtrip) {
     v << 1.0, 2.0, 3.0;
     simplemc::json_serializer s {};
     s.save_at("v", v);
-    s.write_to_file("eigen_vec.json");
+    simplemc::write_json_file(s.root(), "eigen_vec.json");
 
-    simplemc::json_deserializer d { "eigen_vec.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "eigen_vec.json");
+    const simplemc::json_serializer d { std::move(doc) };
     Eigen::VectorXd back;
     d.load_at("v", back);
     ASSERT_EQ(back.size(), v.size());
@@ -210,9 +219,11 @@ TEST(SerializerJson, EigenMatrixRoundtrip) {
     m << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0;
     simplemc::json_serializer s {};
     s.save_at("m", m);
-    s.write_to_file("eigen_mat.json");
+    simplemc::write_json_file(s.root(), "eigen_mat.json");
 
-    simplemc::json_deserializer d { "eigen_mat.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "eigen_mat.json");
+    const simplemc::json_serializer d { std::move(doc) };
     Eigen::MatrixXd back;
     d.load_at("m", back);
     ASSERT_EQ(back.rows(), m.rows());
@@ -241,8 +252,11 @@ TEST(SerializerJson, AdlDispatch_FriendPath) {
     ASSERT_DOUBLE_EQ(j["p"]["x"].get<double>(), 1.25);
     ASSERT_DOUBLE_EQ(j["p"]["y"].get<double>(), -3.5);
 
-    s.write_to_file("intrusive.json");
-    simplemc::json_deserializer d { "intrusive.json" };
+    simplemc::write_json_file(s.root(), "intrusive.json");
+
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "intrusive.json");
+    const simplemc::json_serializer d { std::move(doc) };
     intrusive_point back;
     d.load_at("p", back);
     ASSERT_EQ(back, p);
@@ -254,9 +268,11 @@ TEST(SerializerJson, AdlDispatch_FreeFunctionPath) {
 
     simplemc::json_serializer s {};
     s.save_at("b", b);
-    s.write_to_file("nonintrusive.json");
+    simplemc::write_json_file(s.root(), "nonintrusive.json");
 
-    simplemc::json_deserializer d { "nonintrusive.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "nonintrusive.json");
+    const simplemc::json_serializer d { std::move(doc) };
     nonintrusive_box back;
     d.load_at("b", back);
     ASSERT_EQ(back, b);
@@ -268,9 +284,11 @@ TEST(SerializerJson, AdlDispatch_Composite) {
 
     simplemc::json_serializer s {};
     s.save_at("c", c);
-    s.write_to_file("composite.json");
+    simplemc::write_json_file(s.root(), "composite.json");
 
-    simplemc::json_deserializer d { "composite.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "composite.json");
+    const simplemc::json_serializer d { std::move(doc) };
     composite back;
     d.load_at("c", back);
     ASSERT_EQ(back, c);
@@ -313,7 +331,7 @@ TEST(SerializerJson, OperatorBracket_SharesTree) {
 TEST(SerializerJson, OperatorBracket_ReadSideThrowsOnMissing) {
     nlohmann::json j;
     j["existing"] = 1;
-    auto d = simplemc::json_deserializer::from_json(j);
+    const simplemc::json_serializer d { std::move(j) };
     EXPECT_THROW({ auto sub = d["missing"]; }, simplemc::simplemc_exception);
 }
 
@@ -326,7 +344,7 @@ TEST(SerializerJson, JsonPtr_TracksPosition) {
 
     nlohmann::json j;
     j["a"]["b"] = 42;
-    auto d = simplemc::json_deserializer::from_json(j);
+    const simplemc::json_serializer d { std::move(j) };
     EXPECT_EQ(d.json_ptr(), ptr {});
     EXPECT_EQ(d["a"]["b"].json_ptr(), ptr { "/a/b" });
 }
@@ -337,7 +355,7 @@ TEST(SerializerJson, SchemaTolerance_HasAndArraySize) {
     nlohmann::json j;
     j["present"] = 1;
     j["list"] = { 10, 20, 30 };
-    auto d = simplemc::json_deserializer::from_json(j);
+    const simplemc::json_serializer d { std::move(j) };
 
     EXPECT_TRUE(d.has("present"));
     EXPECT_FALSE(d.has("missing"));
@@ -347,7 +365,7 @@ TEST(SerializerJson, SchemaTolerance_HasAndArraySize) {
 TEST(SerializerJson, SchemaTolerance_ArrayShape) {
     nlohmann::json j;
     j["mat"] = nlohmann::json::array({ nlohmann::json::array({ 1, 2, 3 }), nlohmann::json::array({ 4, 5, 6 }) });
-    auto d = simplemc::json_deserializer::from_json(j);
+    const simplemc::json_serializer d { std::move(j) };
 
     const auto mat_d = d["mat"];
     ASSERT_EQ(mat_d.get().size(), 2u);
@@ -401,10 +419,12 @@ TEST(SerializerJson, RootRoundtrip_WithSimplemcSave) {
     const intrusive_point p { 7.0, 9.0 };
     simplemc::json_serializer s;
     simplemc_save(s, p);
-    s.write_to_file("p.json");
+    simplemc::write_json_file(s.root(), "p.json");
 
     intrusive_point back;
-    simplemc::json_deserializer d { "p.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "p.json");
+    const simplemc::json_serializer d { std::move(doc) };
     simplemc_load(d, back);
     ASSERT_EQ(back, p);
 }
@@ -413,10 +433,38 @@ TEST(SerializerJson, RootRoundtrip_NlohmannFallback) {
     const std::vector<double> v { 1.0, 2.5, -3.0 };
     simplemc::json_serializer s;
     s.root() = v;
-    s.write_to_file("v.json");
+    simplemc::write_json_file(s.root(), "v.json");
 
-    simplemc::json_deserializer d { "v.json" };
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "v.json");
+    simplemc::json_serializer d { std::move(doc) };
     std::vector<double> back;
     d.root().get_to(back);
     check_equal(back, v);
+}
+
+// ===== Rank-namespacing pattern (dmc-polaron checkpoint shape) =========================
+
+TEST(SerializerJson, RankNamespacingPattern) {
+    // Mirrors the dmc-polaron checkpoint pattern: one document carrying per-rank state
+    // under "run_<rank>" sub-keys.
+    using test_types::intrusive_point;
+    const intrusive_point p0 { 1.0, 2.0 };
+    const intrusive_point p1 { 3.0, 4.0 };
+
+    simplemc::json_serializer s;
+    s.save_at("run_0", p0);
+    s.save_at("run_1", p1);
+    simplemc::write_json_file(s.root(), "ranked.json", { .mode = simplemc::json_file_mode::cbor });
+
+    nlohmann::json doc;
+    simplemc::read_json_file(doc, "ranked.json", { .mode = simplemc::json_file_mode::cbor });
+    const simplemc::json_serializer d { std::move(doc) };
+
+    intrusive_point back0;
+    intrusive_point back1;
+    d.load_at("run_0", back0);
+    d.load_at("run_1", back1);
+    ASSERT_EQ(back0, p0);
+    ASSERT_EQ(back1, p1);
 }

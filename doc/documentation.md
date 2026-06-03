@@ -120,7 +120,7 @@ state-I/O logic without coupling to a specific backend.
 It currently ships with the following backends:
 
 - @ref simplemc-serialize-json, implemented on top of [nlohmann_json](https://github.com/nlohmann/
-json) and providing @ref simplemc::json_serializer / @ref simplemc::json_deserializer, text- and 
+json) and providing the unified @ref simplemc::json_serializer (satisfying both concepts), text- and 
 binary-mode file I/O helpers, and various custom nlohmann adapters. 
 
 Additional backends can be added by satisfying the @ref simplemc::serializer and 

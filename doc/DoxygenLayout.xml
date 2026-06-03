@@ -195,7 +195,6 @@
           <tab type="user" url="@ref nlohmann::adl_serializer< std::complex< T > >" title="nlohmann::adl_serializer< std::complex >"/>
           <tab type="user" url="@ref simplemc::json_serializer" title="json_serializer"/>
           <tab type="user" url="@ref simplemc::json_io_options" title="json_io_options"/>
-          <tab type="user" url="@ref simplemc::json_deserializer" title="json_deserializer"/>
         </tab>
         <tab type="user" url="@ref simplemc::deserializer" title="deserializer"/>
         <tab type="user" url="@ref simplemc::has_simplemc_load" title="has_simplemc_load"/>

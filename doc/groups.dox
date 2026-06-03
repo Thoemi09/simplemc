@@ -1300,18 +1300,19 @@
  * simplemc::deserializer — and the ADL pattern that lets each user/library type carry its own
  * state-I/O logic without coupling to a specific backend.
  *
- * @section simplemc-serialize-model What is a serializer?
+ * @section simplemc-serialize-model Serialization model
  *
- * A **serializer** writes named values/objects into some hierarchical store — a JSON file, an HDF5
- * file, a TOML table, etc. A **deserializer** reads them back. Both always point at one **location**
- * inside the store; everything you save or load happens at (or below) that location.
+ * **simplemc-serialize** models a hierarchical store — a JSON file, an HDF5 file, a TOML table, etc.
+ * — navigated by named keys and read or written at any **location** within it. A type that implements
+ * this model in the write direction is a **serializer** (simplemc::serializer); in the read direction
+ * it is a **deserializer** (simplemc::deserializer). A single backend class may satisfy both concepts
+ * (the JSON backend does: see simplemc::json_serializer).
  *
- * There are four basic operations every (de)serializer is required to support. Let `s` be a
- * (de)serializer object and let `key` be a `std::string_view` and let `value` be an instance of some
- * type `T`:
+ * The model defines four basic operations. Let `s` be a (de)serializer object, `key` a
+ * `std::string_view`, and `value` an instance of some type `T`:
  *
  * - `s[key]` returns another serializer / deserializer of the same type, pointing one level
- * deeper at the sub-location `key` than the current location. The store itself is not duplicated —
+ * deeper than the current location at the sub-location `key`. The store itself is not duplicated —
  * `s` and the returned instance write into the same underlying file or object.
  * - `s.has(key)` returns true if `key` exists at the current location.
  * - `s.save_at(key, value)` writes `value` into the store at sub-location `key` relative to the
@@ -1344,12 +1345,12 @@
  *
  * These may be `friend`-declared inside the class when private access is needed.
  *
- * As described above, `save_at` / `load_at` look up `%simplemc_save` / `simplemc_load` using ADL. If
+ * As described above, `save_at` / `load_at` look up `%simplemc_save` / `%simplemc_load` using ADL. If
  * no matching overload can be found (see simplemc::has_simplemc_save / simplemc::has_simplemc_load),
  * the (de)serializer might fall through to the backend's native idiom (e.g. nlohmann's `to_json` /
  * `from_json` for the JSON backend). See specific backend documentation for details.
  *
- * **simplemc** library types ship `%simplemc_save` / `simplemc_load` overloads that should work for
+ * **simplemc** library types ship `%simplemc_save` / `%simplemc_load` overloads that should work for
  * any supported backend.
  *
  * @section simplemc-serialize-backends Backends
@@ -1364,15 +1365,15 @@
 /**
  * @defgroup simplemc-serialize-json JSON serialization
  * @ingroup simplemc-serialize
- * @brief JSON backend on top of nlohmann_json: serializer/deserializer, file I/O helpers, and
- * nlohmann adapters for non-customized types.
+ * @brief JSON backend on top of nlohmann_json: unified serializer/deserializer, file I/O helpers,
+ * and nlohmann adapters for non-customized types.
  *
- * @details simplemc::json_serializer and simplemc::json_deserializer satisfy
- * simplemc::serializer and simplemc::deserializer respectively. Both own a shared
- * `nlohmann::json` tree via `std::shared_ptr` and track the current position via a raw
- * pointer into the tree. Navigation via `operator[]` returns a new instance sharing the tree
- * but pointing at the sub-node — there is no stack and no RAII scope. Reference semantics on
- * copy: `auto s2 = s;` aliases the same underlying tree.
+ * @details simplemc::json_serializer satisfies both simplemc::serializer and
+ * simplemc::deserializer. It owns a shared `nlohmann::json` tree via `std::shared_ptr` and tracks
+ * the current position via a JSON pointer into the tree. Navigation via `operator[]` returns a
+ * new instance sharing the tree but pointing at the sub-node — the non-const overload auto-creates
+ * (save side) and the const overload throws on missing keys (load side). There is no stack and no
+ * RAII scope. Reference semantics on copy: `auto s2 = s;` aliases the same underlying tree.
  *
  * Per-type customization is via the ADL pattern described in @ref simplemc-serialize-adl.
  * Types without an ADL `simplemc_save` / `simplemc_load` fall through to nlohmann's `to_json`
