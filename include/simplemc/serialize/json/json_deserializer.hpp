@@ -13,13 +13,11 @@
 #include <fmt/format.h>
 #include <nlohmann/json.hpp>
 
-#include <cstddef>
 #include <filesystem>
 #include <memory>
 #include <string>
 #include <string_view>
 #include <utility>
-#include <vector>
 
 namespace simplemc {
 
@@ -32,12 +30,17 @@ namespace simplemc {
  * @brief JSON read-side deserializer.
  *
  * @details Mirror of @ref json_serializer for the read direction. Owns a `std::shared_ptr` to the
- * loaded `nlohmann::json` tree and tracks the current position via a `const nlohmann::json*`.
- * Navigation via `operator[]` returns a new instance sharing the tree; missing keys throw.
+ * loaded `nlohmann::json` document and tracks the current position as a JSON pointer (path from
+ * root, RFC 6901). Navigation via `operator[]` returns a new instance sharing the document;
+ * missing keys throw.
  *
- * Per-type customization is via ADL `simplemc_load(json_deserializer&, T&)`. Types without such a
- * function fall through to `current.get_to(v)`, which dispatches to nlohmann's `from_json` /
- * `adl_serializer<T>` machinery.
+ * Per-type customization is via ADL `simplemc_load(const json_deserializer&, T&)`. Types without
+ * such a function fall through to `current.get_to(v)`, which dispatches to nlohmann's `from_json`
+ * / `adl_serializer<T>` machinery.
+ *
+ * Two raw-access points are provided: root() returns the document root regardless of the current
+ * position, while get() returns the node this (sub-)deserializer is positioned at. For a top-level
+ * deserializer the two are the same.
  */
 class json_deserializer {
 public:
@@ -46,27 +49,42 @@ public:
     /// Configuration options type (see @ref json_io_options).
     using options = json_io_options;
 
-    /// Construct by reading a JSON file from `path` using `opts` (text mode by default).
+    /**
+     * @brief Construct by reading a JSON file from `path`.
+     *
+     * @param path Source file path.
+     * @param opts JSON IO options (defaults to text mode).
+     */
     explicit json_deserializer(const file_handle& path, options opts = {}) :
-        tree_ { std::make_shared<nlohmann::json>() },
-        current_ { tree_.get() } {
-        simplemc::read_json_file(*tree_, path, opts);
+        root_ { std::make_shared<nlohmann::json>() },
+        current_ {} {
+        simplemc::read_json_file(*root_, path, opts);
     }
 
-    /// Factory: construct from an in-memory JSON tree (moved in).
-    static json_deserializer from_tree(nlohmann::json tree) {
-        auto shared = std::make_shared<nlohmann::json>(std::move(tree));
-        return json_deserializer { shared, shared.get() };
+    /**
+     * @brief Construct from an in-memory `nlohmann::json` document.
+     *
+     * @param doc JSON document to take ownership of (moved in).
+     * @return A deserializer pointing at the root of `doc`.
+     */
+    [[nodiscard]] static json_deserializer from_json(nlohmann::json doc) {
+        auto shared = std::make_shared<nlohmann::json>(std::move(doc));
+        return json_deserializer { std::move(shared), nlohmann::json::json_pointer {} };
     }
 
     /**
      * @brief Read sub-key `key` of the current position into `v`; return `*this` for chaining.
      *
-     * @details If `T` has an ADL `simplemc_load`, this descends into the sub-position and dispatches.
-     * Otherwise the value is read via `nlohmann::json::get_to`, triggering `from_json` /
-     * `adl_serializer<T>` if defined.
+     * @details If `T` has an ADL `simplemc_load`, this descends into the sub-position and
+     * dispatches. Otherwise the value is read via `nlohmann::json::get_to`, triggering
+     * `from_json` / `adl_serializer<T>` if defined.
      *
      * Throws simplemc::simplemc_exception via nlohmann's `at()` if the key is missing.
+     *
+     * @tparam T Value type being read into.
+     * @param key Sub-key (relative to the current position) to read from.
+     * @param v Output value to read into.
+     * @return `*this`, to satisfy the simplemc::deserializer concept.
      */
     template <class T>
     json_deserializer load_at(std::string_view key, T& v) const {
@@ -74,76 +92,76 @@ public:
             const auto sub = (*this)[key];
             simplemc_load(sub, v);
         } else {
-            current_->at(std::string { key }).get_to(v);
+            root_->at(current_ / std::string { key }).get_to(v);
         }
         return *this;
     }
 
     /**
-     * @brief Return a new `json_deserializer` pointing at the sub-position `key`, sharing the tree.
+     * @brief Return a new deserializer pointing at sub-key `key`, sharing the document.
      *
      * @details Throws simplemc::simplemc_exception if `key` is absent. Use @ref has to check
      * presence first when the key is optional.
+     *
+     * @param key Sub-key (relative to the current position) to descend into.
+     * @return Sub-deserializer pointing at `key`.
      */
     json_deserializer operator[](std::string_view key) const {
-        if (!current_->contains(std::string { key })) {
+        auto sub_ptr = current_ / std::string { key };
+        if (!root_->contains(sub_ptr)) {
             throw simplemc_exception(fmt::format("missing key: '{}'", key));
         }
-        return json_deserializer { tree_, &current_->at(std::string { key }) };
-    }
-
-    /// Test whether the current position contains `key`.
-    [[nodiscard]] bool has(std::string_view key) const { return current_->contains(std::string { key }); }
-
-    /// Number of elements in the array at `key`. Throws if the key is missing or not an array.
-    [[nodiscard]] std::size_t array_size(std::string_view key) const {
-        return current_->at(std::string { key }).size();
-    }
-
-    /// Shape of a nested-array structure at `key`. Returns the dimensions in row-major order.
-    [[nodiscard]] std::vector<std::size_t> array_shape(std::string_view key) const {
-        std::vector<std::size_t> shape;
-        const nlohmann::json* p = &current_->at(std::string { key });
-        while (p->is_array()) {
-            shape.push_back(p->size());
-            if (p->empty()) {
-                break;
-            }
-            p = &p->front();
-        }
-        return shape;
+        return json_deserializer { root_, std::move(sub_ptr) };
     }
 
     /**
-     * @brief One-shot helper: read `v` from `path`.
+     * @brief Test whether the current position contains sub-key `key`.
      *
-     * @details If `T` has an ADL `simplemc_load`, the customization is invoked on a fresh
-     * deserializer (reading from the root level). Otherwise the value is read from the root via
-     * nlohmann, which dispatches to `from_json` / `adl_serializer<T>`.
+     * @param key Sub-key to check.
+     * @return `true` if `key` is present at the current position.
      */
-    template <class T>
-    static void load_from_file(const file_handle& path, T& v, options opts = {}) {
-        json_deserializer d { path, opts };
-        if constexpr (has_simplemc_load<T, json_deserializer>) {
-            simplemc_load(d, v);
-        } else {
-            d.tree().get_to(v);
-        }
+    [[nodiscard]] bool has(std::string_view key) const {
+        return root_->contains(current_ / std::string { key });
     }
 
-    /// Read-only access to the underlying tree.
-    [[nodiscard]] const nlohmann::json& tree() const { return *tree_; }
+    /**
+     * @brief Read-only access to the document root, regardless of current position.
+     *
+     * @return Const reference to the underlying `nlohmann::json` document root.
+     */
+    [[nodiscard]] const nlohmann::json& root() const noexcept { return *root_; }
+
+    /**
+     * @brief Read-only access to the node this (sub-)deserializer is positioned at.
+     *
+     * @details For a top-level deserializer this is the same as root(); for a sub-deserializer
+     * returned by `operator[]` it is the sub-node.
+     *
+     * @return Const reference to the `nlohmann::json` node at the current position.
+     */
+    [[nodiscard]] const nlohmann::json& get() const { return root_->at(current_); }
+
+    /**
+     * @brief Logical position of this (sub-)deserializer as a JSON pointer (RFC 6901).
+     *
+     * @details For a top-level deserializer this is the empty pointer `""` (the document root);
+     * for a sub-deserializer returned by `operator[]` it is the path from the root to the sub-node.
+     *
+     * @return Const reference to the underlying `nlohmann::json::json_pointer`.
+     */
+    [[nodiscard]] const nlohmann::json::json_pointer& json_ptr() const noexcept { return current_; }
 
 private:
-    /// Sub-deserializer constructor — shares `tree`, points at `current`.
-    json_deserializer(std::shared_ptr<nlohmann::json> tree, const nlohmann::json* current) :
-        tree_ { std::move(tree) },
-        current_ { current } {}
+    /// Sub-deserializer constructor — shares `root`, points at `current`.
+    json_deserializer(std::shared_ptr<nlohmann::json> root, nlohmann::json::json_pointer current) :
+        root_ { std::move(root) },
+        current_ { std::move(current) } {}
 
-    std::shared_ptr<nlohmann::json> tree_;
-    const nlohmann::json* current_;
+    std::shared_ptr<nlohmann::json> root_;
+    nlohmann::json::json_pointer current_;
 };
 
+// Check deserializer concept.
 static_assert(deserializer<json_deserializer>);
 
 /** @} */

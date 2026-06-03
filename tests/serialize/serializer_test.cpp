@@ -10,7 +10,7 @@
  *  - ADL dispatch via friend `simplemc_save` (intrusive) and namespace-scope `simplemc_save` /
  *    `simplemc_load` (non-intrusive).
  *  - `operator[]` navigation produces the expected JSON tree.
- *  - `has` / `array_size` schema-tolerance queries.
+ *  - `has` and direct-node access for schema-tolerance queries.
  *  - All four binary file IO modes still round-trip via the relocated file_io.
  */
 
@@ -234,7 +234,7 @@ TEST(SerializerJson, AdlDispatch_FriendPath) {
     s.save_at("p", p);
 
     // verify the JSON shape: { "p": { "x": 1.25, "y": -3.5 } }
-    const auto& j = s.tree();
+    const auto& j = s.root();
     ASSERT_TRUE(j.contains("p"));
     ASSERT_TRUE(j["p"].contains("x"));
     ASSERT_TRUE(j["p"].contains("y"));
@@ -284,7 +284,7 @@ TEST(SerializerJson, OperatorBracket_BuildsSubTree) {
     s["results"].save_at("mean", 0.5);
     s["results"].save_at("var", 0.1);
 
-    const auto& j = s.tree();
+    const auto& j = s.root();
     ASSERT_EQ(j["step"].get<int>(), 1);
     ASSERT_DOUBLE_EQ(j["results"]["mean"].get<double>(), 0.5);
     ASSERT_DOUBLE_EQ(j["results"]["var"].get<double>(), 0.1);
@@ -294,7 +294,7 @@ TEST(SerializerJson, OperatorBracket_ChainedNavigation) {
     simplemc::json_serializer s {};
     s["a"]["b"]["c"].save_at("x", 42);
 
-    const auto& j = s.tree();
+    const auto& j = s.root();
     ASSERT_EQ(j["a"]["b"]["c"]["x"].get<int>(), 42);
 }
 
@@ -305,7 +305,7 @@ TEST(SerializerJson, OperatorBracket_SharesTree) {
     results.save_at("var", 0.1);
 
     // s sees the changes because the tree is shared
-    const auto& j = s.tree();
+    const auto& j = s.root();
     ASSERT_DOUBLE_EQ(j["results"]["mean"].get<double>(), 0.5);
     ASSERT_DOUBLE_EQ(j["results"]["var"].get<double>(), 0.1);
 }
@@ -313,8 +313,22 @@ TEST(SerializerJson, OperatorBracket_SharesTree) {
 TEST(SerializerJson, OperatorBracket_ReadSideThrowsOnMissing) {
     nlohmann::json j;
     j["existing"] = 1;
-    auto d = simplemc::json_deserializer::from_tree(j);
+    auto d = simplemc::json_deserializer::from_json(j);
     EXPECT_THROW({ auto sub = d["missing"]; }, simplemc::simplemc_exception);
+}
+
+TEST(SerializerJson, JsonPtr_TracksPosition) {
+    using ptr = nlohmann::json::json_pointer;
+    simplemc::json_serializer s {};
+    EXPECT_EQ(s.json_ptr(), ptr {});
+    auto sub = s["a"]["b"];
+    EXPECT_EQ(sub.json_ptr(), ptr { "/a/b" });
+
+    nlohmann::json j;
+    j["a"]["b"] = 42;
+    auto d = simplemc::json_deserializer::from_json(j);
+    EXPECT_EQ(d.json_ptr(), ptr {});
+    EXPECT_EQ(d["a"]["b"].json_ptr(), ptr { "/a/b" });
 }
 
 // ===== Schema-tolerance queries =======================================================
@@ -323,22 +337,21 @@ TEST(SerializerJson, SchemaTolerance_HasAndArraySize) {
     nlohmann::json j;
     j["present"] = 1;
     j["list"] = { 10, 20, 30 };
-    auto d = simplemc::json_deserializer::from_tree(j);
+    auto d = simplemc::json_deserializer::from_json(j);
 
     EXPECT_TRUE(d.has("present"));
     EXPECT_FALSE(d.has("missing"));
-    EXPECT_EQ(d.array_size("list"), 3u);
+    EXPECT_EQ(d["list"].get().size(), 3u);
 }
 
 TEST(SerializerJson, SchemaTolerance_ArrayShape) {
     nlohmann::json j;
     j["mat"] = nlohmann::json::array({ nlohmann::json::array({ 1, 2, 3 }), nlohmann::json::array({ 4, 5, 6 }) });
-    auto d = simplemc::json_deserializer::from_tree(j);
+    auto d = simplemc::json_deserializer::from_json(j);
 
-    auto shape = d.array_shape("mat");
-    ASSERT_EQ(shape.size(), 2u);
-    EXPECT_EQ(shape[0], 2u);
-    EXPECT_EQ(shape[1], 3u);
+    const auto mat_d = d["mat"];
+    ASSERT_EQ(mat_d.get().size(), 2u);
+    EXPECT_EQ(mat_d.get().front().size(), 3u);
 }
 
 // ===== File IO binary modes (relocated coverage from old json/file_io tests) =========
@@ -381,23 +394,29 @@ TEST(SerializerJson, RangeAdapters) {
     check_equal(arr | simplemc::ranges::views::reverse, arr_rev);
 }
 
-// ===== save_to_file / load_from_file one-shots =========================================
+// ===== Whole-document round-trips via ADL and nlohmann fallback ========================
 
-TEST(SerializerJson, SaveLoadToFile_WithSimplemcSave) {
+TEST(SerializerJson, RootRoundtrip_WithSimplemcSave) {
     using test_types::intrusive_point;
     const intrusive_point p { 7.0, 9.0 };
-    simplemc::json_serializer::save_to_file("p.json", p);
+    simplemc::json_serializer s;
+    simplemc_save(s, p);
+    s.write_to_file("p.json");
 
     intrusive_point back;
-    simplemc::json_deserializer::load_from_file("p.json", back);
+    simplemc::json_deserializer d { "p.json" };
+    simplemc_load(d, back);
     ASSERT_EQ(back, p);
 }
 
-TEST(SerializerJson, SaveLoadToFile_NlohmannFallback) {
+TEST(SerializerJson, RootRoundtrip_NlohmannFallback) {
     const std::vector<double> v { 1.0, 2.5, -3.0 };
-    simplemc::json_serializer::save_to_file("v.json", v);
+    simplemc::json_serializer s;
+    s.root() = v;
+    s.write_to_file("v.json");
 
+    simplemc::json_deserializer d { "v.json" };
     std::vector<double> back;
-    simplemc::json_deserializer::load_from_file("v.json", back);
+    d.root().get_to(back);
     check_equal(back, v);
 }
