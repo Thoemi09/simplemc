@@ -205,6 +205,8 @@
         <tab type="user" url="@ref simplemc::serializer" title="serializer"/>
       </tab>
       <tab type="usergroup" url="@ref simplemc-mc" title="simplemc-mc">
+        <tab type="user" url="@ref simplemc::mc_measurement" title="mc_measurement"/>
+        <tab type="user" url="@ref simplemc::measurement" title="measurement"/>
         <tab type="user" url="@ref simplemc::simulation_params" title="simulation_params"/>
         <tab type="user" url="@ref simplemc::simulation_stats" title="simulation_stats"/>
         <tab type="user" url="@ref simplemc::simulation_run" title="simulation_run"/>

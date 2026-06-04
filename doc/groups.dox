@@ -1423,6 +1423,20 @@
  * @defgroup simplemc-mc simplemc-mc
  * @brief Building blocks for Monte Carlo simulations.
  *
- * @details **simplemc-mc** is the Monte Carlo–specific layer of **simplemc**. It hosts the types and 
+ * @details **simplemc-mc** is the Monte Carlo–specific layer of **simplemc**. It hosts the types and
  * drivers needed to set up, run, and persist a Monte Carlo simulation.
+ *
+ * @section simplemc-mc-type-erasure Polymorphic user types
+ *
+ * Some user-extensible types in **simplemc-mc** follow the **concept–model type-erasure idiom**: the 
+ * user writes any plain class that satisfies a small C++20 concept, and the library wraps it in a 
+ * value-semantic polymorphic holder. The wrapper hides a `std::unique_ptr` to an internal polymorphic 
+ * base whose nested model derives from it, stores the user's value, and forwards the concept's 
+ * operations through it.
+ *
+ * The result: user code is non-intrusive (no base class to inherit from), the wrapper is a regular
+ * value type usable in standard containers, and a single wrapper instance can hold values of
+ * arbitrary user types.
+ * 
+ * See e.g. simplemc::measurement.
  */
