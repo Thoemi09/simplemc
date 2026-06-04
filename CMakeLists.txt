@@ -5,10 +5,12 @@
 # SIMPLEMC_BUILD_EXAMPLES: Build examples.
 # SIMPLEMC_BUILD_DOC: Build documentation with Doxygen.
 # SIMPLEMC_USE_STD_RANGES: Use ranges from the standard library.
+# SIMPLEMC_USE_HDF5: Enable HDF5 backend for serialization.
 # SIMPLEMC_FETCH_FMT: Fetch fmt from github.
 # SIMPLEMC_FETCH_RANGEV3: Fetch range-v3 from github.
 # SIMPLEMC_FETCH_EIGEN3: Fetch Eigen3 from gitlab.
 # SIMPLEMC_FETCH_NLOHMANN_JSON: Fetch nlohmann_json from github.
+# SIMPLEMC_FETCH_HIGHFIVE: Fetch HighFive from github.
 # SIMPLEMC_DISABLE_WARNINGS: Disable stricter compilation warnings.
 # SIMPLEMC_BUILD_STOCHASTIC_PROCESS_TESTS: Build stochastic process tests.
 
@@ -45,10 +47,12 @@ option(SIMPLEMC_BUILD_TESTS "Build unit tests with googletest" ${SIMPLEMC_MASTER
 option(SIMPLEMC_BUILD_EXAMPLES "Build examples" ${SIMPLEMC_MASTER_PROJECT})
 option(SIMPLEMC_BUILD_DOC "Build documentation with Doxygen" OFF)
 option(SIMPLEMC_USE_STD_RANGES "Use ranges from the standard library" ${SIMPLEMC_USES_GNU})
+option(SIMPLEMC_USE_HDF5 "Enable HDF5 backend for serialization" OFF)
 option(SIMPLEMC_FETCH_FMT "Fetch fmt from github" ON)
 option(SIMPLEMC_FETCH_RANGEV3 "Fetch range-v3 from github" ON)
 option(SIMPLEMC_FETCH_EIGEN3 "Fetch Eigen3 from gitlab" ON)
 option(SIMPLEMC_FETCH_NLOHMANN_JSON "Fetch nlohmann_json from github" ON)
+option(SIMPLEMC_FETCH_HIGHFIVE "Fetch HighFive from github" ON)
 option(SIMPLEMC_DISABLE_WARNINGS "Disable stricter compilation warnings" ON)
 option(SIMPLEMC_BUILD_STOCHASTIC_PROCESS_TESTS "Build stochastic process tests" OFF)
 
@@ -66,10 +70,14 @@ message(STATUS "Build unit tests: ${SIMPLEMC_BUILD_TESTS}")
 message(STATUS "Build examples: ${SIMPLEMC_BUILD_EXAMPLES}")
 message(STATUS "Build documentation: ${SIMPLEMC_BUILD_DOC}")
 message(STATUS "Use std ranges: ${SIMPLEMC_USE_STD_RANGES}")
+message(STATUS "Use HDF5 backend: ${SIMPLEMC_USE_HDF5}")
 message(STATUS "Fetch fmt: ${SIMPLEMC_FETCH_FMT}")
 message(STATUS "Fetch range-v3: ${SIMPLEMC_FETCH_RANGEV3}")
 message(STATUS "Fetch Eigen3: ${SIMPLEMC_FETCH_EIGEN3}")
 message(STATUS "Fetch nlohmann_json: ${SIMPLEMC_FETCH_NLOHMANN_JSON}")
+if(SIMPLEMC_USE_HDF5)
+    message(STATUS "Fetch HighFive: ${SIMPLEMC_FETCH_HIGHFIVE}")
+endif()
 message(STATUS "Disable stricter compiler warnings: ${SIMPLEMC_DISABLE_WARNINGS}")
 message(STATUS "Build stochastic process tests: ${SIMPLEMC_BUILD_STOCHASTIC_PROCESS_TESTS}")
 message(STATUS "-----------------------------------------------")

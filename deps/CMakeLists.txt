@@ -12,6 +12,8 @@
 # The following dependencies are optional:
 # ---------------------------------
 # googletest: For testing. Only used if SIMPLEMC_BUILD_TESTS is ON.
+# hdf5: HDF5 C library for serialization. Only used if SIMPLEMC_USE_HDF5 is ON.
+# HighFive: C++ HDF5 wrapper. Only used if SIMPLEMC_USE_HDF5 is ON.
 
 include(FetchContent)
 
@@ -165,5 +167,27 @@ if(SIMPLEMC_BUILD_TESTS)
         GIT_REPO https://github.com/google/googletest
         GIT_TAG main  # 8736d2cd
         CACHE_OPTIONS "INSTALL_GTEST=OFF;BUILD_GMOCK=OFF"
+    )
+endif()
+
+# hdf5 + HighFive
+if(SIMPLEMC_USE_HDF5)
+    # hdf5 (always use find_package, never fetch)
+    simplemc_fetch_or_find_dependency(
+        TARGET_NAME hdf5::hdf5
+        PACKAGE_NAME HDF5
+        SHOULD_FETCH OFF
+        FIND_PACKAGE_ARGS COMPONENTS C
+    )
+
+    # HighFive
+    simplemc_fetch_or_find_dependency(
+        TARGET_NAME HighFive::HighFive
+        PACKAGE_NAME HighFive
+        SHOULD_FETCH ${SIMPLEMC_FETCH_HIGHFIVE}
+        FETCH_CONTENT_NAME highfive
+        GIT_REPO https://github.com/highfive-devs/highfive.git
+        GIT_TAG main # 959ec30
+        CACHE_OPTIONS "HIGHFIVE_UNIT_TESTS=OFF;HIGHFIVE_EXAMPLES=OFF;HIGHFIVE_BUILD_DOCS=OFF;HIGHFIVE_USE_BOOST=OFF"
     )
 endif()

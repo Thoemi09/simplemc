@@ -190,6 +190,9 @@
         </tab>
       </tab>
       <tab type="usergroup" url="@ref simplemc-serialize" title="simplemc-serialize">
+        <tab type="usergroup" url="@ref simplemc-serialize-hdf5" title="HDF5 serialization">
+          <tab type="user" url="@ref simplemc::hdf5_serializer" title="hdf5_serializer"/>
+        </tab>
         <tab type="usergroup" url="@ref simplemc-serialize-json" title="JSON serialization">
           <tab type="user" url="@ref nlohmann::adl_serializer< M >" title="nlohmann::adl_serializer< Eigen >"/>
           <tab type="user" url="@ref nlohmann::adl_serializer< std::complex< T > >" title="nlohmann::adl_serializer< std::complex >"/>

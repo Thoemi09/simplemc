@@ -14,5 +14,6 @@
 
 // build options
 #cmakedefine SIMPLEMC_USE_STD_RANGES
+#cmakedefine SIMPLEMC_USE_HDF5
 
 #endif // SIMPLEMC_CONFIG_HPP

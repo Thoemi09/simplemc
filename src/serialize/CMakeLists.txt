@@ -6,7 +6,7 @@
 # the serializer/deserializer concepts, ADL detection helpers, and library-shipped simplemc_save /
 # simplemc_load overloads for simplemc-owned types.
 # simplemc-serialize (simplemc::simplemc-serialize): Interface library aggregating core + all
-# available backends (currently json; hdf5 in the future).
+# available backends (json, hdf5).
 
 # add serialize core interface library
 add_library(simplemc-serialize-core INTERFACE)
@@ -17,6 +17,9 @@ target_link_libraries(simplemc-serialize-core
 
 # build backend sublibraries
 add_subdirectory(json)
+if(SIMPLEMC_USE_HDF5)
+    add_subdirectory(hdf5)
+endif()
 
 # add aggregate interface library — links core + every shipped backend
 add_library(simplemc-serialize INTERFACE)
@@ -24,4 +27,5 @@ add_library(simplemc::simplemc-serialize ALIAS simplemc-serialize)
 target_link_libraries(simplemc-serialize
     INTERFACE
         simplemc::simplemc-serialize-core
-        simplemc::simplemc-serialize-json)
+        simplemc::simplemc-serialize-json
+        $<$<BOOL:${SIMPLEMC_USE_HDF5}>:simplemc::simplemc-serialize-hdf5>)

@@ -1359,32 +1359,64 @@
  * simplemc::serializer and simplemc::deserializer. **simplemc-serialize** ships with the following
  * backends:
  * - @ref simplemc-serialize-json is based on the popular <a href="https://github.com/nlohmann/json">
- * nlohmann_json</a> library.
+ * nlohmann_json</a> library and is always available.
+ * - @ref simplemc-serialize-hdf5 is based on <a href="https://github.com/BlueBrain/HighFive">
+ * HighFive</a> over a system HDF5 install. It is opt-in via the CMake option `SIMPLEMC_USE_HDF5=ON`.
  */
 
 /**
  * @defgroup simplemc-serialize-json JSON serialization
  * @ingroup simplemc-serialize
- * @brief JSON backend on top of nlohmann_json: unified serializer/deserializer, file I/O helpers,
- * and nlohmann adapters for non-customized types.
+ * @brief JSON backend on top of `nlohmann_json`.
  *
- * @details simplemc::json_serializer satisfies both simplemc::serializer and
- * simplemc::deserializer. It owns a shared `nlohmann::json` tree via `std::shared_ptr` and tracks
- * the current position via a JSON pointer into the tree. Navigation via `operator[]` returns a
- * new instance sharing the tree but pointing at the sub-node — the non-const overload auto-creates
- * (save side) and the const overload throws on missing keys (load side). There is no stack and no
- * RAII scope. Reference semantics on copy: `auto s2 = s;` aliases the same underlying tree.
+ * @details simplemc::json_serializer satisfies both simplemc::serializer and simplemc::deserializer.
+ * It owns a shared `nlohmann::json` tree via `std::shared_ptr` and tracks the current position via a
+ * JSON pointer into the tree. Navigation via `operator[]` returns a new instance sharing the tree but
+ * pointing at the sub-node — the non-const overload auto-creates (save side) and the const overload
+ * throws on missing keys (load side). Copying uses reference semantices, i.e. a copy aliases the same
+ * underlying tree as the original.
  *
- * Per-type customization is via the ADL pattern described in @ref simplemc-serialize-adl.
- * Types without an ADL `simplemc_save` / `simplemc_load` fall through to nlohmann's `to_json`
- * / `from_json` / `adl_serializer<T>` machinery. The nlohmann-side specializations shipped in
- * `serialize/json/complex.hpp` and `serialize/json/eigen.hpp` plug `std::complex<T>` and
- * Eigen matrices / vectors (simplemc::eigen_matrix) into that fallback path so they round-trip
- * without needing per-type ADL hooks.
+ * Per-type customization is via the ADL pattern described in @ref simplemc-serialize-adl. Types
+ * without an ADL `%simplemc_save` / `%simplemc_load` fall through to nlohmann's internal
+ * serialization machinery.
  *
- * File I/O helpers (simplemc::read_json_file / simplemc::write_json_file) support both text
- * mode and the four nlohmann binary formats — BSON, CBOR, MessagePack, UBJSON — via the
- * simplemc::json_binary_mode enum and the simplemc::json_serializer_options struct.
+ * File I/O helpers (simplemc::read_json_file / simplemc::write_json_file) support both text mode and
+ * the four nlohmann binary formats — BSON, CBOR, MessagePack, UBJSON — via the
+ * simplemc::json_file_mode enum and the simplemc::json_io_options struct.
+ */
+
+/**
+ * @defgroup simplemc-serialize-hdf5 HDF5 serialization
+ * @ingroup simplemc-serialize
+ * @brief HDF5 backend on top of `HighFive`.
+ *
+ * @details simplemc::hdf5_serializer satisfies both simplemc::serializer and simplemc::deserializer.
+ * It owns a shared `HighFive::File` via `std::shared_ptr` and tracks the current position via a
+ * POSIX-style HDF5 path (e.g. `/physics/temperature`). Navigation via `operator[]` returns a new
+ * instance sharing the file but pointing one level deeper — the operation is purely a "pointer
+ * advance" that never touches the file. Copying uses reference semantices, i.e. a copy aliases the
+ * same underlying HDF5 file as the original.
+ *
+ * Per-type customization is via the ADL pattern described in @ref simplemc-serialize-adl. Types
+ * without an ADL `simplemc_save` / `simplemc_load` fall through to `HighFive::File::createDataSet` on
+ * the save side and `HighFive::DataSet::read` on the load side, writing leaf values directly as HDF5
+ * datasets. Group materialization is lazy: the group at `/current/location` is only created on the
+ * file when an actual leaf dataset is written through it. This mirrors the auto-create-on-write
+ * semantics of the JSON backend.
+ *
+ * Files can be opened in three modes via simplemc::hdf5_file_mode:
+ * - `read` (read-only, throws if the file is missing),
+ * - `truncate` (fresh write — the default for the save side), and
+ * - `append` (open an existing file for read/write or create it if missing, preserving any
+ * pre-existing structure).
+ *
+ * Path helpers simplemc::h5_join_path and simplemc::h5_parent_path are exposed for working with
+ * POSIX-style HDF5 paths outside the serializer.
+ *
+ * The HDF5 backend is header-only and only available when the CMake option `SIMPLEMC_USE_HDF5=ON` is
+ * set. It depends on HighFive and a system HDF5 installation. `HighFive::Exception` is caught at
+ * every public boundary and rethrown as a simplemc::simplemc_exception so callers see a consistent
+ * error type.
  */
 
 /**
