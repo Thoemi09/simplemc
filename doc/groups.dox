@@ -1421,5 +1421,8 @@
 
 /**
  * @defgroup simplemc-mc simplemc-mc
- * @brief Monte Carlo library.
+ * @brief Building blocks for Monte Carlo simulations.
+ *
+ * @details **simplemc-mc** is the Monte Carlo–specific layer of **simplemc**. It hosts the types and 
+ * drivers needed to set up, run, and persist a Monte Carlo simulation.
  */

@@ -39,6 +39,7 @@ add_subdirectory(grids)
 add_subdirectory(numeric)
 add_subdirectory(accs)
 add_subdirectory(serialize)
+add_subdirectory(mc)
 
 # add simplemc library
 add_library(simplemc INTERFACE)
@@ -51,4 +52,5 @@ target_link_libraries(simplemc
         simplemc::simplemc-grids
         simplemc::simplemc-numeric
         simplemc::simplemc-accs
-        simplemc::simplemc-serialize)
+        simplemc::simplemc-serialize
+        simplemc::simplemc-mc)

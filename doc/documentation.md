@@ -130,4 +130,17 @@ Header-only and opt-in via the CMake option `SIMPLEMC_USE_HDF5=ON`.
 Additional backends can be added by satisfying the @ref simplemc::serializer and 
 @ref simplemc::deserializer concepts.
 
-<!-- ## Monte Carlo library -->
+## Monte Carlo library
+
+@ref simplemc-mc is the Monte Carlo–specific layer of **simplemc**. It hosts the types and
+drivers needed to set up, run, and persist a Monte Carlo simulation.
+
+It currently provides
+
+- simplemc::simulation_params and simplemc::simulation_stats — parameters and statistics for a 
+simulation run.
+- simplemc::simulation_run — bundles the parameters, the statistics, and a timer, and exposes the run 
+lifecycle and stop-criteria predicates that a Monte Carlo driver consults.
+
+More functionality (drivers, updates, measurements, MPI integration, warmup, checkpointing) will
+land in follow-up iterations.
