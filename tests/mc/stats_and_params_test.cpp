@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <cstdint>
 #include <cstdio>
 #include <limits>
@@ -226,4 +227,37 @@ TEST(MCUpdateStats, JsonRoundTripPreservesAllFields) {
     EXPECT_EQ(dst.cumulative_nprops, src.cumulative_nprops);
     EXPECT_EQ(dst.cumulative_naccs, src.cumulative_naccs);
     EXPECT_EQ(dst.cumulative_nimps, src.cumulative_nimps);
+}
+
+TEST(MCMeasurementStats, DefaultsAreActiveWithEmptyName) {
+    measurement_stats m;
+    EXPECT_EQ(m.name, "");
+    EXPECT_TRUE(m.is_active);
+}
+
+TEST(MCMeasurementStats, PrintDoesNotCrash) {
+    const measurement_stats a { .name = "histogram", .is_active = true };
+    const measurement_stats b { .name = "legendre", .is_active = false };
+
+    std::FILE* f = std::tmpfile();
+    ASSERT_NE(f, nullptr);
+    print(f, a);
+    print(f, b);
+    const std::array<measurement_stats, 2> entries { a, b };
+    print(f, std::span<const measurement_stats> { entries });
+    std::fclose(f);
+}
+
+TEST(MCMeasurementStats, JsonRoundTripPreservesAllFields) {
+    const measurement_stats src { .name = "observable", .is_active = false };
+
+    json_serializer writer;
+    writer.save_at("ms", src);
+
+    json_serializer reader { writer.root() };
+    measurement_stats dst;
+    reader.load_at("ms", dst);
+
+    EXPECT_EQ(dst.name, src.name);
+    EXPECT_EQ(dst.is_active, src.is_active);
 }

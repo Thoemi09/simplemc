@@ -8,6 +8,8 @@
 
 #include <simplemc/mc/concepts.hpp>
 #include <simplemc/mc/measurement.hpp>
+#include <simplemc/mc/measurement_stats.hpp>
+#include <simplemc/mc/simulation.hpp>
 #include <simplemc/mc/simulation_params.hpp>
 #include <simplemc/mc/simulation_stats.hpp>
 #include <simplemc/mc/update.hpp>
