@@ -751,13 +751,13 @@ void simplemc_save(S& s, const batch_acc<T, A>& acc) {
  * and accumulating batches and then uses them to construct the batch accumulator (see
  * simplemc::batch_acc(std::vector<mean_acc_type>, std::vector<mean_acc_type>)).
  *
- * @tparam S simplemc::deserializer type.
+ * @tparam S simplemc::serializer type.
  * @tparam T simplemc::sample_type of the batch accumulator.
  * @tparam A simplemc::varalg algorithm of the batch accumulator.
- * @param s Deserializer object.
+ * @param s Serializer object.
  * @param acc Batch accumulator to deserialize into.
  */
-template <deserializer S, sample_type T, varalg A>
+template <serializer S, sample_type T, varalg A>
 void simplemc_load(const S& s, batch_acc<T, A>& acc) {
     using mean_acc_type = typename batch_acc<T, A>::mean_acc_type;
     std::size_t m_b = 0;

@@ -235,11 +235,11 @@ void simplemc_save(S& s, const symmetric_power_grid& g) {
  * of grid points \f$ M \f$ and the power exponent \f$ p \f$. It then uses them to reset the grid
  * (see simplemc::symmetric_power_grid::reset).
  *
- * @tparam S simplemc::deserializer type.
- * @param s Deserializer object.
+ * @tparam S simplemc::serializer type.
+ * @param s Serializer object.
  * @param g Symmetric power grid to deserialize into.
  */
-template <deserializer S>
+template <serializer S>
 void simplemc_load(const S& s, symmetric_power_grid& g) {
     double first = 0;
     double last = 0;

@@ -143,13 +143,13 @@ void simplemc_save(S& s, const covar_acc<T, A>& acc) {
  * samples and simplemc::covar_acc(const cplx_vec_type&, const dbl_mat_type&, const dbl_mat_type&,
  * const dbl_mat_type&, count_type) for complex samples).
  *
- * @tparam S simplemc::deserializer type.
+ * @tparam S simplemc::serializer type.
  * @tparam T simplemc::sample_type of the covariance accumulator.
  * @tparam A simplemc::varalg algorithm of the covariance accumulator.
- * @param s Deserializer object.
+ * @param s Serializer object.
  * @param acc Covariance accumulator to deserialize into.
  */
-template <deserializer S, sample_type T, varalg A>
+template <serializer S, sample_type T, varalg A>
 void simplemc_load(const S& s, covar_acc<T, A>& acc) {
     using acc_type = covar_acc<T, A>;
     auto count = typename acc_type::count_type {};

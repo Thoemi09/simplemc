@@ -1296,24 +1296,22 @@
  * different serialization backends, allowing users to choose the one that best fits their needs or to
  * implement their own.
  *
- * It defines the concepts that every backend satisfies — simplemc::serializer and
- * simplemc::deserializer — and the ADL pattern that lets each user/library type carry its own
- * state-I/O logic without coupling to a specific backend.
+ * It defines the concept that every backend satisfies — simplemc::serializer — and the ADL pattern
+ * that lets each user/library type carry its own state-I/O logic without coupling to a specific
+ * backend.
  *
  * @section simplemc-serialize-model Serialization model
  *
  * **simplemc-serialize** models a hierarchical store — a JSON file, an HDF5 file, a TOML table, etc.
  * — navigated by named keys and read or written at any **location** within it. A type that implements
- * this model in the write direction is a **serializer** (simplemc::serializer); in the read direction
- * it is a **deserializer** (simplemc::deserializer). A single backend class may satisfy both concepts
- * (the JSON backend does: see simplemc::json_serializer).
+ * both the read and write directions of this model is a **serializer** (simplemc::serializer).
  *
- * The model defines four basic operations. Let `s` be a (de)serializer object, `key` a
+ * The model defines four basic operations. Let `s` be a serializer object, `key` a
  * `std::string_view`, and `value` an instance of some type `T`:
  *
- * - `s[key]` returns another serializer / deserializer of the same type, pointing one level
- * deeper than the current location at the sub-location `key`. The store itself is not duplicated —
- * `s` and the returned instance write into the same underlying file or object.
+ * - `s[key]` returns another serializer of the same type, pointing one level deeper than the current
+ * location at the sub-location `key`. The store itself is not duplicated — `s` and the returned
+ * instance write into the same underlying file or object.
  * - `s.has(key)` returns true if `key` exists at the current location.
  * - `s.save_at(key, value)` writes `value` into the store at sub-location `key` relative to the
  * current location and returns `s` (or a reference to it). That means calls can be chained:
@@ -1339,7 +1337,7 @@
  * template <simplemc::serializer S>
  * void simplemc_save(S& s, const T& v);
  *
- * template <simplemc::deserializer S>
+ * template <simplemc::serializer S>
  * void simplemc_load(const S& s, T& v);
  * ```
  *
@@ -1347,7 +1345,7 @@
  *
  * As described above, `save_at` / `load_at` look up `%simplemc_save` / `%simplemc_load` using ADL. If
  * no matching overload can be found (see simplemc::has_simplemc_save / simplemc::has_simplemc_load),
- * the (de)serializer might fall through to the backend's native idiom (e.g. nlohmann's `to_json` /
+ * the serializer might fall through to the backend's native idiom (e.g. nlohmann's `to_json` /
  * `from_json` for the JSON backend). See specific backend documentation for details.
  *
  * **simplemc** library types ship `%simplemc_save` / `%simplemc_load` overloads that should work for
@@ -1355,9 +1353,8 @@
  *
  * @section simplemc-serialize-backends Backends
  *
- * Concrete backends sit on top of the core concepts and provide implementations of
- * simplemc::serializer and simplemc::deserializer. **simplemc-serialize** ships with the following
- * backends:
+ * Concrete backends sit on top of the core concept and provide an implementation of
+ * simplemc::serializer. **simplemc-serialize** ships with the following backends:
  * - @ref simplemc-serialize-json is based on the popular <a href="https://github.com/nlohmann/json">
  * nlohmann_json</a> library and is always available.
  * - @ref simplemc-serialize-hdf5 is based on <a href="https://github.com/BlueBrain/HighFive">
@@ -1369,7 +1366,8 @@
  * @ingroup simplemc-serialize
  * @brief JSON backend on top of `nlohmann_json`.
  *
- * @details simplemc::json_serializer satisfies both simplemc::serializer and simplemc::deserializer.
+ * @details simplemc::json_serializer satisfies simplemc::serializer.
+ *
  * It owns a shared `nlohmann::json` tree via `std::shared_ptr` and tracks the current position via a
  * JSON pointer into the tree. Navigation via `operator[]` returns a new instance sharing the tree but
  * pointing at the sub-node — the non-const overload auto-creates (save side) and the const overload
@@ -1390,7 +1388,8 @@
  * @ingroup simplemc-serialize
  * @brief HDF5 backend on top of `HighFive`.
  *
- * @details simplemc::hdf5_serializer satisfies both simplemc::serializer and simplemc::deserializer.
+ * @details simplemc::hdf5_serializer satisfies simplemc::serializer.
+ *
  * It owns a shared `HighFive::File` via `std::shared_ptr` and tracks the current position via a
  * POSIX-style HDF5 path (e.g. `/physics/temperature`). Navigation via `operator[]` returns a new
  * instance sharing the file but pointing one level deeper — the operation is purely a "pointer
@@ -1428,15 +1427,15 @@
  *
  * @section simplemc-mc-type-erasure Polymorphic user types
  *
- * Some user-extensible types in **simplemc-mc** follow the **concept–model type-erasure idiom**: the 
- * user writes any plain class that satisfies a small C++20 concept, and the library wraps it in a 
- * value-semantic polymorphic holder. The wrapper hides a `std::unique_ptr` to an internal polymorphic 
- * base whose nested model derives from it, stores the user's value, and forwards the concept's 
+ * Some user-extensible types in **simplemc-mc** follow the **concept–model type-erasure idiom**: the
+ * user writes any plain class that satisfies a small C++20 concept, and the library wraps it in a
+ * value-semantic polymorphic holder. The wrapper hides a `std::unique_ptr` to an internal polymorphic
+ * base whose nested model derives from it, stores the user's value, and forwards the concept's
  * operations through it.
  *
  * The result: user code is non-intrusive (no base class to inherit from), the wrapper is a regular
  * value type usable in standard containers, and a single wrapper instance can hold values of
  * arbitrary user types.
- * 
+ *
  * See e.g. simplemc::measurement.
  */

@@ -228,11 +228,11 @@ void simplemc_save(S& s, const splitmix64& r) {
  * @details It deserializes the 64-bit internal state and uses it to seed the RNG (see
  * simplemc::splitmix64::seed).
  *
- * @tparam S simplemc::deserializer type.
- * @param s Deserializer object.
+ * @tparam S simplemc::serializer type.
+ * @param s Serializer object.
  * @param r RNG to deserialize into.
  */
-template <deserializer S>
+template <serializer S>
 void simplemc_load(const S& s, splitmix64& r) {
     std::uint64_t state = 0;
     s.load_at("state", state);

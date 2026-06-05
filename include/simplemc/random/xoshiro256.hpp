@@ -378,12 +378,12 @@ void simplemc_save(S& s, const xoshiro256<X>& r) {
  * @details It deserializes the four 64-bit state words and uses them to seed the RNG (see
  * simplemc::xoshiro256::seed).
  *
- * @tparam S simplemc::deserializer type.
+ * @tparam S simplemc::serializer type.
  * @tparam X simplemc::xoshiro256_type variant of the RNG.
- * @param s Deserializer object.
+ * @param s Serializer object.
  * @param r RNG to deserialize into.
  */
-template <deserializer S, xoshiro256_type X>
+template <serializer S, xoshiro256_type X>
 void simplemc_load(const S& s, xoshiro256<X>& r) {
     std::uint64_t s0 = 0;
     std::uint64_t s1 = 0;

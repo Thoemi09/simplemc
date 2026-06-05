@@ -444,12 +444,12 @@ void simplemc_save(S& s, const block_acc<A>& acc) {
  * simplemc::mean_acc holding the current block data. It then uses them to construct the block
  * accumulator (see simplemc::block_acc(const acc_type&, const mean_acc_type&, count_type)).
  *
- * @tparam S simplemc::deserializer type.
+ * @tparam S simplemc::serializer type.
  * @tparam A Wrapped accumulator type of the block accumulator.
- * @param s Deserializer object.
+ * @param s Serializer object.
  * @param acc Block accumulator to deserialize into.
  */
-template <deserializer S, typename A>
+template <serializer S, typename A>
 void simplemc_load(const S& s, block_acc<A>& acc) {
     using acc_type = block_acc<A>;
     auto blsize = typename acc_type::count_type {};

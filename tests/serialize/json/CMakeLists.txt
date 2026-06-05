@@ -2,7 +2,7 @@
 #
 # The following targets are defined:
 # ---------------------------------
-# json-serializer-test: Executable to test the JSON serializer and deserializer.
+# json-serializer-test: Executable to test the JSON serializer.
 # json-utils-test: Executable to test utility functions for JSON serialization.
 
 # create executables

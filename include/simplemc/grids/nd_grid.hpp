@@ -310,12 +310,12 @@ void simplemc_save(S& s, const nd_grid<Grids...>& g) {
  *
  * @details It deserializes each underlying 1-D grid in place from its tuple position subobject.
  *
- * @tparam S simplemc::deserializer type.
+ * @tparam S simplemc::serializer type.
  * @tparam Grids simplemc::grid_1d types of the N-dimensional grid.
- * @param s Deserializer object.
+ * @param s Serializer object.
  * @param g N-dimensional grid to deserialize into.
  */
-template <deserializer S, grid_1d... Grids>
+template <serializer S, grid_1d... Grids>
 void simplemc_load(const S& s, nd_grid<Grids...>& g) {
     const auto sub = s["grids"];
     [&]<std::size_t... I>(std::index_sequence<I...>) {

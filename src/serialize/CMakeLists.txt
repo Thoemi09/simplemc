@@ -2,9 +2,9 @@
 #
 # The following targets are defined:
 # ---------------------------------
-# simplemc-serialize-core (simplemc::simplemc-serialize-core): Header-only interface library carrying
-# the serializer/deserializer concepts, ADL detection helpers, and library-shipped simplemc_save /
-# simplemc_load overloads for simplemc-owned types.
+# simplemc-serialize-core (simplemc::simplemc-serialize-core): Provides the serializer concepts, ADL 
+# detection helpers, and library-shipped simplemc_save / simplemc_load overloads for simplemc-owned 
+# types.
 # simplemc-serialize (simplemc::simplemc-serialize): Interface library aggregating core + all
 # available backends (json, hdf5).
 

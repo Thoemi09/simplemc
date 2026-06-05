@@ -21,14 +21,13 @@ void roundtrip_json(const T& src, T& dst) {
     simplemc_load(d, dst);
 }
 
-// Test serializer/deserializer concept conformance.
+// Test serializer concept conformance.
 TEST(SerializerJson, ConceptConformance) {
-    using simplemc::deserializer;
+    using simplemc::serializer;
     using simplemc::json_serializer;
     using simplemc::serializer;
 
     static_assert(serializer<json_serializer>);
-    static_assert(deserializer<json_serializer>);
     SUCCEED();
 }
 

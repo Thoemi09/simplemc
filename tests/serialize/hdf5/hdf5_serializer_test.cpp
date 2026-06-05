@@ -40,14 +40,13 @@ void roundtrip_hdf5(const T& src, T& dst) {
 
 } // namespace
 
-// Test serializer/deserializer concept conformance.
+// Test serializer concept conformance.
 TEST(SerializerHdf5, ConceptConformance) {
-    using simplemc::deserializer;
+    using simplemc::serializer;
     using simplemc::hdf5_serializer;
     using simplemc::serializer;
 
     static_assert(serializer<hdf5_serializer>);
-    static_assert(deserializer<hdf5_serializer>);
     SUCCEED();
 }
 

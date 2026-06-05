@@ -105,11 +105,11 @@ void simplemc_save(S& s, const simulation_params& p) {
  *
  * @details It deserializes all fields of the struct.
  *
- * @tparam S Deserializer type.
- * @param s Deserializer handle.
+ * @tparam S Serializer type.
+ * @param s Serializer handle.
  * @param p Parameters to deserialize into.
  */
-template <deserializer S>
+template <serializer S>
 void simplemc_load(const S& s, simulation_params& p) {
     s.load_at("max_steps", p.max_steps);
     s.load_at("max_time", p.max_time);

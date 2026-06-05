@@ -27,7 +27,7 @@ public:
         s.save_at("x", p.x_);
         s.save_at("y", p.y_);
     }
-    template <simplemc::deserializer S>
+    template <simplemc::serializer S>
     friend void simplemc_load(const S& s, intrusive_point& p) {
         s.load_at("x", p.x_);
         s.load_at("y", p.y_);
@@ -47,7 +47,7 @@ void simplemc_save(S& s, const nonintrusive_box& b) {
     s.save_at("width", b.width);
     s.save_at("height", b.height);
 }
-template <simplemc::deserializer S>
+template <simplemc::serializer S>
 void simplemc_load(const S& s, nonintrusive_box& b) {
     s.load_at("width", b.width);
     s.load_at("height", b.height);
@@ -68,7 +68,7 @@ void simplemc_save(S& s, const composite& c) {
     s.save_at("bx", c.bx);
     s.save_at("data", c.data);
 }
-template <simplemc::deserializer S>
+template <simplemc::serializer S>
 void simplemc_load(const S& s, composite& c) {
     s.load_at("pt", c.pt);
     s.load_at("bx", c.bx);

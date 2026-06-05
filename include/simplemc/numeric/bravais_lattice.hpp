@@ -362,12 +362,12 @@ void simplemc_save(S& s, const bravais_lattice<N>& l) {
  * @details It deserializes the real-space basis matrix \f$ A \f$ and uses it to reset the lattice
  * (see simplemc::bravais_lattice::reset).
  *
- * @tparam S simplemc::deserializer type.
+ * @tparam S simplemc::serializer type.
  * @tparam N Spatial dimension of the Bravais lattice.
- * @param s Deserializer object.
+ * @param s Serializer object.
  * @param l Bravais lattice to deserialize into.
  */
-template <deserializer S, int N>
+template <serializer S, int N>
 void simplemc_load(const S& s, bravais_lattice<N>& l) {
     auto A = typename bravais_lattice<N>::matrix_type {};
     s.load_at("A", A);

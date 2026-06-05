@@ -598,12 +598,12 @@ void simplemc_save(S& s, const autocorr_acc<A>& acc) {
  * autocorrelation accumulator (see simplemc::autocorr_acc(std::vector<acc_type>,
  * std::vector<mean_acc_type>, count_type, std::size_t)).
  *
- * @tparam S simplemc::deserializer type.
+ * @tparam S simplemc::serializer type.
  * @tparam A Wrapped (co)variance accumulator type of the autocorrelation accumulator.
- * @param s Deserializer object.
+ * @param s Serializer object.
  * @param acc Autocorrelation accumulator to deserialize into.
  */
-template <deserializer S, typename A>
+template <serializer S, typename A>
 void simplemc_load(const S& s, autocorr_acc<A>& acc) {
     using wrapped_acc_type = typename autocorr_acc<A>::acc_type;
     using mean_acc_type = typename autocorr_acc<A>::mean_acc_type;

@@ -204,11 +204,11 @@ void simplemc_save(S& s, const linear_grid& g) {
  * with the number of grid points \f$ M \f$ and then uses them to reset the grid (see
  * simplemc::linear_grid::reset).
  *
- * @tparam S simplemc::deserializer type.
- * @param s Deserializer object.
+ * @tparam S simplemc::serializer type.
+ * @param s Serializer object.
  * @param g Linear grid to deserialize into.
  */
-template <deserializer S>
+template <serializer S>
 void simplemc_load(const S& s, linear_grid& g) {
     double first = 0;
     double last = 0;

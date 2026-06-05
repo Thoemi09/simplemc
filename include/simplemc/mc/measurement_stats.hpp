@@ -80,11 +80,11 @@ void simplemc_save(S& s, const measurement_stats& m) {
 /**
  * @brief Deserialize a simplemc::measurement_stats.
  *
- * @tparam S Deserializer type.
- * @param s Deserializer handle.
+ * @tparam S Serializer type.
+ * @param s Serializer handle.
  * @param m Metadata to deserialize into.
  */
-template <deserializer S>
+template <serializer S>
 void simplemc_load(const S& s, measurement_stats& m) {
     s.load_at("name", m.name);
     s.load_at("is_active", m.is_active);

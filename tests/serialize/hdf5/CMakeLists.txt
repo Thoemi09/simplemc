@@ -2,7 +2,7 @@
 #
 # The following targets are defined:
 # ---------------------------------
-# hdf5-serializer-test: Executable to test the HDF5 serializer and deserializer.
+# hdf5-serializer-test: Executable to test the HDF5 serializer.
 
 # create executables
 add_executable(hdf5-serializer-test hdf5_serializer_test.cpp)

@@ -199,7 +199,6 @@
           <tab type="user" url="@ref simplemc::json_serializer" title="json_serializer"/>
           <tab type="user" url="@ref simplemc::json_io_options" title="json_io_options"/>
         </tab>
-        <tab type="user" url="@ref simplemc::deserializer" title="deserializer"/>
         <tab type="user" url="@ref simplemc::has_simplemc_load" title="has_simplemc_load"/>
         <tab type="user" url="@ref simplemc::has_simplemc_save" title="has_simplemc_save"/>
         <tab type="user" url="@ref simplemc::serializer" title="serializer"/>

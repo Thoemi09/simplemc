@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Unified JSON serializer/deserializer for simplemc-serialize-json.
+ * @brief JSON serializer for simplemc-serialize-json.
  */
 
 #ifndef SIMPLEMC_SERIALIZE_JSON_JSON_SERIALIZER_HPP
@@ -25,7 +25,7 @@ namespace simplemc {
  */
 
 /**
- * @brief Serializer/deserializer for the JSON backend.
+ * @brief Serializer for the JSON backend.
  *
  * @details A simplemc::json_serializer is a lightweight **handle** into a shared `nlohmann::json`
  * document. The handle carries two pieces of state, which together define everything it does:
@@ -39,7 +39,7 @@ namespace simplemc {
  * positioned at the document root (the empty pointer `""`); a sub-serializer returned by operator[]()
  * is positioned one level deeper.
  *
- * The class satisfies both the @ref simplemc::serializer and @ref simplemc::deserializer concepts:
+ * The class satisfies the @ref simplemc::serializer concept:
  *
  * - **Save direction**: `save_at(key, value)` (non-const) writes into the shared document via ADL
  * `%simplemc_save(json_serializer&, const T&)` if such an overload is reachable, falling back to
@@ -250,9 +250,8 @@ private:
     nlohmann::json::json_pointer current_;
 };
 
-// Check serializer and deserializer concepts.
+// Check serializer concept.
 static_assert(serializer<json_serializer>);
-static_assert(deserializer<json_serializer>);
 
 /** @} */
 

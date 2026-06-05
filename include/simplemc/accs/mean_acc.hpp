@@ -512,13 +512,13 @@ void simplemc_save(S& s, const mean_acc<T, A>& acc) {
  * accumulated mean data and then uses them to construct the mean accumulator (see
  * simplemc::mean_acc(const vec_type&, count_type)).
  *
- * @tparam S simplemc::deserializer type.
+ * @tparam S simplemc::serializer type.
  * @tparam T simplemc::sample_type of the mean accumulator.
  * @tparam A simplemc::varalg algorithm of the mean accumulator.
- * @param s Deserializer object.
+ * @param s Serializer object.
  * @param acc Mean accumulator to deserialize into.
  */
-template <deserializer S, sample_type T, varalg A>
+template <serializer S, sample_type T, varalg A>
 void simplemc_load(const S& s, mean_acc<T, A>& acc) {
     using acc_type = mean_acc<T, A>;
     auto count = typename acc_type::count_type {};

@@ -163,11 +163,11 @@ void simplemc_save(S& s, const update_stats& u) {
  *
  * @details It deserializes all fields of the struct.
  *
- * @tparam S Deserializer type.
- * @param s Deserializer handle.
+ * @tparam S Serializer type.
+ * @param s Serializer handle.
  * @param u Statistics to deserialize into.
  */
-template <deserializer S>
+template <serializer S>
 void simplemc_load(const S& s, update_stats& u) {
     s.load_at("name", u.name);
     s.load_at("inv_name", u.inv_name);

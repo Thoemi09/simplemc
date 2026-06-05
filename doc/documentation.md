@@ -112,23 +112,21 @@ modify their functionality.
 ## Serialization library
 
 @ref simplemc-serialize is a generic, extensible serialization framework that supports multiple 
-backends. It defines the @ref simplemc::serializer and @ref simplemc::deserializer concepts and the 
-ADL customization point (`simplemc_save` / `simplemc_load`) that lets each type carry its own 
-state-I/O logic without coupling to a specific backend.
-
+backends. It defines the @ref simplemc::serializer concept and the ADL customization point 
+(`simplemc_save` / `simplemc_load`) that lets each type carry its own state-I/O logic without 
+coupling to a specific backend.
 
 It currently ships with the following backends:
 
 - @ref simplemc-serialize-json, implemented on top of [nlohmann_json](https://github.com/nlohmann/
-json) and providing the unified @ref simplemc::json_serializer (satisfying both concepts), text- and 
-binary-mode file I/O helpers, and various custom nlohmann adapters. Always available.
+json) and providing @ref simplemc::json_serializer, text- and binary-mode file I/O helpers, and 
+various custom nlohmann adapters. Always available.
 - @ref simplemc-serialize-hdf5, implemented on top of [HighFive](https://github.com/BlueBrain/
-HighFive). It requires a system HDF5 install and provides the unified @ref simplemc::hdf5_serializer
-(satisfying both concepts) with POSIX-style path navigation and lazy group materialization. 
-Header-only and opt-in via the CMake option `SIMPLEMC_USE_HDF5=ON`.
+HighFive). It requires a system HDF5 install and provides @ref simplemc::hdf5_serializer with 
+POSIX-style path navigation and lazy group materialization. Header-only and opt-in via the CMake 
+option `SIMPLEMC_USE_HDF5=ON`.
 
-Additional backends can be added by satisfying the @ref simplemc::serializer and 
-@ref simplemc::deserializer concepts.
+Additional backends can be added by satisfying the @ref simplemc::serializer concept.
 
 ## Monte Carlo library
 

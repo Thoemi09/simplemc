@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Unified HDF5 serializer/deserializer for simplemc-serialize-hdf5.
+ * @brief HDF5 serializer for simplemc-serialize-hdf5.
  */
 
 #ifndef SIMPLEMC_SERIALIZE_HDF5_HDF5_SERIALIZER_HPP
@@ -102,7 +102,7 @@ inline std::string h5_parent_path(const std::string& path) {
 }
 
 /**
- * @brief Serializer/deserializer for the HDF5 backend.
+ * @brief Serializer for the HDF5 backend.
  *
  * @details A simplemc::hdf5_serializer is a lightweight **handle** into a shared `HighFive::File`.
  * The handle carries two pieces of state, which together define everything it does:
@@ -116,7 +116,7 @@ inline std::string h5_parent_path(const std::string& path) {
  * positioned at the root (`/`); a sub-serializer returned by operator[]() is positioned one level
  * deeper.
  *
- * The class satisfies both the @ref simplemc::serializer and @ref simplemc::deserializer concepts:
+ * The class satisfies the @ref simplemc::serializer concept:
  *
  * - **Save direction**: `save_at(key, value)` writes into the file via ADL
  * `%simplemc_save(hdf5_serializer&, const T&)` if such an overload is reachable, falling back to
@@ -308,9 +308,8 @@ private:
     std::string current_;
 };
 
-// Check serializer and deserializer concepts.
+// Check serializer concept.
 static_assert(serializer<hdf5_serializer>);
-static_assert(deserializer<hdf5_serializer>);
 
 /** @} */
 
