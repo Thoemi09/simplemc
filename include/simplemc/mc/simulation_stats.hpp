@@ -38,6 +38,31 @@ struct simulation_stats {
 };
 
 /**
+ * @brief Reset the current-run counters to zero.
+ *
+ * @details The cumulative fields are left untouched.
+ *
+ * @param s Simulation statistics to reset.
+ */
+inline void reset_simulation_stats(simulation_stats& s) noexcept {
+    s.steps_done = 0;
+    s.last_runtime = 0.0;
+}
+
+/**
+ * @brief Accumulate the current-run counters into the cumulative ones and reset the current ones.
+ *
+ * @details It calls simplemc::reset_simulation_stats after accumulating.
+ *
+ * @param s Simulation statistics to accumulate.
+ */
+inline void accumulate_simulation_stats(simulation_stats& s) noexcept {
+    s.cumulative_steps += s.steps_done;
+    s.cumulative_time += s.last_runtime;
+    reset_simulation_stats(s);
+}
+
+/**
  * @brief Print a simplemc::simulation_stats as a human-readable block.
  *
  * @param fp Destination file handle (default `stdout`).
