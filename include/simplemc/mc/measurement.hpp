@@ -45,6 +45,10 @@ namespace simplemc {
  * this is checked at construction time.
  *
  * See @ref simplemc-mc for a description of the implementation strategy.
+ *
+ * @note The wrapper takes the user measurement by value and does not expose it back. To access result 
+ * data (e.g. an accumulator) after a run, have the user type hold a pointer or reference to 
+ * externally-owned storage rather than the data itself.
  */
 class measurement {
 public:
@@ -87,8 +91,6 @@ public:
      * @details Performs a deep copy of `other`'s wrapped value into `*this` (via the copy-and-swap
      * pattern), discarding `*this`'s previous wrapped value. After the call, the two wrappers do not
      * share state.
-     *
-     * Provides the strong exception guarantee: if the copy throws, `*this` is left unchanged.
      *
      * @param other Wrapper to copy from.
      * @return Reference to `*this`.
