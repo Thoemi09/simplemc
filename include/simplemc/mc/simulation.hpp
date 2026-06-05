@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <random>
 #include <ranges>
 #include <span>
@@ -129,24 +130,24 @@ public:
     /**
      * @brief Look up an update by name.
      *
-     * @details Linear scan over the registered updates. Throws simplemc::simplemc_exception if
-     * no update with the given name is registered.
+     * @details Linear scan over the registered updates.
      *
      * @param name Update name.
-     * @return Index of the update in the order it was added.
+     * @return Index of the update in the order it was added, or `std::nullopt` if no update with
+     * the given name is registered.
      */
-    [[nodiscard]] std::size_t find_update(std::string_view name) const;
+    [[nodiscard]] std::optional<std::size_t> find_update(std::string_view name) const noexcept;
 
     /**
      * @brief Look up a measurement by name.
      *
-     * @details Linear scan over the registered measurements. Throws simplemc::simplemc_exception
-     * if no measurement with the given name is registered.
+     * @details Linear scan over the registered measurements.
      *
      * @param name Measurement name.
-     * @return Index of the measurement in the order it was added.
+     * @return Index of the measurement in the order it was added, or `std::nullopt` if no
+     * measurement with the given name is registered.
      */
-    [[nodiscard]] std::size_t find_measurement(std::string_view name) const;
+    [[nodiscard]] std::optional<std::size_t> find_measurement(std::string_view name) const noexcept;
 
     /**
      * @brief Change the selection weight of a registered update.
@@ -272,9 +273,6 @@ public:
     [[nodiscard]] RNG& rng() noexcept { return rng_; }
 
 private:
-    [[nodiscard]] bool has_update_with_name(std::string_view name) const noexcept;
-    [[nodiscard]] bool has_measurement_with_name(std::string_view name) const noexcept;
-
     RNG rng_ {};
     std::vector<update> updates_;
     std::vector<update_stats> update_stats_;
@@ -288,13 +286,22 @@ private:
 };
 
 template <class RNG>
-bool simulation<RNG>::has_update_with_name(std::string_view name) const noexcept {
-    return std::ranges::any_of(update_stats_, [name](const update_stats& us) { return us.name == name; });
+std::optional<std::size_t> simulation<RNG>::find_update(std::string_view name) const noexcept {
+    const auto it = std::ranges::find_if(update_stats_, [name](const update_stats& us) { return us.name == name; });
+    if (it == update_stats_.end()) {
+        return std::nullopt;
+    }
+    return static_cast<std::size_t>(std::distance(update_stats_.begin(), it));
 }
 
 template <class RNG>
-bool simulation<RNG>::has_measurement_with_name(std::string_view name) const noexcept {
-    return std::ranges::any_of(measurement_stats_, [name](const measurement_stats& ms) { return ms.name == name; });
+std::optional<std::size_t> simulation<RNG>::find_measurement(std::string_view name) const noexcept {
+    const auto it =
+        std::ranges::find_if(measurement_stats_, [name](const measurement_stats& ms) { return ms.name == name; });
+    if (it == measurement_stats_.end()) {
+        return std::nullopt;
+    }
+    return static_cast<std::size_t>(std::distance(measurement_stats_.begin(), it));
 }
 
 template <class RNG>
@@ -302,7 +309,7 @@ void simulation<RNG>::add_update(update u, std::string name, double weight) {
     if (weight < 0.0) {
         throw simplemc_exception(fmt::format("update weight must be >= 0 (got {} on '{}')", weight, name));
     }
-    if (has_update_with_name(name)) {
+    if (find_update(name).has_value()) {
         throw simplemc_exception(fmt::format("update '{}' is already registered", name));
     }
 
@@ -325,10 +332,10 @@ void simulation<RNG>::add_update(
     if (name1 == name2) {
         throw simplemc_exception(fmt::format("paired updates must have distinct names (both are '{}')", name1));
     }
-    if (has_update_with_name(name1)) {
+    if (find_update(name1)) {
         throw simplemc_exception(fmt::format("update '{}' is already registered", name1));
     }
-    if (has_update_with_name(name2)) {
+    if (find_update(name2)) {
         throw simplemc_exception(fmt::format("update '{}' is already registered", name2));
     }
 
@@ -344,7 +351,7 @@ void simulation<RNG>::add_update(
 
 template <class RNG>
 void simulation<RNG>::add_measurement(measurement m, std::string name, bool is_active) {
-    if (has_measurement_with_name(name)) {
+    if (find_measurement(name)) {
         throw simplemc_exception(fmt::format("measurement '{}' is already registered", name));
     }
     measurements_.push_back(std::move(m));
@@ -352,35 +359,24 @@ void simulation<RNG>::add_measurement(measurement m, std::string name, bool is_a
 }
 
 template <class RNG>
-std::size_t simulation<RNG>::find_update(std::string_view name) const {
-    const auto it = std::ranges::find_if(update_stats_, [name](const update_stats& us) { return us.name == name; });
-    if (it == update_stats_.end()) {
-        throw simplemc_exception(fmt::format("update '{}' is not registered", name));
-    }
-    return static_cast<std::size_t>(std::distance(update_stats_.begin(), it));
-}
-
-template <class RNG>
-std::size_t simulation<RNG>::find_measurement(std::string_view name) const {
-    const auto it =
-        std::ranges::find_if(measurement_stats_, [name](const measurement_stats& ms) { return ms.name == name; });
-    if (it == measurement_stats_.end()) {
-        throw simplemc_exception(fmt::format("measurement '{}' is not registered", name));
-    }
-    return static_cast<std::size_t>(std::distance(measurement_stats_.begin(), it));
-}
-
-template <class RNG>
 void simulation<RNG>::set_update_weight(std::string_view name, double w) {
     if (w < 0.0) {
         throw simplemc_exception(fmt::format("update weight must be >= 0 (got {} on '{}')", w, name));
     }
-    update_stats_[find_update(name)].weight = w;
+    const auto idx = find_update(name);
+    if (!idx) {
+        throw simplemc_exception(fmt::format("update '{}' is not registered", name));
+    }
+    update_stats_[*idx].weight = w;
 }
 
 template <class RNG>
 void simulation<RNG>::set_measurement_active(std::string_view name, bool is_active) {
-    measurement_stats_[find_measurement(name)].is_active = is_active;
+    const auto idx = find_measurement(name);
+    if (!idx) {
+        throw simplemc_exception(fmt::format("measurement '{}' is not registered", name));
+    }
+    measurement_stats_[*idx].is_active = is_active;
 }
 
 template <class RNG>

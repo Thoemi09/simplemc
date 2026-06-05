@@ -298,7 +298,7 @@ TEST(MCSimulation, FindUpdateByName) {
     sim.add_update(always_accept {}, "beta", 1.0);
     EXPECT_EQ(sim.find_update("alpha"), 0u);
     EXPECT_EQ(sim.find_update("beta"), 1u);
-    EXPECT_THROW((void)sim.find_update("missing"), simplemc_exception);
+    EXPECT_FALSE(sim.find_update("missing").has_value());
 }
 
 TEST(MCSimulation, FindMeasurementByName) {
@@ -307,7 +307,7 @@ TEST(MCSimulation, FindMeasurementByName) {
     sim.add_measurement(counting_measurement {}, "obs2");
     EXPECT_EQ(sim.find_measurement("obs1"), 0u);
     EXPECT_EQ(sim.find_measurement("obs2"), 1u);
-    EXPECT_THROW((void)sim.find_measurement("missing"), simplemc_exception);
+    EXPECT_FALSE(sim.find_measurement("missing").has_value());
 }
 
 TEST(MCSimulation, SetUpdateWeightChangesSelection) {
