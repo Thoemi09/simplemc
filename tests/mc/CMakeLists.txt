@@ -2,13 +2,13 @@
 #
 # The following targets are defined:
 # ---------------------------------
-# mc-simulation-run-test: Test simulation_params, simulation_stats, and simulation_run.
+# mc-simulation-test: Test simulation_params and simulation_stats.
 # mc-measurement-test: Test the type-erased measurement wrapper and the mc_measurement concept.
 # mc-update-test: Test the type-erased update wrapper and the mc_update concept.
 
 # create executables
-add_executable(mc-simulation-run-test simulation_run_test.cpp)
-target_link_libraries(mc-simulation-run-test PRIVATE simplemc-test)
+add_executable(mc-simulation-test simulation_test.cpp)
+target_link_libraries(mc-simulation-test PRIVATE simplemc-test)
 
 add_executable(mc-measurement-test measurement_test.cpp)
 target_link_libraries(mc-measurement-test PRIVATE simplemc-test)
@@ -17,6 +17,6 @@ add_executable(mc-update-test update_test.cpp)
 target_link_libraries(mc-update-test PRIVATE simplemc-test)
 
 # add tests
-add_test(NAME mc-simulation-run-test COMMAND mc-simulation-run-test)
+add_test(NAME mc-simulation-test COMMAND mc-simulation-test)
 add_test(NAME mc-measurement-test COMMAND mc-measurement-test)
 add_test(NAME mc-update-test COMMAND mc-update-test)

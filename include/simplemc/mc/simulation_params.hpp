@@ -12,6 +12,7 @@
 #include <fmt/format.h>
 
 #include <cstdint>
+#include <cstdio>
 #include <limits>
 
 namespace simplemc {
@@ -22,12 +23,7 @@ namespace simplemc {
  */
 
 /**
- * @brief User-set parameters that control a Monte Carlo simulation run.
- *
- * @details It is held by simplemc::simulation_run, which validates the values on assignment and
- * construction using simplemc::validate_simulation_params.
- *
- * Times are always in seconds.
+ * @brief Plain aggregate of sser-set parameters that control a Monte Carlo simulation run.
  */
 struct simulation_params {
     /// Stop the run once this many Monte Carlo steps have been performed. Default: maximum.
@@ -67,6 +63,24 @@ inline void validate_simulation_params(const simulation_params& p) {
     if (p.cycles_per_check == 0) {
         throw simplemc_exception("cycles_per_check must be > 0");
     }
+}
+
+/**
+ * @brief Print a simplemc::simulation_params as a human-readable block.
+ *
+ * @param fp Destination file handle (default `stdout`).
+ * @param p Parameters to print.
+ */
+inline void print(std::FILE* fp, const simulation_params& p) {
+    fmt::print(fp,
+        "============================\n"
+        "SIMULATION PARAMETERS:\n"
+        "============================\n"
+        "Max. steps        = {}\n"
+        "Max. time         = {} sec\n"
+        "Steps per cycle   = {}\n"
+        "Cycles per check  = {}\n",
+        p.max_steps, p.max_time, p.steps_per_cycle, p.cycles_per_check);
 }
 
 /**

@@ -8,7 +8,10 @@
 
 #include <simplemc/serialize/concepts.hpp>
 
+#include <fmt/format.h>
+
 #include <cstdint>
+#include <cstdio>
 
 namespace simplemc {
 
@@ -18,12 +21,7 @@ namespace simplemc {
  */
 
 /**
- * @brief Simulation statistics gathered during a Monte Carlo run.
- *
- * @details It is held by simplemc::simulation_run, which mutates these fields to track the progress
- * and statistics of active and completed simulations.
- *
- * All fields are public for ease of aggregate-initialisation and direct mutation by the driver.
+ * @brief Plain aggregate of simulation statistics gathered during a Monte Carlo run.
  */
 struct simulation_stats {
     /// Number of Monte Carlo steps performed in the current run.
@@ -38,6 +36,24 @@ struct simulation_stats {
     /// Cumulative runtime, in seconds, over multiple simulations.
     double cumulative_time = 0.0;
 };
+
+/**
+ * @brief Print a simplemc::simulation_stats as a human-readable block.
+ *
+ * @param fp Destination file handle (default `stdout`).
+ * @param s Statistics to print.
+ */
+inline void print(std::FILE* fp, const simulation_stats& s) {
+    fmt::print(fp,
+        "============================\n"
+        "SIMULATION STATISTICS:\n"
+        "============================\n"
+        "Steps done        = {}\n"
+        "Last runtime      = {} sec\n"
+        "Cumulative steps  = {}\n"
+        "Cumulative time   = {} sec\n",
+        s.steps_done, s.last_runtime, s.cumulative_steps, s.cumulative_time);
+}
 
 /**
  * @brief Serialize a simplemc::simulation_stats.

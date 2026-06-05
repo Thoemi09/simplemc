@@ -211,7 +211,6 @@
         <tab type="user" url="@ref simplemc::update" title="update"/>
         <tab type="user" url="@ref simplemc::simulation_params" title="simulation_params"/>
         <tab type="user" url="@ref simplemc::simulation_stats" title="simulation_stats"/>
-        <tab type="user" url="@ref simplemc::simulation_run" title="simulation_run"/>
       </tab>
       <tab type="filelist" visible="yes" title="" intro=""/>
     </tab>
