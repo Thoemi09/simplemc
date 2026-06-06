@@ -44,13 +44,13 @@ static_assert(!mc_measurement<not_a_meas>);
 static_assert(!mc_measurement<int>);
 
 // the wrapper itself satisfies the concept — it forwards `measure()`
-static_assert(mc_measurement<measurement>);
+static_assert(mc_measurement<measurement<>>);
 
 // the concept is a pure role description: a move-only measurement still satisfies it
 // (but the wrapper rejects it because of the copyability requirement)
 static_assert(mc_measurement<move_only_meas>);
-static_assert(!std::is_constructible_v<measurement, int>);
-static_assert(!std::is_constructible_v<measurement, not_a_meas>);
+static_assert(!std::is_constructible_v<measurement<>, int>);
+static_assert(!std::is_constructible_v<measurement<>, not_a_meas>);
 
 TEST(MCMeasurement, WrapsAndForwardsMeasure) {
     counter_meas src;
@@ -108,7 +108,7 @@ TEST(MCMeasurement, HeterogeneousStorageInVector) {
     auto a_count = a.count;
     auto b_count = b.count;
 
-    std::vector<measurement> v;
+    std::vector<measurement<>> v;
     v.emplace_back(a);
     v.emplace_back(b);
 

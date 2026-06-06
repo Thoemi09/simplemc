@@ -7,9 +7,12 @@
 #define SIMPLEMC_MC_MEASUREMENT_HPP
 
 #include <simplemc/mc/concepts.hpp>
+#include <simplemc/serialize/concepts.hpp>
+#include <simplemc/serialize/json/json_serializer.hpp>
 
 #include <concepts>
 #include <memory>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 
@@ -44,12 +47,20 @@ namespace simplemc {
  * collection of observers. Because copies are deep, the wrapped user type must be copy-constructible;
  * this is checked at construction time.
  *
+ * The wrapper is templated on the serializer type `S` used for state persistence. If the wrapped user
+ * type provides a serialization path through `S`, the wrapper's save_at() / load_at() forward to it.
+ * Otherwise they are silent no-ops, which lets stateless measurements be added without writing
+ * trivial empty overloads.
+ *
  * See @ref simplemc-mc for a description of the implementation strategy.
  *
- * @note The wrapper takes the user measurement by value and does not expose it back. To access result 
- * data (e.g. an accumulator) after a run, have the user type hold a pointer or reference to 
+ * @note The wrapper takes the user measurement by value and does not expose it back. To access result
+ * data (e.g. an accumulator) after a run, have the user type hold a pointer or reference to
  * externally-owned storage rather than the data itself.
+ *
+ * @tparam S Serializer type.
  */
+template <serializer S = json_serializer>
 class measurement {
 public:
     /**
@@ -116,12 +127,36 @@ public:
      */
     void measure() { pimpl_->measure(); }
 
+    /**
+     * @brief Serialize the wrapped user state.
+     *
+     * @details Forwards to the serializer's `save_at()` method. If the wrapped user type is not
+     * serializable through `S`, the call is a silent no-op.
+     *
+     * @param s Serializer handle one level above where the user state should be written.
+     * @param key Sub-key to write into.
+     */
+    void save_at(S& s, std::string_view key) const { pimpl_->save_at(s, key); }
+
+    /**
+     * @brief Deserialize the wrapped user state.
+     *
+     * @details Forwards to the serializer's `load_at()` method. If the wrapped user type is not
+     * deserializable through `S`, the call is a silent no-op.
+     *
+     * @param s Serializer handle one level above where the user state should be read from.
+     * @param key Sub-key to read from.
+     */
+    void load_at(const S& s, std::string_view key) { pimpl_->load_at(s, key); }
+
 private:
     // Hidden polymorphic base — the "concept" half of the concept-model idiom.
     struct interface {
         virtual ~interface() = default;
         virtual void measure() = 0;
         [[nodiscard]] virtual std::unique_ptr<interface> clone() const = 0;
+        virtual void save_at(S& parent, std::string_view key) const = 0;
+        virtual void load_at(const S& parent, std::string_view key) = 0;
     };
 
     // Hidden template derived - the "model" half of the concept-model idiom.
@@ -132,11 +167,26 @@ private:
         explicit model(M m) : concrete { std::move(m) } {}
         void measure() override { concrete.measure(); }
         [[nodiscard]] std::unique_ptr<interface> clone() const override { return std::make_unique<model>(*this); }
+        void save_at(S& s, std::string_view key) const override {
+            if constexpr (requires(S& p, std::string_view k, const M& v) { p.save_at(k, v); }) {
+                s.save_at(key, concrete);
+            }
+        }
+        void load_at(const S& s, std::string_view key) override {
+            if constexpr (requires(const S& p, std::string_view k, M& v) { p.load_at(k, v); }) {
+                s.load_at(key, concrete);
+            }
+        }
     };
 
 private:
     std::unique_ptr<interface> pimpl_;
 };
+
+// Deduction guide: measurement m { my_meas{} } deduces to measurement<json_serializer>.
+template <class M>
+    requires mc_measurement<std::remove_cvref_t<M>> && std::copy_constructible<std::remove_cvref_t<M>>
+measurement(M&&) -> measurement<>;
 
 /** @} */
 

@@ -56,13 +56,13 @@ static_assert(!mc_update<nothing>);
 static_assert(!mc_update<int>);
 
 // The wrapper itself satisfies the concept — it forwards attempt() and accept().
-static_assert(mc_update<update>);
+static_assert(mc_update<update<>>);
 
 // A non-conforming type cannot construct an `update`.
-static_assert(!std::is_constructible_v<update, int>);
-static_assert(!std::is_constructible_v<update, nothing>);
-static_assert(!std::is_constructible_v<update, missing_attempt>);
-static_assert(!std::is_constructible_v<update, missing_accept>);
+static_assert(!std::is_constructible_v<update<>, int>);
+static_assert(!std::is_constructible_v<update<>, nothing>);
+static_assert(!std::is_constructible_v<update<>, missing_attempt>);
+static_assert(!std::is_constructible_v<update<>, missing_accept>);
 
 TEST(MCUpdate, WrapsAndForwardsAttemptAccept) {
     toy_update src;
@@ -148,7 +148,7 @@ TEST(MCUpdate, HeterogeneousStorageInVector) {
     auto a_accepted = a.accepted;
     auto b_committed = b.committed;
 
-    std::vector<update> v;
+    std::vector<update<>> v;
     v.emplace_back(a);
     v.emplace_back(b);
 
