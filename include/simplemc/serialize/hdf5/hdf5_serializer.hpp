@@ -26,6 +26,44 @@ namespace simplemc {
  * @{
  */
 
+// Forward declaration.
+class hdf5_serializer;
+
+/**
+ * @brief Concept describing value types that can be written with simplemc::hdf5_serializer::save_at.
+ *
+ * @details This is satisfied when either
+ *
+ * - (a) type `T` opts into ADL serialization (simplemc::has_simplemc_save with a
+ * simplemc::hdf5_serializer, or
+ * - (b) type `T` is supported by HighFive's `createDataSet`.
+ *
+ * The second clause inherits HighFive's own SFINAE constraints, so this concept tracks exactly what
+ * hdf5_serializer::save_at accepts at instantiation.
+ *
+ * @tparam T Value type.
+ */
+template <class T>
+concept hdf5_savable = requires(HighFive::File& f, const T& v) { f.createDataSet(std::string {}, v); } ||
+    has_simplemc_save<T, hdf5_serializer>;
+
+/**
+ * @brief Concept describing value types that can be read with simplemc::hdf5_serializer::load_at.
+ *
+ * @details This is satisfied when either
+ *
+ * - (a) type `T` opts into ADL serialization (simplemc::has_simplemc_load with a
+ * simplemc::hdf5_serializer, or
+ * - (b) type `T` is supported by HighFive's `HighFive::DataSet::read`.
+ *
+ * The second clause inherits HighFive's own SFINAE constraints, so this concept tracks exactly what
+ * hdf5_serializer::save_at accepts at instantiation.
+ *
+ * @tparam T Value type.
+ */
+template <class T>
+concept hdf5_loadable = requires(HighFive::DataSet& ds, T& v) { ds.read(v); } || has_simplemc_load<T, hdf5_serializer>;
+
 /**
  * @brief File open mode for simplemc::hdf5_serializer.
  *
@@ -177,6 +215,7 @@ public:
      * @return A copy of `*this`.
      */
     template <class T>
+        requires hdf5_savable<T>
     hdf5_serializer save_at(std::string_view key, const T& value) {
         if constexpr (has_simplemc_save<T, hdf5_serializer>) {
             auto sub = (*this)[key];
@@ -217,6 +256,7 @@ public:
      * @return A copy of `*this`.
      */
     template <class T>
+        requires hdf5_loadable<T>
     hdf5_serializer load_at(std::string_view key, T& value) const {
         if constexpr (has_simplemc_load<T, hdf5_serializer>) {
             const auto sub = (*this)[key];
