@@ -1,5 +1,4 @@
 #include <simplemc/mc.hpp>
-#include <simplemc/serialize/json/json_serializer.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
 #include <gtest/gtest.h>
@@ -39,22 +38,6 @@ TEST(MCSimulationParams, PrintDoesNotCrash) {
     std::fclose(f);
 }
 
-TEST(MCSimulationParams, JsonRoundTripPreservesAllFields) {
-    const simulation_params src { .max_steps = 12345, .max_time = 7.5, .steps_per_cycle = 3, .cycles_per_check = 17 };
-
-    json_serializer writer;
-    writer.save_at("params", src);
-
-    json_serializer reader { writer.root() };
-    simulation_params dst;
-    reader.load_at("params", dst);
-
-    EXPECT_EQ(dst.max_steps, src.max_steps);
-    EXPECT_DOUBLE_EQ(dst.max_time, src.max_time);
-    EXPECT_EQ(dst.steps_per_cycle, src.steps_per_cycle);
-    EXPECT_EQ(dst.cycles_per_check, src.cycles_per_check);
-}
-
 TEST(MCSimulationStats, DefaultsAreZero) {
     simulation_stats s;
     EXPECT_EQ(s.steps_done, 0u);
@@ -91,24 +74,6 @@ TEST(MCSimulationStats, AccumulateFoldsAndResets) {
     EXPECT_DOUBLE_EQ(s.last_runtime, 0.0);
     EXPECT_EQ(s.cumulative_steps, 142u);
     EXPECT_DOUBLE_EQ(s.cumulative_time, 6.75);
-}
-
-TEST(MCSimulationStats, JsonRoundTripPreservesAllFields) {
-    const simulation_stats src {
-        .steps_done = 42, .last_runtime = 1.5, .cumulative_steps = 100, .cumulative_time = 5.25
-    };
-
-    json_serializer writer;
-    writer.save_at("stats", src);
-
-    json_serializer reader { writer.root() };
-    simulation_stats dst;
-    reader.load_at("stats", dst);
-
-    EXPECT_EQ(dst.steps_done, src.steps_done);
-    EXPECT_DOUBLE_EQ(dst.last_runtime, src.last_runtime);
-    EXPECT_EQ(dst.cumulative_steps, src.cumulative_steps);
-    EXPECT_DOUBLE_EQ(dst.cumulative_time, src.cumulative_time);
 }
 
 TEST(MCUpdateStats, DefaultsAreSensible) {
@@ -198,37 +163,6 @@ TEST(MCUpdateStats, PrintDoesNotCrash) {
     std::fclose(f);
 }
 
-TEST(MCUpdateStats, JsonRoundTripPreservesAllFields) {
-    const update_stats src { .name = "flip",
-        .inv_name = "flip_back",
-        .weight = 2.5,
-        .ratio = 0.5,
-        .nprops = 10,
-        .naccs = 6,
-        .nimps = 1,
-        .cumulative_nprops = 100,
-        .cumulative_naccs = 60,
-        .cumulative_nimps = 5 };
-
-    json_serializer writer;
-    writer.save_at("update_stats", src);
-
-    json_serializer reader { writer.root() };
-    update_stats dst;
-    reader.load_at("update_stats", dst);
-
-    EXPECT_EQ(dst.name, src.name);
-    EXPECT_EQ(dst.inv_name, src.inv_name);
-    EXPECT_DOUBLE_EQ(dst.weight, src.weight);
-    EXPECT_DOUBLE_EQ(dst.ratio, src.ratio);
-    EXPECT_EQ(dst.nprops, src.nprops);
-    EXPECT_EQ(dst.naccs, src.naccs);
-    EXPECT_EQ(dst.nimps, src.nimps);
-    EXPECT_EQ(dst.cumulative_nprops, src.cumulative_nprops);
-    EXPECT_EQ(dst.cumulative_naccs, src.cumulative_naccs);
-    EXPECT_EQ(dst.cumulative_nimps, src.cumulative_nimps);
-}
-
 TEST(MCMeasurementStats, DefaultsAreActiveWithEmptyName) {
     measurement_stats m;
     EXPECT_EQ(m.name, "");
@@ -248,16 +182,3 @@ TEST(MCMeasurementStats, PrintDoesNotCrash) {
     std::fclose(f);
 }
 
-TEST(MCMeasurementStats, JsonRoundTripPreservesAllFields) {
-    const measurement_stats src { .name = "observable", .is_active = false };
-
-    json_serializer writer;
-    writer.save_at("ms", src);
-
-    json_serializer reader { writer.root() };
-    measurement_stats dst;
-    reader.load_at("ms", dst);
-
-    EXPECT_EQ(dst.name, src.name);
-    EXPECT_EQ(dst.is_active, src.is_active);
-}

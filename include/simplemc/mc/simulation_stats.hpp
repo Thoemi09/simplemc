@@ -6,7 +6,6 @@
 #ifndef SIMPLEMC_MC_SIMULATION_STATS_HPP
 #define SIMPLEMC_MC_SIMULATION_STATS_HPP
 
-#include <simplemc/serialize/concepts.hpp>
 
 #include <fmt/format.h>
 
@@ -78,40 +77,6 @@ inline void print(std::FILE* fp, const simulation_stats& s) {
         "Cumulative steps  = {}\n"
         "Cumulative time   = {} sec\n",
         s.steps_done, s.last_runtime, s.cumulative_steps, s.cumulative_time);
-}
-
-/**
- * @brief Serialize a simplemc::simulation_stats.
- *
- * @details It serializes all fields of the struct.
- *
- * @tparam S Serializer type.
- * @param s Serializer handle.
- * @param st Stats to serialize.
- */
-template <serializer S>
-void simplemc_save(S& s, const simulation_stats& st) {
-    s.save_at("steps_done", st.steps_done);
-    s.save_at("last_runtime", st.last_runtime);
-    s.save_at("cumulative_steps", st.cumulative_steps);
-    s.save_at("cumulative_time", st.cumulative_time);
-}
-
-/**
- * @brief Deserialize a simplemc::simulation_stats.
- *
- * @details It deserializes all fields of the struct.
- *
- * @tparam S Serializer type.
- * @param s Serializer handle.
- * @param st Stats to deserialize into.
- */
-template <serializer S>
-void simplemc_load(const S& s, simulation_stats& st) {
-    s.load_at("steps_done", st.steps_done);
-    s.load_at("last_runtime", st.last_runtime);
-    s.load_at("cumulative_steps", st.cumulative_steps);
-    s.load_at("cumulative_time", st.cumulative_time);
 }
 
 /** @} */

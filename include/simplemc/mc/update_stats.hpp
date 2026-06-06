@@ -6,7 +6,6 @@
 #ifndef SIMPLEMC_MC_UPDATE_STATS_HPP
 #define SIMPLEMC_MC_UPDATE_STATS_HPP
 
-#include <simplemc/serialize/concepts.hpp>
 
 #include <fmt/format.h>
 
@@ -133,52 +132,6 @@ inline void print(std::FILE* fp, std::span<const update_stats> entries) {
         const double acc = s.nprops > 0 ? static_cast<double>(s.naccs) / static_cast<double>(s.nprops) : 0.0;
         fmt::print(fp, "{:<16} {:>10} {:>10} {:>10} {:>10.4f}\n", s.name, s.nprops, s.naccs, s.nimps, acc);
     }
-}
-
-/**
- * @brief Serialize a simplemc::update_stats.
- *
- * @details It serializes all fields of the struct.
- *
- * @tparam S Serializer type.
- * @param s Serializer handle.
- * @param u Statistics to serialize.
- */
-template <serializer S>
-void simplemc_save(S& s, const update_stats& u) {
-    s.save_at("name", u.name);
-    s.save_at("inv_name", u.inv_name);
-    s.save_at("weight", u.weight);
-    s.save_at("ratio", u.ratio);
-    s.save_at("nprops", u.nprops);
-    s.save_at("naccs", u.naccs);
-    s.save_at("nimps", u.nimps);
-    s.save_at("cumulative_nprops", u.cumulative_nprops);
-    s.save_at("cumulative_naccs", u.cumulative_naccs);
-    s.save_at("cumulative_nimps", u.cumulative_nimps);
-}
-
-/**
- * @brief Deserialize a simplemc::update_stats.
- *
- * @details It deserializes all fields of the struct.
- *
- * @tparam S Serializer type.
- * @param s Serializer handle.
- * @param u Statistics to deserialize into.
- */
-template <serializer S>
-void simplemc_load(const S& s, update_stats& u) {
-    s.load_at("name", u.name);
-    s.load_at("inv_name", u.inv_name);
-    s.load_at("weight", u.weight);
-    s.load_at("ratio", u.ratio);
-    s.load_at("nprops", u.nprops);
-    s.load_at("naccs", u.naccs);
-    s.load_at("nimps", u.nimps);
-    s.load_at("cumulative_nprops", u.cumulative_nprops);
-    s.load_at("cumulative_naccs", u.cumulative_naccs);
-    s.load_at("cumulative_nimps", u.cumulative_nimps);
 }
 
 /** @} */

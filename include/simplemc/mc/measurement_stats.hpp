@@ -6,7 +6,6 @@
 #ifndef SIMPLEMC_MC_MEASUREMENT_STATS_HPP
 #define SIMPLEMC_MC_MEASUREMENT_STATS_HPP
 
-#include <simplemc/serialize/concepts.hpp>
 
 #include <fmt/format.h>
 
@@ -62,32 +61,6 @@ inline void print(std::FILE* fp, std::span<const measurement_stats> entries) {
     for (const auto& s : entries) {
         fmt::print(fp, "  {} ({})\n", s.name, s.is_active ? "active" : "inactive");
     }
-}
-
-/**
- * @brief Serialize a simplemc::measurement_stats.
- *
- * @tparam S Serializer type.
- * @param s Serializer handle.
- * @param m Metadata to serialize.
- */
-template <serializer S>
-void simplemc_save(S& s, const measurement_stats& m) {
-    s.save_at("name", m.name);
-    s.save_at("is_active", m.is_active);
-}
-
-/**
- * @brief Deserialize a simplemc::measurement_stats.
- *
- * @tparam S Serializer type.
- * @param s Serializer handle.
- * @param m Metadata to deserialize into.
- */
-template <serializer S>
-void simplemc_load(const S& s, measurement_stats& m) {
-    s.load_at("name", m.name);
-    s.load_at("is_active", m.is_active);
 }
 
 /** @} */

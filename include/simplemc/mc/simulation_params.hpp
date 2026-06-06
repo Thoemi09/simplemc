@@ -6,7 +6,6 @@
 #ifndef SIMPLEMC_MC_SIMULATION_PARAMS_HPP
 #define SIMPLEMC_MC_SIMULATION_PARAMS_HPP
 
-#include <simplemc/serialize/concepts.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
 #include <fmt/format.h>
@@ -81,40 +80,6 @@ inline void print(std::FILE* fp, const simulation_params& p) {
         "Steps per cycle   = {}\n"
         "Cycles per check  = {}\n",
         p.max_steps, p.max_time, p.steps_per_cycle, p.cycles_per_check);
-}
-
-/**
- * @brief Serialize a simplemc::simulation_params.
- *
- * @details It serializes all fields of the struct.
- *
- * @tparam S Serializer type.
- * @param s Serializer handle.
- * @param p Parameters to serialize.
- */
-template <serializer S>
-void simplemc_save(S& s, const simulation_params& p) {
-    s.save_at("max_steps", p.max_steps);
-    s.save_at("max_time", p.max_time);
-    s.save_at("steps_per_cycle", p.steps_per_cycle);
-    s.save_at("cycles_per_check", p.cycles_per_check);
-}
-
-/**
- * @brief Deserialize a simplemc::simulation_params.
- *
- * @details It deserializes all fields of the struct.
- *
- * @tparam S Serializer type.
- * @param s Serializer handle.
- * @param p Parameters to deserialize into.
- */
-template <serializer S>
-void simplemc_load(const S& s, simulation_params& p) {
-    s.load_at("max_steps", p.max_steps);
-    s.load_at("max_time", p.max_time);
-    s.load_at("steps_per_cycle", p.steps_per_cycle);
-    s.load_at("cycles_per_check", p.cycles_per_check);
 }
 
 /** @} */
