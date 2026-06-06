@@ -1,8 +1,10 @@
 #include <simplemc/mc.hpp>
 #include <simplemc/random/xoshiro256.hpp>
+#include <simplemc/serialize/json/json_serializer.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
 #include <gtest/gtest.h>
+#include <nlohmann/json.hpp>
 
 #include <cstdint>
 #include <limits>
@@ -44,6 +46,54 @@ struct counting_measurement {
     std::shared_ptr<int> count = std::make_shared<int>(0);
     void measure() { ++*count; }
 };
+
+// Stateful update with an ADL simplemc_save / simplemc_load that round-trips an internal counter.
+struct stateful_update {
+    std::shared_ptr<int> counter = std::make_shared<int>(0);
+    double attempt() {
+        ++*counter;
+        return 1.0;
+    }
+    void accept() { }
+};
+
+template <serializer S>
+void simplemc_save(S& s, const stateful_update& u) {
+    s.save_at("counter", *u.counter);
+}
+
+template <serializer S>
+void simplemc_load(const S& s, stateful_update& u) {
+    s.load_at("counter", *u.counter);
+}
+
+// Stateful measurement with ADL save/load.
+struct stateful_measurement {
+    std::shared_ptr<int> tally = std::make_shared<int>(0);
+    void measure() { ++*tally; }
+};
+
+template <serializer S>
+void simplemc_save(S& s, const stateful_measurement& m) {
+    s.save_at("tally", *m.tally);
+}
+
+template <serializer S>
+void simplemc_load(const S& s, stateful_measurement& m) {
+    s.load_at("tally", *m.tally);
+}
+
+// User update that has only nlohmann to_json / from_json (no simplemc_save).
+struct nlohmann_only_update {
+    int counter = 0;
+    double attempt() {
+        ++counter;
+        return 1.0;
+    }
+    void accept() { }
+};
+inline void to_json(nlohmann::json& j, const nlohmann_only_update& u) { j = nlohmann::json { { "counter", u.counter } }; }
+inline void from_json(const nlohmann::json& j, nlohmann_only_update& u) { j.at("counter").get_to(u.counter); }
 
 } // namespace
 
@@ -411,4 +461,148 @@ TEST(MCSimulation, ResetStatsZeroesCurrentNotCumulative) {
     EXPECT_EQ(sim.update_stats_data()[0].nprops, 0u);
     EXPECT_EQ(sim.update_stats_data()[0].cumulative_nprops, cumulative_before); // survived
     EXPECT_EQ(sim.stats().steps_done, 0u);
+}
+
+TEST(MCSimulation, JsonRoundTripPersistsCumulativeAndConfig) {
+    // Source simulation: stateful + stateless toys + a stateful measurement
+    simulation<xoshiro256ss> src { xoshiro256ss { 42 } };
+    stateful_update stateful;
+    auto stateful_counter = stateful.counter;
+    src.add_update(stateful, "stateful", 2.5);
+    src.add_update(always_accept {}, "stateless", 1.0);
+    stateful_measurement m;
+    auto m_tally = m.tally;
+    src.add_measurement(m, "obs");
+    src.add_measurement(counting_measurement {}, "stateless_meas");
+
+    src.run({ .max_steps = 50, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = 10 });
+    const std::uint64_t src_steps = src.stats().steps_done;
+    const int src_counter = *stateful_counter;
+    const int src_tally = *m_tally;
+    ASSERT_GT(src_steps, 0u);
+    ASSERT_GT(src_counter, 0);
+    ASSERT_GT(src_tally, 0);
+    src.accumulate_stats();
+
+    // Save
+    json_serializer writer;
+    writer.save_at("sim", src);
+
+    // Destination: same structure, different RNG seed
+    simulation<xoshiro256ss> dst { xoshiro256ss { 999 } };
+    stateful_update dst_stateful;
+    auto dst_stateful_counter = dst_stateful.counter;
+    dst.add_update(dst_stateful, "stateful", 2.5);
+    dst.add_update(always_accept {}, "stateless", 1.0);
+    stateful_measurement dst_m;
+    auto dst_m_tally = dst_m.tally;
+    dst.add_measurement(dst_m, "obs");
+    dst.add_measurement(counting_measurement {}, "stateless_meas");
+
+    // Load
+    json_serializer reader { writer.root() };
+    reader.load_at("sim", dst);
+
+    // Persistent fields propagated
+    EXPECT_EQ(dst.stats().cumulative_steps, src.stats().cumulative_steps);
+    EXPECT_DOUBLE_EQ(dst.stats().cumulative_time, src.stats().cumulative_time);
+    EXPECT_DOUBLE_EQ(dst.update_stats_data()[0].weight, 2.5);
+    EXPECT_DOUBLE_EQ(dst.update_stats_data()[1].weight, 1.0);
+    EXPECT_EQ(
+        dst.update_stats_data()[0].cumulative_nprops, src.update_stats_data()[0].cumulative_nprops);
+    EXPECT_EQ(dst.update_stats_data()[0].inv_name, src.update_stats_data()[0].inv_name);
+    EXPECT_DOUBLE_EQ(dst.update_stats_data()[0].ratio, src.update_stats_data()[0].ratio);
+    EXPECT_EQ(dst.measurement_stats_data()[0].is_active, src.measurement_stats_data()[0].is_active);
+
+    // Per-run fields are zero on dst
+    EXPECT_EQ(dst.stats().steps_done, 0u);
+    EXPECT_DOUBLE_EQ(dst.stats().last_runtime, 0.0);
+    EXPECT_EQ(dst.update_stats_data()[0].nprops, 0u);
+
+    // User-state round-trip via simplemc_save / simplemc_load
+    EXPECT_EQ(*dst_stateful_counter, src_counter);
+    EXPECT_EQ(*dst_m_tally, src_tally);
+
+    // RNG continuation: a draw from dst matches a draw from src
+    EXPECT_EQ(dst.rng()(), src.rng()());
+}
+
+TEST(MCSimulation, JsonLoadThrowsOnMissingUpdate) {
+    simulation<xoshiro256ss> src;
+    src.add_update(always_accept {}, "a", 1.0);
+    src.run({ .max_steps = 5, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = 5 });
+
+    json_serializer writer;
+    writer.save_at("sim", src);
+
+    simulation<xoshiro256ss> dst;
+    dst.add_update(always_accept {}, "b", 1.0); // different name
+
+    json_serializer reader { writer.root() };
+    EXPECT_THROW(reader.load_at("sim", dst), simplemc_exception);
+}
+
+TEST(MCSimulation, JsonLoadThrowsOnMissingMeasurement) {
+    simulation<xoshiro256ss> src;
+    src.add_update(always_accept {}, "a", 1.0);
+    src.add_measurement(counting_measurement {}, "obs1");
+    src.run({ .max_steps = 5, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = 5 });
+
+    json_serializer writer;
+    writer.save_at("sim", src);
+
+    simulation<xoshiro256ss> dst;
+    dst.add_update(always_accept {}, "a", 1.0);
+    dst.add_measurement(counting_measurement {}, "different_name");
+
+    json_serializer reader { writer.root() };
+    EXPECT_THROW(reader.load_at("sim", dst), simplemc_exception);
+}
+
+TEST(MCSimulation, JsonRoundTripWorksWithStatelessUserTypes) {
+    // Stateless user types have neither simplemc_save nor nlohmann::to_json — the wrapper's
+    // save_at silently no-ops. Round-trip still succeeds.
+    simulation<xoshiro256ss> src;
+    src.add_update(always_accept {}, "aa", 1.0);
+    src.add_measurement(counting_measurement {}, "obs");
+    src.run({ .max_steps = 5, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = 5 });
+    src.accumulate_stats();
+
+    json_serializer writer;
+    EXPECT_NO_THROW(writer.save_at("sim", src));
+
+    simulation<xoshiro256ss> dst;
+    dst.add_update(always_accept {}, "aa", 1.0);
+    dst.add_measurement(counting_measurement {}, "obs");
+
+    json_serializer reader { writer.root() };
+    EXPECT_NO_THROW(reader.load_at("sim", dst));
+    EXPECT_EQ(dst.stats().cumulative_steps, src.stats().cumulative_steps);
+}
+
+TEST(MCSimulation, JsonRoundTripWorksWithNlohmannToJsonUserTypes) {
+    // User type with only nlohmann to_json / from_json (no simplemc_save).
+    simulation<xoshiro256ss> src;
+    src.add_update(nlohmann_only_update {}, "nlh", 1.0);
+    src.run({ .max_steps = 10, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = 5 });
+    src.accumulate_stats();
+
+    json_serializer writer;
+    writer.save_at("sim", src);
+
+    // Confirm the JSON has a "user" sub-object with the counter populated (i.e., the wrapper
+    // fell through to nlohmann's to_json for the user type).
+    const auto& root = writer.root();
+    ASSERT_TRUE(root.contains("sim"));
+    ASSERT_TRUE(root["sim"].contains("updates"));
+    ASSERT_TRUE(root["sim"]["updates"].contains("nlh"));
+    ASSERT_TRUE(root["sim"]["updates"]["nlh"].contains("user"));
+    EXPECT_GT(root["sim"]["updates"]["nlh"]["user"]["counter"].get<int>(), 0);
+
+    simulation<xoshiro256ss> dst;
+    dst.add_update(nlohmann_only_update {}, "nlh", 1.0);
+
+    json_serializer reader { writer.root() };
+    EXPECT_NO_THROW(reader.load_at("sim", dst));
+    EXPECT_EQ(dst.stats().cumulative_steps, src.stats().cumulative_steps);
 }
