@@ -45,6 +45,11 @@ struct simulation_params {
      * @brief Number of measurement cycles between stop-criteria polls. Default: \f$ 10^6 \f$.
      */
     std::uint64_t cycles_per_check = 1'000'000;
+
+    /**
+     * @brief Wheter to skip every measurement for the whole run. Default: false.
+     */
+    bool skip_measurements = false;
 };
 
 /**
@@ -87,8 +92,9 @@ inline void print(std::FILE* fp, const simulation_params& p) {
         "Max. steps        = {}\n"
         "Max. time         = {} sec\n"
         "Steps per cycle   = {}\n"
-        "Cycles per check  = {}\n",
-        p.max_steps, p.max_time, p.steps_per_cycle, p.cycles_per_check);
+        "Cycles per check  = {}\n"
+        "Skip measurements = {}\n",
+        p.max_steps, p.max_time, p.steps_per_cycle, p.cycles_per_check, p.skip_measurements);
 }
 
 /**
@@ -130,6 +136,7 @@ void simplemc_save_input_config(S& s, const simulation_params& p) {
     s.save_at("max_time", p.max_time);
     s.save_at("steps_per_cycle", p.steps_per_cycle);
     s.save_at("cycles_per_check", p.cycles_per_check);
+    s.save_at("skip_measurements", p.skip_measurements);
 }
 
 /**
@@ -145,6 +152,7 @@ void simplemc_load_input_config(const S& s, simulation_params& p) {
     s.try_load_at("max_time", p.max_time);
     s.try_load_at("steps_per_cycle", p.steps_per_cycle);
     s.try_load_at("cycles_per_check", p.cycles_per_check);
+    s.try_load_at("skip_measurements", p.skip_measurements);
     validate_simulation_params(p);
 }
 

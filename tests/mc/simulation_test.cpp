@@ -174,12 +174,9 @@ TEST(MCSimulation, StepIncrementsCountersByOne) {
     always_accept aa;
     auto accepts = aa.accepts;
     sim.add_update(aa, "aa", 1.0);
-    sim.initialize_update_distribution();
 
     constexpr int N = 100;
-    for (int i = 0; i < N; ++i) {
-        sim.step();
-    }
+    sim.run({ .max_steps = N, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = N });
 
     EXPECT_EQ(sim.stats().steps_done, static_cast<std::uint64_t>(N));
     EXPECT_EQ(sim.update_stats_data()[0].nprops, static_cast<std::uint64_t>(N));
@@ -193,12 +190,9 @@ TEST(MCSimulation, StepRejectsWhenAttemptBelowUniform) {
     half_accept ha;
     auto rejects = ha.rejects;
     sim.add_update(ha, "h", 1.0);
-    sim.initialize_update_distribution();
 
     constexpr int N = 1000;
-    for (int i = 0; i < N; ++i) {
-        sim.step();
-    }
+    sim.run({ .max_steps = N, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = N });
 
     const auto& us = sim.update_stats_data()[0];
     EXPECT_EQ(us.nprops, static_cast<std::uint64_t>(N));
@@ -214,12 +208,9 @@ TEST(MCSimulation, ImpossibleIsRecorded) {
     auto accepts = ia.accepts;
     auto rejects = ia.rejects;
     sim.add_update(ia, "imp", 1.0);
-    sim.initialize_update_distribution();
 
     constexpr int N = 50;
-    for (int i = 0; i < N; ++i) {
-        sim.step();
-    }
+    sim.run({ .max_steps = N, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = N });
 
     const auto& us = sim.update_stats_data()[0];
     EXPECT_EQ(us.nprops, static_cast<std::uint64_t>(N));
@@ -234,12 +225,9 @@ TEST(MCSimulation, ZeroWeightUpdateNeverPicked) {
     sim.add_update(always_accept {}, "a", 1.0);
     sim.add_update(always_accept {}, "b", 0.0);
     sim.add_update(always_accept {}, "c", 1.0);
-    sim.initialize_update_distribution();
 
     constexpr int N = 1000;
-    for (int i = 0; i < N; ++i) {
-        sim.step();
-    }
+    sim.run({ .max_steps = N, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = N });
 
     const auto us = sim.update_stats_data();
     EXPECT_EQ(us[1].nprops, 0u);
@@ -252,13 +240,13 @@ TEST(MCSimulation, CycleCallsMeasureOncePerCycle) {
     counting_measurement cm;
     auto count = cm.count;
     sim.add_measurement(cm, "counter");
-    sim.initialize_update_distribution();
 
     constexpr std::uint64_t steps_per_cycle = 5;
     constexpr int M = 10;
-    for (int i = 0; i < M; ++i) {
-        sim.cycle(steps_per_cycle);
-    }
+    sim.run({ .max_steps = M * steps_per_cycle,
+        .max_time = 1000.0,
+        .steps_per_cycle = steps_per_cycle,
+        .cycles_per_check = M });
 
     EXPECT_EQ(sim.stats().steps_done, static_cast<std::uint64_t>(M * steps_per_cycle));
     EXPECT_EQ(*count, M);
@@ -364,24 +352,22 @@ TEST(MCSimulation, SetUpdateWeightChangesSelection) {
     simulation<> sim { xoshiro256ss { 0 } };
     sim.add_update(always_accept {}, "a", 1.0);
     sim.add_update(always_accept {}, "b", 0.0);
-    sim.initialize_update_distribution();
 
     constexpr int N = 50;
-    for (int i = 0; i < N; ++i) {
-        sim.step();
-    }
+    const simulation_params p { .max_steps = N, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = N };
+    sim.run(p);
     EXPECT_EQ(sim.update_stats_data()[0].nprops, static_cast<std::uint64_t>(N));
     EXPECT_EQ(sim.update_stats_data()[1].nprops, 0u);
 
+    sim.accumulate_stats();
     sim.set_update_weight("a", 0.0);
     sim.set_update_weight("b", 1.0);
-    sim.initialize_update_distribution();
 
-    for (int i = 0; i < N; ++i) {
-        sim.step();
-    }
-    EXPECT_EQ(sim.update_stats_data()[0].nprops, static_cast<std::uint64_t>(N)); // unchanged
-    EXPECT_EQ(sim.update_stats_data()[1].nprops, static_cast<std::uint64_t>(N)); // all-second batch
+    sim.run(p);
+    EXPECT_EQ(sim.update_stats_data()[0].nprops, 0u);                              // none in second batch
+    EXPECT_EQ(sim.update_stats_data()[1].nprops, static_cast<std::uint64_t>(N));   // all-second batch
+    EXPECT_EQ(sim.update_stats_data()[0].cumulative_nprops, static_cast<std::uint64_t>(N)); // first batch survives
+    EXPECT_EQ(sim.update_stats_data()[1].cumulative_nprops, 0u);
     EXPECT_DOUBLE_EQ(sim.update_stats_data()[0].weight, 0.0);
     EXPECT_DOUBLE_EQ(sim.update_stats_data()[1].weight, 1.0);
 }
@@ -406,10 +392,8 @@ TEST(MCSimulation, AddMeasurementInactiveSkipsMeasure) {
     counting_measurement cm;
     auto count = cm.count;
     sim.add_measurement(cm, "obs", /*is_active=*/false);
-    sim.initialize_update_distribution();
 
-    sim.cycle(5);
-    sim.cycle(5);
+    sim.run({ .max_steps = 10, .max_time = 1000.0, .steps_per_cycle = 5, .cycles_per_check = 2 });
 
     EXPECT_EQ(*count, 0);
     EXPECT_FALSE(sim.measurement_stats_data()[0].is_active);
@@ -422,18 +406,17 @@ TEST(MCSimulation, SetMeasurementActiveTogglesAtRuntime) {
     counting_measurement cm;
     auto count = cm.count;
     sim.add_measurement(cm, "obs");
-    sim.initialize_update_distribution();
 
-    sim.cycle(1);
+    const simulation_params one_cycle { .max_steps = 1, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = 1 };
+    sim.run(one_cycle);
     EXPECT_EQ(*count, 1);
 
     sim.set_measurement_active("obs", false);
-    sim.cycle(1);
-    sim.cycle(1);
+    sim.run({ .max_steps = 2, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = 2 });
     EXPECT_EQ(*count, 1); // skipped both times
 
     sim.set_measurement_active("obs", true);
-    sim.cycle(1);
+    sim.run(one_cycle);
     EXPECT_EQ(*count, 2);
 }
 
@@ -461,6 +444,24 @@ TEST(MCSimulation, ResetStatsZeroesCurrentNotCumulative) {
     EXPECT_EQ(sim.update_stats_data()[0].nprops, 0u);
     EXPECT_EQ(sim.update_stats_data()[0].cumulative_nprops, cumulative_before); // survived
     EXPECT_EQ(sim.stats().steps_done, 0u);
+}
+
+TEST(MCSimulation, RunSkipsAllMeasurementsWhenSkipMeasurementsTrue) {
+    simulation<> sim { xoshiro256ss { 0 } };
+    sim.add_update(always_accept {}, "aa", 1.0);
+    counting_measurement cm;
+    auto count = cm.count;
+    sim.add_measurement(cm, "obs"); // active by default
+
+    sim.run({ .max_steps = 10,
+        .max_time = 1000.0,
+        .steps_per_cycle = 1,
+        .cycles_per_check = 10,
+        .skip_measurements = true });
+
+    EXPECT_EQ(*count, 0);                        // no measurements happened
+    EXPECT_EQ(sim.stats().steps_done, 10u);      // steps still happened
+    EXPECT_TRUE(sim.measurement_stats_data()[0].is_active); // per-measurement flag untouched
 }
 
 TEST(MCSimulation, JsonRoundTripPersistsCumulativeAndConfig) {

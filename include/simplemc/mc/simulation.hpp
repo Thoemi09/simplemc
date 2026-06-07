@@ -205,7 +205,11 @@ public:
      *
      * The loop is nested: an outer while-loop polls the stop criteria every
      * `p.cycles_per_check` cycles; an inner for-loop runs that many cycles; each cycle runs
-     * `p.steps_per_cycle` Metropolis steps followed by a single sweep over the measurements.
+     * `p.steps_per_cycle` Metropolis steps followed by a single sweep over the active
+     * measurements. The active set is sampled once at entry from `measurement_stats::is_active`;
+     * if `p.skip_measurements` is `true` the active set is empty for the whole call. Toggling
+     * `is_active` after `run()` starts has no effect (and is in any case not possible from the
+     * outside while the blocking `run()` is executing).
      *
      * The stop criteria are `stats.steps_done < p.max_steps` and `stats.last_runtime <
      * p.max_time`. Because they are only re-checked at cycle-block boundaries, `steps_done`
@@ -217,29 +221,9 @@ public:
     void run(const simulation_params& p);
 
     /**
-     * @brief Run a single Metropolis step.
-     *
-     * @details Samples an update via the internal `std::discrete_distribution`, increments the
-     * proposal counter, calls `attempt()`, and applies the standard branch (impossible if
-     * `attempt() * ratio <= 0`, accept if it beats a uniform draw, otherwise reject).
-     *
-     * @pre The distribution must already be built. `run()` builds it automatically at entry; users
-     * who call `step()` or `cycle()` directly must call initialize_update_distribution() first.
-     */
-    void step();
-
-    /**
-     * @brief Run `steps_per_cycle` consecutive steps, then invoke `measure()` on every measurement.
-     *
-     * @param steps_per_cycle Number of Metropolis steps before the measurement sweep.
-     */
-    void cycle(std::uint64_t steps_per_cycle);
-
-    /**
      * @brief Build the internal selection distribution from the current update weights.
      *
-     * @details Called automatically by run() at entry. Exposed so users who drive step() or
-     * cycle() directly can build the distribution manually after their add_update calls.
+     * @details Called automatically by run() at entry.
      *
      * Throws simplemc::simplemc_exception if no update has a positive weight; zero-weight entries
      * are passed through to `std::discrete_distribution` unchanged (they get probability 0).
@@ -445,6 +429,25 @@ public:
     }
 
 private:
+    /**
+     * @brief Run a single Metropolis step.
+     *
+     * @details Samples an update via the internal `std::discrete_distribution`, increments the
+     * proposal counter, calls `attempt()`, and applies the standard branch (impossible if
+     * `attempt() * ratio <= 0`, accept if it beats a uniform draw, otherwise reject).
+     */
+    void step();
+
+    /**
+     * @brief Run `steps_per_cycle` consecutive steps, then invoke `measure()` on every active
+     * measurement.
+     *
+     * @param steps_per_cycle Number of Metropolis steps before the measurement sweep.
+     * @param active Indices of the measurements to invoke this cycle. Built once at the start of
+     *               `run()` to avoid re-checking `measurement_stats::is_active` on every cycle.
+     */
+    void cycle(std::uint64_t steps_per_cycle, std::span<const std::size_t> active);
+
     RNG rng_ {};
     std::vector<update<cp_serializer_type, ic_serializer_type>> updates_;
     std::vector<update_stats> update_stats_;
@@ -577,14 +580,12 @@ void simulation<S1, S2, RNG>::step() {
 }
 
 template <serializer S1, serializer S2, class RNG>
-void simulation<S1, S2, RNG>::cycle(std::uint64_t steps_per_cycle) {
+void simulation<S1, S2, RNG>::cycle(std::uint64_t steps_per_cycle, std::span<const std::size_t> active) {
     for (std::uint64_t s = 0; s < steps_per_cycle; ++s) {
         step();
     }
-    for (std::size_t i = 0; i < measurements_.size(); ++i) {
-        if (measurement_stats_[i].is_active) {
-            measurements_[i].measure();
-        }
+    for (std::size_t i : active) {
+        measurements_[i].measure();
     }
 }
 
@@ -596,10 +597,21 @@ void simulation<S1, S2, RNG>::run(const simulation_params& p) {
     }
     initialize_update_distribution();
     reset_stats();
+
+    std::vector<std::size_t> active_measurements;
+    if (!p.skip_measurements) {
+        active_measurements.reserve(measurements_.size());
+        for (std::size_t i = 0; i < measurements_.size(); ++i) {
+            if (measurement_stats_[i].is_active) {
+                active_measurements.push_back(i);
+            }
+        }
+    }
+
     clock_.start();
     while (stats_.steps_done < p.max_steps && stats_.last_runtime < p.max_time) {
         for (std::uint64_t c = 0; c < p.cycles_per_check; ++c) {
-            cycle(p.steps_per_cycle);
+            cycle(p.steps_per_cycle, active_measurements);
         }
         stats_.last_runtime = clock_.elapsed();
     }

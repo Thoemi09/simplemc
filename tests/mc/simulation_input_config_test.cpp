@@ -198,9 +198,11 @@ TEST(MCSimulationInputConfig, LoadThrowsOnMissingMeasurement) {
 
 TEST(MCSimulationInputConfig, ParamsAndSimLiveSideBySide) {
     // The canonical pattern: serialize params and sim under separate top-level keys.
-    const simulation_params src_params {
-        .max_steps = 1234, .max_time = 2.5, .steps_per_cycle = 7, .cycles_per_check = 13
-    };
+    const simulation_params src_params { .max_steps = 1234,
+        .max_time = 2.5,
+        .steps_per_cycle = 7,
+        .cycles_per_check = 13,
+        .skip_measurements = true };
     simulation<> src;
     src.add_update(always_accept {}, "a", 3.0);
 
@@ -226,5 +228,6 @@ TEST(MCSimulationInputConfig, ParamsAndSimLiveSideBySide) {
     EXPECT_DOUBLE_EQ(dst_params.max_time, 2.5);
     EXPECT_EQ(dst_params.steps_per_cycle, 7u);
     EXPECT_EQ(dst_params.cycles_per_check, 13u);
+    EXPECT_TRUE(dst_params.skip_measurements);
     EXPECT_DOUBLE_EQ(dst.update_stats_data()[0].weight, 3.0);
 }
