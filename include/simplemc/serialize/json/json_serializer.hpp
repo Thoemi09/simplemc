@@ -188,6 +188,27 @@ public:
     }
 
     /**
+     * @brief Try to deserialize the file at `<current location>/<key>` into a given value.
+     *
+     * @details Same as load_at() except that it silently returns false if `key` is missing,
+     * leaving `value` unchanged.
+     *
+     * @tparam T Value type.
+     * @param key Sub-key relative to the current location.
+     * @param value Value to read into.
+     * @return True if the key was present and the read occurred, false otherwise.
+     */
+    template <class T>
+        requires json_loadable<T>
+    bool try_load_at(std::string_view key, T& value) const {
+        if (!has(key)) {
+            return false;
+        }
+        load_at(key, value);
+        return true;
+    }
+
+    /**
      * @brief Return a sub-handle positioned at `<current location>/<key>` (save side).
      *
      * @details Conceptually, this is a "pointer-advance" operation: the returned handle shares

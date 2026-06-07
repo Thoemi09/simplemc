@@ -161,8 +161,8 @@ inline std::string h5_parent_path(const std::string& path) {
  * `HighFive::File::createDataSet` otherwise. The fallback creates an HDF5 **dataset** at
  * `<current location>/<key>`; the ADL path delegates to the user's overload, which typically descends via
  * operator[]() into an HDF5 **group**.
- * - **Load direction**: `load_at(key, value)` reads from the file via ADL
- * `%simplemc_load(const hdf5_serializer&, T&)` if such an overload is reachable, falling back to
+ * - **Load direction**: `load_at(key, value)` and `try_load_at(key, value)` reads from the file via
+ * ADL `%simplemc_load(const hdf5_serializer&, T&)` if such an overload is reachable, falling back to
  * `HighFive::DataSet::read` otherwise.
  *
  * Group materialization is lazy: operator[]() never touches the file, and `save_at` only creates the
@@ -270,6 +270,27 @@ public:
             }
         }
         return *this;
+    }
+
+    /**
+     * @brief Try to deserialize the file at `<current location>/<key>` into a given value.
+     *
+     * @details Same as load_at() except that it silently returns false if `key` is missing,
+     * leaving `value` unchanged.
+     *
+     * @tparam T Value type.
+     * @param key Sub-key relative to the current location.
+     * @param value Value to read into.
+     * @return True if the key was present and the read occurred, false otherwise.
+     */
+    template <class T>
+        requires hdf5_loadable<T>
+    bool try_load_at(std::string_view key, T& value) const {
+        if (!has(key)) {
+            return false;
+        }
+        load_at(key, value);
+        return true;
     }
 
     /**

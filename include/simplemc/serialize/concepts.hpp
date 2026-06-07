@@ -35,6 +35,9 @@ namespace simplemc {
  * `s` for chaining.
  * - `cs.load_at(key, mvalue)` reads from sub-location `key` of the current location into `mvalue`
  * and returns `s` for chaining.
+ * - `cs.try_load_at(key, mvalue)` reads from sub-location `key` of the current location into
+ * `mvalue` if the sub-location exists, and returns a boolean reporting whether the read occurred.
+ * If the sub-location is missing, `mvalue` is left untouched.
  *
  * @tparam S Type to check.
  * @tparam T Type used in the smoke test (defaults to `int`).
@@ -46,6 +49,7 @@ concept serializer = requires(S& s, const S& cs, std::string_view key, const T& 
     { cs.has(key) } -> std::convertible_to<bool>;
     { s.save_at(key, value) } -> std::same_as<S>;
     { cs.load_at(key, mvalue) } -> std::same_as<S>;
+    { cs.try_load_at(key, mvalue) } -> std::convertible_to<bool>;
 };
 
 /**

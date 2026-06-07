@@ -188,6 +188,41 @@ TEST(SerializerHdf5, HasKey) {
     std::filesystem::remove(path);
 }
 
+// Test try_load_at() no-ops on missing key and loads on present key.
+TEST(SerializerHdf5, TryLoadAt) {
+    using test_types::intrusive_point;
+
+    const auto path = temp_h5_path();
+    {
+        simplemc::hdf5_serializer s { path, simplemc::hdf5_file_mode::truncate };
+        s.save_at("n", 7);
+        s.save_at("p", intrusive_point { 1.25, -3.5 });
+    }
+    const simplemc::hdf5_serializer d { path, simplemc::hdf5_file_mode::read };
+
+    // direct path: present key reads, returns true
+    int n = 0;
+    EXPECT_TRUE(d.try_load_at("n", n));
+    EXPECT_EQ(n, 7);
+
+    // direct path: missing key leaves value untouched, returns false
+    int n_default = 42;
+    EXPECT_FALSE(d.try_load_at("missing", n_default));
+    EXPECT_EQ(n_default, 42);
+
+    // ADL path: present key reads, returns true
+    intrusive_point p;
+    EXPECT_TRUE(d.try_load_at("p", p));
+    EXPECT_EQ(p, (intrusive_point { 1.25, -3.5 }));
+
+    // ADL path: missing key leaves value untouched, returns false
+    intrusive_point p_default { 9.0, 9.0 };
+    EXPECT_FALSE(d.try_load_at("missing_point", p_default));
+    EXPECT_EQ(p_default, (intrusive_point { 9.0, 9.0 }));
+
+    std::filesystem::remove(path);
+}
+
 // Test serializing/deserializing a mean_acc with real scalar sample type.
 TEST(SerializerHdf5, MeanAccScalar) {
     simplemc::mean_acc<double> a;
