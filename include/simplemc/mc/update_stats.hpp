@@ -6,6 +6,7 @@
 #ifndef SIMPLEMC_MC_UPDATE_STATS_HPP
 #define SIMPLEMC_MC_UPDATE_STATS_HPP
 
+#include <simplemc/serialize/concepts.hpp>
 
 #include <fmt/format.h>
 
@@ -28,17 +29,21 @@ namespace simplemc {
  * the simulation driver. It carries both the configuration of the update (name, selection weight,
  * detailed-balance ratio, name of the inverse update) and the statistics that record how the update
  * behaved during the run.
- *
- * The driver signals an impossible proposal by an `attempt()` return value of \f$ \leq 0 \f$.
  */
 struct update_stats {
-    /// Identifier used in printed reports.
+    /**
+     * @brief Identifier used in printed reports.
+     */
     std::string name;
 
-    /// Identifier of the inverse update. Empty for self-inverse updates.
+    /**
+     * @brief Identifier of the inverse update. Empty for self-inverse updates.
+     */
     std::string inv_name;
 
-    /// Unnormalized selection weight (\f$ w \geq 0 \f$).
+    /**
+     * @brief Unnormalized selection weight (\f$ w \geq 0 \f$).
+     */
     double weight = 0.0;
 
     /**
@@ -51,22 +56,34 @@ struct update_stats {
      */
     double ratio = 1.0;
 
-    /// Number of times this update has been proposed in the current run.
+    /**
+     * @brief Number of times this update has been proposed in the current run.
+     */
     std::uint64_t nprops = 0;
 
-    /// Number of times this update has been accepted in the current run.
+    /**
+     * @brief Number of times this update has been accepted in the current run.
+     */
     std::uint64_t naccs = 0;
 
-    /// Number of times this update has been signaled as impossible in the current run.
+    /**
+     * @brief Number of times this update has been signaled as impossible in the current run.
+     */
     std::uint64_t nimps = 0;
 
-    /// Cumulative number of proposals across multiple runs.
+    /**
+     * @brief Cumulative number of proposals across multiple runs.
+     */
     std::uint64_t cumulative_nprops = 0;
 
-    /// Cumulative number of acceptances across multiple runs.
+    /**
+     * @brief Cumulative number of acceptances across multiple runs.
+     */
     std::uint64_t cumulative_naccs = 0;
 
-    /// Cumulative number of impossible signals across multiple runs.
+    /**
+     * @brief Cumulative number of impossible signals across multiple runs.
+     */
     std::uint64_t cumulative_nimps = 0;
 };
 
@@ -98,21 +115,6 @@ inline void accumulate_update_stats(update_stats& s) noexcept {
 }
 
 /**
- * @brief Print a simplemc::update_stats as a one-line summary.
- *
- * @details Includes the configuration (name, weight, ratio) and the current-run counters with the
- * acceptance ratio (`naccs / nprops`) when `nprops > 0`.
- *
- * @param fp Destination file handle.
- * @param s Statistics to print.
- */
-inline void print(std::FILE* fp, const update_stats& s) {
-    const double acc = s.nprops > 0 ? static_cast<double>(s.naccs) / static_cast<double>(s.nprops) : 0.0;
-    fmt::print(fp, "Update '{}' (weight={}, ratio={}): nprops={} naccs={} nimps={} acc={:.4f}\n", s.name, s.weight,
-        s.ratio, s.nprops, s.naccs, s.nimps, acc);
-}
-
-/**
  * @brief Print a collection of simplemc::update_stats as a table.
  *
  * @details Produces a header followed by one row per entry. Each row shows the name and the
@@ -132,6 +134,64 @@ inline void print(std::FILE* fp, std::span<const update_stats> entries) {
         const double acc = s.nprops > 0 ? static_cast<double>(s.naccs) / static_cast<double>(s.nprops) : 0.0;
         fmt::print(fp, "{:<16} {:>10} {:>10} {:>10} {:>10.4f}\n", s.name, s.nprops, s.naccs, s.nimps, acc);
     }
+}
+
+/**
+ * @brief Serialize the persistent fields of simplemc::update_stats.
+ *
+ * @tparam S Serializer type.
+ * @param s Serializer handle.
+ * @param us Stats to write.
+ */
+template <serializer S>
+void simplemc_save(S& s, const update_stats& us) {
+    s.save_at("inv_name", us.inv_name);
+    s.save_at("weight", us.weight);
+    s.save_at("ratio", us.ratio);
+    s.save_at("cumulative_nprops", us.cumulative_nprops);
+    s.save_at("cumulative_naccs", us.cumulative_naccs);
+    s.save_at("cumulative_nimps", us.cumulative_nimps);
+}
+
+/**
+ * @brief Deserialize the persistent fields of simplemc::update_stats.
+ *
+ * @tparam S Serializer type.
+ * @param s Serializer handle.
+ * @param us Stats to read into.
+ */
+template <serializer S>
+void simplemc_load(const S& s, update_stats& us) {
+    s.load_at("inv_name", us.inv_name);
+    s.load_at("weight", us.weight);
+    s.load_at("ratio", us.ratio);
+    s.load_at("cumulative_nprops", us.cumulative_nprops);
+    s.load_at("cumulative_naccs", us.cumulative_naccs);
+    s.load_at("cumulative_nimps", us.cumulative_nimps);
+}
+
+/**
+ * @brief Serialize the user-input config of simplemc::update_stats.
+ *
+ * @tparam S Serializer type.
+ * @param s Serializer handle.
+ * @param us Stats to write.
+ */
+template <serializer S>
+void simplemc_save_input_config(S& s, const update_stats& us) {
+    s.save_at("weight", us.weight);
+}
+
+/**
+ * @brief Deserialize the user-input config of simplemc::update_stats.
+ *
+ * @tparam S Serializer type.
+ * @param s Serializer handle.
+ * @param us Stats to read into.
+ */
+template <serializer S>
+void simplemc_load_input_config(const S& s, update_stats& us) {
+    s.try_load_at("weight", us.weight);
 }
 
 /** @} */

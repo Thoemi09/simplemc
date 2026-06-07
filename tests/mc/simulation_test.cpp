@@ -98,18 +98,18 @@ inline void from_json(const nlohmann::json& j, nlohmann_only_update& u) { j.at("
 } // namespace
 
 TEST(MCSimulation, AddUpdateRejectsDuplicateName) {
-    simulation<xoshiro256ss> sim;
+    simulation<> sim;
     sim.add_update(always_accept {}, "a", 1.0);
     EXPECT_THROW(sim.add_update(always_accept {}, "a", 1.0), simplemc_exception);
 }
 
 TEST(MCSimulation, AddUpdateRejectsNegativeWeight) {
-    simulation<xoshiro256ss> sim;
+    simulation<> sim;
     EXPECT_THROW(sim.add_update(always_accept {}, "a", -1.0), simplemc_exception);
 }
 
 TEST(MCSimulation, AddUpdatePairSetsInvNameAndRatio) {
-    simulation<xoshiro256ss> sim;
+    simulation<> sim;
     sim.add_update(always_accept {}, "a", 2.0, always_accept {}, "b", 1.0);
 
     const auto us = sim.update_stats_data();
@@ -127,13 +127,13 @@ TEST(MCSimulation, AddUpdatePairSetsInvNameAndRatio) {
 }
 
 TEST(MCSimulation, AddUpdatePairRejectsAsymmetricZeroWeight) {
-    simulation<xoshiro256ss> sim;
+    simulation<> sim;
     EXPECT_THROW(
         sim.add_update(always_accept {}, "a", 1.0, always_accept {}, "b", 0.0), simplemc_exception);
 }
 
 TEST(MCSimulation, AddUpdatePairAllowsBothZero) {
-    simulation<xoshiro256ss> sim;
+    simulation<> sim;
     // both weights zero is allowed; ratios stay at 1.0
     EXPECT_NO_THROW(sim.add_update(always_accept {}, "a", 0.0, always_accept {}, "b", 0.0));
     const auto us = sim.update_stats_data();
@@ -143,26 +143,26 @@ TEST(MCSimulation, AddUpdatePairAllowsBothZero) {
 }
 
 TEST(MCSimulation, AddUpdatePairRejectsSameName) {
-    simulation<xoshiro256ss> sim;
+    simulation<> sim;
     EXPECT_THROW(
         sim.add_update(always_accept {}, "a", 1.0, always_accept {}, "a", 1.0), simplemc_exception);
 }
 
 TEST(MCSimulation, AddMeasurementRejectsDuplicateName) {
-    simulation<xoshiro256ss> sim;
+    simulation<> sim;
     sim.add_measurement(counting_measurement {}, "m");
     EXPECT_THROW(sim.add_measurement(counting_measurement {}, "m"), simplemc_exception);
 }
 
 TEST(MCSimulation, RunThrowsWhenNoUpdates) {
-    simulation<xoshiro256ss> sim;
+    simulation<> sim;
     EXPECT_THROW(
         sim.run({ .max_steps = 10, .max_time = 1.0, .steps_per_cycle = 1, .cycles_per_check = 1 }),
         simplemc_exception);
 }
 
 TEST(MCSimulation, RunThrowsWhenAllWeightsZero) {
-    simulation<xoshiro256ss> sim;
+    simulation<> sim;
     sim.add_update(always_accept {}, "a", 0.0);
     EXPECT_THROW(
         sim.run({ .max_steps = 10, .max_time = 1.0, .steps_per_cycle = 1, .cycles_per_check = 1 }),
@@ -170,7 +170,7 @@ TEST(MCSimulation, RunThrowsWhenAllWeightsZero) {
 }
 
 TEST(MCSimulation, StepIncrementsCountersByOne) {
-    simulation<xoshiro256ss> sim { xoshiro256ss { 42 } };
+    simulation<> sim { xoshiro256ss { 42 } };
     always_accept aa;
     auto accepts = aa.accepts;
     sim.add_update(aa, "aa", 1.0);
@@ -189,7 +189,7 @@ TEST(MCSimulation, StepIncrementsCountersByOne) {
 }
 
 TEST(MCSimulation, StepRejectsWhenAttemptBelowUniform) {
-    simulation<xoshiro256ss> sim { xoshiro256ss { 7 } };
+    simulation<> sim { xoshiro256ss { 7 } };
     half_accept ha;
     auto rejects = ha.rejects;
     sim.add_update(ha, "h", 1.0);
@@ -209,7 +209,7 @@ TEST(MCSimulation, StepRejectsWhenAttemptBelowUniform) {
 }
 
 TEST(MCSimulation, ImpossibleIsRecorded) {
-    simulation<xoshiro256ss> sim { xoshiro256ss { 0 } };
+    simulation<> sim { xoshiro256ss { 0 } };
     impossible_attempt ia;
     auto accepts = ia.accepts;
     auto rejects = ia.rejects;
@@ -230,7 +230,7 @@ TEST(MCSimulation, ImpossibleIsRecorded) {
 }
 
 TEST(MCSimulation, ZeroWeightUpdateNeverPicked) {
-    simulation<xoshiro256ss> sim { xoshiro256ss { 1234 } };
+    simulation<> sim { xoshiro256ss { 1234 } };
     sim.add_update(always_accept {}, "a", 1.0);
     sim.add_update(always_accept {}, "b", 0.0);
     sim.add_update(always_accept {}, "c", 1.0);
@@ -247,7 +247,7 @@ TEST(MCSimulation, ZeroWeightUpdateNeverPicked) {
 }
 
 TEST(MCSimulation, CycleCallsMeasureOncePerCycle) {
-    simulation<xoshiro256ss> sim { xoshiro256ss { 0 } };
+    simulation<> sim { xoshiro256ss { 0 } };
     sim.add_update(always_accept {}, "aa", 1.0);
     counting_measurement cm;
     auto count = cm.count;
@@ -267,7 +267,7 @@ TEST(MCSimulation, CycleCallsMeasureOncePerCycle) {
 }
 
 TEST(MCSimulation, RunStopsOnMaxSteps) {
-    simulation<xoshiro256ss> sim { xoshiro256ss { 0 } };
+    simulation<> sim { xoshiro256ss { 0 } };
     sim.add_update(always_accept {}, "aa", 1.0);
 
     constexpr std::uint64_t max_steps = 100;
@@ -284,7 +284,7 @@ TEST(MCSimulation, RunStopsOnMaxSteps) {
 }
 
 TEST(MCSimulation, RunStopsOnMaxTime) {
-    simulation<xoshiro256ss> sim { xoshiro256ss { 0 } };
+    simulation<> sim { xoshiro256ss { 0 } };
     sim.add_update(always_accept {}, "aa", 1.0);
 
     constexpr double max_time = 0.001;
@@ -296,7 +296,7 @@ TEST(MCSimulation, RunStopsOnMaxTime) {
 }
 
 TEST(MCSimulation, AccumulateStatsFoldsAllCounters) {
-    simulation<xoshiro256ss> sim { xoshiro256ss { 0 } };
+    simulation<> sim { xoshiro256ss { 0 } };
     sim.add_update(always_accept {}, "aa", 1.0);
 
     const simulation_params p { .max_steps = 30, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = 10 };
@@ -316,7 +316,7 @@ TEST(MCSimulation, AccumulateStatsFoldsAllCounters) {
 }
 
 TEST(MCSimulation, RunAutoResetsCurrentCountersAfterAccumulate) {
-    simulation<xoshiro256ss> sim { xoshiro256ss { 0 } };
+    simulation<> sim { xoshiro256ss { 0 } };
     sim.add_update(always_accept {}, "aa", 1.0);
 
     const simulation_params p { .max_steps = 30, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = 10 };
@@ -343,7 +343,7 @@ TEST(MCSimulation, RunAutoResetsCurrentCountersAfterAccumulate) {
 }
 
 TEST(MCSimulation, FindUpdateByName) {
-    simulation<xoshiro256ss> sim;
+    simulation<> sim;
     sim.add_update(always_accept {}, "alpha", 1.0);
     sim.add_update(always_accept {}, "beta", 1.0);
     EXPECT_EQ(sim.find_update("alpha"), 0u);
@@ -352,7 +352,7 @@ TEST(MCSimulation, FindUpdateByName) {
 }
 
 TEST(MCSimulation, FindMeasurementByName) {
-    simulation<xoshiro256ss> sim;
+    simulation<> sim;
     sim.add_measurement(counting_measurement {}, "obs1");
     sim.add_measurement(counting_measurement {}, "obs2");
     EXPECT_EQ(sim.find_measurement("obs1"), 0u);
@@ -361,7 +361,7 @@ TEST(MCSimulation, FindMeasurementByName) {
 }
 
 TEST(MCSimulation, SetUpdateWeightChangesSelection) {
-    simulation<xoshiro256ss> sim { xoshiro256ss { 0 } };
+    simulation<> sim { xoshiro256ss { 0 } };
     sim.add_update(always_accept {}, "a", 1.0);
     sim.add_update(always_accept {}, "b", 0.0);
     sim.initialize_update_distribution();
@@ -387,7 +387,7 @@ TEST(MCSimulation, SetUpdateWeightChangesSelection) {
 }
 
 TEST(MCSimulation, SetUpdateWeightRejectsNegative) {
-    simulation<xoshiro256ss> sim;
+    simulation<> sim;
     sim.add_update(always_accept {}, "a", 1.0);
     EXPECT_THROW(sim.set_update_weight("a", -1.0), simplemc_exception);
     // weight unchanged
@@ -395,13 +395,13 @@ TEST(MCSimulation, SetUpdateWeightRejectsNegative) {
 }
 
 TEST(MCSimulation, SetUpdateWeightRejectsMissingName) {
-    simulation<xoshiro256ss> sim;
+    simulation<> sim;
     sim.add_update(always_accept {}, "a", 1.0);
     EXPECT_THROW(sim.set_update_weight("missing", 2.0), simplemc_exception);
 }
 
 TEST(MCSimulation, AddMeasurementInactiveSkipsMeasure) {
-    simulation<xoshiro256ss> sim { xoshiro256ss { 0 } };
+    simulation<> sim { xoshiro256ss { 0 } };
     sim.add_update(always_accept {}, "aa", 1.0);
     counting_measurement cm;
     auto count = cm.count;
@@ -417,7 +417,7 @@ TEST(MCSimulation, AddMeasurementInactiveSkipsMeasure) {
 }
 
 TEST(MCSimulation, SetMeasurementActiveTogglesAtRuntime) {
-    simulation<xoshiro256ss> sim { xoshiro256ss { 0 } };
+    simulation<> sim { xoshiro256ss { 0 } };
     sim.add_update(always_accept {}, "aa", 1.0);
     counting_measurement cm;
     auto count = cm.count;
@@ -438,13 +438,13 @@ TEST(MCSimulation, SetMeasurementActiveTogglesAtRuntime) {
 }
 
 TEST(MCSimulation, SetMeasurementActiveRejectsMissingName) {
-    simulation<xoshiro256ss> sim;
+    simulation<> sim;
     sim.add_measurement(counting_measurement {}, "obs");
     EXPECT_THROW(sim.set_measurement_active("missing", false), simplemc_exception);
 }
 
 TEST(MCSimulation, ResetStatsZeroesCurrentNotCumulative) {
-    simulation<xoshiro256ss> sim { xoshiro256ss { 0 } };
+    simulation<> sim { xoshiro256ss { 0 } };
     sim.add_update(always_accept {}, "aa", 1.0);
 
     sim.run({ .max_steps = 20, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = 10 });
@@ -465,7 +465,7 @@ TEST(MCSimulation, ResetStatsZeroesCurrentNotCumulative) {
 
 TEST(MCSimulation, JsonRoundTripPersistsCumulativeAndConfig) {
     // Source simulation: stateful + stateless toys + a stateful measurement
-    simulation<xoshiro256ss> src { xoshiro256ss { 42 } };
+    simulation<> src { xoshiro256ss { 42 } };
     stateful_update stateful;
     auto stateful_counter = stateful.counter;
     src.add_update(stateful, "stateful", 2.5);
@@ -489,7 +489,7 @@ TEST(MCSimulation, JsonRoundTripPersistsCumulativeAndConfig) {
     writer.save_at("sim", src);
 
     // Destination: same structure, different RNG seed
-    simulation<xoshiro256ss> dst { xoshiro256ss { 999 } };
+    simulation<> dst { xoshiro256ss { 999 } };
     stateful_update dst_stateful;
     auto dst_stateful_counter = dst_stateful.counter;
     dst.add_update(dst_stateful, "stateful", 2.5);
@@ -528,14 +528,14 @@ TEST(MCSimulation, JsonRoundTripPersistsCumulativeAndConfig) {
 }
 
 TEST(MCSimulation, JsonLoadThrowsOnMissingUpdate) {
-    simulation<xoshiro256ss> src;
+    simulation<> src;
     src.add_update(always_accept {}, "a", 1.0);
     src.run({ .max_steps = 5, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = 5 });
 
     json_serializer writer;
     writer.save_at("sim", src);
 
-    simulation<xoshiro256ss> dst;
+    simulation<> dst;
     dst.add_update(always_accept {}, "b", 1.0); // different name
 
     json_serializer reader { writer.root() };
@@ -543,7 +543,7 @@ TEST(MCSimulation, JsonLoadThrowsOnMissingUpdate) {
 }
 
 TEST(MCSimulation, JsonLoadThrowsOnMissingMeasurement) {
-    simulation<xoshiro256ss> src;
+    simulation<> src;
     src.add_update(always_accept {}, "a", 1.0);
     src.add_measurement(counting_measurement {}, "obs1");
     src.run({ .max_steps = 5, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = 5 });
@@ -551,7 +551,7 @@ TEST(MCSimulation, JsonLoadThrowsOnMissingMeasurement) {
     json_serializer writer;
     writer.save_at("sim", src);
 
-    simulation<xoshiro256ss> dst;
+    simulation<> dst;
     dst.add_update(always_accept {}, "a", 1.0);
     dst.add_measurement(counting_measurement {}, "different_name");
 
@@ -562,7 +562,7 @@ TEST(MCSimulation, JsonLoadThrowsOnMissingMeasurement) {
 TEST(MCSimulation, JsonRoundTripWorksWithStatelessUserTypes) {
     // Stateless user types have neither simplemc_save nor nlohmann::to_json — the wrapper's
     // save_at silently no-ops. Round-trip still succeeds.
-    simulation<xoshiro256ss> src;
+    simulation<> src;
     src.add_update(always_accept {}, "aa", 1.0);
     src.add_measurement(counting_measurement {}, "obs");
     src.run({ .max_steps = 5, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = 5 });
@@ -571,7 +571,7 @@ TEST(MCSimulation, JsonRoundTripWorksWithStatelessUserTypes) {
     json_serializer writer;
     EXPECT_NO_THROW(writer.save_at("sim", src));
 
-    simulation<xoshiro256ss> dst;
+    simulation<> dst;
     dst.add_update(always_accept {}, "aa", 1.0);
     dst.add_measurement(counting_measurement {}, "obs");
 
@@ -582,7 +582,7 @@ TEST(MCSimulation, JsonRoundTripWorksWithStatelessUserTypes) {
 
 TEST(MCSimulation, JsonRoundTripWorksWithNlohmannToJsonUserTypes) {
     // User type with only nlohmann to_json / from_json (no simplemc_save).
-    simulation<xoshiro256ss> src;
+    simulation<> src;
     src.add_update(nlohmann_only_update {}, "nlh", 1.0);
     src.run({ .max_steps = 10, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = 5 });
     src.accumulate_stats();
@@ -599,7 +599,7 @@ TEST(MCSimulation, JsonRoundTripWorksWithNlohmannToJsonUserTypes) {
     ASSERT_TRUE(root["sim"]["updates"]["nlh"].contains("user"));
     EXPECT_GT(root["sim"]["updates"]["nlh"]["user"]["counter"].get<int>(), 0);
 
-    simulation<xoshiro256ss> dst;
+    simulation<> dst;
     dst.add_update(nlohmann_only_update {}, "nlh", 1.0);
 
     json_serializer reader { writer.root() };

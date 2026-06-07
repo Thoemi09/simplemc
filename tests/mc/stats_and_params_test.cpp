@@ -1,13 +1,16 @@
 #include <simplemc/mc.hpp>
+#include <simplemc/serialize/json/json_serializer.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
 #include <gtest/gtest.h>
+#include <nlohmann/json.hpp>
 
 #include <array>
 #include <cstdint>
 #include <cstdio>
 #include <limits>
 #include <span>
+#include <utility>
 
 using namespace simplemc;
 
@@ -156,8 +159,6 @@ TEST(MCUpdateStats, PrintDoesNotCrash) {
 
     std::FILE* f = std::tmpfile();
     ASSERT_NE(f, nullptr);
-    print(f, a);
-    print(f, b);
     const std::array<update_stats, 2> entries { a, b };
     print(f, std::span<const update_stats> { entries });
     std::fclose(f);
@@ -175,10 +176,210 @@ TEST(MCMeasurementStats, PrintDoesNotCrash) {
 
     std::FILE* f = std::tmpfile();
     ASSERT_NE(f, nullptr);
-    print(f, a);
-    print(f, b);
     const std::array<measurement_stats, 2> entries { a, b };
     print(f, std::span<const measurement_stats> { entries });
     std::fclose(f);
+}
+
+TEST(MCSimulationParams, JsonStateRoundTrip) {
+    const simulation_params src { .max_steps = 123456, .max_time = 7.5, .steps_per_cycle = 3, .cycles_per_check = 17 };
+
+    json_serializer w;
+    simplemc_save(w, src);
+
+    simulation_params dst;
+    const json_serializer r { w.root() };
+    simplemc_load(r, dst);
+
+    EXPECT_EQ(dst.max_steps, simulation_params {}.max_steps);
+    EXPECT_DOUBLE_EQ(dst.max_time, simulation_params {}.max_time);
+    EXPECT_EQ(dst.steps_per_cycle, src.steps_per_cycle);
+    EXPECT_EQ(dst.cycles_per_check, src.cycles_per_check);
+}
+
+TEST(MCSimulationParams, JsonInputConfigRoundTrip) {
+    const simulation_params src { .max_steps = 42, .max_time = 1.25, .steps_per_cycle = 2, .cycles_per_check = 7 };
+
+    json_serializer w;
+    simplemc_save_input_config(w, src);
+
+    simulation_params dst;
+    const json_serializer r { w.root() };
+    simplemc_load_input_config(r, dst);
+
+    EXPECT_EQ(dst.max_steps, src.max_steps);
+    EXPECT_DOUBLE_EQ(dst.max_time, src.max_time);
+    EXPECT_EQ(dst.steps_per_cycle, src.steps_per_cycle);
+    EXPECT_EQ(dst.cycles_per_check, src.cycles_per_check);
+}
+
+TEST(MCSimulationParams, JsonInputConfigKeepsDefaultsOnMissingKeys) {
+    // Empty input config — load should leave aggregate defaults untouched and pass validation.
+    const json_serializer r { nlohmann::json::object() };
+
+    simulation_params dst;
+    EXPECT_NO_THROW(simplemc_load_input_config(r, dst));
+
+    EXPECT_EQ(dst.steps_per_cycle, 5u);
+    EXPECT_EQ(dst.cycles_per_check, 1'000'000u);
+    EXPECT_EQ(dst.max_steps, std::numeric_limits<std::uint64_t>::max());
+    EXPECT_DOUBLE_EQ(dst.max_time, 10.0);
+}
+
+TEST(MCSimulationParams, JsonInputConfigOverridesPartial) {
+    // Only steps_per_cycle present — others stay at defaults.
+    nlohmann::json doc;
+    doc["steps_per_cycle"] = 11;
+    const json_serializer r { std::move(doc) };
+
+    simulation_params dst;
+    simplemc_load_input_config(r, dst);
+
+    EXPECT_EQ(dst.steps_per_cycle, 11u);
+    EXPECT_EQ(dst.cycles_per_check, 1'000'000u); // default
+    EXPECT_DOUBLE_EQ(dst.max_time, 10.0); // default
+}
+
+TEST(MCSimulationParams, JsonLoadValidatesInputConfig) {
+    nlohmann::json doc;
+    doc["steps_per_cycle"] = 0; // invalid
+    const json_serializer r { std::move(doc) };
+
+    simulation_params dst;
+    EXPECT_THROW(simplemc_load_input_config(r, dst), simplemc_exception);
+}
+
+TEST(MCSimulationStats, JsonRoundTripWritesCumulativeOnly) {
+    const simulation_stats src {
+        .steps_done = 7, .last_runtime = 1.5, .cumulative_steps = 1234, .cumulative_time = 9.75
+    };
+
+    json_serializer w;
+    simplemc_save(w, src);
+
+    // Persistent fields written, current-run fields omitted.
+    const auto& root = w.root();
+    EXPECT_TRUE(root.contains("cumulative_steps"));
+    EXPECT_TRUE(root.contains("cumulative_time"));
+    EXPECT_FALSE(root.contains("steps_done"));
+    EXPECT_FALSE(root.contains("last_runtime"));
+
+    simulation_stats dst;
+    const json_serializer r { w.root() };
+    simplemc_load(r, dst);
+
+    EXPECT_EQ(dst.cumulative_steps, 1234u);
+    EXPECT_DOUBLE_EQ(dst.cumulative_time, 9.75);
+    EXPECT_EQ(dst.steps_done, 0u); // untouched
+    EXPECT_DOUBLE_EQ(dst.last_runtime, 0.0);
+}
+
+TEST(MCUpdateStats, JsonStateRoundTrip) {
+    const update_stats src { .name = "ignored",
+        .inv_name = "back",
+        .weight = 3.5,
+        .ratio = 0.5,
+        .nprops = 100,
+        .naccs = 60,
+        .nimps = 5,
+        .cumulative_nprops = 300,
+        .cumulative_naccs = 180,
+        .cumulative_nimps = 15 };
+
+    json_serializer w;
+    simplemc_save(w, src);
+
+    // name and current-run counters are omitted by the hook (parent owns name, current-run resets per run).
+    const auto& root = w.root();
+    EXPECT_FALSE(root.contains("name"));
+    EXPECT_FALSE(root.contains("nprops"));
+    EXPECT_FALSE(root.contains("naccs"));
+    EXPECT_FALSE(root.contains("nimps"));
+    EXPECT_TRUE(root.contains("inv_name"));
+    EXPECT_TRUE(root.contains("weight"));
+    EXPECT_TRUE(root.contains("ratio"));
+    EXPECT_TRUE(root.contains("cumulative_nprops"));
+
+    update_stats dst;
+    const json_serializer r { w.root() };
+    simplemc_load(r, dst);
+
+    EXPECT_EQ(dst.name, ""); // untouched
+    EXPECT_EQ(dst.inv_name, "back");
+    EXPECT_DOUBLE_EQ(dst.weight, 3.5);
+    EXPECT_DOUBLE_EQ(dst.ratio, 0.5);
+    EXPECT_EQ(dst.cumulative_nprops, 300u);
+    EXPECT_EQ(dst.cumulative_naccs, 180u);
+    EXPECT_EQ(dst.cumulative_nimps, 15u);
+    EXPECT_EQ(dst.nprops, 0u); // untouched
+}
+
+TEST(MCUpdateStats, JsonInputConfigWritesWeightOnly) {
+    const update_stats src { .name = "ignored", .inv_name = "back", .weight = 7.25, .ratio = 0.5 };
+
+    json_serializer w;
+    simplemc_save_input_config(w, src);
+
+    const auto& root = w.root();
+    EXPECT_TRUE(root.contains("weight"));
+    EXPECT_FALSE(root.contains("inv_name"));
+    EXPECT_FALSE(root.contains("ratio"));
+    EXPECT_FALSE(root.contains("name"));
+    EXPECT_FALSE(root.contains("cumulative_nprops"));
+
+    update_stats dst;
+    const json_serializer r { w.root() };
+    simplemc_load_input_config(r, dst);
+    EXPECT_DOUBLE_EQ(dst.weight, 7.25);
+}
+
+TEST(MCUpdateStats, JsonInputConfigLoadIsLenient) {
+    const json_serializer r { nlohmann::json::object() };
+
+    update_stats dst;
+    dst.weight = 4.0;
+    EXPECT_NO_THROW(simplemc_load_input_config(r, dst));
+    EXPECT_DOUBLE_EQ(dst.weight, 4.0); // unchanged
+}
+
+TEST(MCMeasurementStats, JsonStateRoundTrip) {
+    const measurement_stats src { .name = "ignored", .is_active = false };
+
+    json_serializer w;
+    simplemc_save(w, src);
+
+    const auto& root = w.root();
+    EXPECT_TRUE(root.contains("is_active"));
+    EXPECT_FALSE(root.contains("name"));
+
+    measurement_stats dst;
+    dst.is_active = true;
+    const json_serializer r { w.root() };
+    simplemc_load(r, dst);
+
+    EXPECT_FALSE(dst.is_active);
+    EXPECT_EQ(dst.name, "");
+}
+
+TEST(MCMeasurementStats, JsonInputConfigRoundTrip) {
+    measurement_stats src;
+    src.is_active = false;
+
+    json_serializer w;
+    simplemc_save_input_config(w, src);
+
+    measurement_stats dst;
+    dst.is_active = true;
+    const json_serializer r { w.root() };
+    simplemc_load_input_config(r, dst);
+    EXPECT_FALSE(dst.is_active);
+}
+
+TEST(MCMeasurementStats, JsonInputConfigLoadIsLenient) {
+    const json_serializer r { nlohmann::json::object() };
+    measurement_stats dst;
+    dst.is_active = false;
+    EXPECT_NO_THROW(simplemc_load_input_config(r, dst));
+    EXPECT_FALSE(dst.is_active); // unchanged
 }
 

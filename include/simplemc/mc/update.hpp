@@ -57,13 +57,33 @@ namespace simplemc {
  * Otherwise they are silent no-ops, which lets stateless updates be added without writing trivial
  * empty overloads.
  *
+ * The wrapper is templated on the serializer types `S1` and `S2` used for checkpointing and
+ * input-config serialization, respectively:
+ * - If the wrapped user type provides a serialization path through `S1`'s `%save_at()` /
+ * `%load_at()`, the wrapper's save_at() / load_at() forward to it.
+ * - If the wrapped user type satisfies simplemc::has_simplemc_save_input_config with `S2`, the
+ * wrapper's save_input_config_at() / load_input_config_at() forward to the user type's ADL hooks.
+ *
+ * Otherwise they are silent no-ops.
+ *
  * See @ref simplemc-mc for a description of the implementation strategy.
  *
- * @tparam S Serializer type.
+ * @tparam S1 Serializer type used for checkpoint serialization.
+ * @tparam S2 Serializer type used for input-config serialization.
  */
-template <serializer S = json_serializer>
+template <serializer S1 = json_serializer, serializer S2 = json_serializer>
 class update {
 public:
+    /**
+     * @brief Type used for checkpoint serialization.
+     */
+    using cp_serializer_type = S1;
+
+    /**
+     * @brief Type used for input-config serialization.
+     */
+    using ic_serializer_type = S2;
+
     /**
      * @brief Wrap a user-defined update.
      *
@@ -144,26 +164,54 @@ public:
     void reject() { pimpl_->reject(); }
 
     /**
-     * @brief Serialize the wrapped user state.
+     * @brief Serialize the wrapped user type.
      *
      * @details Forwards to the serializer's `save_at()` method. If the wrapped user type is not
-     * serializable through `S`, the call is a silent no-op.
+     * serializable through cp_serializer_type, the call is a silent no-op.
      *
-     * @param s Serializer handle one level above where the user state should be written.
+     * @param s Serializer handle.
      * @param key Sub-key to write into.
      */
-    void save_at(S& s, std::string_view key) const { pimpl_->save_at(s, key); }
+    void save_at(cp_serializer_type& s, std::string_view key) const { pimpl_->save_at(s, key); }
 
     /**
-     * @brief Deserialize the wrapped user state.
+     * @brief Deserialize the wrapped user type.
      *
      * @details Forwards to the serializer's `load_at()` method. If the wrapped user type is not
-     * deserializable through `S`, the call is a silent no-op.
+     * deserializable through cp_serializer_type, the call is a silent no-op.
      *
-     * @param s Serializer handle one level above where the user state should be read from.
+     * @param s Serializer handle.
      * @param key Sub-key to read from.
      */
-    void load_at(const S& s, std::string_view key) { pimpl_->load_at(s, key); }
+    void load_at(const cp_serializer_type& s, std::string_view key) { pimpl_->load_at(s, key); }
+
+    /**
+     * @brief Serialize the wrapped user type as input config.
+     *
+     * @details Forwards to the wrapped user type's ADL hook. If the wrapped user type does not
+     * provide such a hook, the call is a silent no-op — the entry simply contributes nothing to the
+     * input-config output.
+     *
+     * @param s Serializer handle.
+     * @param key Sub-key to write into.
+     */
+    void save_input_config_at(ic_serializer_type& s, std::string_view key) const {
+        pimpl_->save_input_config_at(s, key);
+    }
+
+    /**
+     * @brief Deserialize the wrapped user type from input config.
+     *
+     * @details Forwards to the wrapped user type's ADL hook. If the wrapped user type does not
+     * provide such a hook, the call is a silent no-op — the entry simply contributes nothing to the
+     * input-config output.
+     *
+     * @param s Serializer handle.
+     * @param key Sub-key to read from.
+     */
+    void load_input_config_at(const ic_serializer_type& s, std::string_view key) {
+        pimpl_->load_input_config_at(s, key);
+    }
 
 private:
     // Hidden polymorphic base — the "concept" half of the concept-model idiom.
@@ -173,8 +221,10 @@ private:
         virtual void accept() = 0;
         virtual void reject() = 0;
         [[nodiscard]] virtual std::unique_ptr<interface> clone() const = 0;
-        virtual void save_at(S&, std::string_view) const = 0;
-        virtual void load_at(const S&, std::string_view) = 0;
+        virtual void save_at(cp_serializer_type&, std::string_view) const = 0;
+        virtual void load_at(const cp_serializer_type&, std::string_view) = 0;
+        virtual void save_input_config_at(ic_serializer_type&, std::string_view) const = 0;
+        virtual void load_input_config_at(const ic_serializer_type&, std::string_view) = 0;
     };
 
     // Hidden template derived - the "model" half of the concept-model idiom.
@@ -191,15 +241,26 @@ private:
             }
         }
         [[nodiscard]] std::unique_ptr<interface> clone() const override { return std::make_unique<model>(*this); }
-        void save_at(S& s, std::string_view key) const override {
-            if constexpr (requires(S& p, std::string_view k, const U& v) { p.save_at(k, v); }) {
+        void save_at(cp_serializer_type& s, std::string_view key) const override {
+            if constexpr (requires(cp_serializer_type& p, std::string_view k, const U& v) { p.save_at(k, v); }) {
                 s.save_at(key, concrete);
             }
-            // else: no serialization path for U through S — silent no-op
         }
-        void load_at(const S& s, std::string_view key) override {
-            if constexpr (requires(const S& p, std::string_view k, U& v) { p.load_at(k, v); }) {
+        void load_at(const cp_serializer_type& s, std::string_view key) override {
+            if constexpr (requires(const cp_serializer_type& p, std::string_view k, U& v) { p.load_at(k, v); }) {
                 s.load_at(key, concrete);
+            }
+        }
+        void save_input_config_at(ic_serializer_type& s, std::string_view key) const override {
+            if constexpr (has_simplemc_save_input_config<U, ic_serializer_type>) {
+                auto sub = s[key];
+                simplemc_save_input_config(sub, concrete);
+            }
+        }
+        void load_input_config_at(const ic_serializer_type& s, std::string_view key) override {
+            if constexpr (has_simplemc_load_input_config<U, ic_serializer_type>) {
+                const auto sub = s[key];
+                simplemc_load_input_config(sub, concrete);
             }
         }
     };

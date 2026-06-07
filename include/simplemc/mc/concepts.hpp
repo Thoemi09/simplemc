@@ -54,6 +54,30 @@ concept mc_update = requires(U& u) {
     u.accept();
 };
 
+/**
+ * @brief Check if type `T` is serializable by a serializer of type `S` via a call to
+ * `simplemc_save_input_config`.
+ *
+ * @details Parallels simplemc::has_simplemc_save but its intended use is for user-input.
+ *
+ * @tparam T Type being serialized.
+ * @tparam S Serializer type.
+ */
+template <class T, class S>
+concept has_simplemc_save_input_config = requires(const T& t, S& s) { simplemc_save_input_config(s, t); };
+
+/**
+ * @brief Check if type `T` is deserializable by a serializer of type `S` via a call to
+ * `simplemc_load_input_config`.
+ *
+ * @details Parallels simplemc::has_simplemc_load but its intended use is for user-input.
+ *
+ * @tparam T Type being deserialized into.
+ * @tparam S Serializer type.
+ */
+template <class T, class S>
+concept has_simplemc_load_input_config = requires(T& t, const S& s) { simplemc_load_input_config(s, t); };
+
 /** @} */
 
 } // namespace simplemc

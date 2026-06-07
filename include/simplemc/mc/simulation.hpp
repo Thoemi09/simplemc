@@ -60,13 +60,28 @@ namespace simplemc {
  * proposal is counted in `update_stats::nimps` and neither `accept()` nor `reject()` is invoked
  * on the wrapped update.
  *
- * @tparam RNG Random number generator type (default: `simplemc::xoshiro256ss`).
- * @tparam S Serializer type used by the wrapped updates / measurements (default:
- * `simplemc::json_serializer`).
+ * The driver carries two independent backend parameters for serialization: `S1` for state
+ * checkpointing and `S2` for input-config (user-facing config files). They default independently to
+ * simplemc::json_serializer, so picking e.g. `simulation<hdf5_serializer>` keeps state checkpointing
+ * in HDF5 while keeping input config in JSON without any extra typing.
+ *
+ * @tparam S1 Serializer type for state checkpointing (default: simplemc::json_serializer).
+ * @tparam S2 Serializer type for input-config (default: simplemc::json_serializer).
+ * @tparam RNG Random number generator type (default: simplemc::xoshiro256ss).
  */
-template <class RNG = xoshiro256ss, serializer S = json_serializer>
+template <serializer S1 = json_serializer, serializer S2 = json_serializer, class RNG = xoshiro256ss>
 class simulation {
 public:
+    /**
+     * @brief Type used for checkpoint serialization.
+     */
+    using cp_serializer_type = S1;
+
+    /**
+     * @brief Type used for input-config serialization.
+     */
+    using ic_serializer_type = S2;
+
     /**
      * @brief Default constructor.
      *
@@ -95,7 +110,7 @@ public:
      * @param name Identifier (must be unique within this simulation).
      * @param weight Unnormalized selection weight (\f$ \ge 0 \f$).
      */
-    void add_update(update<S> u, std::string name, double weight);
+    void add_update(update<cp_serializer_type, ic_serializer_type> u, std::string name, double weight);
 
     /**
      * @brief Register an inverse pair of updates.
@@ -114,8 +129,8 @@ public:
      * @param name2 Identifier for the second update.
      * @param weight2 Weight of the second update.
      */
-    void add_update(
-        update<S> u1, std::string name1, double weight1, update<S> u2, std::string name2, double weight2);
+    void add_update(update<cp_serializer_type, ic_serializer_type> u1, std::string name1, double weight1,
+        update<cp_serializer_type, ic_serializer_type> u2, std::string name2, double weight2);
 
     /**
      * @brief Register a measurement.
@@ -130,7 +145,8 @@ public:
      * @param name Identifier (must be unique within this simulation).
      * @param is_active Initial activation state. Defaults to `true`.
      */
-    void add_measurement(measurement<S> m, std::string name, bool is_active = true);
+    void add_measurement(
+        measurement<cp_serializer_type, ic_serializer_type> m, std::string name, bool is_active = true);
 
     /**
      * @brief Look up an update by name.
@@ -280,31 +296,28 @@ public:
     /**
      * @brief Serialize the persistent state of the simulation.
      *
-     * @details Writes the RNG state, the cumulative simulation counters (`cumulative_steps`,
-     * `cumulative_time`), and for each registered update / measurement its persistent fields keyed
-     * by name (see @ref simplemc-mc for the schema). Per-run state (`steps_done`, `last_runtime`,
-     * per-update current-run counters) is intentionally not written; `simulation_params` is per-call
-     * and not part of the checkpoint either.
+     * @details Writes the RNG state, the cumulative simulation counters via simplemc_save on the
+     * simulation_stats aggregate, and for each registered update / measurement its persistent
+     * fields keyed by name via simplemc_save on the corresponding stats aggregate (see
+     * @ref simplemc-mc for the schema). Per-run state (`steps_done`, `last_runtime`, per-update
+     * current-run counters) is intentionally not written; `simulation_params` is per-call and not
+     * part of the checkpoint either — serialize it separately if you need to persist user inputs.
      *
      * Each entry's user state is written under a `"user"` sub-key via the wrapper's `save_at`,
-     * which routes through `s.save_at(key, concrete)` — picking up either ADL `simplemc_save<S>`
+     * which routes through `s.save_at(key, concrete)` — picking up either ADL `simplemc_save<S1>`
      * or the backend's native fallback, or silently no-op'ing if neither is available.
+     *
+     * See also simplemc_save_input_config() for the parallel user-input flavor.
      */
-    friend void simplemc_save(S& s, const simulation& sim) {
+    friend void simplemc_save(cp_serializer_type& s, const simulation& sim) {
         s.save_at("rng", sim.rng_);
-        s.save_at("cumulative_steps", sim.stats_.cumulative_steps);
-        s.save_at("cumulative_time", sim.stats_.cumulative_time);
+        simplemc_save(s, sim.stats_);
 
         auto updates = s["updates"];
         for (std::size_t i = 0; i < sim.updates_.size(); ++i) {
             const auto& us = sim.update_stats_[i];
             auto entry = updates[us.name];
-            entry.save_at("inv_name", us.inv_name);
-            entry.save_at("weight", us.weight);
-            entry.save_at("ratio", us.ratio);
-            entry.save_at("cumulative_nprops", us.cumulative_nprops);
-            entry.save_at("cumulative_naccs", us.cumulative_naccs);
-            entry.save_at("cumulative_nimps", us.cumulative_nimps);
+            simplemc_save(entry, us);
             sim.updates_[i].save_at(entry, "user");
         }
 
@@ -312,7 +325,7 @@ public:
         for (std::size_t i = 0; i < sim.measurements_.size(); ++i) {
             const auto& ms = sim.measurement_stats_[i];
             auto entry = meas[ms.name];
-            entry.save_at("is_active", ms.is_active);
+            simplemc_save(entry, ms);
             sim.measurements_[i].save_at(entry, "user");
         }
     }
@@ -327,10 +340,9 @@ public:
      * touched — the user calls `run()` (which rebuilds the distribution at entry) or
      * `initialize_update_distribution()` before sampling.
      */
-    friend void simplemc_load(const S& s, simulation& sim) {
+    friend void simplemc_load(const cp_serializer_type& s, simulation& sim) {
         s.load_at("rng", sim.rng_);
-        s.load_at("cumulative_steps", sim.stats_.cumulative_steps);
-        s.load_at("cumulative_time", sim.stats_.cumulative_time);
+        simplemc_load(s, sim.stats_);
 
         if (!sim.update_stats_.empty()) {
             const auto updates = s["updates"];
@@ -340,12 +352,7 @@ public:
                     throw simplemc_exception(fmt::format("checkpoint missing update '{}'", us.name));
                 }
                 const auto entry = updates[us.name];
-                entry.load_at("inv_name", us.inv_name);
-                entry.load_at("weight", us.weight);
-                entry.load_at("ratio", us.ratio);
-                entry.load_at("cumulative_nprops", us.cumulative_nprops);
-                entry.load_at("cumulative_naccs", us.cumulative_naccs);
-                entry.load_at("cumulative_nimps", us.cumulative_nimps);
+                simplemc_load(entry, us);
                 sim.updates_[i].load_at(entry, "user");
             }
         }
@@ -358,17 +365,90 @@ public:
                     throw simplemc_exception(fmt::format("checkpoint missing measurement '{}'", ms.name));
                 }
                 const auto entry = meas[ms.name];
-                entry.load_at("is_active", ms.is_active);
+                simplemc_load(entry, ms);
                 sim.measurements_[i].load_at(entry, "user");
+            }
+        }
+    }
+
+    /**
+     * @brief Serialize the user-facing input config of the simulation.
+     *
+     * @details Writes per-update `weight` and per-measurement `is_active`, keyed by name, plus
+     * each wrapper's input-config user state under a `"user"` sub-key when the wrapped type opts
+     * in. Omits the RNG state, cumulative counters, `inv_name`, and `ratio` — those are runtime
+     * state or derived from the registration call.
+     *
+     * `simulation_params` is intentionally not included; the user holds it separately and
+     * serializes it side-by-side via its own simplemc_save_input_config() free-function hook.
+     *
+     * The produced JSON is hand-editable as a config file: change a `weight` or toggle
+     * `is_active`, reload via simplemc_load_input_config(), and the simulation picks up the new
+     * settings.
+     */
+    friend void simplemc_save_input_config(ic_serializer_type& s, const simulation& sim) {
+        auto updates = s["updates"];
+        for (std::size_t i = 0; i < sim.updates_.size(); ++i) {
+            const auto& us = sim.update_stats_[i];
+            auto entry = updates[us.name];
+            simplemc_save_input_config(entry, us);
+            sim.updates_[i].save_input_config_at(entry, "user");
+        }
+
+        auto meas = s["measurements"];
+        for (std::size_t i = 0; i < sim.measurements_.size(); ++i) {
+            const auto& ms = sim.measurement_stats_[i];
+            auto entry = meas[ms.name];
+            simplemc_save_input_config(entry, ms);
+            sim.measurements_[i].save_input_config_at(entry, "user");
+        }
+    }
+
+    /**
+     * @brief Restore the user-facing input config of the simulation.
+     *
+     * @details The destination simulation must already have the same set of updates / measurements
+     * registered (matching names) before this call. An entry present in the simulation but missing
+     * in the input config throws simplemc::simplemc_exception, mirroring simplemc_load. Per-field
+     * presence is optional inside each entry (each stats hook uses `has()` guards), so an input
+     * file may legitimately omit fields it doesn't override.
+     *
+     * The simulation's internal selection distribution is not rebuilt — call run() (which rebuilds
+     * at entry) or initialize_update_distribution() before sampling if you changed any weight.
+     */
+    friend void simplemc_load_input_config(const ic_serializer_type& s, simulation& sim) {
+        if (!sim.update_stats_.empty()) {
+            const auto updates = s["updates"];
+            for (std::size_t i = 0; i < sim.update_stats_.size(); ++i) {
+                auto& us = sim.update_stats_[i];
+                if (!updates.has(us.name)) {
+                    throw simplemc_exception(fmt::format("input config missing update '{}'", us.name));
+                }
+                const auto entry = updates[us.name];
+                simplemc_load_input_config(entry, us);
+                sim.updates_[i].load_input_config_at(entry, "user");
+            }
+        }
+
+        if (!sim.measurement_stats_.empty()) {
+            const auto meas = s["measurements"];
+            for (std::size_t i = 0; i < sim.measurement_stats_.size(); ++i) {
+                auto& ms = sim.measurement_stats_[i];
+                if (!meas.has(ms.name)) {
+                    throw simplemc_exception(fmt::format("input config missing measurement '{}'", ms.name));
+                }
+                const auto entry = meas[ms.name];
+                simplemc_load_input_config(entry, ms);
+                sim.measurements_[i].load_input_config_at(entry, "user");
             }
         }
     }
 
 private:
     RNG rng_ {};
-    std::vector<update<S>> updates_;
+    std::vector<update<cp_serializer_type, ic_serializer_type>> updates_;
     std::vector<update_stats> update_stats_;
-    std::vector<measurement<S>> measurements_;
+    std::vector<measurement<cp_serializer_type, ic_serializer_type>> measurements_;
     std::vector<measurement_stats> measurement_stats_;
     simulation_stats stats_;
 
@@ -377,8 +457,8 @@ private:
     timer<> clock_;
 };
 
-template <class RNG, serializer S>
-std::optional<std::size_t> simulation<RNG, S>::find_update(std::string_view name) const noexcept {
+template <serializer S1, serializer S2, class RNG>
+std::optional<std::size_t> simulation<S1, S2, RNG>::find_update(std::string_view name) const noexcept {
     const auto it = std::ranges::find_if(update_stats_, [name](const update_stats& us) { return us.name == name; });
     if (it == update_stats_.end()) {
         return std::nullopt;
@@ -386,8 +466,8 @@ std::optional<std::size_t> simulation<RNG, S>::find_update(std::string_view name
     return static_cast<std::size_t>(std::distance(update_stats_.begin(), it));
 }
 
-template <class RNG, serializer S>
-std::optional<std::size_t> simulation<RNG, S>::find_measurement(std::string_view name) const noexcept {
+template <serializer S1, serializer S2, class RNG>
+std::optional<std::size_t> simulation<S1, S2, RNG>::find_measurement(std::string_view name) const noexcept {
     const auto it =
         std::ranges::find_if(measurement_stats_, [name](const measurement_stats& ms) { return ms.name == name; });
     if (it == measurement_stats_.end()) {
@@ -396,8 +476,8 @@ std::optional<std::size_t> simulation<RNG, S>::find_measurement(std::string_view
     return static_cast<std::size_t>(std::distance(measurement_stats_.begin(), it));
 }
 
-template <class RNG, serializer S>
-void simulation<RNG, S>::add_update(update<S> u, std::string name, double weight) {
+template <serializer S1, serializer S2, class RNG>
+void simulation<S1, S2, RNG>::add_update(update<S1, S2> u, std::string name, double weight) {
     if (weight < 0.0) {
         throw simplemc_exception(fmt::format("update weight must be >= 0 (got {} on '{}')", weight, name));
     }
@@ -409,9 +489,9 @@ void simulation<RNG, S>::add_update(update<S> u, std::string name, double weight
     update_stats_.push_back({ .name = name, .inv_name = std::move(name), .weight = weight, .ratio = 1.0 });
 }
 
-template <class RNG, serializer S>
-void simulation<RNG, S>::add_update(
-    update<S> u1, std::string name1, double weight1, update<S> u2, std::string name2, double weight2) {
+template <serializer S1, serializer S2, class RNG>
+void simulation<S1, S2, RNG>::add_update(
+    update<S1, S2> u1, std::string name1, double weight1, update<S1, S2> u2, std::string name2, double weight2) {
     if (weight1 < 0.0 || weight2 < 0.0) {
         throw simplemc_exception(
             fmt::format("update weights must be >= 0 (got {} on '{}' and {} on '{}')", weight1, name1, weight2, name2));
@@ -441,8 +521,8 @@ void simulation<RNG, S>::add_update(
     update_stats_.push_back({ .name = std::move(name2), .inv_name = std::move(name1), .weight = weight2, .ratio = r2 });
 }
 
-template <class RNG, serializer S>
-void simulation<RNG, S>::add_measurement(measurement<S> m, std::string name, bool is_active) {
+template <serializer S1, serializer S2, class RNG>
+void simulation<S1, S2, RNG>::add_measurement(measurement<S1, S2> m, std::string name, bool is_active) {
     if (find_measurement(name)) {
         throw simplemc_exception(fmt::format("measurement '{}' is already registered", name));
     }
@@ -450,8 +530,8 @@ void simulation<RNG, S>::add_measurement(measurement<S> m, std::string name, boo
     measurement_stats_.push_back({ .name = std::move(name), .is_active = is_active });
 }
 
-template <class RNG, serializer S>
-void simulation<RNG, S>::set_update_weight(std::string_view name, double w) {
+template <serializer S1, serializer S2, class RNG>
+void simulation<S1, S2, RNG>::set_update_weight(std::string_view name, double w) {
     if (w < 0.0) {
         throw simplemc_exception(fmt::format("update weight must be >= 0 (got {} on '{}')", w, name));
     }
@@ -462,8 +542,8 @@ void simulation<RNG, S>::set_update_weight(std::string_view name, double w) {
     update_stats_[*idx].weight = w;
 }
 
-template <class RNG, serializer S>
-void simulation<RNG, S>::set_measurement_active(std::string_view name, bool is_active) {
+template <serializer S1, serializer S2, class RNG>
+void simulation<S1, S2, RNG>::set_measurement_active(std::string_view name, bool is_active) {
     const auto idx = find_measurement(name);
     if (!idx) {
         throw simplemc_exception(fmt::format("measurement '{}' is not registered", name));
@@ -471,8 +551,8 @@ void simulation<RNG, S>::set_measurement_active(std::string_view name, bool is_a
     measurement_stats_[*idx].is_active = is_active;
 }
 
-template <class RNG, serializer S>
-void simulation<RNG, S>::initialize_update_distribution() {
+template <serializer S1, serializer S2, class RNG>
+void simulation<S1, S2, RNG>::initialize_update_distribution() {
     auto weights = update_stats_ | std::views::transform(&update_stats::weight);
     if (!std::ranges::any_of(weights, [](double w) { return w > 0.0; })) {
         throw simplemc_exception("at least one update weight must be > 0");
@@ -480,8 +560,8 @@ void simulation<RNG, S>::initialize_update_distribution() {
     dist_ = std::discrete_distribution<std::size_t> { weights.begin(), weights.end() };
 }
 
-template <class RNG, serializer S>
-void simulation<RNG, S>::step() {
+template <serializer S1, serializer S2, class RNG>
+void simulation<S1, S2, RNG>::step() {
     const std::size_t idx = dist_(rng_);
     ++stats_.steps_done;
     ++update_stats_[idx].nprops;
@@ -496,8 +576,8 @@ void simulation<RNG, S>::step() {
     }
 }
 
-template <class RNG, serializer S>
-void simulation<RNG, S>::cycle(std::uint64_t steps_per_cycle) {
+template <serializer S1, serializer S2, class RNG>
+void simulation<S1, S2, RNG>::cycle(std::uint64_t steps_per_cycle) {
     for (std::uint64_t s = 0; s < steps_per_cycle; ++s) {
         step();
     }
@@ -508,8 +588,8 @@ void simulation<RNG, S>::cycle(std::uint64_t steps_per_cycle) {
     }
 }
 
-template <class RNG, serializer S>
-void simulation<RNG, S>::run(const simulation_params& p) {
+template <serializer S1, serializer S2, class RNG>
+void simulation<S1, S2, RNG>::run(const simulation_params& p) {
     validate_simulation_params(p);
     if (updates_.empty()) {
         throw simplemc_exception("no updates registered");
@@ -525,16 +605,16 @@ void simulation<RNG, S>::run(const simulation_params& p) {
     }
 }
 
-template <class RNG, serializer S>
-void simulation<RNG, S>::accumulate_stats() noexcept {
+template <serializer S1, serializer S2, class RNG>
+void simulation<S1, S2, RNG>::accumulate_stats() noexcept {
     accumulate_simulation_stats(stats_);
     for (auto& us : update_stats_) {
         accumulate_update_stats(us);
     }
 }
 
-template <class RNG, serializer S>
-void simulation<RNG, S>::reset_stats() noexcept {
+template <serializer S1, serializer S2, class RNG>
+void simulation<S1, S2, RNG>::reset_stats() noexcept {
     reset_simulation_stats(stats_);
     for (auto& us : update_stats_) {
         reset_update_stats(us);

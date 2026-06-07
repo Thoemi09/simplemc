@@ -6,6 +6,7 @@
 #ifndef SIMPLEMC_MC_SIMULATION_STATS_HPP
 #define SIMPLEMC_MC_SIMULATION_STATS_HPP
 
+#include <simplemc/serialize/concepts.hpp>
 
 #include <fmt/format.h>
 
@@ -23,16 +24,24 @@ namespace simplemc {
  * @brief Plain aggregate of simulation statistics gathered during a Monte Carlo run.
  */
 struct simulation_stats {
-    /// Number of Monte Carlo steps performed in the current run.
+    /**
+     * @brief Number of Monte Carlo steps performed in the current run.
+     */
     std::uint64_t steps_done = 0;
 
-    /// Runtime, in seconds, of the most recently finalized simulation.
+    /**
+     * @brief Runtime, in seconds, of the most recently finalized simulation.
+     */
     double last_runtime = 0.0;
 
-    /// Cumulative number of MC steps performed over multiple simulations.
+    /**
+     * @brief Cumulative number of MC steps performed over multiple simulations.
+     */
     std::uint64_t cumulative_steps = 0;
 
-    /// Cumulative runtime, in seconds, over multiple simulations.
+    /**
+     * @brief Cumulative runtime, in seconds, over multiple simulations.
+     */
     double cumulative_time = 0.0;
 };
 
@@ -64,7 +73,7 @@ inline void accumulate_simulation_stats(simulation_stats& s) noexcept {
 /**
  * @brief Print a simplemc::simulation_stats as a human-readable block.
  *
- * @param fp Destination file handle (default `stdout`).
+ * @param fp Destination file handle.
  * @param s Statistics to print.
  */
 inline void print(std::FILE* fp, const simulation_stats& s) {
@@ -77,6 +86,32 @@ inline void print(std::FILE* fp, const simulation_stats& s) {
         "Cumulative steps  = {}\n"
         "Cumulative time   = {} sec\n",
         s.steps_done, s.last_runtime, s.cumulative_steps, s.cumulative_time);
+}
+
+/**
+ * @brief Serialize the persistent fields of simplemc::simulation_stats.
+ *
+ * @tparam S Serializer type.
+ * @param s Serializer handle.
+ * @param st Stats to write.
+ */
+template <serializer S>
+void simplemc_save(S& s, const simulation_stats& st) {
+    s.save_at("cumulative_steps", st.cumulative_steps);
+    s.save_at("cumulative_time", st.cumulative_time);
+}
+
+/**
+ * @brief Deserialize the persistent fields of simplemc::simulation_stats.
+ *
+ * @tparam S Serializer type.
+ * @param s Serializer handle.
+ * @param st Stats to read into.
+ */
+template <serializer S>
+void simplemc_load(const S& s, simulation_stats& st) {
+    s.load_at("cumulative_steps", st.cumulative_steps);
+    s.load_at("cumulative_time", st.cumulative_time);
 }
 
 /** @} */
