@@ -150,7 +150,7 @@ private:
         }
     }
 
-    // Broadcast into/from the current mean accumulator. Only used in mpi_collect with batch_acc.
+    // Broadcast into/from the current mean accumulator (used in simplemc_mpi_collect with batch_acc).
     void broadcast(int root, const mpi::communicator& comm) {
         mpi::broadcast(make_span(mdata_), root, comm);
         mpi::broadcast(count_, root, comm);
@@ -412,7 +412,7 @@ public:
      * @param acc Mean accumulator.
      * @return Mean accumulator with the reduced data from all processes.
      */
-    [[nodiscard]] friend mean_acc mpi_collect(const mpi::communicator& comm, const mean_acc& acc) {
+    [[nodiscard]] friend mean_acc simplemc_mpi_collect(const mpi::communicator& comm, const mean_acc& acc) {
         assert(all_equal(acc.size(), comm));
         mean_acc res { acc.size() };
 

@@ -41,7 +41,7 @@ TYPED_TEST(SimplemcAccsMPI, MeanAccCollectSingleSample) {
     auto acc = make_empty<acc_t, T>();
     acc << data[this->rank % N];
 
-    auto res = mpi_collect(this->comm, acc);
+    auto res = simplemc_mpi_collect(this->comm, acc);
 
     auto ref = make_empty<acc_t, T>();
     for (int r = 0; r < this->size; ++r) {
@@ -63,7 +63,7 @@ TYPED_TEST(SimplemcAccsMPI, MeanAccCollectStrided) {
         acc << data[i];
     }
 
-    auto res = mpi_collect(this->comm, acc);
+    auto res = simplemc_mpi_collect(this->comm, acc);
 
     auto ref = make_empty<acc_t, T>();
     for (int i = 0; i < N; ++i) {
@@ -87,7 +87,7 @@ TYPED_TEST(SimplemcAccsMPI, MeanAccCollectAsymmetric) {
         }
     }
 
-    auto res = mpi_collect(this->comm, acc);
+    auto res = simplemc_mpi_collect(this->comm, acc);
 
     auto ref = make_empty<acc_t, T>();
     for (const auto& x : data) {
@@ -107,7 +107,7 @@ TYPED_TEST(SimplemcAccsMPI, VarAccCollectSingleSample) {
     auto acc = make_empty<acc_t, T>();
     acc << data[this->rank % N];
 
-    auto res = mpi_collect(this->comm, acc);
+    auto res = simplemc_mpi_collect(this->comm, acc);
 
     auto ref = make_empty<acc_t, T>();
     for (int r = 0; r < this->size; ++r) {
@@ -129,7 +129,7 @@ TYPED_TEST(SimplemcAccsMPI, VarAccCollectStrided) {
         acc << data[i];
     }
 
-    auto res = mpi_collect(this->comm, acc);
+    auto res = simplemc_mpi_collect(this->comm, acc);
 
     auto ref = make_empty<acc_t, T>();
     for (int i = 0; i < N; ++i) {
@@ -149,7 +149,7 @@ TYPED_TEST(SimplemcAccsMPI, CovarAccCollectSingleSample) {
     auto acc = make_empty<acc_t, T>();
     acc << data[this->rank % N];
 
-    auto res = mpi_collect(this->comm, acc);
+    auto res = simplemc_mpi_collect(this->comm, acc);
 
     auto ref = make_empty<acc_t, T>();
     for (int r = 0; r < this->size; ++r) {
@@ -171,7 +171,7 @@ TYPED_TEST(SimplemcAccsMPI, CovarAccCollectStrided) {
         acc << data[i];
     }
 
-    auto res = mpi_collect(this->comm, acc);
+    auto res = simplemc_mpi_collect(this->comm, acc);
 
     auto ref = make_empty<acc_t, T>();
     for (int i = 0; i < N; ++i) {
@@ -194,7 +194,7 @@ TYPED_TEST(SimplemcAccsMPI, BlockVarAccCollect) {
         acc << data[i];
     }
 
-    auto res = mpi_collect(this->comm, acc);
+    auto res = simplemc_mpi_collect(this->comm, acc);
 
     // build reference: simulate per-rank blocking, then merge inner accumulators
     auto ref = make_empty<inner_t, T>();
@@ -222,7 +222,7 @@ TYPED_TEST(SimplemcAccsMPI, BlockCovarAccCollect) {
         acc << data[i];
     }
 
-    auto res = mpi_collect(this->comm, acc);
+    auto res = simplemc_mpi_collect(this->comm, acc);
 
     // build reference: simulate per-rank blocking, then merge inner accumulators
     auto ref = make_empty<inner_t, T>();
@@ -249,7 +249,7 @@ TYPED_TEST(SimplemcAccsMPI, BatchAccCollect) {
         acc << make_sample<T>(this->rank * 4 + i);
     }
 
-    auto res = mpi_collect(this->comm, acc, false);
+    auto res = simplemc_mpi_collect(this->comm, acc, false);
 
     // build reference: simulate each rank's batch_acc and collect all batches
     std::vector<macc_t> ref_batches;

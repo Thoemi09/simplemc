@@ -498,7 +498,7 @@ public:
      * @param acc Covariance accumulator.
      * @return Covariance accumulator with the reduced data from all processes.
      */
-    friend covar_acc mpi_collect(const mpi::communicator& comm, const covar_acc& acc) {
+    friend covar_acc simplemc_mpi_collect(const mpi::communicator& comm, const covar_acc& acc) {
         assert(all_equal(acc.size(), comm));
         covar_acc res(acc.size());
 

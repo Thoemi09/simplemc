@@ -454,7 +454,7 @@ public:
      * @param acc Variance accumulator.
      * @return Variance accumulator with the reduced data from all processes.
      */
-    friend var_acc mpi_collect(const mpi::communicator& comm, const var_acc& acc) {
+    friend var_acc simplemc_mpi_collect(const mpi::communicator& comm, const var_acc& acc) {
         assert(all_equal(acc.size(), comm));
         var_acc res(acc.size());
 

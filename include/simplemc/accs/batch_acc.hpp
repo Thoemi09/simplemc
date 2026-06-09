@@ -624,7 +624,7 @@ public:
      * @param same_count Should we perform merges to enforce the same count on each process?
      * @return `std::vector` containing the batches gatherered from all processes.
      */
-    friend std::vector<mean_acc_type> mpi_collect(
+    friend std::vector<mean_acc_type> simplemc_mpi_collect(
         const mpi::communicator& comm, const batch_acc& acc, bool same_count) {
         assert(all_equal(acc.size(), comm));
 
