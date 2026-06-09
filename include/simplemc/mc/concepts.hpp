@@ -55,6 +55,27 @@ concept mc_update = requires(U& u) {
 };
 
 /**
+ * @brief Contract a type must satisfy to drive a Monte Carlo run as a kernel.
+ *
+ * @details A kernel is the algorithm that advances the simulation by one step. The free
+ * simplemc::run loop accepts any type that exposes a callable `step(rng)` member, where the RNG
+ * type matches the one threaded through the loop. The default simplemc::metropolis_kernel
+ * implements a standard Metropolis step over a simplemc::update_set; users can plug in custom
+ * kernels (parallel tempering, heat-bath, Wolff cluster, ...) by satisfying this concept.
+ *
+ * `step` returns `void`. The kernel is responsible for any per-update counter bookkeeping; the
+ * outer loop only tracks the global step count and the wall-clock budget.
+ *
+ * Kernels MAY optionally expose a `prepare()` member; if present, simplemc::run calls it once at
+ * the start of a run (used by the default kernel to rebuild the discrete distribution).
+ *
+ * @tparam K Type to check.
+ * @tparam RNG RNG type the kernel will receive.
+ */
+template <class K, class RNG>
+concept mc_kernel = requires(K& k, RNG& rng) { k.step(rng); };
+
+/**
  * @brief Check if type `T` is serializable by a serializer of type `S` via a call to
  * `simplemc_save_input_config`.
  *

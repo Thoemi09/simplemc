@@ -112,7 +112,7 @@ TEST(MCSimulation, AddUpdatePairSetsInvNameAndRatio) {
     simulation<> sim;
     sim.add_update(always_accept {}, "a", 2.0, always_accept {}, "b", 1.0);
 
-    const auto us = sim.update_stats_data();
+    const auto us = sim.update_data();
     ASSERT_EQ(us.size(), 2u);
 
     EXPECT_EQ(us[0].name, "a");
@@ -136,7 +136,7 @@ TEST(MCSimulation, AddUpdatePairAllowsBothZero) {
     simulation<> sim;
     // both weights zero is allowed; ratios stay at 1.0
     EXPECT_NO_THROW(sim.add_update(always_accept {}, "a", 0.0, always_accept {}, "b", 0.0));
-    const auto us = sim.update_stats_data();
+    const auto us = sim.update_data();
     ASSERT_EQ(us.size(), 2u);
     EXPECT_DOUBLE_EQ(us[0].ratio, 1.0);
     EXPECT_DOUBLE_EQ(us[1].ratio, 1.0);
@@ -179,9 +179,9 @@ TEST(MCSimulation, StepIncrementsCountersByOne) {
     sim.run({ .max_steps = N, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = N });
 
     EXPECT_EQ(sim.stats().steps_done, static_cast<std::uint64_t>(N));
-    EXPECT_EQ(sim.update_stats_data()[0].nprops, static_cast<std::uint64_t>(N));
-    EXPECT_EQ(sim.update_stats_data()[0].naccs, static_cast<std::uint64_t>(N));
-    EXPECT_EQ(sim.update_stats_data()[0].nimps, 0u);
+    EXPECT_EQ(sim.update_data()[0].nprops, static_cast<std::uint64_t>(N));
+    EXPECT_EQ(sim.update_data()[0].naccs, static_cast<std::uint64_t>(N));
+    EXPECT_EQ(sim.update_data()[0].nimps, 0u);
     EXPECT_EQ(*accepts, N);
 }
 
@@ -194,7 +194,7 @@ TEST(MCSimulation, StepRejectsWhenAttemptBelowUniform) {
     constexpr int N = 1000;
     sim.run({ .max_steps = N, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = N });
 
-    const auto& us = sim.update_stats_data()[0];
+    const auto& us = sim.update_data()[0];
     EXPECT_EQ(us.nprops, static_cast<std::uint64_t>(N));
     EXPECT_EQ(us.nimps, 0u);
     EXPECT_GT(us.naccs, 0u);
@@ -212,7 +212,7 @@ TEST(MCSimulation, ImpossibleIsRecorded) {
     constexpr int N = 50;
     sim.run({ .max_steps = N, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = N });
 
-    const auto& us = sim.update_stats_data()[0];
+    const auto& us = sim.update_data()[0];
     EXPECT_EQ(us.nprops, static_cast<std::uint64_t>(N));
     EXPECT_EQ(us.nimps, static_cast<std::uint64_t>(N));
     EXPECT_EQ(us.naccs, 0u);
@@ -229,7 +229,7 @@ TEST(MCSimulation, ZeroWeightUpdateNeverPicked) {
     constexpr int N = 1000;
     sim.run({ .max_steps = N, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = N });
 
-    const auto us = sim.update_stats_data();
+    const auto us = sim.update_data();
     EXPECT_EQ(us[1].nprops, 0u);
     EXPECT_EQ(us[0].nprops + us[2].nprops, static_cast<std::uint64_t>(N));
 }
@@ -250,8 +250,8 @@ TEST(MCSimulation, CycleCallsMeasureOncePerCycle) {
 
     EXPECT_EQ(sim.stats().steps_done, static_cast<std::uint64_t>(M * steps_per_cycle));
     EXPECT_EQ(*count, M);
-    EXPECT_EQ(sim.update_stats_data()[0].nprops, static_cast<std::uint64_t>(M * steps_per_cycle));
-    EXPECT_EQ(sim.measurement_stats_data()[0].name, "counter");
+    EXPECT_EQ(sim.update_data()[0].nprops, static_cast<std::uint64_t>(M * steps_per_cycle));
+    EXPECT_EQ(sim.measurement_data()[0].name, "counter");
 }
 
 TEST(MCSimulation, RunStopsOnMaxSteps) {
@@ -291,7 +291,7 @@ TEST(MCSimulation, AccumulateStatsFoldsAllCounters) {
     sim.run(p);
 
     const std::uint64_t first_steps = sim.stats().steps_done;
-    const std::uint64_t first_nprops = sim.update_stats_data()[0].nprops;
+    const std::uint64_t first_nprops = sim.update_data()[0].nprops;
     ASSERT_GT(first_steps, 0u);
 
     sim.accumulate_stats();
@@ -299,8 +299,8 @@ TEST(MCSimulation, AccumulateStatsFoldsAllCounters) {
     EXPECT_EQ(sim.stats().steps_done, 0u);
     EXPECT_DOUBLE_EQ(sim.stats().last_runtime, 0.0);
     EXPECT_EQ(sim.stats().cumulative_steps, first_steps);
-    EXPECT_EQ(sim.update_stats_data()[0].nprops, 0u);
-    EXPECT_EQ(sim.update_stats_data()[0].cumulative_nprops, first_nprops);
+    EXPECT_EQ(sim.update_data()[0].nprops, 0u);
+    EXPECT_EQ(sim.update_data()[0].cumulative_nprops, first_nprops);
 }
 
 TEST(MCSimulation, RunAutoResetsCurrentCountersAfterAccumulate) {
@@ -311,23 +311,23 @@ TEST(MCSimulation, RunAutoResetsCurrentCountersAfterAccumulate) {
 
     sim.run(p);
     const std::uint64_t first_steps = sim.stats().steps_done;
-    const std::uint64_t first_nprops = sim.update_stats_data()[0].nprops;
+    const std::uint64_t first_nprops = sim.update_data()[0].nprops;
 
     sim.accumulate_stats();
     EXPECT_EQ(sim.stats().cumulative_steps, first_steps);
-    EXPECT_EQ(sim.update_stats_data()[0].cumulative_nprops, first_nprops);
+    EXPECT_EQ(sim.update_data()[0].cumulative_nprops, first_nprops);
 
     sim.run(p);
     const std::uint64_t second_steps = sim.stats().steps_done;
-    const std::uint64_t second_nprops = sim.update_stats_data()[0].nprops;
+    const std::uint64_t second_nprops = sim.update_data()[0].nprops;
 
     // run() reset current counters at entry — cumulative survived through the second run
     EXPECT_EQ(sim.stats().cumulative_steps, first_steps);
-    EXPECT_EQ(sim.update_stats_data()[0].cumulative_nprops, first_nprops);
+    EXPECT_EQ(sim.update_data()[0].cumulative_nprops, first_nprops);
 
     sim.accumulate_stats();
     EXPECT_EQ(sim.stats().cumulative_steps, first_steps + second_steps);
-    EXPECT_EQ(sim.update_stats_data()[0].cumulative_nprops, first_nprops + second_nprops);
+    EXPECT_EQ(sim.update_data()[0].cumulative_nprops, first_nprops + second_nprops);
 }
 
 TEST(MCSimulation, FindUpdateByName) {
@@ -356,20 +356,20 @@ TEST(MCSimulation, SetUpdateWeightChangesSelection) {
     constexpr int N = 50;
     const simulation_params p { .max_steps = N, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = N };
     sim.run(p);
-    EXPECT_EQ(sim.update_stats_data()[0].nprops, static_cast<std::uint64_t>(N));
-    EXPECT_EQ(sim.update_stats_data()[1].nprops, 0u);
+    EXPECT_EQ(sim.update_data()[0].nprops, static_cast<std::uint64_t>(N));
+    EXPECT_EQ(sim.update_data()[1].nprops, 0u);
 
     sim.accumulate_stats();
     sim.set_update_weight("a", 0.0);
     sim.set_update_weight("b", 1.0);
 
     sim.run(p);
-    EXPECT_EQ(sim.update_stats_data()[0].nprops, 0u);                              // none in second batch
-    EXPECT_EQ(sim.update_stats_data()[1].nprops, static_cast<std::uint64_t>(N));   // all-second batch
-    EXPECT_EQ(sim.update_stats_data()[0].cumulative_nprops, static_cast<std::uint64_t>(N)); // first batch survives
-    EXPECT_EQ(sim.update_stats_data()[1].cumulative_nprops, 0u);
-    EXPECT_DOUBLE_EQ(sim.update_stats_data()[0].weight, 0.0);
-    EXPECT_DOUBLE_EQ(sim.update_stats_data()[1].weight, 1.0);
+    EXPECT_EQ(sim.update_data()[0].nprops, 0u);                              // none in second batch
+    EXPECT_EQ(sim.update_data()[1].nprops, static_cast<std::uint64_t>(N));   // all-second batch
+    EXPECT_EQ(sim.update_data()[0].cumulative_nprops, static_cast<std::uint64_t>(N)); // first batch survives
+    EXPECT_EQ(sim.update_data()[1].cumulative_nprops, 0u);
+    EXPECT_DOUBLE_EQ(sim.update_data()[0].weight, 0.0);
+    EXPECT_DOUBLE_EQ(sim.update_data()[1].weight, 1.0);
 }
 
 TEST(MCSimulation, SetUpdateWeightRejectsNegative) {
@@ -377,7 +377,7 @@ TEST(MCSimulation, SetUpdateWeightRejectsNegative) {
     sim.add_update(always_accept {}, "a", 1.0);
     EXPECT_THROW(sim.set_update_weight("a", -1.0), simplemc_exception);
     // weight unchanged
-    EXPECT_DOUBLE_EQ(sim.update_stats_data()[0].weight, 1.0);
+    EXPECT_DOUBLE_EQ(sim.update_data()[0].weight, 1.0);
 }
 
 TEST(MCSimulation, SetUpdateWeightRejectsMissingName) {
@@ -396,7 +396,7 @@ TEST(MCSimulation, AddMeasurementInactiveSkipsMeasure) {
     sim.run({ .max_steps = 10, .max_time = 1000.0, .steps_per_cycle = 5, .cycles_per_check = 2 });
 
     EXPECT_EQ(*count, 0);
-    EXPECT_FALSE(sim.measurement_stats_data()[0].is_active);
+    EXPECT_FALSE(sim.measurement_data()[0].is_active);
     EXPECT_EQ(sim.stats().steps_done, 10u); // steps still happen
 }
 
@@ -434,15 +434,15 @@ TEST(MCSimulation, ResetStatsZeroesCurrentNotCumulative) {
     sim.accumulate_stats();
     sim.run({ .max_steps = 20, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = 10 });
 
-    const std::uint64_t cumulative_before = sim.update_stats_data()[0].cumulative_nprops;
-    const std::uint64_t current_before = sim.update_stats_data()[0].nprops;
+    const std::uint64_t cumulative_before = sim.update_data()[0].cumulative_nprops;
+    const std::uint64_t current_before = sim.update_data()[0].nprops;
     ASSERT_GT(current_before, 0u);
     ASSERT_GT(cumulative_before, 0u);
 
     sim.reset_stats();
 
-    EXPECT_EQ(sim.update_stats_data()[0].nprops, 0u);
-    EXPECT_EQ(sim.update_stats_data()[0].cumulative_nprops, cumulative_before); // survived
+    EXPECT_EQ(sim.update_data()[0].nprops, 0u);
+    EXPECT_EQ(sim.update_data()[0].cumulative_nprops, cumulative_before); // survived
     EXPECT_EQ(sim.stats().steps_done, 0u);
 }
 
@@ -461,7 +461,7 @@ TEST(MCSimulation, RunSkipsAllMeasurementsWhenSkipMeasurementsTrue) {
 
     EXPECT_EQ(*count, 0);                        // no measurements happened
     EXPECT_EQ(sim.stats().steps_done, 10u);      // steps still happened
-    EXPECT_TRUE(sim.measurement_stats_data()[0].is_active); // per-measurement flag untouched
+    EXPECT_TRUE(sim.measurement_data()[0].is_active); // per-measurement flag untouched
 }
 
 TEST(MCSimulation, JsonRoundTripPersistsCumulativeAndConfig) {
@@ -507,18 +507,18 @@ TEST(MCSimulation, JsonRoundTripPersistsCumulativeAndConfig) {
     // Persistent fields propagated
     EXPECT_EQ(dst.stats().cumulative_steps, src.stats().cumulative_steps);
     EXPECT_DOUBLE_EQ(dst.stats().cumulative_time, src.stats().cumulative_time);
-    EXPECT_DOUBLE_EQ(dst.update_stats_data()[0].weight, 2.5);
-    EXPECT_DOUBLE_EQ(dst.update_stats_data()[1].weight, 1.0);
+    EXPECT_DOUBLE_EQ(dst.update_data()[0].weight, 2.5);
+    EXPECT_DOUBLE_EQ(dst.update_data()[1].weight, 1.0);
     EXPECT_EQ(
-        dst.update_stats_data()[0].cumulative_nprops, src.update_stats_data()[0].cumulative_nprops);
-    EXPECT_EQ(dst.update_stats_data()[0].inv_name, src.update_stats_data()[0].inv_name);
-    EXPECT_DOUBLE_EQ(dst.update_stats_data()[0].ratio, src.update_stats_data()[0].ratio);
-    EXPECT_EQ(dst.measurement_stats_data()[0].is_active, src.measurement_stats_data()[0].is_active);
+        dst.update_data()[0].cumulative_nprops, src.update_data()[0].cumulative_nprops);
+    EXPECT_EQ(dst.update_data()[0].inv_name, src.update_data()[0].inv_name);
+    EXPECT_DOUBLE_EQ(dst.update_data()[0].ratio, src.update_data()[0].ratio);
+    EXPECT_EQ(dst.measurement_data()[0].is_active, src.measurement_data()[0].is_active);
 
     // Per-run fields are zero on dst
     EXPECT_EQ(dst.stats().steps_done, 0u);
     EXPECT_DOUBLE_EQ(dst.stats().last_runtime, 0.0);
-    EXPECT_EQ(dst.update_stats_data()[0].nprops, 0u);
+    EXPECT_EQ(dst.update_data()[0].nprops, 0u);
 
     // User-state round-trip via simplemc_save / simplemc_load
     EXPECT_EQ(*dst_stateful_counter, src_counter);
@@ -606,4 +606,33 @@ TEST(MCSimulation, JsonRoundTripWorksWithNlohmannToJsonUserTypes) {
     json_serializer reader { writer.root() };
     EXPECT_NO_THROW(reader.load_at("sim", dst));
     EXPECT_EQ(dst.stats().cumulative_steps, src.stats().cumulative_steps);
+}
+
+// =====================================================================================
+// Callback forwarding through the simulation aggregate.
+// =====================================================================================
+
+TEST(MCSimulationCallbacks, OnStepFiresThroughAggregate) {
+    simulation<> sim;
+    sim.add_update(always_accept {}, "u", 1.0);
+
+    std::uint64_t step_calls = 0;
+    auto cbs = simplemc::run_callbacks { .on_step = [&](const simulation_stats&) { ++step_calls; } };
+
+    sim.run({ .max_steps = 100, .max_time = 1e6, .steps_per_cycle = 5, .cycles_per_check = 4 }, cbs);
+    EXPECT_EQ(step_calls, sim.stats().steps_done);
+}
+
+TEST(MCSimulationCallbacks, StopWhenTrumpsMaxSteps) {
+    simulation<> sim;
+    sim.add_update(always_accept {}, "u", 1.0);
+
+    auto cbs = simplemc::run_callbacks {
+        .stop_when = [](const simulation_stats& s) { return s.steps_done >= 50; },
+    };
+    sim.run({ .max_steps = std::numeric_limits<std::uint64_t>::max(), .max_time = 1e6,
+                .steps_per_cycle = 5, .cycles_per_check = 4 },
+        cbs);
+    EXPECT_GE(sim.stats().steps_done, 50u);
+    EXPECT_LT(sim.stats().steps_done, 200u);
 }

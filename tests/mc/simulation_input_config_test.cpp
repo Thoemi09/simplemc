@@ -94,10 +94,10 @@ TEST(MCSimulationInputConfig, RoundTripPersistsWeightAndActiveAndUserConfig) {
     simplemc_load_input_config(r["sim"], dst);
 
     // Weight and is_active from input config:
-    EXPECT_DOUBLE_EQ(dst.update_stats_data()[0].weight, 2.5);
-    EXPECT_DOUBLE_EQ(dst.update_stats_data()[1].weight, 1.0);
-    EXPECT_FALSE(dst.measurement_stats_data()[0].is_active);
-    EXPECT_TRUE(dst.measurement_stats_data()[1].is_active);
+    EXPECT_DOUBLE_EQ(dst.update_data()[0].weight, 2.5);
+    EXPECT_DOUBLE_EQ(dst.update_data()[1].weight, 1.0);
+    EXPECT_FALSE(dst.measurement_data()[0].is_active);
+    EXPECT_TRUE(dst.measurement_data()[1].is_active);
 
     // User-state round-trip on opt-in types:
     EXPECT_DOUBLE_EQ(*dst_threshold, 0.75);
@@ -229,5 +229,5 @@ TEST(MCSimulationInputConfig, ParamsAndSimLiveSideBySide) {
     EXPECT_EQ(dst_params.steps_per_cycle, 7u);
     EXPECT_EQ(dst_params.cycles_per_check, 13u);
     EXPECT_TRUE(dst_params.skip_measurements);
-    EXPECT_DOUBLE_EQ(dst.update_stats_data()[0].weight, 3.0);
+    EXPECT_DOUBLE_EQ(dst.update_data()[0].weight, 3.0);
 }

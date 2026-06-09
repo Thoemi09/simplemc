@@ -139,7 +139,7 @@ TEST(MCSimulationMixedBackend, InstantiationCompiles) {
     simulation<mock_state_serializer, mock_input_config_serializer> sim;
     dual_update u;
     sim.add_update(u, "tunable", 2.5);
-    EXPECT_DOUBLE_EQ(sim.update_stats_data()[0].weight, 2.5);
+    EXPECT_DOUBLE_EQ(sim.update_data()[0].weight, 2.5);
 }
 
 TEST(MCSimulationMixedBackend, StateAndInputConfigDispatchIndependently) {
@@ -194,7 +194,7 @@ TEST(MCSimulationMixedBackend, StateAndInputConfigDispatchIndependently) {
     EXPECT_EQ(*dst_state_counter, 42);
 
     // Input-config round-trip:
-    EXPECT_DOUBLE_EQ(dst.update_stats_data()[0].weight, 3.0);
+    EXPECT_DOUBLE_EQ(dst.update_data()[0].weight, 3.0);
     EXPECT_DOUBLE_EQ(*dst_config_threshold, 1.25);
 }
 

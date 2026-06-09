@@ -44,30 +44,30 @@ static_assert(!mc_measurement<not_a_meas>);
 static_assert(!mc_measurement<int>);
 
 // the wrapper itself satisfies the concept — it forwards `measure()`
-static_assert(mc_measurement<measurement<>>);
+static_assert(mc_measurement<basic_measurement<>>);
 
 // the concept is a pure role description: a move-only measurement still satisfies it
 // (but the wrapper rejects it because of the copyability requirement)
 static_assert(mc_measurement<move_only_meas>);
-static_assert(!std::is_constructible_v<measurement<>, int>);
-static_assert(!std::is_constructible_v<measurement<>, not_a_meas>);
+static_assert(!std::is_constructible_v<basic_measurement<>, int>);
+static_assert(!std::is_constructible_v<basic_measurement<>, not_a_meas>);
 
-TEST(MCMeasurement, WrapsAndForwardsMeasure) {
+TEST(MCBasicMeasurement, WrapsAndForwardsMeasure) {
     counter_meas src;
     auto count = src.count;
 
-    measurement m { src };
+    basic_measurement m { src };
     m.measure();
 
     EXPECT_EQ(*count, 1);
 }
 
-TEST(MCMeasurement, CopyProducesIndependentValueSharingCapturedState) {
+TEST(MCBasicMeasurement, CopyProducesIndependentValueSharingCapturedState) {
     counter_meas src;
     auto count = src.count;
 
-    measurement a { src };
-    measurement b { a }; // deep copy via clone()
+    basic_measurement a { src };
+    basic_measurement b { a }; // deep copy via clone()
 
     a.measure();
     b.measure();
@@ -76,25 +76,25 @@ TEST(MCMeasurement, CopyProducesIndependentValueSharingCapturedState) {
     EXPECT_EQ(*count, 2);
 }
 
-TEST(MCMeasurement, MoveTransfersOwnership) {
+TEST(MCBasicMeasurement, MoveTransfersOwnership) {
     counter_meas src;
     auto count = src.count;
 
-    measurement a { src };
-    measurement b { std::move(a) };
+    basic_measurement a { src };
+    basic_measurement b { std::move(a) };
 
     b.measure();
     EXPECT_EQ(*count, 1);
 }
 
-TEST(MCMeasurement, CopyAssignReplacesPreviousValue) {
+TEST(MCBasicMeasurement, CopyAssignReplacesPreviousValue) {
     counter_meas first;
     doubling_meas second;
     auto first_count = first.count;
     auto second_count = second.count;
 
-    measurement m { first };
-    m = measurement { second }; // assign a wrapper holding a different concrete type
+    basic_measurement m { first };
+    m = basic_measurement { second }; // assign a wrapper holding a different concrete type
 
     m.measure();
 
@@ -102,13 +102,13 @@ TEST(MCMeasurement, CopyAssignReplacesPreviousValue) {
     EXPECT_EQ(*second_count, 2); // doubling_meas: 1 -> 2
 }
 
-TEST(MCMeasurement, HeterogeneousStorageInVector) {
+TEST(MCBasicMeasurement, HeterogeneousStorageInVector) {
     counter_meas a;
     doubling_meas b;
     auto a_count = a.count;
     auto b_count = b.count;
 
-    std::vector<measurement<>> v;
+    std::vector<basic_measurement<>> v;
     v.emplace_back(a);
     v.emplace_back(b);
 
@@ -118,4 +118,107 @@ TEST(MCMeasurement, HeterogeneousStorageInVector) {
 
     EXPECT_EQ(*a_count, 1); // counter_meas: 0 -> 1
     EXPECT_EQ(*b_count, 2); // doubling_meas: 1 -> 2
+}
+
+TEST(MCBasicMeasurement, GetReturnsWrappedValueWhenTypeMatches) {
+    counter_meas src;
+    auto count = src.count;
+    basic_measurement m { src };
+
+    auto* p = m.get<counter_meas>();
+    ASSERT_NE(p, nullptr);
+    EXPECT_EQ(p->count.get(), count.get());
+
+    // measuring through the wrapper bumps the same counter the recovered pointer sees
+    m.measure();
+    EXPECT_EQ(*p->count, 1);
+}
+
+TEST(MCBasicMeasurement, GetReturnsNullOnTypeMismatch) {
+    basic_measurement m { counter_meas{} };
+    EXPECT_EQ(m.get<doubling_meas>(), nullptr);
+    EXPECT_EQ(m.get<int>(), nullptr);
+}
+
+TEST(MCBasicMeasurement, GetConstOverloadReturnsConstPointer) {
+    const basic_measurement m { counter_meas{} };
+    const counter_meas* p = m.get<counter_meas>();
+    ASSERT_NE(p, nullptr);
+    EXPECT_EQ(*p->count, 0);
+}
+
+// =====================================================================================
+// Tests for the new per-measurement struct (basic_measurement wrapper + name + active).
+// =====================================================================================
+
+#include <simplemc/serialize/json/json_serializer.hpp>
+
+TEST(MCMeasurement, ConstructFromUserValue) {
+    measurement m { counter_meas {}, "m1" };
+    EXPECT_EQ(m.name, "m1");
+    EXPECT_TRUE(m.is_active);
+}
+
+TEST(MCMeasurement, ConstructFromUserValueExplicitActive) {
+    measurement m { counter_meas {}, "m1", false };
+    EXPECT_FALSE(m.is_active);
+}
+
+TEST(MCMeasurement, ConstructFromPreBuiltWrapper) {
+    basic_measurement bw { counter_meas {} };
+    measurement m { std::move(bw), "m2", true };
+    EXPECT_EQ(m.name, "m2");
+    EXPECT_TRUE(m.is_active);
+}
+
+TEST(MCMeasurement, ConstructorRejectsEmptyName) {
+    EXPECT_THROW(measurement(counter_meas {}, "", true), simplemc_exception);
+}
+
+TEST(MCMeasurement, MeasureForwardsToWrapper) {
+    counter_meas src;
+    auto count = src.count;
+    measurement m { src, "m", true };
+    m.measure();
+    EXPECT_EQ(*count, 1);
+}
+
+TEST(MCMeasurement, GetForwardsToWrapper) {
+    counter_meas src;
+    auto count = src.count;
+    measurement m { src, "m", true };
+
+    auto* p = m.get<counter_meas>();
+    ASSERT_NE(p, nullptr);
+    EXPECT_EQ(p->count.get(), count.get());
+
+    EXPECT_EQ(m.get<doubling_meas>(), nullptr);
+}
+
+TEST(MCMeasurement, SerializationRoundTrip) {
+    measurement m { counter_meas {}, "m", false };
+
+    json_serializer s;
+    auto entry = s["entry"];
+    simplemc_save(entry, m);
+
+    measurement v { counter_meas {}, "tmp", true };
+    const auto rentry = json_serializer { s }["entry"];
+    simplemc_load(rentry, v);
+
+    EXPECT_FALSE(v.is_active);
+}
+
+TEST(MCMeasurement, InputConfigRoundTripTouchesActive) {
+    measurement m { counter_meas {}, "m", false };
+
+    json_serializer s;
+    auto entry = s["entry"];
+    simplemc_save_input_config(entry, m);
+
+    measurement v { counter_meas {}, "m", true };
+    const auto rentry = json_serializer { s }["entry"];
+    simplemc_load_input_config(rentry, v);
+
+    EXPECT_FALSE(v.is_active);
 }

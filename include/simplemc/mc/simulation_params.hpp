@@ -50,6 +50,18 @@ struct simulation_params {
      * @brief Wheter to skip every measurement for the whole run. Default: false.
      */
     bool skip_measurements = false;
+
+    /**
+     * @brief Trigger the `on_checkpoint` callback once this many steps have elapsed since the
+     * last checkpoint. Default: effectively never (maximum representable).
+     */
+    std::uint64_t checkpoint_after_steps = std::numeric_limits<std::uint64_t>::max();
+
+    /**
+     * @brief Trigger the `on_checkpoint` callback once this much wall-clock time has elapsed
+     * since the last checkpoint. Default: effectively never (infinity).
+     */
+    double checkpoint_after_time = std::numeric_limits<double>::infinity();
 };
 
 /**
@@ -76,6 +88,10 @@ inline void validate_simulation_params(const simulation_params& p) {
     if (p.cycles_per_check == 0) {
         throw simplemc_exception("cycles_per_check must be > 0");
     }
+    if (p.checkpoint_after_time < 0) {
+        throw simplemc_exception(
+            fmt::format("checkpoint_after_time must be >= 0 (got {})", p.checkpoint_after_time));
+    }
 }
 
 /**
@@ -89,12 +105,15 @@ inline void print(std::FILE* fp, const simulation_params& p) {
         "============================\n"
         "SIMULATION PARAMETERS:\n"
         "============================\n"
-        "Max. steps        = {}\n"
-        "Max. time         = {} sec\n"
-        "Steps per cycle   = {}\n"
-        "Cycles per check  = {}\n"
-        "Skip measurements = {}\n",
-        p.max_steps, p.max_time, p.steps_per_cycle, p.cycles_per_check, p.skip_measurements);
+        "Max. steps              = {}\n"
+        "Max. time               = {} sec\n"
+        "Steps per cycle         = {}\n"
+        "Cycles per check        = {}\n"
+        "Skip measurements       = {}\n"
+        "Checkpoint after steps  = {}\n"
+        "Checkpoint after time   = {} sec\n",
+        p.max_steps, p.max_time, p.steps_per_cycle, p.cycles_per_check, p.skip_measurements,
+        p.checkpoint_after_steps, p.checkpoint_after_time);
 }
 
 /**
@@ -137,6 +156,8 @@ void simplemc_save_input_config(S& s, const simulation_params& p) {
     s.save_at("steps_per_cycle", p.steps_per_cycle);
     s.save_at("cycles_per_check", p.cycles_per_check);
     s.save_at("skip_measurements", p.skip_measurements);
+    s.save_at("checkpoint_after_steps", p.checkpoint_after_steps);
+    s.save_at("checkpoint_after_time", p.checkpoint_after_time);
 }
 
 /**
@@ -153,6 +174,8 @@ void simplemc_load_input_config(const S& s, simulation_params& p) {
     s.try_load_at("steps_per_cycle", p.steps_per_cycle);
     s.try_load_at("cycles_per_check", p.cycles_per_check);
     s.try_load_at("skip_measurements", p.skip_measurements);
+    s.try_load_at("checkpoint_after_steps", p.checkpoint_after_steps);
+    s.try_load_at("checkpoint_after_time", p.checkpoint_after_time);
     validate_simulation_params(p);
 }
 
