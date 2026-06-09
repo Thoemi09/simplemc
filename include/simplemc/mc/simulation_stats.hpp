@@ -6,6 +6,8 @@
 #ifndef SIMPLEMC_MC_SIMULATION_STATS_HPP
 #define SIMPLEMC_MC_SIMULATION_STATS_HPP
 
+#include <simplemc/mpi/all_reduce.hpp>
+#include <simplemc/mpi/communicator.hpp>
 #include <simplemc/serialize/concepts.hpp>
 
 #include <fmt/format.h>
@@ -112,6 +114,25 @@ template <serializer S>
 void simplemc_load(const S& s, simulation_stats& st) {
     s.load_at("cumulative_steps", st.cumulative_steps);
     s.load_at("cumulative_time", st.cumulative_time);
+}
+
+/**
+ * @brief All-reduce a simplemc::simulation_stats across MPI ranks (`MPI_SUM`, in place).
+ *
+ * @details Reduces all four counter fields (`steps_done`, `last_runtime`, `cumulative_steps`,
+ * `cumulative_time`) with `MPI_SUM`, leaving every rank with the global sum. Unlike the accumulator
+ * `simplemc_mpi_collect` overloads, which return a new accumulator, this is in-place because
+ * simplemc::simulation_stats is a plain aggregate of counters with no internal invariants and the
+ * sets that contain it follow the same in-place convention.
+ *
+ * @param comm MPI communicator over which to reduce.
+ * @param st Stats to reduce in place.
+ */
+inline void simplemc_mpi_collect(const mpi::communicator& comm, simulation_stats& st) {
+    mpi::all_reduce_in_place(st.steps_done, MPI_SUM, comm);
+    mpi::all_reduce_in_place(st.last_runtime, MPI_SUM, comm);
+    mpi::all_reduce_in_place(st.cumulative_steps, MPI_SUM, comm);
+    mpi::all_reduce_in_place(st.cumulative_time, MPI_SUM, comm);
 }
 
 /** @} */

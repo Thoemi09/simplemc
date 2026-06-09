@@ -6,6 +6,8 @@
 #ifndef SIMPLEMC_MC_CONCEPTS_HPP
 #define SIMPLEMC_MC_CONCEPTS_HPP
 
+#include <simplemc/mpi/communicator.hpp>
+
 #include <concepts>
 
 namespace simplemc {
@@ -98,6 +100,20 @@ concept has_simplemc_save_input_config = requires(const T& t, S& s) { simplemc_s
  */
 template <class T, class S>
 concept has_simplemc_load_input_config = requires(T& t, const S& s) { simplemc_load_input_config(s, t); };
+
+/**
+ * @brief Check if type `T` can be collected across MPI ranks via a call to `simplemc_mpi_collect`.
+ *
+ * @details The overload must take `(const mpi::communicator&, const T&)` and return a `T`. This is
+ * the shape required by the simplemc::basic_measurement / simplemc::basic_update wrapper hook to
+ * forward MPI reduction through to the wrapped user value.
+ *
+ * @tparam T Type to check.
+ */
+template <class T>
+concept has_simplemc_mpi_collect = requires(const mpi::communicator& c, const T& v) {
+    { simplemc_mpi_collect(c, v) } -> std::same_as<T>;
+};
 
 /** @} */
 

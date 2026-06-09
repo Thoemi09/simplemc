@@ -16,6 +16,7 @@
 #include <simplemc/mc/simulation_stats.hpp>
 #include <simplemc/mc/update.hpp>
 #include <simplemc/mc/update_set.hpp>
+#include <simplemc/mpi/communicator.hpp>
 #include <simplemc/random/xoshiro256.hpp>
 #include <simplemc/serialize/concepts.hpp>
 #include <simplemc/serialize/json/json_serializer.hpp>
@@ -383,6 +384,23 @@ public:
             const auto meas = s["measurements"];
             simplemc_load_input_config(meas, sim.measurements_);
         }
+    }
+
+    /**
+     * @brief All-reduce every component of the simulation across MPI ranks.
+     *
+     * @details Composite reducer: forwards to simplemc_mpi_collect on the contained
+     * simulation_stats, update_set, and measurement_set in turn. The RNG and the internal selection
+     * distribution are intentionally not touched. Reduction is in-place because simulation is
+     * non-copyable.
+     *
+     * @param comm MPI communicator over which to reduce.
+     * @param sim Simulation to reduce in place.
+     */
+    friend void simplemc_mpi_collect(const mpi::communicator& comm, simulation& sim) {
+        simplemc_mpi_collect(comm, sim.stats_);
+        simplemc_mpi_collect(comm, sim.updates_);
+        simplemc_mpi_collect(comm, sim.measurements_);
     }
 
 private:

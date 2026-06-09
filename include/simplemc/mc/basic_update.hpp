@@ -7,6 +7,7 @@
 #define SIMPLEMC_MC_BASIC_UPDATE_HPP
 
 #include <simplemc/mc/concepts.hpp>
+#include <simplemc/mpi/communicator.hpp>
 #include <simplemc/serialize/concepts.hpp>
 #include <simplemc/serialize/json/json_serializer.hpp>
 
@@ -232,6 +233,19 @@ public:
         pimpl_->load_input_config_at(s, key);
     }
 
+    /**
+     * @brief All-reduce the wrapped user value across MPI ranks via ADL.
+     *
+     * @details Forwards to the wrapped user type's free
+     * `simplemc_mpi_collect(const mpi::communicator&, T&)` picked up by ADL, replacing the held
+     * value with the reduced result. If the wrapped type does not provide such an overload, the
+     * call is a silent no-op — mirroring the behavior of save_at() / load_at() for non-serializable
+     * types.
+     *
+     * @param comm MPI communicator over which to reduce.
+     */
+    void mpi_collect(const mpi::communicator& comm) { pimpl_->mpi_collect(comm); }
+
 private:
     // Hidden polymorphic base — the "concept" half of the concept-model idiom.
     struct interface {
@@ -247,6 +261,7 @@ private:
         virtual void load_at(const cp_serializer_type&, std::string_view) = 0;
         virtual void save_input_config_at(ic_serializer_type&, std::string_view) const = 0;
         virtual void load_input_config_at(const ic_serializer_type&, std::string_view) = 0;
+        virtual void mpi_collect(const mpi::communicator& comm) = 0;
     };
 
     // Hidden template derived - the "model" half of the concept-model idiom.
@@ -286,6 +301,11 @@ private:
             if constexpr (has_simplemc_load_input_config<U, ic_serializer_type>) {
                 const auto sub = s[key];
                 simplemc_load_input_config(sub, concrete);
+            }
+        }
+        void mpi_collect(const mpi::communicator& comm) override {
+            if constexpr (has_simplemc_mpi_collect<U>) {
+                concrete = simplemc_mpi_collect(comm, concrete);
             }
         }
     };

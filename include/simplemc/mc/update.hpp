@@ -8,6 +8,8 @@
 
 #include <simplemc/mc/basic_update.hpp>
 #include <simplemc/mc/concepts.hpp>
+#include <simplemc/mpi/all_reduce.hpp>
+#include <simplemc/mpi/communicator.hpp>
 #include <simplemc/serialize/concepts.hpp>
 #include <simplemc/serialize/json/json_serializer.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
@@ -247,6 +249,28 @@ struct update {
     friend void simplemc_load_input_config(const ic_serializer_type& s, update& u) {
         s.try_load_at("weight", u.weight);
         u.wrapped.load_input_config_at(s, "user");
+    }
+
+    /**
+     * @brief All-reduce this update's counters and wrapped payload across MPI ranks.
+     *
+     * @details Allreduces the six counter fields (`nprops`, `naccs`, `nimps`, plus the three
+     * `cumulative_*`) with `MPI_SUM`, then forwards to the wrapper's `mpi_collect()` so the wrapped
+     * user value is reduced via its own ADL hook. Identification fields (`name`, `inv_name`,
+     * `weight`, `ratio`) are intentionally not touched — they are local registration data assumed
+     * identical across ranks.
+     *
+     * @param comm MPI communicator over which to reduce.
+     * @param u Update to reduce in place.
+     */
+    friend void simplemc_mpi_collect(const mpi::communicator& comm, update& u) {
+        mpi::all_reduce_in_place(u.nprops, MPI_SUM, comm);
+        mpi::all_reduce_in_place(u.naccs, MPI_SUM, comm);
+        mpi::all_reduce_in_place(u.nimps, MPI_SUM, comm);
+        mpi::all_reduce_in_place(u.cumulative_nprops, MPI_SUM, comm);
+        mpi::all_reduce_in_place(u.cumulative_naccs, MPI_SUM, comm);
+        mpi::all_reduce_in_place(u.cumulative_nimps, MPI_SUM, comm);
+        u.wrapped.mpi_collect(comm);
     }
 };
 

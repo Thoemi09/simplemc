@@ -8,6 +8,7 @@
 
 #include <simplemc/mc/basic_measurement.hpp>
 #include <simplemc/mc/concepts.hpp>
+#include <simplemc/mpi/communicator.hpp>
 #include <simplemc/serialize/concepts.hpp>
 #include <simplemc/serialize/json/json_serializer.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
@@ -159,6 +160,21 @@ struct measurement {
     friend void simplemc_load_input_config(const ic_serializer_type& s, measurement& m) {
         s.try_load_at("is_active", m.is_active);
         m.wrapped.load_input_config_at(s, "user");
+    }
+
+    /**
+     * @brief All-reduce this measurement's wrapped payload across MPI ranks.
+     *
+     * @details Forwards to the wrapper's `mpi_collect()`, which dispatches via ADL to the wrapped
+     * user type's `simplemc_mpi_collect(comm, T&)` overload (silent no-op when the user type does
+     * not provide one). The measurement's identification fields (`name`, `is_active`) are local
+     * registration data assumed identical across ranks and are not touched.
+     *
+     * @param comm MPI communicator over which to reduce.
+     * @param m Measurement to reduce in place.
+     */
+    friend void simplemc_mpi_collect(const mpi::communicator& comm, measurement& m) {
+        m.wrapped.mpi_collect(comm);
     }
 };
 

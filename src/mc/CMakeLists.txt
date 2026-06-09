@@ -9,4 +9,6 @@ add_library(simplemc::simplemc-mc ALIAS simplemc-mc)
 target_link_libraries(simplemc-mc
     INTERFACE
         simplemc::simplemc-utils
-        simplemc::simplemc-serialize-core)
+        simplemc::simplemc-mpi
+        simplemc::simplemc-serialize-core
+        simplemc::simplemc-serialize-json)

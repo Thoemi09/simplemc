@@ -7,6 +7,7 @@
 #define SIMPLEMC_MC_MEASUREMENT_SET_HPP
 
 #include <simplemc/mc/measurement.hpp>
+#include <simplemc/mpi/communicator.hpp>
 #include <simplemc/serialize/concepts.hpp>
 #include <simplemc/serialize/json/json_serializer.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
@@ -181,6 +182,23 @@ public:
             }
             const auto entry = s[m.name];
             simplemc_load_input_config(entry, m);
+        }
+    }
+
+    /**
+     * @brief All-reduce every registered measurement across MPI ranks.
+     *
+     * @details Iterates the registered measurements and forwards to the per-`measurement<>`
+     * `simplemc_mpi_collect`, which in turn delegates to the wrapper's `mpi_collect()`. Names,
+     * ordering, and the active cache are local and not touched; all are assumed identical across
+     * ranks by construction.
+     *
+     * @param comm MPI communicator over which to reduce.
+     * @param ms Measurement set to reduce in place.
+     */
+    friend void simplemc_mpi_collect(const mpi::communicator& comm, measurement_set& ms) {
+        for (auto& m : ms.measurements_) {
+            simplemc_mpi_collect(comm, m);
         }
     }
 

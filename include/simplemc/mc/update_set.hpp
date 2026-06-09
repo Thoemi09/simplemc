@@ -7,6 +7,7 @@
 #define SIMPLEMC_MC_UPDATE_SET_HPP
 
 #include <simplemc/mc/update.hpp>
+#include <simplemc/mpi/communicator.hpp>
 #include <simplemc/serialize/concepts.hpp>
 #include <simplemc/serialize/json/json_serializer.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
@@ -261,6 +262,23 @@ public:
             }
             const auto entry = s[u.name];
             simplemc_load_input_config(entry, u);
+        }
+    }
+
+    /**
+     * @brief All-reduce every registered update across MPI ranks (counters + wrapped payload).
+     *
+     * @details Iterates the registered updates and forwards to the per-`update<>` `simplemc_mpi_collect`,
+     * which allreduces the six counter fields and the wrapper. Weights, names, the discrete
+     * selection distribution, and detailed-balance ratios are local registration data assumed
+     * identical across ranks and are not touched.
+     *
+     * @param comm MPI communicator over which to reduce.
+     * @param us Update set to reduce in place.
+     */
+    friend void simplemc_mpi_collect(const mpi::communicator& comm, update_set& us) {
+        for (auto& u : us.updates_) {
+            simplemc_mpi_collect(comm, u);
         }
     }
 

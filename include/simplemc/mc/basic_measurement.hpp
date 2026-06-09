@@ -7,6 +7,7 @@
 #define SIMPLEMC_MC_BASIC_MEASUREMENT_HPP
 
 #include <simplemc/mc/concepts.hpp>
+#include <simplemc/mpi/communicator.hpp>
 #include <simplemc/serialize/concepts.hpp>
 #include <simplemc/serialize/json/json_serializer.hpp>
 
@@ -94,8 +95,7 @@ public:
     template <class M>
         requires(!std::same_as<std::remove_cvref_t<M>, basic_measurement>) && mc_measurement<std::remove_cvref_t<M>> &&
         std::copy_constructible<std::remove_cvref_t<M>>
-    basic_measurement(M&& m)
-        : pimpl_ { std::make_unique<model<std::remove_cvref_t<M>>>(std::forward<M>(m)) } {}
+    basic_measurement(M&& m) : pimpl_ { std::make_unique<model<std::remove_cvref_t<M>>>(std::forward<M>(m)) } {}
 
     /**
      * @brief Copy constructor.
@@ -216,6 +216,22 @@ public:
         pimpl_->load_input_config_at(s, key);
     }
 
+    /**
+     * @brief All-reduce the wrapped user value across MPI ranks via ADL.
+     *
+     * @details Forwards to the wrapped user type's free
+     * `simplemc_mpi_collect(const mpi::communicator&, T&)` picked up by ADL, replacing the held
+     * value with the reduced result. If the wrapped type does not provide such an overload, the
+     * call is a silent no-op — mirroring the behavior of save_at() / load_at() for non-serializable
+     * types.
+     *
+     * Library accumulators (simplemc::mean_acc, simplemc::var_acc, ...) ship the overload, so
+     * wrapping one of them yields an MPI-collectible measurement out of the box.
+     *
+     * @param comm MPI communicator over which to reduce.
+     */
+    void mpi_collect(const mpi::communicator& comm) { pimpl_->mpi_collect(comm); }
+
 private:
     // Hidden polymorphic base — the "concept" half of the concept-model idiom.
     struct interface {
@@ -229,6 +245,7 @@ private:
         virtual void load_at(const cp_serializer_type& parent, std::string_view key) = 0;
         virtual void save_input_config_at(ic_serializer_type& parent, std::string_view key) const = 0;
         virtual void load_input_config_at(const ic_serializer_type& parent, std::string_view key) = 0;
+        virtual void mpi_collect(const mpi::communicator& comm) = 0;
     };
 
     // Hidden template derived - the "model" half of the concept-model idiom.
@@ -262,6 +279,11 @@ private:
             if constexpr (has_simplemc_load_input_config<M, ic_serializer_type>) {
                 const auto sub = s[key];
                 simplemc_load_input_config(sub, concrete);
+            }
+        }
+        void mpi_collect(const mpi::communicator& comm) override {
+            if constexpr (has_simplemc_mpi_collect<M>) {
+                concrete = simplemc_mpi_collect(comm, concrete);
             }
         }
     };
