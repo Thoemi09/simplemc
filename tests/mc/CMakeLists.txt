@@ -13,6 +13,7 @@
 # mc-simulation-test:           Test the convenience simulation aggregate.
 # mc-simulation-input-config-test:    Test input-config serialization through simulation.
 # mc-simulation-mixed-backend-test:   Test simulation serialization with different S1/S2 backends.
+# mc-callbacks-test:                  Test progress_printer and JSON/HDF5 checkpoint helpers.
 # mc-mpi-test:                        Test MPI reduction helpers on simplemc-mc types (mpirun -n 4).
 
 # create executables
@@ -49,6 +50,9 @@ target_link_libraries(mc-simulation-input-config-test PRIVATE simplemc-test)
 add_executable(mc-simulation-mixed-backend-test simulation_mixed_backend_test.cpp)
 target_link_libraries(mc-simulation-mixed-backend-test PRIVATE simplemc-test)
 
+add_executable(mc-callbacks-test callbacks_test.cpp)
+target_link_libraries(mc-callbacks-test PRIVATE simplemc-test)
+
 add_executable(mc-mpi-test mc_mpi_test.cpp)
 target_link_libraries(mc-mpi-test PRIVATE simplemc-test)
 
@@ -64,4 +68,5 @@ add_test(NAME mc-run-test COMMAND mc-run-test)
 add_test(NAME mc-simulation-test COMMAND mc-simulation-test)
 add_test(NAME mc-simulation-input-config-test COMMAND mc-simulation-input-config-test)
 add_test(NAME mc-simulation-mixed-backend-test COMMAND mc-simulation-mixed-backend-test)
+add_test(NAME mc-callbacks-test COMMAND mc-callbacks-test)
 add_test(NAME mc-mpi-test COMMAND mpirun -n 4 mc-mpi-test)
