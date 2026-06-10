@@ -12,7 +12,6 @@
 #include <simplemc/mc/simulation_ctx.hpp>
 #include <simplemc/mc/simulation_params.hpp>
 #include <simplemc/mc/simulation_stats.hpp>
-#include <simplemc/serialize/concepts.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 #include <simplemc/utils/timer.hpp>
 
@@ -33,8 +32,9 @@ namespace simplemc {
  * (`ctx.steps_done < params.max_steps`, `ctx.elapsed() < params.max_time`, and
  * `!cbs.stop_when(ctx)`); inner `for (cycles_per_check)` runs that many cycles; each cycle runs
  * `params.steps_per_cycle` Metropolis steps via `kernel.step(rng)` and then invokes
- * `meas.measure_all()` (unless `params.skip_measurements`). All four callbacks receive `ctx`, so a
- * hook can read the live step count (`ctx.steps_done`) and live wall-clock (`ctx.elapsed()`).
+ * `meas.measure_all()` (a no-op when `params.skip_measurements` cleared the active cache at
+ * entry). All four callbacks receive `ctx`, so a hook can read the live step count
+ * (`ctx.steps_done`) and live wall-clock (`ctx.elapsed()`).
  *
  * Before the loop, validates `params` and (if the kernel exposes one) calls `kernel.prepare()`.
  * Builds the active-set cache on `meas` from each entry's `is_active` flag (cleared instead if
@@ -44,13 +44,20 @@ namespace simplemc {
  * elapsed step / time deltas since the last checkpoint, and `on_checkpoint` is invoked if either
  * threshold is crossed.
  *
+ * @note `max_time` and `stop_when` are polled only once per `cycles_per_check` block, i.e. every
+ * `steps_per_cycle * cycles_per_check` steps. With the default `cycles_per_check` of \f$ 10^6 \f$,
+ * a slow step function can overshoot `max_time` considerably — tune `cycles_per_check` to the cost
+ * of a step.
+ *
  * On exit, the run's final totals are recorded into `stats`: `last_steps_done = ctx.steps_done`
  * and `last_runtime = ctx.elapsed()`. The cumulative fields on `stats` are left untouched (fold
  * them in with simplemc::accumulate_simulation_stats). Per-update counters (`nprops`, `naccs`,
- * `nimps`) are written by the kernel.
+ * `nimps`) are written by the kernel; note the asymmetry with `stats.last_*`: the per-update
+ * current-run counters are **not** reset at run entry — they keep accumulating until
+ * `accumulate_counters()` / `reset_run_counters()` is called on the update set.
  *
  * @tparam Kernel Step kernel satisfying simplemc::mc_kernel for the given RNG.
- * @tparam S1, S2 Serializer types carried by the measurement_set.
+ * @tparam Traits Traits bundle satisfying simplemc::mc_traits_like, carried by the measurement_set.
  * @tparam RNG    Random number generator type.
  * @tparam Cbs    Callbacks bundle satisfying simplemc::mc_run_callbacks. Defaults to
  *                simplemc::run_callbacks<> (all no-ops); any user type with the four hooks works.
@@ -59,13 +66,13 @@ namespace simplemc {
  * @param meas Measurement set; its active cache is rebuilt at entry.
  * @param p Parameters controlling the run.
  * @param stats Recorded statistics; the run's final totals are written to `last_*` at exit.
- * @param rng RNG threaded into both the kernel and the measurement sweep.
+ * @param rng RNG threaded into the kernel's `step()`.
  * @param cbs Optional callbacks; default = all no-ops.
  */
-template <class Kernel, serializer S1, serializer S2, class RNG,
+template <class Kernel, mc_traits_like Traits, class RNG,
     mc_run_callbacks Cbs = run_callbacks<>>
     requires mc_kernel<Kernel, RNG>
-void run(Kernel& kernel, measurement_set<S1, S2>& meas, const simulation_params& p,
+void run(Kernel& kernel, measurement_set<Traits>& meas, const simulation_params& p,
     simulation_stats& stats, RNG& rng, const Cbs& cbs = {}) {
     validate_simulation_params(p);
     if constexpr (requires { kernel.prepare(); }) {
@@ -90,9 +97,7 @@ void run(Kernel& kernel, measurement_set<S1, S2>& meas, const simulation_params&
                 ++ctx.steps_done;
                 cbs.on_step(ctx);
             }
-            if (!p.skip_measurements) {
-                meas.measure_all();
-            }
+            meas.measure_all();
             cbs.on_cycle(ctx);
         }
         last_runtime = ctx.elapsed();

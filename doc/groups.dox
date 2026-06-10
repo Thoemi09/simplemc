@@ -1442,5 +1442,9 @@
  * value type usable in standard containers, and a single wrapper instance can hold values of
  * arbitrary user types.
  *
- * See e.g. simplemc::measurement.
+ * See e.g. simplemc::measurement. The reusable machinery behind this idiom is public: a wrapper is
+ * built from simplemc::basic_wrapper (the value-semantics shell), simplemc::basic_interface (the
+ * role-agnostic polymorphic base), and simplemc::basic_model (the role-agnostic model). The
+ * collection counterpart, simplemc::named_set, provides the shared registration / lookup base for
+ * simplemc::update_set and simplemc::measurement_set.
  */

@@ -172,7 +172,7 @@ TEST(MCCallbacks, Hdf5CheckpointWriterRoundTripsSimulation) {
     const auto path = std::filesystem::temp_directory_path() / "simplemc_test_ckpt.h5";
     std::filesystem::remove(path);
 
-    using sim_t = simulation<hdf5_serializer, json_serializer>;
+    using sim_t = simulation<mc_traits<hdf5_serializer, json_serializer>>;
     sim_t src;
     src.add_update(trivial_update {}, "u", 1.0);
     src.add_measurement(trivial_meas {}, "m");

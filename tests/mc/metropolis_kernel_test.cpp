@@ -24,9 +24,10 @@ struct always_reject {
 };
 
 struct always_impossible {
+    std::shared_ptr<int> rejects = std::make_shared<int>(0);
     double attempt() { return 0.0; } // impossible
     void accept() {}
-    void reject() {}
+    void reject() { ++*rejects; }
 };
 
 } // namespace
@@ -52,7 +53,9 @@ TEST(MCMetropolisKernel, StepAccepts) {
 
 TEST(MCMetropolisKernel, StepImpossible) {
     update_set<> us;
-    us.add({ always_impossible {}, "u", 1.0 });
+    always_impossible src;
+    auto rejects = src.rejects;
+    us.add({ src, "u", 1.0 });
 
     metropolis_kernel k { us };
     k.prepare();
@@ -64,6 +67,8 @@ TEST(MCMetropolisKernel, StepImpossible) {
     EXPECT_EQ(us.at(0).nprops, 50u);
     EXPECT_EQ(us.at(0).naccs, 0u);
     EXPECT_EQ(us.at(0).nimps, 50u);
+    // Impossible proposals are rejected: attempt() is always followed by accept() or reject().
+    EXPECT_EQ(*rejects, 50);
 }
 
 TEST(MCMetropolisKernel, StepRejects) {
@@ -92,11 +97,11 @@ TEST(MCMetropolisKernel, AppliesRatioFromInversePair) {
     // prob = 0.5. Just verify the kernel reads u.ratio (no crash, counters bump).
     update_set<> us;
     us.add_pair({ always_accept {}, "f", 2.0 }, { always_accept {}, "b", 4.0 });
-    EXPECT_DOUBLE_EQ(us.at(0).ratio, 2.0);
-    EXPECT_DOUBLE_EQ(us.at(1).ratio, 0.5);
 
     metropolis_kernel k { us };
-    k.prepare();
+    k.prepare(); // derives the detailed-balance ratios from the current weights
+    EXPECT_DOUBLE_EQ(us.at(0).ratio, 2.0);
+    EXPECT_DOUBLE_EQ(us.at(1).ratio, 0.5);
 
     xoshiro256ss rng { 42 };
     for (int i = 0; i < 500; ++i) {

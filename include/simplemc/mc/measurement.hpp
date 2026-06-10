@@ -8,9 +8,8 @@
 
 #include <simplemc/mc/basic_measurement.hpp>
 #include <simplemc/mc/concepts.hpp>
+#include <simplemc/mc/traits.hpp>
 #include <simplemc/mpi/communicator.hpp>
-#include <simplemc/serialize/concepts.hpp>
-#include <simplemc/serialize/json/json_serializer.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
 #include <concepts>
@@ -34,25 +33,29 @@ namespace simplemc {
  *
  * Construction validates `name` non-empty.
  *
- * @tparam S1 Serializer type used for checkpoint serialization.
- * @tparam S2 Serializer type used for input-config serialization.
+ * @tparam Traits Traits bundle satisfying simplemc::mc_traits_like (default: simplemc::mc_traits<>).
  */
-template <serializer S1 = json_serializer, serializer S2 = json_serializer>
+template <mc_traits_like Traits = mc_traits<>>
 struct measurement {
+    /**
+     * @brief The traits bundle this measurement was parameterized on.
+     */
+    using traits_type = Traits;
+
     /**
      * @brief Type used for checkpoint serialization.
      */
-    using cp_serializer_type = S1;
+    using checkpoint_serializer_type = typename Traits::checkpoint_serializer_type;
 
     /**
      * @brief Type used for input-config serialization.
      */
-    using ic_serializer_type = S2;
+    using input_config_serializer_type = typename Traits::input_config_serializer_type;
 
     /**
      * @brief The wrapped user measurement.
      */
-    basic_measurement<S1, S2> wrapped;
+    basic_measurement<Traits> wrapped;
 
     /**
      * @brief Identifier used in lookups and printed reports.
@@ -78,11 +81,11 @@ struct measurement {
      */
     template <class M>
         requires(!std::same_as<std::remove_cvref_t<M>, measurement>) &&
-                (!std::same_as<std::remove_cvref_t<M>, basic_measurement<S1, S2>>) &&
+                (!std::same_as<std::remove_cvref_t<M>, basic_measurement<Traits>>) &&
                 mc_measurement<std::remove_cvref_t<M>> &&
                 std::copy_constructible<std::remove_cvref_t<M>>
     measurement(M&& m, std::string name, bool is_active = true) : measurement {
-        basic_measurement<S1, S2> { std::forward<M>(m) }, std::move(name), is_active
+        basic_measurement<Traits> { std::forward<M>(m) }, std::move(name), is_active
     } {}
 
     /**
@@ -94,7 +97,7 @@ struct measurement {
      * @param name Identifier.
      * @param is_active Initial activation state.
      */
-    measurement(basic_measurement<S1, S2> w, std::string name, bool is_active = true) :
+    measurement(basic_measurement<Traits> w, std::string name, bool is_active = true) :
         wrapped { std::move(w) }, name { std::move(name) }, is_active { is_active } {
         if (this->name.empty()) {
             throw simplemc_exception("measurement name must be non-empty");
@@ -131,7 +134,7 @@ struct measurement {
      * @details Writes `is_active` and delegates to the wrapper for the `"user"` sub-key. Schema
      * matches the previous simplemc::measurement_stats layout (plus the wrapper's `"user"` sub-tree).
      */
-    friend void simplemc_save(cp_serializer_type& s, const measurement& m) {
+    friend void simplemc_save(checkpoint_serializer_type& s, const measurement& m) {
         s.save_at("is_active", m.is_active);
         m.wrapped.save_at(s, "user");
     }
@@ -139,7 +142,7 @@ struct measurement {
     /**
      * @brief Deserialize the persistent fields of this measurement.
      */
-    friend void simplemc_load(const cp_serializer_type& s, measurement& m) {
+    friend void simplemc_load(const checkpoint_serializer_type& s, measurement& m) {
         s.load_at("is_active", m.is_active);
         m.wrapped.load_at(s, "user");
     }
@@ -149,7 +152,7 @@ struct measurement {
      *
      * @details Writes `is_active` and delegates to the wrapper for the `"user"` sub-key.
      */
-    friend void simplemc_save_input_config(ic_serializer_type& s, const measurement& m) {
+    friend void simplemc_save_input_config(input_config_serializer_type& s, const measurement& m) {
         s.save_at("is_active", m.is_active);
         m.wrapped.save_input_config_at(s, "user");
     }
@@ -157,7 +160,7 @@ struct measurement {
     /**
      * @brief Deserialize the user-input config of this measurement.
      */
-    friend void simplemc_load_input_config(const ic_serializer_type& s, measurement& m) {
+    friend void simplemc_load_input_config(const input_config_serializer_type& s, measurement& m) {
         s.try_load_at("is_active", m.is_active);
         m.wrapped.load_input_config_at(s, "user");
     }

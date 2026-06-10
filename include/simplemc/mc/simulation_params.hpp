@@ -47,7 +47,7 @@ struct simulation_params {
     std::uint64_t cycles_per_check = 1'000'000;
 
     /**
-     * @brief Wheter to skip every measurement for the whole run. Default: false.
+     * @brief Whether to skip every measurement for the whole run. Default: false.
      */
     bool skip_measurements = false;
 

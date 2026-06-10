@@ -47,17 +47,52 @@ TEST(MCUpdateSet, AddDuplicateNameThrows) {
     EXPECT_THROW(us.add({ toy_update {}, "a", 1.0 }), simplemc_exception);
 }
 
-TEST(MCUpdateSet, AddPairCrossLinksAndComputesRatios) {
+TEST(MCUpdateSet, AddPairCrossLinksAndRebuildComputesRatios) {
     update_set<> us;
     us.add_pair({ toy_update {}, "f", 2.0 }, { toy_update {}, "b", 3.0 });
 
     EXPECT_EQ(us.size(), 2u);
     EXPECT_EQ(us.at(0).name, "f");
     EXPECT_EQ(us.at(0).inv_name, "b");
-    EXPECT_DOUBLE_EQ(us.at(0).ratio, 3.0 / 2.0);
     EXPECT_EQ(us.at(1).name, "b");
     EXPECT_EQ(us.at(1).inv_name, "f");
+
+    us.rebuild_distribution(); // derives the detailed-balance ratios from the current weights
+    EXPECT_DOUBLE_EQ(us.at(0).ratio, 3.0 / 2.0);
     EXPECT_DOUBLE_EQ(us.at(1).ratio, 2.0 / 3.0);
+}
+
+TEST(MCUpdateSet, SetWeightThenRebuildRecomputesRatios) {
+    update_set<> us;
+    us.add_pair({ toy_update {}, "f", 2.0 }, { toy_update {}, "b", 4.0 });
+    us.rebuild_distribution();
+    EXPECT_DOUBLE_EQ(us.at(0).ratio, 2.0);
+    EXPECT_DOUBLE_EQ(us.at(1).ratio, 0.5);
+
+    // A later weight change must not leave the ratios stale.
+    us.set_weight("f", 1.0);
+    us.rebuild_distribution();
+    EXPECT_DOUBLE_EQ(us.at(0).ratio, 4.0);
+    EXPECT_DOUBLE_EQ(us.at(1).ratio, 0.25);
+}
+
+TEST(MCUpdateSet, RebuildThrowsOnAsymmetricZeroPair) {
+    update_set<> us;
+    us.add({ toy_update {}, "a", 1.0 }); // keeps a positive total weight
+    us.add_pair({ toy_update {}, "f", 2.0 }, { toy_update {}, "b", 4.0 });
+
+    us.set_weight("b", 0.0); // breaks the pair-zero invariant after registration
+    EXPECT_THROW(us.rebuild_distribution(), simplemc_exception);
+}
+
+TEST(MCUpdateSet, RebuildKeepsUnitRatioOnBothZeroPair) {
+    update_set<> us;
+    us.add({ toy_update {}, "a", 1.0 });
+    us.add_pair({ toy_update {}, "f", 0.0 }, { toy_update {}, "b", 0.0 });
+
+    us.rebuild_distribution();
+    EXPECT_DOUBLE_EQ(us.at(1).ratio, 1.0);
+    EXPECT_DOUBLE_EQ(us.at(2).ratio, 1.0);
 }
 
 TEST(MCUpdateSet, AddPairBothZeroAllowed) {

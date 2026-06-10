@@ -8,17 +8,20 @@
 
 #include <simplemc/mc/basic_measurement.hpp>
 #include <simplemc/mc/basic_update.hpp>
+#include <simplemc/mc/basic_wrapper.hpp>
 #include <simplemc/mc/concepts.hpp>
 #include <simplemc/mc/callbacks.hpp>
 #include <simplemc/mc/measurement.hpp>
 #include <simplemc/mc/measurement_set.hpp>
 #include <simplemc/mc/kernels.hpp>
+#include <simplemc/mc/named_set.hpp>
 #include <simplemc/mc/run.hpp>
 #include <simplemc/mc/run_callbacks.hpp>
 #include <simplemc/mc/simulation.hpp>
 #include <simplemc/mc/simulation_ctx.hpp>
 #include <simplemc/mc/simulation_params.hpp>
 #include <simplemc/mc/simulation_stats.hpp>
+#include <simplemc/mc/traits.hpp>
 #include <simplemc/mc/update.hpp>
 #include <simplemc/mc/update_set.hpp>
 

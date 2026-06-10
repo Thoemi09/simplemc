@@ -12,7 +12,7 @@
 # mc-run-test:                  Test the free run() driver + run_callbacks + custom kernels.
 # mc-simulation-test:           Test the convenience simulation aggregate.
 # mc-simulation-input-config-test:    Test input-config serialization through simulation.
-# mc-simulation-mixed-backend-test:   Test simulation serialization with different S1/S2 backends.
+# mc-simulation-mixed-backend-test:   Test simulation serialization with different mc_traits backends.
 # mc-callbacks-test:                  Test progress_printer and JSON/HDF5 checkpoint helpers.
 # mc-mpi-test:                        Test MPI reduction helpers on simplemc-mc types (mpirun -n 4).
 

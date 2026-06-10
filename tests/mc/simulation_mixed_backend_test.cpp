@@ -94,6 +94,11 @@ static_assert(serializer<mock_state_serializer>);
 static_assert(serializer<mock_input_config_serializer>);
 static_assert(!std::is_same_v<mock_state_serializer, mock_input_config_serializer>);
 
+// Traits bundle pairing the two distinct mock backends.
+using mixed_traits = mc_traits<mock_state_serializer, mock_input_config_serializer>;
+static_assert(mc_traits_like<mixed_traits>);
+static_assert(!mc_traits_like<int>);
+
 // User update opting into BOTH flavors, via two ADL hooks typed on different serializer types.
 // This proves the wrapper dispatches to the right hook per backend, without any cross-talk.
 struct dual_update {
@@ -135,8 +140,8 @@ void simplemc_load(const mock_state_serializer& s, state_only_update& u) {
 } // namespace
 
 TEST(MCSimulationMixedBackend, InstantiationCompiles) {
-    // Smoke test: the three-parameter form instantiates.
-    simulation<mock_state_serializer, mock_input_config_serializer> sim;
+    // Smoke test: the traits form with two distinct backends instantiates.
+    simulation<mixed_traits> sim;
     dual_update u;
     sim.add_update(u, "tunable", 2.5);
     EXPECT_DOUBLE_EQ(sim.update_data()[0].weight, 2.5);
@@ -144,7 +149,7 @@ TEST(MCSimulationMixedBackend, InstantiationCompiles) {
 
 TEST(MCSimulationMixedBackend, StateAndInputConfigDispatchIndependently) {
     // Source simulation with both backends in play.
-    simulation<mock_state_serializer, mock_input_config_serializer> src { xoshiro256ss { 7 } };
+    simulation<mixed_traits> src { xoshiro256ss { 7 } };
     dual_update src_u;
     *src_u.state_counter = 42;
     *src_u.config_threshold = 1.25;
@@ -176,7 +181,7 @@ TEST(MCSimulationMixedBackend, StateAndInputConfigDispatchIndependently) {
 
     // Destination: load state from state serializer, then input-config from input-config
     // serializer. Cross-talk would show up as wrong values or extra throws.
-    simulation<mock_state_serializer, mock_input_config_serializer> dst;
+    simulation<mixed_traits> dst;
     dual_update dst_u;
     auto dst_state_counter = dst_u.state_counter;
     auto dst_config_threshold = dst_u.config_threshold;
@@ -201,7 +206,7 @@ TEST(MCSimulationMixedBackend, StateAndInputConfigDispatchIndependently) {
 TEST(MCSimulationMixedBackend, OneSidedOptInSilentlySkipsOtherFlavor) {
     // state_only_update has only the state hook. Input-config save/load should be no-ops on the
     // user slot; no exceptions, no fields written.
-    simulation<mock_state_serializer, mock_input_config_serializer> sim;
+    simulation<mixed_traits> sim;
     state_only_update u;
     *u.ticks = 99;
     sim.add_update(u, "ticker", 1.0);

@@ -165,8 +165,8 @@ struct progress_printer {
  * (ADL on the borrowed object's type), and writes it to `path` using the chosen
  * simplemc::json_io_options (text/cbor/bson/...). Typical usage: install as `on_checkpoint`.
  *
- * The borrowed object must outlive the callable. simplemc::simulation is non-copyable, so this
- * helper takes a pointer rather than a value.
+ * The borrowed object must outlive the callable; it is held by pointer so the checkpoint always
+ * reflects the live state at invocation time.
  *
  * @tparam Sim Type to serialize (typically simplemc::simulation<...>).
  */

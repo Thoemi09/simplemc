@@ -112,6 +112,8 @@ TEST(MCSimulation, AddUpdatePairSetsInvNameAndRatio) {
     simulation<> sim;
     sim.add_update(always_accept {}, "a", 2.0, always_accept {}, "b", 1.0);
 
+    sim.initialize_update_distribution(); // derives the ratios from the current weights
+
     const auto us = sim.update_data();
     ASSERT_EQ(us.size(), 2u);
 
@@ -217,7 +219,8 @@ TEST(MCSimulation, ImpossibleIsRecorded) {
     EXPECT_EQ(us.nimps, static_cast<std::uint64_t>(N));
     EXPECT_EQ(us.naccs, 0u);
     EXPECT_EQ(*accepts, 0);
-    EXPECT_EQ(*rejects, 0);
+    // Impossible proposals are rejected: attempt() is always followed by accept() or reject().
+    EXPECT_EQ(*rejects, N);
 }
 
 TEST(MCSimulation, ZeroWeightUpdateNeverPicked) {
@@ -635,4 +638,31 @@ TEST(MCSimulationCallbacks, StopWhenTrumpsMaxSteps) {
         cbs);
     EXPECT_GE(sim.stats().last_steps_done, 50u);
     EXPECT_LT(sim.stats().last_steps_done, 200u);
+}
+
+// =====================================================================================
+// Move semantics.
+// =====================================================================================
+
+TEST(MCSimulation, IsMovableAndRunsAfterMove) {
+    static_assert(std::movable<simulation<>>);
+
+    simulation<> src { xoshiro256ss { 7 } };
+    src.add_update(always_accept {}, "u", 1.0);
+    counting_measurement cm;
+    auto count = cm.count;
+    src.add_measurement(cm, "obs");
+
+    constexpr int N = 50;
+    const simulation_params p { .max_steps = N, .max_time = 1000.0, .steps_per_cycle = 5, .cycles_per_check = 2 };
+    src.run(p);
+    src.accumulate_stats();
+    const int count_after_first = *count;
+    EXPECT_GT(count_after_first, 0);
+
+    simulation<> dst { std::move(src) };
+    dst.run(p);
+    EXPECT_EQ(dst.stats().cumulative_steps, static_cast<std::uint64_t>(N));
+    EXPECT_EQ(dst.stats().last_steps_done, static_cast<std::uint64_t>(N));
+    EXPECT_GT(*count, count_after_first); // measurements keep firing on the moved-to simulation
 }

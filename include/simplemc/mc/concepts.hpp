@@ -8,6 +8,7 @@
 
 #include <simplemc/mc/simulation_ctx.hpp>
 #include <simplemc/mpi/communicator.hpp>
+#include <simplemc/serialize/concepts.hpp>
 
 #include <concepts>
 
@@ -40,7 +41,9 @@ concept mc_measurement = requires(M& m) { m.measure(); };
  * @details A Monte Carlo update proposes a change to the simulation state via `attempt()`, which
  * returns the acceptance probability of the proposed change. The driver then either commits the
  * change by calling `accept()` or rolls it back by calling `reject()` (the latter is an optional
- * callback — see simplemc::update for details).
+ * callback — see simplemc::update for details). Every `attempt()` is followed by exactly one of
+ * `accept()` / `reject()`; in particular, impossible proposals (`attempt()` returning a value
+ * \f$ \leq 0 \f$) are rejected, so `reject()` can rely on rolling back whatever `attempt()` set up.
  *
  * Let `u` be an instance of type `U`. The requirements for a type `U` to be an update are the
  * following:
@@ -139,6 +142,33 @@ template <class T>
 concept has_simplemc_mpi_collect = requires(const mpi::communicator& c, const T& v) {
     { simplemc_mpi_collect(c, v) } -> std::same_as<T>;
 };
+
+/**
+ * @brief Contract a traits bundle must satisfy to parameterize the simplemc-mc class templates.
+ *
+ * @details All simplemc-mc class templates (simplemc::basic_update, simplemc::update_set,
+ * simplemc::simulation, ...) take a single traits parameter that bundles the backend types they
+ * thread through their serialization and stepping paths. A traits type must expose three member
+ * type aliases:
+ *
+ * - `checkpoint_serializer_type` — serializer backend used for checkpoint (state) serialization;
+ * must itself satisfy simplemc::serializer.
+ * - `input_config_serializer_type` — serializer backend used for input-config serialization; must
+ * itself satisfy simplemc::serializer.
+ * - `rng_type` — random number generator type (unconstrained beyond existence, matching the rest of
+ * simplemc-mc).
+ *
+ * simplemc::mc_traits is the canonical model; any user struct exposing the three aliases qualifies.
+ *
+ * @tparam T Type to check.
+ */
+template <class T>
+concept mc_traits_like = requires {
+    typename T::checkpoint_serializer_type;
+    typename T::input_config_serializer_type;
+    typename T::rng_type;
+} && serializer<typename T::checkpoint_serializer_type>
+  && serializer<typename T::input_config_serializer_type>;
 
 /** @} */
 

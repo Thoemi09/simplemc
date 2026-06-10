@@ -6,10 +6,8 @@
 #ifndef SIMPLEMC_MC_KERNELS_HPP
 #define SIMPLEMC_MC_KERNELS_HPP
 
+#include <simplemc/mc/traits.hpp>
 #include <simplemc/mc/update_set.hpp>
-#include <simplemc/random/xoshiro256.hpp>
-#include <simplemc/serialize/concepts.hpp>
-#include <simplemc/serialize/json/json_serializer.hpp>
 
 #include <cstddef>
 #include <random>
@@ -29,26 +27,29 @@ namespace simplemc {
  * an update via the set's discrete distribution, calls `attempt()` on the wrapper, multiplies the
  * result by the entry's detailed-balance `ratio`, and applies the standard Metropolis branch:
  *
- * - if `attempt() * ratio <= 0`, the proposal is counted as impossible (`nimps`);
+ * - if `attempt() * ratio <= 0`, the proposal is counted as impossible (`nimps`) and `reject()` is
+ *   called so any speculative state set up by `attempt()` is rolled back;
  * - if `attempt() * ratio >= uniform_draw`, the proposal is accepted (`naccs`) and `accept()` is
  *   called on the wrapped update;
  * - otherwise it is rejected and `reject()` is called.
  *
- * In every case the proposal counter (`nprops`) is bumped. The counters live on the
- * simplemc::update entries themselves.
+ * Every `attempt()` is therefore followed by exactly one of `accept()` / `reject()`. In every case
+ * the proposal counter (`nprops`) is bumped. The counters live on the simplemc::update entries
+ * themselves.
  *
  * Lifetime: the kernel stores a non-owning pointer to the set; the caller must keep the set alive
- * for the kernel's lifetime. The convenience simplemc::simulation aggregate owns both as siblings
- * and disables move/copy to make this safe.
+ * for the kernel's lifetime. The convenience simplemc::simulation aggregate constructs a fresh
+ * kernel over its own update set for each run, so no dangling pointer can arise there.
  *
- * @tparam S1 Serializer type carried by the update_set (checkpoint).
- * @tparam S2 Serializer type carried by the update_set (input-config).
- * @tparam RNG RNG type the kernel will receive.
+ * @tparam Traits Traits bundle satisfying simplemc::mc_traits_like (default: simplemc::mc_traits<>).
+ *                The kernel drives an `update_set<Traits>` and steps with `Traits::rng_type`.
  */
-template <serializer S1 = json_serializer, serializer S2 = json_serializer, class RNG = xoshiro256ss>
+template <mc_traits_like Traits = mc_traits<>>
 class metropolis_kernel {
 public:
-    using update_set_type = update_set<S1, S2>;
+    using traits_type = Traits;
+    using rng_type = typename Traits::rng_type;
+    using update_set_type = update_set<Traits>;
 
     /**
      * @brief Construct with a back-pointer to the update set this kernel will drive.
@@ -67,13 +68,14 @@ public:
     /**
      * @brief Run a single Metropolis step.
      */
-    void step(RNG& rng) {
+    void step(rng_type& rng) {
         const std::size_t idx = set_->select(rng);
         auto& u = set_->at(idx);
         ++u.nprops;
         const double p = u.wrapped.attempt() * u.ratio;
         if (p <= 0.0) {
             ++u.nimps;
+            u.wrapped.reject();
         } else if (p >= uni01_(rng)) {
             u.wrapped.accept();
             ++u.naccs;
