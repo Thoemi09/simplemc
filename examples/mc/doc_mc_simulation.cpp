@@ -55,5 +55,5 @@ int main() {
     const auto* m = sim.get_measurement<integral_observer>("integral");
     const double result = m->acc.mean() * (state.b - state.a);
     const double exact = std::sin(state.b) - std::sin(state.a);
-    fmt::print("steps:  {}\nresult: {}\nexact:  {}\n", sim.stats().steps_done, result, exact);
+    fmt::print("steps:  {}\nresult: {}\nexact:  {}\n", sim.stats().last_steps_done, result, exact);
 }

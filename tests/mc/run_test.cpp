@@ -35,10 +35,10 @@ struct counting_kernel {
 struct counting_callbacks {
     std::shared_ptr<std::uint64_t> steps = std::make_shared<std::uint64_t>(0);
     std::uint64_t stop_after = 0;
-    void on_step(const simulation_stats&) const { ++*steps; }
-    void on_cycle(const simulation_stats&) const {}
-    void on_checkpoint(const simulation_stats&) const {}
-    bool stop_when(const simulation_stats& s) const { return s.steps_done >= stop_after; }
+    void on_step(const simulation_ctx&) const { ++*steps; }
+    void on_cycle(const simulation_ctx&) const {}
+    void on_checkpoint(const simulation_ctx&) const {}
+    bool stop_when(const simulation_ctx& x) const { return x.steps_done >= stop_after; }
 };
 
 static_assert(mc_run_callbacks<run_callbacks<>>);
@@ -61,8 +61,8 @@ TEST(MCRun, MaxStepsBounds) {
 
     // The loop checks bounds only at outer-block boundaries; steps_done may overshoot by up to
     // one block of cycles_per_check * steps_per_cycle = 20 steps.
-    EXPECT_GE(stats.steps_done, 1000u);
-    EXPECT_LE(stats.steps_done, 1000u + 20u);
+    EXPECT_GE(stats.last_steps_done, 1000u);
+    EXPECT_LE(stats.last_steps_done, 1000u + 20u);
 }
 
 TEST(MCRun, MaxTimeBounds) {
@@ -81,7 +81,7 @@ TEST(MCRun, MaxTimeBounds) {
         .cycles_per_check = 1,
     };
     run(kernel, ms, p, stats, rng);
-    EXPECT_GT(stats.steps_done, 0u);
+    EXPECT_GT(stats.last_steps_done, 0u);
     EXPECT_GE(stats.last_runtime, 0.0);
 }
 
@@ -94,12 +94,12 @@ TEST(MCRun, OnStepFiresEverySingleStep) {
     xoshiro256ss rng { 3 };
 
     std::uint64_t step_calls = 0;
-    auto cbs = run_callbacks { .on_step = [&](const simulation_stats&) { ++step_calls; } };
+    auto cbs = run_callbacks { .on_step = [&](const simulation_ctx&) { ++step_calls; } };
 
     simulation_params p { .max_steps = 100, .max_time = 1e6, .steps_per_cycle = 5, .cycles_per_check = 4 };
     run(kernel, ms, p, stats, rng, cbs);
 
-    EXPECT_EQ(step_calls, stats.steps_done);
+    EXPECT_EQ(step_calls, stats.last_steps_done);
 }
 
 TEST(MCRun, OnCycleFiresEveryCycle) {
@@ -111,13 +111,13 @@ TEST(MCRun, OnCycleFiresEveryCycle) {
     xoshiro256ss rng { 4 };
 
     std::uint64_t cycle_calls = 0;
-    auto cbs = run_callbacks { .on_cycle = [&](const simulation_stats&) { ++cycle_calls; } };
+    auto cbs = run_callbacks { .on_cycle = [&](const simulation_ctx&) { ++cycle_calls; } };
 
     simulation_params p { .max_steps = 100, .max_time = 1e6, .steps_per_cycle = 5, .cycles_per_check = 4 };
     run(kernel, ms, p, stats, rng, cbs);
 
     // Total cycles = steps_done / steps_per_cycle.
-    EXPECT_EQ(cycle_calls, stats.steps_done / p.steps_per_cycle);
+    EXPECT_EQ(cycle_calls, stats.last_steps_done / p.steps_per_cycle);
 }
 
 TEST(MCRun, StopWhenEndsEarly) {
@@ -128,8 +128,8 @@ TEST(MCRun, StopWhenEndsEarly) {
     simulation_stats stats;
     xoshiro256ss rng { 5 };
 
-    auto cbs = run_callbacks { .stop_when = [](const simulation_stats& s) {
-        return s.steps_done >= 50; // very small budget
+    auto cbs = run_callbacks { .stop_when = [](const simulation_ctx& x) {
+        return x.steps_done >= 50; // very small budget
     } };
 
     simulation_params p {
@@ -139,8 +139,8 @@ TEST(MCRun, StopWhenEndsEarly) {
         .cycles_per_check = 4,
     };
     run(kernel, ms, p, stats, rng, cbs);
-    EXPECT_GE(stats.steps_done, 50u);
-    EXPECT_LT(stats.steps_done, 200u); // stopped early
+    EXPECT_GE(stats.last_steps_done, 50u);
+    EXPECT_LT(stats.last_steps_done, 200u); // stopped early
 }
 
 TEST(MCRun, OnCheckpointFiresWhenStepThresholdCrossed) {
@@ -153,7 +153,7 @@ TEST(MCRun, OnCheckpointFiresWhenStepThresholdCrossed) {
 
     int checkpoint_calls = 0;
     auto cbs = run_callbacks {
-        .on_checkpoint = [&](const simulation_stats&) { ++checkpoint_calls; },
+        .on_checkpoint = [&](const simulation_ctx&) { ++checkpoint_calls; },
     };
 
     // 10 cycles per check * 5 steps = 50 steps per outer-block; checkpoint threshold = 50.
@@ -182,7 +182,7 @@ TEST(MCRun, NoCheckpointWhenNoThreshold) {
 
     int checkpoint_calls = 0;
     auto cbs = run_callbacks {
-        .on_checkpoint = [&](const simulation_stats&) { ++checkpoint_calls; },
+        .on_checkpoint = [&](const simulation_ctx&) { ++checkpoint_calls; },
     };
 
     simulation_params p { .max_steps = 100, .max_time = 1e6, .steps_per_cycle = 5, .cycles_per_check = 4 };
@@ -224,7 +224,7 @@ TEST(MCRun, MeasureAllFiresWhenActive) {
     simulation_params p { .max_steps = 100, .max_time = 1e6, .steps_per_cycle = 5, .cycles_per_check = 4 };
     run(kernel, ms, p, stats, rng);
 
-    EXPECT_EQ(static_cast<std::uint64_t>(*count), stats.steps_done / p.steps_per_cycle);
+    EXPECT_EQ(static_cast<std::uint64_t>(*count), stats.last_steps_done / p.steps_per_cycle);
 }
 
 TEST(MCRun, AcceptsUserDefinedCallbacksBundle) {
@@ -245,9 +245,9 @@ TEST(MCRun, AcceptsUserDefinedCallbacksBundle) {
     };
     run(kernel, ms, p, stats, rng, cbs);
 
-    EXPECT_EQ(*cbs.steps, stats.steps_done);
-    EXPECT_GE(stats.steps_done, 50u);
-    EXPECT_LT(stats.steps_done, 200u); // stop_when ended the run early
+    EXPECT_EQ(*cbs.steps, stats.last_steps_done);
+    EXPECT_GE(stats.last_steps_done, 50u);
+    EXPECT_LT(stats.last_steps_done, 200u); // stop_when ended the run early
 }
 
 TEST(MCRun, AcceptsCustomKernelWithoutUpdateSet) {
@@ -260,6 +260,6 @@ TEST(MCRun, AcceptsCustomKernelWithoutUpdateSet) {
     simulation_params p { .max_steps = 200, .max_time = 1e6, .steps_per_cycle = 5, .cycles_per_check = 4 };
     run(kernel, ms, p, stats, rng);
 
-    EXPECT_GE(stats.steps_done, 200u);
-    EXPECT_EQ(kernel.calls, stats.steps_done);
+    EXPECT_GE(stats.last_steps_done, 200u);
+    EXPECT_EQ(kernel.calls, stats.last_steps_done);
 }

@@ -23,16 +23,21 @@ namespace simplemc {
  */
 
 /**
- * @brief Plain aggregate of simulation statistics gathered during a Monte Carlo run.
+ * @brief Plain aggregate of recorded simulation statistics.
+ *
+ * @details Holds the post-run record: the totals of the most recently finalized run
+ * (`last_steps_done`, `last_runtime`) and the cumulative totals across runs (`cumulative_steps`,
+ * `cumulative_time`). The live state of a run still in progress (the running step counter and
+ * wall-clock) lives separately in simplemc::simulation_ctx.
  */
 struct simulation_stats {
     /**
-     * @brief Number of Monte Carlo steps performed in the current run.
+     * @brief Number of Monte Carlo steps performed in the most recently finalized run.
      */
-    std::uint64_t steps_done = 0;
+    std::uint64_t last_steps_done = 0;
 
     /**
-     * @brief Runtime, in seconds, of the most recently finalized simulation.
+     * @brief Runtime, in seconds, of the most recently finalized run.
      */
     double last_runtime = 0.0;
 
@@ -55,7 +60,7 @@ struct simulation_stats {
  * @param s Simulation statistics to reset.
  */
 inline void reset_simulation_stats(simulation_stats& s) noexcept {
-    s.steps_done = 0;
+    s.last_steps_done = 0;
     s.last_runtime = 0.0;
 }
 
@@ -67,7 +72,7 @@ inline void reset_simulation_stats(simulation_stats& s) noexcept {
  * @param s Simulation statistics to accumulate.
  */
 inline void accumulate_simulation_stats(simulation_stats& s) noexcept {
-    s.cumulative_steps += s.steps_done;
+    s.cumulative_steps += s.last_steps_done;
     s.cumulative_time += s.last_runtime;
     reset_simulation_stats(s);
 }
@@ -83,11 +88,11 @@ inline void print(std::FILE* fp, const simulation_stats& s) {
         "============================\n"
         "SIMULATION STATISTICS:\n"
         "============================\n"
-        "Steps done        = {}\n"
+        "Last steps done   = {}\n"
         "Last runtime      = {} sec\n"
         "Cumulative steps  = {}\n"
         "Cumulative time   = {} sec\n",
-        s.steps_done, s.last_runtime, s.cumulative_steps, s.cumulative_time);
+        s.last_steps_done, s.last_runtime, s.cumulative_steps, s.cumulative_time);
 }
 
 /**
@@ -119,7 +124,7 @@ void simplemc_load(const S& s, simulation_stats& st) {
 /**
  * @brief All-reduce a simplemc::simulation_stats across MPI ranks (`MPI_SUM`, in place).
  *
- * @details Reduces all four counter fields (`steps_done`, `last_runtime`, `cumulative_steps`,
+ * @details Reduces all four counter fields (`last_steps_done`, `last_runtime`, `cumulative_steps`,
  * `cumulative_time`) with `MPI_SUM`, leaving every rank with the global sum. Unlike the accumulator
  * `simplemc_mpi_collect` overloads, which return a new accumulator, this is in-place because
  * simplemc::simulation_stats is a plain aggregate of counters with no internal invariants and the
@@ -129,7 +134,7 @@ void simplemc_load(const S& s, simulation_stats& st) {
  * @param st Stats to reduce in place.
  */
 inline void simplemc_mpi_collect(const mpi::communicator& comm, simulation_stats& st) {
-    mpi::all_reduce_in_place(st.steps_done, MPI_SUM, comm);
+    mpi::all_reduce_in_place(st.last_steps_done, MPI_SUM, comm);
     mpi::all_reduce_in_place(st.last_runtime, MPI_SUM, comm);
     mpi::all_reduce_in_place(st.cumulative_steps, MPI_SUM, comm);
     mpi::all_reduce_in_place(st.cumulative_time, MPI_SUM, comm);

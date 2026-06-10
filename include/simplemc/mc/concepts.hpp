@@ -6,7 +6,7 @@
 #ifndef SIMPLEMC_MC_CONCEPTS_HPP
 #define SIMPLEMC_MC_CONCEPTS_HPP
 
-#include <simplemc/mc/simulation_stats.hpp>
+#include <simplemc/mc/simulation_ctx.hpp>
 #include <simplemc/mpi/communicator.hpp>
 
 #include <concepts>
@@ -82,10 +82,11 @@ concept mc_kernel = requires(K& k, RNG& rng) { k.step(rng); };
  * @brief Contract a type must satisfy to be passed as the callbacks bundle of simplemc::run.
  *
  * @details The run loop invokes four hooks on the bundle, each taking the current
- * simplemc::simulation_stats: `on_step` (after every kernel step), `on_cycle` (after each cycle's
+ * simplemc::simulation_ctx: `on_step` (after every kernel step), `on_cycle` (after each cycle's
  * measurement sweep), `on_checkpoint` (when a checkpoint threshold is crossed), and `stop_when`
  * (polled in the outer loop condition; returns `true` to stop early). All four must be invocable
- * on a `const` bundle.
+ * on a `const` bundle. Hooks read the live step count via `ctx.steps_done` and the live elapsed
+ * seconds via `ctx.elapsed()`.
  *
  * simplemc::run_callbacks is the canonical model: its slots default to no-ops, so users only fill
  * the hooks they need. Any user-defined type providing all four hooks satisfies the concept and
@@ -94,11 +95,11 @@ concept mc_kernel = requires(K& k, RNG& rng) { k.step(rng); };
  * @tparam C Type to check.
  */
 template <class C>
-concept mc_run_callbacks = requires(const C& c, const simulation_stats& s) {
-    c.on_step(s);
-    c.on_cycle(s);
-    c.on_checkpoint(s);
-    { c.stop_when(s) } -> std::convertible_to<bool>;
+concept mc_run_callbacks = requires(const C& c, const simulation_ctx& x) {
+    c.on_step(x);
+    c.on_cycle(x);
+    c.on_checkpoint(x);
+    { c.stop_when(x) } -> std::convertible_to<bool>;
 };
 
 /**

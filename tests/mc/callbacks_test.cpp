@@ -65,8 +65,8 @@ TEST(MCCallbacks, ProgressPrinterPrintsOnFirstCall) {
     std::FILE* fp = std::tmpfile();
     ASSERT_NE(fp, nullptr);
     progress_printer pp { .out = fp, .prefix = "test", .throttle_sec = 60.0, .max_steps = 100 };
-    simulation_stats s { .steps_done = 42, .last_runtime = 0.5 };
-    pp(s);
+    simulation_ctx x { .steps_done = 42 };
+    pp(x);
     const auto text = read_tmpfile(fp);
     std::fclose(fp);
     EXPECT_NE(text.find("[test]"), std::string::npos);
@@ -78,9 +78,9 @@ TEST(MCCallbacks, ProgressPrinterThrottlesSubsequentCalls) {
     ASSERT_NE(fp, nullptr);
     // Very large throttle: after the first emit, no further line should appear within the test.
     progress_printer pp { .out = fp, .prefix = "tp", .throttle_sec = 60.0, .max_time = 1.0 };
-    pp(simulation_stats { .steps_done = 1, .last_runtime = 0.1 });
-    pp(simulation_stats { .steps_done = 2, .last_runtime = 0.2 });
-    pp(simulation_stats { .steps_done = 3, .last_runtime = 0.3 });
+    pp(simulation_ctx { .steps_done = 1 });
+    pp(simulation_ctx { .steps_done = 2 });
+    pp(simulation_ctx { .steps_done = 3 });
     const auto text = read_tmpfile(fp);
     std::fclose(fp);
     // Exactly one newline expected.
@@ -92,8 +92,8 @@ TEST(MCCallbacks, ProgressPrinterRankGateSuppressesNonZero) {
     ASSERT_NE(fp, nullptr);
     progress_printer pp { .out = fp, .prefix = "rg", .throttle_sec = 0.0,
         .rank = 3, .rank_zero_only = true };
-    pp(simulation_stats { .steps_done = 1 });
-    pp(simulation_stats { .steps_done = 2 });
+    pp(simulation_ctx { .steps_done = 1 });
+    pp(simulation_ctx { .steps_done = 2 });
     const auto text = read_tmpfile(fp);
     std::fclose(fp);
     EXPECT_TRUE(text.empty());
@@ -128,7 +128,7 @@ TEST(MCCallbacks, JsonCheckpointWriterRoundTripsSimulation) {
     }
 
     const auto writer = make_json_checkpoint_writer(src, path);
-    writer(src.stats());
+    writer(simulation_ctx {});
     ASSERT_TRUE(std::filesystem::exists(path));
 
     // Build a fresh simulation with the same registration, load, verify.
@@ -155,7 +155,7 @@ TEST(MCCallbacks, JsonCheckpointWriterRespectsModeOption) {
 
     json_io_options opts { .mode = json_file_mode::cbor };
     auto writer = make_json_checkpoint_writer(src, path, opts);
-    writer(src.stats());
+    writer(simulation_ctx {});
     ASSERT_TRUE(std::filesystem::exists(path));
 
     simulation<> dst;
@@ -183,7 +183,7 @@ TEST(MCCallbacks, Hdf5CheckpointWriterRoundTripsSimulation) {
     }
 
     auto writer = make_hdf5_checkpoint_writer(src, path);
-    writer(src.stats());
+    writer(simulation_ctx {});
     ASSERT_TRUE(std::filesystem::exists(path));
 
     sim_t dst;

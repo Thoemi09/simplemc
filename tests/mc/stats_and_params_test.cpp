@@ -43,14 +43,21 @@ TEST(MCSimulationParams, PrintDoesNotCrash) {
 
 TEST(MCSimulationStats, DefaultsAreZero) {
     simulation_stats s;
-    EXPECT_EQ(s.steps_done, 0u);
+    EXPECT_EQ(s.last_steps_done, 0u);
     EXPECT_EQ(s.cumulative_steps, 0u);
     EXPECT_DOUBLE_EQ(s.last_runtime, 0.0);
     EXPECT_DOUBLE_EQ(s.cumulative_time, 0.0);
 }
 
+TEST(MCSimulationCtx, DefaultStepsZeroAndElapsedNonNegative) {
+    simulation_ctx x;
+    EXPECT_EQ(x.steps_done, 0u);
+    x.clk.start();
+    EXPECT_GE(x.elapsed(), 0.0);
+}
+
 TEST(MCSimulationStats, PrintDoesNotCrash) {
-    simulation_stats s { .steps_done = 42, .last_runtime = 1.5, .cumulative_steps = 100, .cumulative_time = 5.25 };
+    simulation_stats s { .last_steps_done = 42, .last_runtime = 1.5, .cumulative_steps = 100, .cumulative_time = 5.25 };
     std::FILE* f = std::tmpfile();
     ASSERT_NE(f, nullptr);
     print(f, s);
@@ -58,22 +65,22 @@ TEST(MCSimulationStats, PrintDoesNotCrash) {
 }
 
 TEST(MCSimulationStats, ResetZeroesCurrentLeavesCumulative) {
-    simulation_stats s { .steps_done = 42, .last_runtime = 1.5, .cumulative_steps = 100, .cumulative_time = 5.25 };
+    simulation_stats s { .last_steps_done = 42, .last_runtime = 1.5, .cumulative_steps = 100, .cumulative_time = 5.25 };
 
     reset_simulation_stats(s);
 
-    EXPECT_EQ(s.steps_done, 0u);
+    EXPECT_EQ(s.last_steps_done, 0u);
     EXPECT_DOUBLE_EQ(s.last_runtime, 0.0);
     EXPECT_EQ(s.cumulative_steps, 100u);
     EXPECT_DOUBLE_EQ(s.cumulative_time, 5.25);
 }
 
 TEST(MCSimulationStats, AccumulateFoldsAndResets) {
-    simulation_stats s { .steps_done = 42, .last_runtime = 1.5, .cumulative_steps = 100, .cumulative_time = 5.25 };
+    simulation_stats s { .last_steps_done = 42, .last_runtime = 1.5, .cumulative_steps = 100, .cumulative_time = 5.25 };
 
     accumulate_simulation_stats(s);
 
-    EXPECT_EQ(s.steps_done, 0u);
+    EXPECT_EQ(s.last_steps_done, 0u);
     EXPECT_DOUBLE_EQ(s.last_runtime, 0.0);
     EXPECT_EQ(s.cumulative_steps, 142u);
     EXPECT_DOUBLE_EQ(s.cumulative_time, 6.75);
@@ -150,7 +157,7 @@ TEST(MCSimulationParams, JsonLoadValidatesInputConfig) {
 
 TEST(MCSimulationStats, JsonRoundTripWritesCumulativeOnly) {
     const simulation_stats src {
-        .steps_done = 7, .last_runtime = 1.5, .cumulative_steps = 1234, .cumulative_time = 9.75
+        .last_steps_done = 7, .last_runtime = 1.5, .cumulative_steps = 1234, .cumulative_time = 9.75
     };
 
     json_serializer w;
@@ -160,7 +167,7 @@ TEST(MCSimulationStats, JsonRoundTripWritesCumulativeOnly) {
     const auto& root = w.root();
     EXPECT_TRUE(root.contains("cumulative_steps"));
     EXPECT_TRUE(root.contains("cumulative_time"));
-    EXPECT_FALSE(root.contains("steps_done"));
+    EXPECT_FALSE(root.contains("last_steps_done"));
     EXPECT_FALSE(root.contains("last_runtime"));
 
     simulation_stats dst;
@@ -169,7 +176,7 @@ TEST(MCSimulationStats, JsonRoundTripWritesCumulativeOnly) {
 
     EXPECT_EQ(dst.cumulative_steps, 1234u);
     EXPECT_DOUBLE_EQ(dst.cumulative_time, 9.75);
-    EXPECT_EQ(dst.steps_done, 0u); // untouched
+    EXPECT_EQ(dst.last_steps_done, 0u); // untouched
     EXPECT_DOUBLE_EQ(dst.last_runtime, 0.0);
 }
 

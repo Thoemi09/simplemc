@@ -221,9 +221,9 @@ public:
      * @brief Run the main loop until a stop criterion fires.
      *
      * @details Forwards to the free simplemc::run with this aggregate's kernel, measurement set,
-     * stats, and RNG. Resets the per-run counters at entry; cumulative counters are left
-     * untouched — call accumulate_stats() to fold them in. Throws if no updates have been
-     * registered.
+     * stats, and RNG. The run's final totals overwrite the `last_*` fields of stats at exit;
+     * cumulative counters are left untouched — call accumulate_stats() to fold them in. Throws if
+     * no updates have been registered.
      *
      * @tparam Cbs Callbacks bundle satisfying simplemc::mc_run_callbacks. Defaults to
      *             simplemc::run_callbacks<> (all no-ops).
@@ -316,8 +316,9 @@ public:
      * `simplemc_save` overload, which preserves the previous on-disk schema (the stats fields under
      * the named key, plus a `"user"` sub-tree from the wrapped user type).
      *
-     * Per-run state (`steps_done`, `last_runtime`, per-update current-run counters) is intentionally
-     * not written; `simulation_params` is per-call and not part of the checkpoint either.
+     * Per-run state (`last_steps_done`, `last_runtime`, per-update current-run counters) is
+     * intentionally not written; `simulation_params` is per-call and not part of the checkpoint
+     * either.
      */
     friend void simplemc_save(cp_serializer_type& s, const simulation& sim) {
         s.save_at("rng", sim.rng_);

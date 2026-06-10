@@ -178,7 +178,7 @@ TEST(MCSimulation, StepIncrementsCountersByOne) {
     constexpr int N = 100;
     sim.run({ .max_steps = N, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = N });
 
-    EXPECT_EQ(sim.stats().steps_done, static_cast<std::uint64_t>(N));
+    EXPECT_EQ(sim.stats().last_steps_done, static_cast<std::uint64_t>(N));
     EXPECT_EQ(sim.update_data()[0].nprops, static_cast<std::uint64_t>(N));
     EXPECT_EQ(sim.update_data()[0].naccs, static_cast<std::uint64_t>(N));
     EXPECT_EQ(sim.update_data()[0].nimps, 0u);
@@ -248,7 +248,7 @@ TEST(MCSimulation, CycleCallsMeasureOncePerCycle) {
         .steps_per_cycle = steps_per_cycle,
         .cycles_per_check = M });
 
-    EXPECT_EQ(sim.stats().steps_done, static_cast<std::uint64_t>(M * steps_per_cycle));
+    EXPECT_EQ(sim.stats().last_steps_done, static_cast<std::uint64_t>(M * steps_per_cycle));
     EXPECT_EQ(*count, M);
     EXPECT_EQ(sim.update_data()[0].nprops, static_cast<std::uint64_t>(M * steps_per_cycle));
     EXPECT_EQ(sim.measurement_data()[0].name, "counter");
@@ -267,8 +267,8 @@ TEST(MCSimulation, RunStopsOnMaxSteps) {
         .cycles_per_check = cycles_per_check });
 
     const std::uint64_t block = steps_per_cycle * cycles_per_check;
-    EXPECT_GE(sim.stats().steps_done, max_steps);
-    EXPECT_LT(sim.stats().steps_done, max_steps + block);
+    EXPECT_GE(sim.stats().last_steps_done, max_steps);
+    EXPECT_LT(sim.stats().last_steps_done, max_steps + block);
 }
 
 TEST(MCSimulation, RunStopsOnMaxTime) {
@@ -280,7 +280,7 @@ TEST(MCSimulation, RunStopsOnMaxTime) {
     sim.run({ .max_steps = max_steps, .max_time = max_time, .steps_per_cycle = 50, .cycles_per_check = 200 });
 
     EXPECT_GE(sim.stats().last_runtime, max_time);
-    EXPECT_LT(sim.stats().steps_done, max_steps);
+    EXPECT_LT(sim.stats().last_steps_done, max_steps);
 }
 
 TEST(MCSimulation, AccumulateStatsFoldsAllCounters) {
@@ -290,13 +290,13 @@ TEST(MCSimulation, AccumulateStatsFoldsAllCounters) {
     const simulation_params p { .max_steps = 30, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = 10 };
     sim.run(p);
 
-    const std::uint64_t first_steps = sim.stats().steps_done;
+    const std::uint64_t first_steps = sim.stats().last_steps_done;
     const std::uint64_t first_nprops = sim.update_data()[0].nprops;
     ASSERT_GT(first_steps, 0u);
 
     sim.accumulate_stats();
 
-    EXPECT_EQ(sim.stats().steps_done, 0u);
+    EXPECT_EQ(sim.stats().last_steps_done, 0u);
     EXPECT_DOUBLE_EQ(sim.stats().last_runtime, 0.0);
     EXPECT_EQ(sim.stats().cumulative_steps, first_steps);
     EXPECT_EQ(sim.update_data()[0].nprops, 0u);
@@ -310,7 +310,7 @@ TEST(MCSimulation, RunAutoResetsCurrentCountersAfterAccumulate) {
     const simulation_params p { .max_steps = 30, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = 10 };
 
     sim.run(p);
-    const std::uint64_t first_steps = sim.stats().steps_done;
+    const std::uint64_t first_steps = sim.stats().last_steps_done;
     const std::uint64_t first_nprops = sim.update_data()[0].nprops;
 
     sim.accumulate_stats();
@@ -318,7 +318,7 @@ TEST(MCSimulation, RunAutoResetsCurrentCountersAfterAccumulate) {
     EXPECT_EQ(sim.update_data()[0].cumulative_nprops, first_nprops);
 
     sim.run(p);
-    const std::uint64_t second_steps = sim.stats().steps_done;
+    const std::uint64_t second_steps = sim.stats().last_steps_done;
     const std::uint64_t second_nprops = sim.update_data()[0].nprops;
 
     // run() reset current counters at entry — cumulative survived through the second run
@@ -397,7 +397,7 @@ TEST(MCSimulation, AddMeasurementInactiveSkipsMeasure) {
 
     EXPECT_EQ(*count, 0);
     EXPECT_FALSE(sim.measurement_data()[0].is_active);
-    EXPECT_EQ(sim.stats().steps_done, 10u); // steps still happen
+    EXPECT_EQ(sim.stats().last_steps_done, 10u); // steps still happen
 }
 
 TEST(MCSimulation, SetMeasurementActiveTogglesAtRuntime) {
@@ -443,7 +443,7 @@ TEST(MCSimulation, ResetStatsZeroesCurrentNotCumulative) {
 
     EXPECT_EQ(sim.update_data()[0].nprops, 0u);
     EXPECT_EQ(sim.update_data()[0].cumulative_nprops, cumulative_before); // survived
-    EXPECT_EQ(sim.stats().steps_done, 0u);
+    EXPECT_EQ(sim.stats().last_steps_done, 0u);
 }
 
 TEST(MCSimulation, RunSkipsAllMeasurementsWhenSkipMeasurementsTrue) {
@@ -460,7 +460,7 @@ TEST(MCSimulation, RunSkipsAllMeasurementsWhenSkipMeasurementsTrue) {
         .skip_measurements = true });
 
     EXPECT_EQ(*count, 0);                        // no measurements happened
-    EXPECT_EQ(sim.stats().steps_done, 10u);      // steps still happened
+    EXPECT_EQ(sim.stats().last_steps_done, 10u);      // steps still happened
     EXPECT_TRUE(sim.measurement_data()[0].is_active); // per-measurement flag untouched
 }
 
@@ -477,7 +477,7 @@ TEST(MCSimulation, JsonRoundTripPersistsCumulativeAndConfig) {
     src.add_measurement(counting_measurement {}, "stateless_meas");
 
     src.run({ .max_steps = 50, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = 10 });
-    const std::uint64_t src_steps = src.stats().steps_done;
+    const std::uint64_t src_steps = src.stats().last_steps_done;
     const int src_counter = *stateful_counter;
     const int src_tally = *m_tally;
     ASSERT_GT(src_steps, 0u);
@@ -516,7 +516,7 @@ TEST(MCSimulation, JsonRoundTripPersistsCumulativeAndConfig) {
     EXPECT_EQ(dst.measurement_data()[0].is_active, src.measurement_data()[0].is_active);
 
     // Per-run fields are zero on dst
-    EXPECT_EQ(dst.stats().steps_done, 0u);
+    EXPECT_EQ(dst.stats().last_steps_done, 0u);
     EXPECT_DOUBLE_EQ(dst.stats().last_runtime, 0.0);
     EXPECT_EQ(dst.update_data()[0].nprops, 0u);
 
@@ -617,10 +617,10 @@ TEST(MCSimulationCallbacks, OnStepFiresThroughAggregate) {
     sim.add_update(always_accept {}, "u", 1.0);
 
     std::uint64_t step_calls = 0;
-    auto cbs = simplemc::run_callbacks { .on_step = [&](const simulation_stats&) { ++step_calls; } };
+    auto cbs = simplemc::run_callbacks { .on_step = [&](const simulation_ctx&) { ++step_calls; } };
 
     sim.run({ .max_steps = 100, .max_time = 1e6, .steps_per_cycle = 5, .cycles_per_check = 4 }, cbs);
-    EXPECT_EQ(step_calls, sim.stats().steps_done);
+    EXPECT_EQ(step_calls, sim.stats().last_steps_done);
 }
 
 TEST(MCSimulationCallbacks, StopWhenTrumpsMaxSteps) {
@@ -628,11 +628,11 @@ TEST(MCSimulationCallbacks, StopWhenTrumpsMaxSteps) {
     sim.add_update(always_accept {}, "u", 1.0);
 
     auto cbs = simplemc::run_callbacks {
-        .stop_when = [](const simulation_stats& s) { return s.steps_done >= 50; },
+        .stop_when = [](const simulation_ctx& x) { return x.steps_done >= 50; },
     };
     sim.run({ .max_steps = std::numeric_limits<std::uint64_t>::max(), .max_time = 1e6,
                 .steps_per_cycle = 5, .cycles_per_check = 4 },
         cbs);
-    EXPECT_GE(sim.stats().steps_done, 50u);
-    EXPECT_LT(sim.stats().steps_done, 200u);
+    EXPECT_GE(sim.stats().last_steps_done, 50u);
+    EXPECT_LT(sim.stats().last_steps_done, 200u);
 }

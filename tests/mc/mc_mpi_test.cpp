@@ -52,7 +52,7 @@ protected:
 
 TEST_F(SimplemcMCMPI, SimulationStatsAllReduceSumsCounters) {
     simulation_stats st;
-    st.steps_done = static_cast<std::uint64_t>(rank + 1);                   // ranks contribute 1..size
+    st.last_steps_done = static_cast<std::uint64_t>(rank + 1);              // ranks contribute 1..size
     st.last_runtime = 1.5 * (rank + 1);
     st.cumulative_steps = static_cast<std::uint64_t>(100 * (rank + 1));
     st.cumulative_time = 0.25 * (rank + 1);
@@ -61,7 +61,7 @@ TEST_F(SimplemcMCMPI, SimulationStatsAllReduceSumsCounters) {
 
     const std::uint64_t expected_int_sum = static_cast<std::uint64_t>(size * (size + 1) / 2);
     const double expected_dbl_sum = 1.5 * static_cast<double>(size * (size + 1)) / 2.0;
-    EXPECT_EQ(st.steps_done, expected_int_sum);
+    EXPECT_EQ(st.last_steps_done, expected_int_sum);
     EXPECT_DOUBLE_EQ(st.last_runtime, expected_dbl_sum);
     EXPECT_EQ(st.cumulative_steps, 100u * expected_int_sum);
     EXPECT_DOUBLE_EQ(st.cumulative_time, 0.25 * static_cast<double>(size * (size + 1)) / 2.0);
@@ -144,13 +144,13 @@ TEST_F(SimplemcMCMPI, SimulationCompositeReducesAllParts) {
     // accumulate_stats() / reset_stats() are noexcept and exposed; instead mutate the underlying
     // simulation_stats directly via the const-cast escape, which is OK because we own the object.
     auto& mut_stats = const_cast<simulation_stats&>(sim.stats()); // NOLINT(cppcoreguidelines-pro-type-const-cast)
-    mut_stats.steps_done = static_cast<std::uint64_t>(rank + 1);
+    mut_stats.last_steps_done = static_cast<std::uint64_t>(rank + 1);
 
     simplemc_mpi_collect(comm, sim);
 
     const std::uint64_t s = static_cast<std::uint64_t>(size * (size + 1) / 2);
     EXPECT_EQ(sim.updates().at(0).nprops, s);
-    EXPECT_EQ(sim.stats().steps_done, s);
+    EXPECT_EQ(sim.stats().last_steps_done, s);
 
     const auto* reduced = sim.get_measurement<mean_meas>("mean");
     ASSERT_NE(reduced, nullptr);

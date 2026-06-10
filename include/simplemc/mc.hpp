@@ -15,6 +15,7 @@
 #include <simplemc/mc/kernels.hpp>
 #include <simplemc/mc/run.hpp>
 #include <simplemc/mc/simulation.hpp>
+#include <simplemc/mc/simulation_ctx.hpp>
 #include <simplemc/mc/simulation_params.hpp>
 #include <simplemc/mc/simulation_stats.hpp>
 #include <simplemc/mc/update.hpp>

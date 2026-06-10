@@ -20,7 +20,7 @@
 #define SIMPLEMC_MC_CALLBACKS_HPP
 
 #include <simplemc/config.hpp>
-#include <simplemc/mc/simulation_stats.hpp>
+#include <simplemc/mc/simulation_ctx.hpp>
 #include <simplemc/serialize/json/file_io.hpp>
 #include <simplemc/serialize/json/json_serializer.hpp>
 #include <simplemc/utils/timer.hpp>
@@ -49,8 +49,9 @@ namespace simplemc {
  * @brief Throttled progress-printer callback.
  *
  * @details A small callable that prints a one-line status to a `FILE*` no more often than
- * `throttle_sec` seconds of wall clock. If both `max_steps` and `max_time` are zero, it prints just
- * the running counters; otherwise it adds a percentage based on whichever budget is non-zero.
+ * `throttle_sec` seconds of wall clock. It reports the live step count (`ctx.steps_done`) and live
+ * wall-clock (`ctx.elapsed()`). If both `max_steps` and `max_time` are zero, it prints just the
+ * running counters; otherwise it adds a percentage based on whichever budget is non-zero.
  *
  * Rank gating is **caller-side**: the user passes the local MPI rank via `rank`, and the printer
  * suppresses output on ranks other than `0` when `rank_zero_only` is true. This keeps the struct
@@ -90,7 +91,7 @@ struct progress_printer {
     /**
      * @brief Print one status line if rank-gated emission is enabled and the throttle has elapsed.
      */
-    void operator()(const simulation_stats& s) const {
+    void operator()(const simulation_ctx& x) const {
         if (rank_zero_only && rank != 0) {
             return;
         }
@@ -99,21 +100,23 @@ struct progress_printer {
             return;
         }
 
+        const std::uint64_t steps = x.steps_done;
+        const double runtime = x.elapsed();
         if (max_steps > 0 && max_time > 0.0) {
-            const double pct_steps = 100.0 * static_cast<double>(s.steps_done) / static_cast<double>(max_steps);
-            const double pct_time = 100.0 * s.last_runtime / max_time;
-            fmt::print(out, "[{}] steps {}/{} ({:.2f}%), time {:.2f}/{:.2f} s ({:.2f}%)\n", prefix, s.steps_done,
-                max_steps, pct_steps, s.last_runtime, max_time, pct_time);
+            const double pct_steps = 100.0 * static_cast<double>(steps) / static_cast<double>(max_steps);
+            const double pct_time = 100.0 * runtime / max_time;
+            fmt::print(out, "[{}] steps {}/{} ({:.2f}%), time {:.2f}/{:.2f} s ({:.2f}%)\n", prefix, steps,
+                max_steps, pct_steps, runtime, max_time, pct_time);
         } else if (max_steps > 0) {
-            const double pct = 100.0 * static_cast<double>(s.steps_done) / static_cast<double>(max_steps);
-            fmt::print(out, "[{}] steps {}/{} ({:.2f}%), time {:.2f} s\n", prefix, s.steps_done, max_steps, pct,
-                s.last_runtime);
+            const double pct = 100.0 * static_cast<double>(steps) / static_cast<double>(max_steps);
+            fmt::print(out, "[{}] steps {}/{} ({:.2f}%), time {:.2f} s\n", prefix, steps, max_steps, pct,
+                runtime);
         } else if (max_time > 0.0) {
-            const double pct = 100.0 * s.last_runtime / max_time;
-            fmt::print(out, "[{}] steps {}, time {:.2f}/{:.2f} s ({:.2f}%)\n", prefix, s.steps_done, s.last_runtime,
+            const double pct = 100.0 * runtime / max_time;
+            fmt::print(out, "[{}] steps {}, time {:.2f}/{:.2f} s ({:.2f}%)\n", prefix, steps, runtime,
                 max_time, pct);
         } else {
-            fmt::print(out, "[{}] steps {}, time {:.2f} s\n", prefix, s.steps_done, s.last_runtime);
+            fmt::print(out, "[{}] steps {}, time {:.2f} s\n", prefix, steps, runtime);
         }
         std::fflush(out);
 
@@ -180,7 +183,7 @@ struct json_checkpoint_writer {
     /**
      * @brief Snapshot `*sim` into `path`.
      */
-    void operator()(const simulation_stats&) const {
+    void operator()(const simulation_ctx&) const {
         json_serializer ser;
         simplemc_save(ser, *sim);
         write_json_file(ser.root(), path, opts);
@@ -247,7 +250,7 @@ struct hdf5_checkpoint_writer {
     /**
      * @brief Snapshot `*sim` into `path`.
      */
-    void operator()(const simulation_stats&) const {
+    void operator()(const simulation_ctx&) const {
         hdf5_serializer ser { path, mode };
         simplemc_save(ser, *sim);
     }
