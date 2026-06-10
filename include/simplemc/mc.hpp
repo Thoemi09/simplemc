@@ -14,6 +14,7 @@
 #include <simplemc/mc/measurement_set.hpp>
 #include <simplemc/mc/kernels.hpp>
 #include <simplemc/mc/run.hpp>
+#include <simplemc/mc/run_callbacks.hpp>
 #include <simplemc/mc/simulation.hpp>
 #include <simplemc/mc/simulation_ctx.hpp>
 #include <simplemc/mc/simulation_params.hpp>

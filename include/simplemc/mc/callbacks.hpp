@@ -20,6 +20,7 @@
 #define SIMPLEMC_MC_CALLBACKS_HPP
 
 #include <simplemc/config.hpp>
+#include <simplemc/mc/run_callbacks.hpp>
 #include <simplemc/mc/simulation_ctx.hpp>
 #include <simplemc/serialize/json/file_io.hpp>
 #include <simplemc/serialize/json/json_serializer.hpp>
