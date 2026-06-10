@@ -82,12 +82,13 @@ concept json_loadable =
  * - **Save direction**: `save_at(key, value)` (non-const) writes into the shared document via ADL
  * `%simplemc_save(json_serializer&, const T&)` if such an overload is reachable, falling back to
  * nlohmann's `to_json` / `adl_serializer<T>` machinery otherwise.
- * - **Load direction**: `load_at(key, value)` (const) reads from the shared document via ADL
- * `%simplemc_load(const json_serializer&, T&)` if such an overload is reachable, falling back to
- * `nlohmann::json::get_to` otherwise.
+ * - **Load direction**: `load_at(key, value)` and `try_load_at(key, value)` (both const) read from
+ * the shared document via ADL `%simplemc_load(const json_serializer&, T&)` if such an overload is
+ * reachable, falling back to `nlohmann::json::get_to` otherwise. The two differ only in how they
+ * handle a missing key — `load_at` throws, `try_load_at` returns `false`.
  *
- * Every operation — save_at(), load_at(), has(), operator[](), get() — is interpreted **relative to
- * the current location**, not relative to the root. For example, given the document
+ * Every operation — save_at(), load_at(), try_load_at(), has(), operator[](), get() — is interpreted
+ * **relative to the current location**, not relative to the root. For example, given the document
  *
  * ```
  * { "physics": { "temperature": 1.5 } }

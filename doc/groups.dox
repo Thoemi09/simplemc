@@ -1306,7 +1306,7 @@
  * — navigated by named keys and read or written at any **location** within it. A type that implements
  * both the read and write directions of this model is a **serializer** (simplemc::serializer).
  *
- * The model defines four basic operations. Let `s` be a serializer object, `key` a
+ * The model defines five basic operations. Let `s` be a serializer object, `key` a
  * `std::string_view`, and `value` an instance of some type `T`:
  *
  * - `s[key]` returns another serializer of the same type, pointing one level deeper than the current
@@ -1318,8 +1318,13 @@
  * `s.save_at("a", a).save_at("b", b);`.
  * - `s.load_at(key, value)` reads from sub-location `key` into `value` and returns `s` for chaining.
  * Backends typically throw on a missing key — use `has(key)` first when the key is optional.
+ * - `s.try_load_at(key, value)` is the optional-read counterpart of `load_at`: it reads from
+ * sub-location `key` into `value` if the key exists and returns `true`, or leaves `value` untouched
+ * and returns `false` if the key is missing. Useful when loading optional/backwards-compatible state
+ * without an explicit `has(key)` check.
  *
- * The dispatch rule for `save_at` / `load_at` is described in @ref simplemc-serialize-adl.
+ * The dispatch rule for `save_at` / `load_at` / `try_load_at` is described in
+ * @ref simplemc-serialize-adl.
  *
  * **Examples across backends.** `s["physics"].save_at("temperature", 1.5)` produces:
  *

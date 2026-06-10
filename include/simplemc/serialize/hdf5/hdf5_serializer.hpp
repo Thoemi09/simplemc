@@ -161,9 +161,10 @@ inline std::string h5_parent_path(const std::string& path) {
  * `HighFive::File::createDataSet` otherwise. The fallback creates an HDF5 **dataset** at
  * `<current location>/<key>`; the ADL path delegates to the user's overload, which typically descends via
  * operator[]() into an HDF5 **group**.
- * - **Load direction**: `load_at(key, value)` and `try_load_at(key, value)` reads from the file via
+ * - **Load direction**: `load_at(key, value)` and `try_load_at(key, value)` read from the file via
  * ADL `%simplemc_load(const hdf5_serializer&, T&)` if such an overload is reachable, falling back to
- * `HighFive::DataSet::read` otherwise.
+ * `HighFive::DataSet::read` otherwise. The two differ only in how they handle a missing key —
+ * `load_at` throws, `try_load_at` returns `false`.
  *
  * Group materialization is lazy: operator[]() never touches the file, and `save_at` only creates the
  * parent group when a leaf dataset is actually written. This mirrors the auto-create-on-write
