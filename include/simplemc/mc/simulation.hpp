@@ -123,7 +123,9 @@ public:
      * @param name Identifier (must be unique within this simulation).
      * @param weight Unnormalized selection weight (\f$ \ge 0 \f$).
      */
-    void add_update(basic_update<Traits> u, std::string name, double weight);
+    void add_update(basic_update<Traits> u, std::string name, double weight) {
+        updates_.add(update_type { std::move(u), std::move(name), weight });
+    }
 
     /**
      * @brief Register an inverse pair of updates.
@@ -142,8 +144,11 @@ public:
      * @param name2 Identifier for the second update.
      * @param weight2 Weight of the second update.
      */
-    void add_update(basic_update<Traits> u1, std::string name1, double weight1,
-        basic_update<Traits> u2, std::string name2, double weight2);
+    void add_update(basic_update<Traits> u1, std::string name1, double weight1, basic_update<Traits> u2,
+        std::string name2, double weight2) {
+        updates_.add_pair(update_type { std::move(u1), std::move(name1), weight1 },
+            update_type { std::move(u2), std::move(name2), weight2 });
+    }
 
     /**
      * @brief Register a measurement.
@@ -156,18 +161,23 @@ public:
      * @param name Identifier (must be unique within this simulation).
      * @param is_active Initial activation state. Defaults to `true`.
      */
-    void add_measurement(basic_measurement<Traits> m, std::string name,
-        bool is_active = true);
+    void add_measurement(basic_measurement<Traits> m, std::string name, bool is_active = true) {
+        measurements_.add(measurement_type { std::move(m), std::move(name), is_active });
+    }
 
     /**
      * @brief Look up an update by name.
      */
-    [[nodiscard]] std::optional<std::size_t> find_update(std::string_view name) const noexcept;
+    [[nodiscard]] std::optional<std::size_t> find_update(std::string_view name) const noexcept {
+        return updates_.find(name);
+    }
 
     /**
      * @brief Look up a measurement by name.
      */
-    [[nodiscard]] std::optional<std::size_t> find_measurement(std::string_view name) const noexcept;
+    [[nodiscard]] std::optional<std::size_t> find_measurement(std::string_view name) const noexcept {
+        return measurements_.find(name);
+    }
 
     /**
      * @brief Change the selection weight of a registered update.
@@ -177,12 +187,12 @@ public:
      * call run() (which rebuilds at entry) or initialize_update_distribution() before the next
      * sampling pass for the change to take effect.
      */
-    void set_update_weight(std::string_view name, double w);
+    void set_update_weight(std::string_view name, double w) { updates_.set_weight(name, w); }
 
     /**
      * @brief Toggle the active state of a registered measurement.
      */
-    void set_measurement_active(std::string_view name, bool is_active);
+    void set_measurement_active(std::string_view name, bool is_active) { measurements_.set_active(name, is_active); }
 
     /**
      * @brief Recover a typed pointer to a registered update's wrapped user value.
@@ -251,17 +261,23 @@ public:
      * update has a positive weight; zero-weight entries are passed through to
      * `std::discrete_distribution` unchanged (they get probability 0).
      */
-    void initialize_update_distribution();
+    void initialize_update_distribution() { updates_.rebuild_distribution(); }
 
     /**
      * @brief Fold the current-run counters into the cumulative counters on every owned aggregate.
      */
-    void accumulate_stats() noexcept;
+    void accumulate_stats() noexcept {
+        accumulate_simulation_stats(stats_);
+        updates_.accumulate_counters();
+    }
 
     /**
      * @brief Zero the current-run counters on every owned aggregate.
      */
-    void reset_stats() noexcept;
+    void reset_stats() noexcept {
+        reset_simulation_stats(stats_);
+        updates_.reset_run_counters();
+    }
 
     /**
      * @brief Read-only access to the aggregate simulation statistics.
@@ -289,9 +305,7 @@ public:
     /**
      * @brief Read-only view over the per-measurement entries.
      */
-    [[nodiscard]] std::span<const measurement_type> measurement_data() const noexcept {
-        return measurements_.data();
-    }
+    [[nodiscard]] std::span<const measurement_type> measurement_data() const noexcept { return measurements_.data(); }
 
     /**
      * @brief Const access to the owned measurement set.
@@ -416,60 +430,6 @@ private:
     measurement_set<Traits> measurements_;
     simulation_stats stats_;
 };
-
-template <mc_traits_like Traits>
-std::optional<std::size_t> simulation<Traits>::find_update(std::string_view name) const noexcept {
-    return updates_.find(name);
-}
-
-template <mc_traits_like Traits>
-std::optional<std::size_t> simulation<Traits>::find_measurement(std::string_view name) const noexcept {
-    return measurements_.find(name);
-}
-
-template <mc_traits_like Traits>
-void simulation<Traits>::add_update(basic_update<Traits> u, std::string name, double weight) {
-    updates_.add(update_type { std::move(u), std::move(name), weight });
-}
-
-template <mc_traits_like Traits>
-void simulation<Traits>::add_update(basic_update<Traits> u1, std::string name1, double weight1,
-    basic_update<Traits> u2, std::string name2, double weight2) {
-    updates_.add_pair(update_type { std::move(u1), std::move(name1), weight1 },
-        update_type { std::move(u2), std::move(name2), weight2 });
-}
-
-template <mc_traits_like Traits>
-void simulation<Traits>::add_measurement(basic_measurement<Traits> m, std::string name, bool is_active) {
-    measurements_.add(measurement_type { std::move(m), std::move(name), is_active });
-}
-
-template <mc_traits_like Traits>
-void simulation<Traits>::set_update_weight(std::string_view name, double w) {
-    updates_.set_weight(name, w);
-}
-
-template <mc_traits_like Traits>
-void simulation<Traits>::set_measurement_active(std::string_view name, bool is_active) {
-    measurements_.set_active(name, is_active);
-}
-
-template <mc_traits_like Traits>
-void simulation<Traits>::initialize_update_distribution() {
-    updates_.rebuild_distribution();
-}
-
-template <mc_traits_like Traits>
-void simulation<Traits>::accumulate_stats() noexcept {
-    accumulate_simulation_stats(stats_);
-    updates_.accumulate_counters();
-}
-
-template <mc_traits_like Traits>
-void simulation<Traits>::reset_stats() noexcept {
-    reset_simulation_stats(stats_);
-    updates_.reset_run_counters();
-}
 
 /** @} */
 
