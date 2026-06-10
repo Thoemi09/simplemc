@@ -20,7 +20,6 @@
 #include <random>
 #include <ranges>
 #include <span>
-#include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -82,14 +81,12 @@ public:
      */
     void add_pair(update_type u1, update_type u2) {
         if ((u1.weight == 0.0) != (u2.weight == 0.0)) {
-            throw simplemc_exception(fmt::format(
-                "inverse pair must have both weights zero or both non-zero "
-                "(got {} on '{}' and {} on '{}')",
+            throw simplemc_exception(fmt::format("inverse pair must have both weights zero or both non-zero "
+                                                 "(got {} on '{}' and {} on '{}')",
                 u1.weight, u1.name, u2.weight, u2.name));
         }
         if (u1.name == u2.name) {
-            throw simplemc_exception(
-                fmt::format("paired updates must have distinct names (both are '{}')", u1.name));
+            throw simplemc_exception(fmt::format("paired updates must have distinct names (both are '{}')", u1.name));
         }
         if (find(u1.name)) {
             throw simplemc_exception(fmt::format("update '{}' is already registered", u1.name));
@@ -131,8 +128,7 @@ public:
      * @brief Look up an update by name.
      */
     [[nodiscard]] std::optional<std::size_t> find(std::string_view name) const noexcept {
-        const auto it =
-            std::ranges::find_if(updates_, [name](const update_type& u) { return u.name == name; });
+        const auto it = std::ranges::find_if(updates_, [name](const update_type& u) { return u.name == name; });
         if (it == updates_.end()) {
             return std::nullopt;
         }

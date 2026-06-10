@@ -31,6 +31,21 @@ struct counting_kernel {
     void step(xoshiro256ss&) { ++calls; }
 };
 
+// User-defined callbacks bundle (not run_callbacks) satisfying mc_run_callbacks.
+struct counting_callbacks {
+    std::shared_ptr<std::uint64_t> steps = std::make_shared<std::uint64_t>(0);
+    std::uint64_t stop_after = 0;
+    void on_step(const simulation_stats&) const { ++*steps; }
+    void on_cycle(const simulation_stats&) const {}
+    void on_checkpoint(const simulation_stats&) const {}
+    bool stop_when(const simulation_stats& s) const { return s.steps_done >= stop_after; }
+};
+
+static_assert(mc_run_callbacks<run_callbacks<>>);
+static_assert(mc_run_callbacks<run_callbacks<progress_printer>>);
+static_assert(mc_run_callbacks<counting_callbacks>);
+static_assert(!mc_run_callbacks<no_op_callback>);
+
 } // namespace
 
 TEST(MCRun, MaxStepsBounds) {
@@ -210,6 +225,29 @@ TEST(MCRun, MeasureAllFiresWhenActive) {
     run(kernel, ms, p, stats, rng);
 
     EXPECT_EQ(static_cast<std::uint64_t>(*count), stats.steps_done / p.steps_per_cycle);
+}
+
+TEST(MCRun, AcceptsUserDefinedCallbacksBundle) {
+    update_set<> us;
+    us.add({ always_accept {}, "u", 1.0 });
+    measurement_set<> ms;
+    metropolis_kernel kernel { us };
+    simulation_stats stats;
+    xoshiro256ss rng { 11 };
+
+    counting_callbacks cbs { .stop_after = 50 };
+
+    simulation_params p {
+        .max_steps = std::numeric_limits<std::uint64_t>::max(),
+        .max_time = 1e6,
+        .steps_per_cycle = 5,
+        .cycles_per_check = 4,
+    };
+    run(kernel, ms, p, stats, rng, cbs);
+
+    EXPECT_EQ(*cbs.steps, stats.steps_done);
+    EXPECT_GE(stats.steps_done, 50u);
+    EXPECT_LT(stats.steps_done, 200u); // stop_when ended the run early
 }
 
 TEST(MCRun, AcceptsCustomKernelWithoutUpdateSet) {

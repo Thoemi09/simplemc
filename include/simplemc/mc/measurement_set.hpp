@@ -19,7 +19,6 @@
 #include <optional>
 #include <ranges>
 #include <span>
-#include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -82,8 +81,8 @@ public:
      * @brief Look up a measurement by name.
      */
     [[nodiscard]] std::optional<std::size_t> find(std::string_view name) const noexcept {
-        const auto it = std::ranges::find_if(
-            measurements_, [name](const measurement_type& m) { return m.name == name; });
+        const auto it =
+            std::ranges::find_if(measurements_, [name](const measurement_type& m) { return m.name == name; });
         if (it == measurements_.end()) {
             return std::nullopt;
         }
@@ -159,8 +158,7 @@ public:
     friend void simplemc_load(const cp_serializer_type& s, measurement_set& ms) {
         for (auto& m : ms.measurements_) {
             if (!s.has(m.name)) {
-                throw simplemc_exception(
-                    fmt::format("measurement '{}' not found in serialized data", m.name));
+                throw simplemc_exception(fmt::format("measurement '{}' not found in serialized data", m.name));
             }
             const auto entry = s[m.name];
             simplemc_load(entry, m);
@@ -177,8 +175,7 @@ public:
     friend void simplemc_load_input_config(const ic_serializer_type& s, measurement_set& ms) {
         for (auto& m : ms.measurements_) {
             if (!s.has(m.name)) {
-                throw simplemc_exception(
-                    fmt::format("measurement '{}' not found in input config", m.name));
+                throw simplemc_exception(fmt::format("measurement '{}' not found in input config", m.name));
             }
             const auto entry = s[m.name];
             simplemc_load_input_config(entry, m);

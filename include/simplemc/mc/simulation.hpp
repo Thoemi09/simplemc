@@ -225,13 +225,14 @@ public:
      * untouched — call accumulate_stats() to fold them in. Throws if no updates have been
      * registered.
      *
+     * @tparam Cbs Callbacks bundle satisfying simplemc::mc_run_callbacks. Defaults to
+     *             simplemc::run_callbacks<> (all no-ops).
+     *
      * @param p Parameters for this run.
      * @param cbs Optional callbacks. Defaults to all no-ops.
      */
-    template <class StepCb = no_op_callback, class CycleCb = no_op_callback,
-        class CheckpointCb = no_op_callback, class StopCb = no_op_stop_callback>
-    void run(const simulation_params& p,
-        const run_callbacks<StepCb, CycleCb, CheckpointCb, StopCb>& cbs = {}) {
+    template <mc_run_callbacks Cbs = run_callbacks<>>
+    void run(const simulation_params& p, const Cbs& cbs = {}) {
         if (updates_.empty()) {
             throw simplemc_exception("no updates registered");
         }

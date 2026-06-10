@@ -63,6 +63,9 @@ struct no_op_stop_callback {
  *   - `stop_when`     — once per cycles_per_check, in the outer while condition; returns true to
  *                       stop early.
  *
+ * This struct is the canonical model of simplemc::mc_run_callbacks; simplemc::run accepts any
+ * type satisfying that concept, so a user-defined bundle with the four hooks works as well.
+ *
  * @tparam StepCb       Type of the per-step callback. Defaults to simplemc::no_op_callback.
  * @tparam CycleCb      Type of the per-cycle callback. Defaults to simplemc::no_op_callback.
  * @tparam CheckpointCb Type of the per-checkpoint callback. Defaults to simplemc::no_op_callback.
@@ -97,10 +100,11 @@ struct run_callbacks {
  * `stats.steps_done` is bumped here on every step; per-update counters (`nprops`, `naccs`,
  * `nimps`) are written by the kernel.
  *
- * @tparam Kernel       Step kernel satisfying simplemc::mc_kernel for the given RNG.
- * @tparam S1, S2       Serializer types carried by the measurement_set.
- * @tparam RNG          Random number generator type.
- * @tparam StepCb, CycleCb, CheckpointCb, StopCb  Callback types (see simplemc::run_callbacks).
+ * @tparam Kernel Step kernel satisfying simplemc::mc_kernel for the given RNG.
+ * @tparam S1, S2 Serializer types carried by the measurement_set.
+ * @tparam RNG    Random number generator type.
+ * @tparam Cbs    Callbacks bundle satisfying simplemc::mc_run_callbacks. Defaults to
+ *                simplemc::run_callbacks<> (all no-ops); any user type with the four hooks works.
  *
  * @param kernel Kernel that performs each step.
  * @param meas Measurement set; its active cache is rebuilt at entry.
@@ -109,13 +113,11 @@ struct run_callbacks {
  * @param rng RNG threaded into both the kernel and the measurement sweep.
  * @param cbs Optional callbacks; default = all no-ops.
  */
-template <class Kernel, serializer S1, serializer S2, class RNG, class StepCb = no_op_callback,
-    class CycleCb = no_op_callback, class CheckpointCb = no_op_callback,
-    class StopCb = no_op_stop_callback>
+template <class Kernel, serializer S1, serializer S2, class RNG,
+    mc_run_callbacks Cbs = run_callbacks<>>
     requires mc_kernel<Kernel, RNG>
 void run(Kernel& kernel, measurement_set<S1, S2>& meas, const simulation_params& p,
-    simulation_stats& stats, RNG& rng,
-    const run_callbacks<StepCb, CycleCb, CheckpointCb, StopCb>& cbs = {}) {
+    simulation_stats& stats, RNG& rng, const Cbs& cbs = {}) {
     validate_simulation_params(p);
     if constexpr (requires { kernel.prepare(); }) {
         kernel.prepare();
