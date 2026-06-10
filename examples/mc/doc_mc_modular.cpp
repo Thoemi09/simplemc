@@ -7,10 +7,10 @@
 
 #include <cmath>
 #include <functional>
-#include <random>
 
 namespace {
 
+// User state shared between the update and the measurement.
 struct my_state {
     double x = 1.0;
     double a = 0.0;
@@ -18,6 +18,7 @@ struct my_state {
     std::function<double(double)> f = [](double v) { return std::cos(v); };
 };
 
+// Uniform-resampling update: propose a new x uniformly in [a, b], always accept.
 struct uniform_update {
     my_state* s;
     simplemc::xoshiro256ss* rng;
@@ -31,6 +32,7 @@ struct uniform_update {
     void accept() { s->x = new_x; }
 };
 
+// Observer that accumulates samples of f(x) and owns its own accumulator.
 struct integral_observer {
     const my_state* s;
     simplemc::mean_acc<double> acc {};

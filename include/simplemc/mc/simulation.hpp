@@ -32,7 +32,7 @@
 namespace simplemc {
 
 /**
- * @addtogroup simplemc-mc
+ * @addtogroup simplemc-mc-sim
  * @{
  */
 
@@ -66,6 +66,11 @@ namespace simplemc {
  * `input_config_serializer_type` for user-facing config files) and the `rng_type`. They default
  * independently via simplemc::mc_traits, so picking e.g. `simulation<mc_traits<hdf5_serializer>>`
  * keeps state checkpointing in HDF5 while keeping input config in JSON without any extra typing.
+ *
+ * The following example integrates \f$ \int_0^2 \cos(x)\,\mathrm{d}x \f$ by Monte Carlo, driven by
+ * this aggregate (contrast with the modular assembly shown on the @ref simplemc-mc module page):
+ *
+ * @include mc/doc_mc_simulation.cpp
  *
  * @tparam Traits Traits bundle satisfying simplemc::mc_traits_like (default: simplemc::mc_traits<>).
  */

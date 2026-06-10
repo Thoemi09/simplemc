@@ -42,7 +42,7 @@
 namespace simplemc {
 
 /**
- * @addtogroup simplemc-mc
+ * @addtogroup simplemc-mc-callbacks
  * @{
  */
 

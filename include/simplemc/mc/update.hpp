@@ -24,7 +24,7 @@
 namespace simplemc {
 
 /**
- * @addtogroup simplemc-mc
+ * @addtogroup simplemc-mc-entities-updates
  * @{
  */
 

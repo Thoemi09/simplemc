@@ -1428,23 +1428,161 @@
  * @brief Building blocks for Monte Carlo simulations.
  *
  * @details **simplemc-mc** is the Monte Carlo–specific layer of **simplemc**. It hosts the types and
- * drivers needed to set up, run, and persist a Monte Carlo simulation.
+ * drivers needed to set up, run, and persist a Markov-chain Monte Carlo (MCMC) simulation while
+ * leaving the physics entirely to the user.
  *
- * @section simplemc-mc-type-erasure Polymorphic user types
+ * A Monte Carlo run is assembled from a few orthogonal pieces, each documented in its own subgroup:
  *
- * Some user-extensible types in **simplemc-mc** follow the **concept–model type-erasure idiom**: the
- * user writes any plain class that satisfies a small C++20 concept, and the library wraps it in a
- * value-semantic polymorphic holder. The wrapper hides a `std::unique_ptr` to an internal polymorphic
- * base whose nested model derives from it, stores the user's value, and forwards the concept's
- * operations through it.
+ * - The user owns the **configuration** (state) of the Markov chain. **simplemc-mc** never sees its
+ * internals.
+ * - @ref simplemc-mc-entities-updates propose and apply changes to that configuration. An update is
+ * any user type whose `attempt()` proposes a move (returning a Metropolis weight ratio) and whose
+ * `accept()` / `reject()` commit or roll it back.
+ * - @ref simplemc-mc-entities-measurements sample observables off the current configuration through a
+ * `measure()` member.
+ * - @ref simplemc-mc-kernels define the MC algorithm, i.e. how updates are chosen, applied and 
+ * accepted/rejected. One kernel invocation constitutes one MC step. The default is the 
+ * Metropolis-Hastings kernel.
+ * - The free simplemc::run drives the simulation by looping over MC cycles. Each cycle consists of a
+ * fixed number of steps and ends with a measurement phase. The loop continues until a stop criterion 
+ * in satisfied (e.g. a fixed number of cycles, a wall-clock time limit, etc.).
+ * - @ref simplemc-mc-callbacks are invoked during the MC loop. They can be used to perform various
+ * tasks like logging, checkpointing, debugging, etc.
+ * - The whole stack is parameterized on a small simplemc::mc_traits_like bundle that selects the RNG
+ * and the two serializer backends used to checkpoint state and read input config, so a run can be
+ * persisted and resumed.
+ *
+ * The contracts that user updates, measurements, kernels, traits and callbacks must satisfy are
+ * expressed as C++20 @ref simplemc-mc-concepts.
+ */
+
+/**
+ * @defgroup simplemc-mc-entities Updates and measurements
+ * @ingroup simplemc-mc
+ * @brief User-extensible polymorphic entities and the machinery behind them.
+ *
+ * @details @ref simplemc-mc-entities-updates and @ref simplemc-mc-entities-measurements are the two
+ * user-extensible entity families of **simplemc-mc**. Both follow the same **concept–model
+ * type-erasure idiom** and are managed by the same named-collection base, documented here.
+ *
+ * @section simplemc-mc-entities-type-erasure Polymorphic user types
+ *
+ * The entity families follow the **concept–model type-erasure idiom**: the user writes any plain
+ * class that satisfies a small C++20 concept (see @ref simplemc-mc-concepts), and the library wraps
+ * it in a value-semantic polymorphic holder. The wrapper hides a `std::unique_ptr` to an internal
+ * polymorphic base whose nested model derives from it, stores the user's value, and forwards the
+ * concept's operations through it.
  *
  * The result: user code is non-intrusive (no base class to inherit from), the wrapper is a regular
  * value type usable in standard containers, and a single wrapper instance can hold values of
- * arbitrary user types.
+ * arbitrary user types. A typed `get<T>()` accessor recovers the wrapped value by `typeid`-checked
+ * cast.
  *
  * See e.g. simplemc::measurement. The reusable machinery behind this idiom is public: a wrapper is
  * built from simplemc::basic_wrapper (the value-semantics shell), simplemc::basic_interface (the
- * role-agnostic polymorphic base), and simplemc::basic_model (the role-agnostic model). The
- * collection counterpart, simplemc::named_set, provides the shared registration / lookup base for
- * simplemc::update_set and simplemc::measurement_set.
+ * role-agnostic polymorphic base), and simplemc::basic_model (the role-agnostic model).
+ *
+ * @section simplemc-mc-entities-collections Named collections
+ *
+ * simplemc::named_set provides the shared registration / lookup base — unique-name enforcement and
+ * by-name / by-index access — for both simplemc::update_set and simplemc::measurement_set.
+ */
+
+/**
+ * @defgroup simplemc-mc-entities-updates Updates
+ * @ingroup simplemc-mc-entities
+ * @brief Moves that propose and apply changes to the Markov-chain configuration.
+ *
+ * @details An **update** is any user type satisfying simplemc::mc_update: `attempt()` proposes a move
+ * and returns its Metropolis weight ratio (\f$ \leq 0 \f$ signals an impossible move), and `accept()`
+ * / `reject()` commit or roll the proposal back. The library wraps it in a value-semantic
+ * simplemc::basic_update.
+ *
+ * A registered update is bundled with its metadata and counters in an simplemc::update entry: its
+ * unique name, selection weight, optional inverse-update link, and acceptance / rejection / impossible
+ * counters. Entries are owned by an simplemc::update_set, which also holds the
+ * `std::discrete_distribution` used to pick an update by weight and recomputes the detailed-balance
+ * ratios via `rebuild_distribution()` at run entry.
+ */
+
+/**
+ * @defgroup simplemc-mc-entities-measurements Measurements
+ * @ingroup simplemc-mc-entities
+ * @brief Observers that sample observables off the current configuration.
+ *
+ * @details A **measurement** is any user type satisfying simplemc::mc_measurement through a
+ * `measure()` member, which typically feeds the sampled value into a @ref simplemc-accs accumulator
+ * it owns. The library wraps it in a value-semantic simplemc::basic_measurement.
+ *
+ * A registered measurement is bundled with its metadata in a simplemc::measurement entry: its unique
+ * name and its active flag. Entries are owned by a simplemc::measurement_set, which caches the active
+ * subset so inactive measurements are cheaply skipped during a run while remaining present for
+ * serialization and later toggling.
+ */
+
+/**
+ * @defgroup simplemc-mc-concepts Concepts
+ * @ingroup simplemc-mc
+ * @brief C++20 concepts that define the contracts of the **simplemc-mc** extension points.
+ *
+ * @details Every extension point of **simplemc-mc** is expressed as a concept, so user types opt in
+ * structurally without inheriting from any base class:
+ *
+ * - simplemc::mc_update — a proposable/accept-rejectable move (`attempt`, `accept`, `reject`).
+ * - simplemc::mc_measurement — an observer with a `measure()` member.
+ * - simplemc::mc_kernel — a step algorithm exposing `step(rng)`.
+ * - simplemc::mc_traits_like — the traits bundle carrying the RNG and the two serializer backends.
+ * - simplemc::mc_run_callbacks — the optional per-run callback bundle.
+ *
+ * These concepts are what let the @ref simplemc-mc-entities, @ref simplemc-mc-kernels,
+ * @ref simplemc-mc-callbacks and
+ * @ref simplemc-mc-sim subgroups stay decoupled from any concrete user type.
+ */
+
+/**
+ * @defgroup simplemc-mc-kernels Kernels
+ * @ingroup simplemc-mc
+ * @brief The Monte Carlo step algorithm.
+ *
+ * @details A **kernel** implements the simplemc::mc_kernel contract: given an RNG, `step(rng)`
+ * performs one Monte Carlo step — picking an update by weight, calling its `attempt()`, and applying
+ * the Metropolis accept/reject decision. simplemc::metropolis_kernel is the default implementation,
+ * stepping over an simplemc::update_set; users can plug in their own kernel satisfying the same
+ * concept.
+ */
+
+/**
+ * @defgroup simplemc-mc-callbacks Callbacks
+ * @ingroup simplemc-mc
+ * @brief Optional per-run hooks that observe a simulation without modifying the loop.
+ *
+ * @details **Callbacks** let user code observe a run without modifying the loop. A bundle satisfying
+ * simplemc::mc_run_callbacks (default simplemc::run_callbacks, whose no-op members compile out
+ * completely) is passed to simplemc::run; its hooks fire at well-defined points and receive a
+ * simplemc::simulation_ctx snapshot. Ready-made callback helpers — e.g. a progress printer and
+ * checkpoint writers — are provided for common needs.
+ */
+
+/**
+ * @defgroup simplemc-mc-sim Simulation tools
+ * @ingroup simplemc-mc
+ * @brief The run loop, the simulation aggregate, and the parameters / statistics / traits around them.
+ *
+ * @details The free simplemc::run is the heart of **simplemc-mc**: it drives the nested
+ * `cycles_per_check` × `steps_per_cycle` loop, invoking the kernel's `step`, the active measurements,
+ * and the callbacks, until a stop criterion fires. RNG and callbacks are deduced from the arguments,
+ * so the default no-op callbacks impose no overhead.
+ *
+ * - simplemc::simulation_params — the per-run configuration: stop criteria (`max_steps`, `max_time`),
+ * loop shape (`steps_per_cycle`, `cycles_per_check`), checkpoint cadence, and the
+ * `skip_measurements` flag.
+ * - simplemc::simulation_stats — the aggregate run statistics, with `last_*` per-run fields and
+ * cumulative counters folded in on demand.
+ * - simplemc::simulation_ctx — the lightweight snapshot (steps done, elapsed time, …) handed to
+ * callbacks.
+ * - simplemc::mc_traits — the canonical simplemc::mc_traits_like bundle selecting the checkpoint and
+ * input-config serializer backends and the RNG.
+ * - simplemc::simulation — the convenience **aggregate** that owns the RNG, an simplemc::update_set,
+ * a simplemc::measurement_set and the statistics, and forwards a single `add_update` /
+ * `add_measurement` / `run` API over the modular pieces. See its reference page for a worked example.
  */
