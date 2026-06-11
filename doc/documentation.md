@@ -141,10 +141,7 @@ It provides
 value-semantic type-erasure machinery and named collections that manage them.
 - @ref simplemc-mc-concepts that express the contracts user updates, measurements, kernels, traits
 and callbacks must satisfy.
-- @ref simplemc-mc-kernels — the MC step algorithm (defaults to Metropolis-Hastings).
-- @ref simplemc-mc-callbacks — the optional per-run hooks that observe a simulation.
-- @ref simplemc-mc-sim, including the free simplemc::run loop, the simplemc::simulation convenience
-aggregate, and the parameters, statistics and traits around them.
-
-Simulations can be assembled either through the high-level simplemc::simulation aggregate or directly
-from the modular pieces; see the @ref simplemc-mc module page for a worked example.
+- @ref simplemc-mc-kernels, representing the underlying MC algorithm (defaults to 
+Metropolis-Hastings).
+- @ref simplemc-mc-callbacks, which are optional per-run hooks that observe a simulation.
+- @ref simplemc-mc-sim, including the free simplemc::run function that performs a simulation.

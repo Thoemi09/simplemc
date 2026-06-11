@@ -20,15 +20,40 @@ namespace simplemc {
  */
 
 /**
+ * @brief Contract a traits bundle must satisfy to parameterize the simplemc-mc class templates.
+ *
+ * @details All **simplemc-mc** class templates (simplemc::basic_update, simplemc::update_set, ...)
+ * take a single traits parameter that bundles various types they depend on.
+ *
+ * A traits type must expose the following member type aliases:
+ *
+ * - `checkpoint_serializer_type` — simplemc::serializer backend used for checkpoint (state)
+ * serialization.
+ * - `input_config_serializer_type` — simplemc::serializer backend used for input-config
+ * serialization.
+ * - `rng_type` — random number generator type.
+ *
+ * See also simplemc::mc_traits.
+ *
+ * @tparam T Type to check.
+ */
+template <class T>
+concept mc_traits_like = requires {
+    typename T::checkpoint_serializer_type;
+    typename T::input_config_serializer_type;
+    typename T::rng_type;
+} && serializer<typename T::checkpoint_serializer_type> && serializer<typename T::input_config_serializer_type>;
+
+/**
  * @brief Contract a type must satisfy to be wrapped in a simplemc::measurement.
  *
- * @details A Monte Carlo measurement is an observer of the simulation state that the driver invokes
- * once per measurement cycle.
+ * @details A Monte Carlo measurement is an observer of the simulation state that simplemc::run
+ * invokes at the end of every MC cycle.
  *
  * Let `m` be an instance of type `M`. The requirements for a type `M` to be a measurement are the
  * following:
  *
- * - `m.measure` is a valid expression that performs the measurement when invoked.
+ * - `m.measure()` performs the measurement.
  *
  * @tparam M Type to check.
  */
@@ -40,10 +65,8 @@ concept mc_measurement = requires(M& m) { m.measure(); };
  *
  * @details A Monte Carlo update proposes a change to the simulation state via `attempt()`, which
  * returns the acceptance probability of the proposed change. The driver then either commits the
- * change by calling `accept()` or rolls it back by calling `reject()` (the latter is an optional
- * callback — see simplemc::update for details). Every `attempt()` is followed by exactly one of
- * `accept()` / `reject()`; in particular, impossible proposals (`attempt()` returning a value
- * \f$ \leq 0 \f$) are rejected, so `reject()` can rely on rolling back whatever `attempt()` set up.
+ * change by calling `accept()` or rolls it back by calling `reject()` (the latter is optional and
+ * falls back to a no-op).
  *
  * Let `u` be an instance of type `U`. The requirements for a type `U` to be an update are the
  * following:
@@ -61,19 +84,20 @@ concept mc_update = requires(U& u) {
 };
 
 /**
- * @brief Contract a type must satisfy to drive a Monte Carlo run as a kernel.
+ * @brief Contract a type must satisfy to drive a Monte Carlo simulation as a kernel.
  *
- * @details A kernel is the algorithm that advances the simulation by one step. The free
- * simplemc::run loop accepts any type that exposes a callable `step(rng)` member, where the RNG
- * type matches the one threaded through the loop. The default simplemc::metropolis_kernel
- * implements a standard Metropolis step over a simplemc::update_set; users can plug in custom
- * kernels (parallel tempering, heat-bath, Wolff cluster, ...) by satisfying this concept.
+ * @details A kernel is the algorithm that advances the simulation by one MC step. The free
+ * simplemc::run loop accepts any type that exposes a callable `step(rng)` member, where `rng` is some
+ * random number generator.
  *
- * `step` returns `void`. The kernel is responsible for any per-update counter bookkeeping; the
- * outer loop only tracks the global step count and the wall-clock budget.
+ * The default simplemc::metropolis_kernel implements a standard Metropolis-Hastings step over a
+ * simplemc::update_set.
  *
- * Kernels MAY optionally expose a `prepare()` member; if present, simplemc::run calls it once at
- * the start of a run (used by the default kernel to rebuild the discrete distribution).
+ * Users can implement their own custom kernels (parallel tempering, heat-bath, Wolff cluster, ...) by
+ * satisfying this concept.
+ *
+ * Kernels may optionally expose a `prepare()` member. If present, simplemc::run calls it once at the
+ * start of a simulation.
  *
  * @tparam K Type to check.
  * @tparam RNG RNG type the kernel will receive.
@@ -82,18 +106,22 @@ template <class K, class RNG>
 concept mc_kernel = requires(K& k, RNG& rng) { k.step(rng); };
 
 /**
- * @brief Contract a type must satisfy to be passed as the callbacks bundle of simplemc::run.
+ * @brief Contract a type must satisfy to be passed as the callbacks bundle to simplemc::run.
  *
- * @details The run loop invokes four hooks on the bundle, each taking the current
- * simplemc::simulation_ctx: `on_step` (after every kernel step), `on_cycle` (after each cycle's
- * measurement sweep), `on_checkpoint` (when a checkpoint threshold is crossed), and `stop_when`
- * (polled in the outer loop condition; returns `true` to stop early). All four must be invocable
- * on a `const` bundle. Hooks read the live step count via `ctx.steps_done` and the live elapsed
- * seconds via `ctx.elapsed()`.
+ * @details The run loop supports four callback hooks, each taking the current simulation context
+ * `ctx` as an argument (see also simplemc::simulation_ctx). Let `c` be an instance of type `C`. The
+ * requirements for a type `C` to be a callback bundle are
  *
- * simplemc::run_callbacks is the canonical model: its slots default to no-ops, so users only fill
- * the hooks they need. Any user-defined type providing all four hooks satisfies the concept and
- * can be passed to simplemc::run directly.
+ * - `c.on_step(ctx)` is a valid expression (called after every kernel step),
+ * - `c.on_cycle(ctx)` is a valid expression (called after each cycle's measurement sweep),
+ * - `c.on_checkpoint(ctx)` is a valid expression (called when a checkpoint threshold is crossed (see
+ * simplemc::simulation_params)), and
+ * - `c.stop_when(ctx) -> bool` returns a boolean flag indicating whether to stop the simulation
+ * (`false`) or to keep going (`true`). It is polled in the outer loop condition.
+ *
+ * All four callbacks must be invocable on a `const` bundle.
+ *
+ * See simplemc::run_callbacks for more information and defaults.
  *
  * @tparam C Type to check.
  */
@@ -142,33 +170,6 @@ template <class T>
 concept has_simplemc_mpi_collect = requires(const mpi::communicator& c, const T& v) {
     { simplemc_mpi_collect(c, v) } -> std::same_as<T>;
 };
-
-/**
- * @brief Contract a traits bundle must satisfy to parameterize the simplemc-mc class templates.
- *
- * @details All simplemc-mc class templates (simplemc::basic_update, simplemc::update_set,
- * simplemc::simulation, ...) take a single traits parameter that bundles the backend types they
- * thread through their serialization and stepping paths. A traits type must expose three member
- * type aliases:
- *
- * - `checkpoint_serializer_type` — serializer backend used for checkpoint (state) serialization;
- * must itself satisfy simplemc::serializer.
- * - `input_config_serializer_type` — serializer backend used for input-config serialization; must
- * itself satisfy simplemc::serializer.
- * - `rng_type` — random number generator type (unconstrained beyond existence, matching the rest of
- * simplemc-mc).
- *
- * simplemc::mc_traits is the canonical model; any user struct exposing the three aliases qualifies.
- *
- * @tparam T Type to check.
- */
-template <class T>
-concept mc_traits_like = requires {
-    typename T::checkpoint_serializer_type;
-    typename T::input_config_serializer_type;
-    typename T::rng_type;
-} && serializer<typename T::checkpoint_serializer_type>
-  && serializer<typename T::input_config_serializer_type>;
 
 /** @} */
 

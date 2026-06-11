@@ -13,26 +13,25 @@
 namespace simplemc {
 
 /**
- * @addtogroup simplemc-mc-sim
+ * @addtogroup simplemc-mc-concepts
  * @{
  */
 
 /**
- * @brief Bundle of backend types threaded through every simplemc-mc class template.
+ * @brief Default MC traits class satisfying simplemc::mc_traits_like.
  *
- * @details All simplemc-mc class templates (simplemc::basic_update, simplemc::update_set,
- * simplemc::measurement_set, ...) take a single traits parameter rather than spelling each backend
- * type individually. This keeps their signatures stable as the set of mc-wide backend types grows:
- * new typedefs are added here, not bolted on as extra template parameters. The aliases are:
+ * @details It comes with the following defaults:
  *
- * - `checkpoint_serializer_type` — serializer used for checkpoint (state) serialization.
- * - `input_config_serializer_type` — serializer used for input-config serialization.
- * - `rng_type` — random number generator type.
+ * - `checkpoint_serializer_type` is set to simplemc::json_serializer.
+ * - `input_config_serializer_type` is set to simplemc::json_serializer.
+ * - `rng_type` is set to simplemc::xoshiro256ss.
  *
- * Any user struct exposing the same three aliases satisfies simplemc::mc_traits_like and can be used
- * in place of this template; `mc_traits` simply provides the defaults and the common spelling, e.g.
- * `simplemc::update_set<simplemc::mc_traits<hdf5_serializer>>` keeps checkpoints in HDF5 while the
- * input config stays in JSON.
+ * Users can either define their own traits struct satisfying simplemc::mc_traits_like or simply
+ * change the template parameters of this one. For example,
+ *
+ * ```cpp
+ * using my_traits = simplemc::mc_traits<hdf5_serializer, json_serializer, std::mt19937>;
+ * ```
  *
  * @tparam S1 Serializer type used for checkpoint serialization.
  * @tparam S2 Serializer type used for input-config serialization.

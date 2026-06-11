@@ -1521,9 +1521,10 @@
  */
 
 /**
- * @defgroup simplemc-mc-concepts Concepts
+ * @defgroup simplemc-mc-concepts Concepts and traits
  * @ingroup simplemc-mc
- * @brief C++20 concepts that define the contracts of the **simplemc-mc** extension points.
+ * @brief C++20 concepts that define the contracts of the **simplemc-mc** extension points, plus the
+ * traits bundle that carries their backend types.
  *
  * @details Every extension point of **simplemc-mc** is expressed as a concept, so user types opt in
  * structurally without inheriting from any base class:
@@ -1533,6 +1534,9 @@
  * - simplemc::mc_kernel — a step algorithm exposing `step(rng)`.
  * - simplemc::mc_traits_like — the traits bundle carrying the RNG and the two serializer backends.
  * - simplemc::mc_run_callbacks — the optional per-run callback bundle.
+ *
+ * simplemc::mc_traits is the canonical model of simplemc::mc_traits_like: the bundle of backend
+ * typedefs (the two serializers and the RNG) threaded through every simplemc-mc class template.
  *
  * These concepts are what let the @ref simplemc-mc-entities, @ref simplemc-mc-kernels,
  * @ref simplemc-mc-callbacks and
