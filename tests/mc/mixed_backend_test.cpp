@@ -19,18 +19,13 @@ namespace {
 // nlohmann::json with the same shared-document / json_pointer pattern as json_serializer, so they
 // satisfy the simplemc::serializer concept naturally.
 //
-// The whole point of having two distinct types is to prove that the wrapper + simulation dispatch
+// The whole point of having two distinct types is to prove that the wrapper + free helpers dispatch
 // state hooks to one and input-config hooks to the other, with no cross-talk.
-// Each instantiation dispatches save_at / load_at through ADL on the wrapped user type first,
-// falling back to nlohmann::json's machinery — same pattern as simplemc::json_serializer. This is
-// what lets a `simplemc_save(tagged_mock_serializer<Tag>&, const T&)` ADL hook be reached when the
-// wrapper or the simulation does `s.save_at(key, value)`.
 template <class Tag>
 class tagged_mock_serializer {
 public:
     explicit tagged_mock_serializer(nlohmann::json doc = {}) :
-        root_ { std::make_shared<nlohmann::json>(std::move(doc)) },
-        current_ {} { }
+        root_ { std::make_shared<nlohmann::json>(std::move(doc)) }, current_ {} {}
 
     template <class T>
     tagged_mock_serializer save_at(std::string_view key, const T& value) {
@@ -77,15 +72,14 @@ public:
 
 private:
     tagged_mock_serializer(std::shared_ptr<nlohmann::json> root, nlohmann::json::json_pointer current) :
-        root_ { std::move(root) },
-        current_ { std::move(current) } { }
+        root_ { std::move(root) }, current_ { std::move(current) } {}
 
     std::shared_ptr<nlohmann::json> root_;
     nlohmann::json::json_pointer current_;
 };
 
-struct state_tag { };
-struct input_config_tag { };
+struct state_tag {};
+struct input_config_tag {};
 
 using mock_state_serializer = tagged_mock_serializer<state_tag>;
 using mock_input_config_serializer = tagged_mock_serializer<input_config_tag>;
@@ -100,20 +94,15 @@ static_assert(mc_traits_like<mixed_traits>);
 static_assert(!mc_traits_like<int>);
 
 // User update opting into BOTH flavors, via two ADL hooks typed on different serializer types.
-// This proves the wrapper dispatches to the right hook per backend, without any cross-talk.
 struct dual_update {
     std::shared_ptr<int> state_counter = std::make_shared<int>(0);
     std::shared_ptr<double> config_threshold = std::make_shared<double>(0.0);
     double attempt() { return 1.0; }
-    void accept() { }
+    void accept() {}
 };
 
-void simplemc_save(mock_state_serializer& s, const dual_update& u) {
-    s.save_at("state_counter", *u.state_counter);
-}
-void simplemc_load(const mock_state_serializer& s, dual_update& u) {
-    s.load_at("state_counter", *u.state_counter);
-}
+void simplemc_save(mock_state_serializer& s, const dual_update& u) { s.save_at("state_counter", *u.state_counter); }
+void simplemc_load(const mock_state_serializer& s, dual_update& u) { s.load_at("state_counter", *u.state_counter); }
 void simplemc_save_input_config(mock_input_config_serializer& s, const dual_update& u) {
     s.save_at("config_threshold", *u.config_threshold);
 }
@@ -127,100 +116,113 @@ void simplemc_load_input_config(const mock_input_config_serializer& s, dual_upda
 struct state_only_update {
     std::shared_ptr<int> ticks = std::make_shared<int>(0);
     double attempt() { return 1.0; }
-    void accept() { }
+    void accept() {}
 };
 
-void simplemc_save(mock_state_serializer& s, const state_only_update& u) {
-    s.save_at("ticks", *u.ticks);
-}
-void simplemc_load(const mock_state_serializer& s, state_only_update& u) {
-    s.load_at("ticks", *u.ticks);
+void simplemc_save(mock_state_serializer& s, const state_only_update& u) { s.save_at("ticks", *u.ticks); }
+void simplemc_load(const mock_state_serializer& s, state_only_update& u) { s.load_at("ticks", *u.ticks); }
+
+// Drive a short run, then fold counters into the cumulative state.
+void run_and_accumulate(update_set<mixed_traits>& updates, measurement_set<mixed_traits>& meas,
+    simulation_stats& stats, xoshiro256ss& rng, const simulation_params& p) {
+    metropolis_kernel<mixed_traits> kernel { updates };
+    run(kernel, meas, p, stats, rng);
+    accumulate_simulation_stats(stats);
+    updates.accumulate_counters();
 }
 
 } // namespace
 
-TEST(MCSimulationMixedBackend, InstantiationCompiles) {
+TEST(MCMixedBackend, InstantiationCompiles) {
     // Smoke test: the traits form with two distinct backends instantiates.
-    simulation<mixed_traits> sim;
-    dual_update u;
-    sim.add_update(u, "tunable", 2.5);
-    EXPECT_DOUBLE_EQ(sim.update_data()[0].weight, 2.5);
+    update_set<mixed_traits> updates;
+    updates.add({ dual_update {}, "tunable", 2.5 });
+    EXPECT_DOUBLE_EQ(updates.data()[0].weight, 2.5);
 }
 
-TEST(MCSimulationMixedBackend, StateAndInputConfigDispatchIndependently) {
-    // Source simulation with both backends in play.
-    simulation<mixed_traits> src { xoshiro256ss { 7 } };
+TEST(MCMixedBackend, StateAndInputConfigDispatchIndependently) {
+    xoshiro256ss rng { 7 };
+    update_set<mixed_traits> updates;
+    measurement_set<mixed_traits> meas;
+    simulation_stats stats;
     dual_update src_u;
     *src_u.state_counter = 42;
     *src_u.config_threshold = 1.25;
-    src.add_update(src_u, "tunable", 3.0);
-    src.run({ .max_steps = 5, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = 5 });
-    src.accumulate_stats();
+    updates.add({ src_u, "tunable", 3.0 });
+
+    run_and_accumulate(updates, meas, stats, rng,
+        { .max_steps = 5, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = 5 });
 
     // Save state to the state serializer; save input config to the (different-type) input-config
     // serializer.
     mock_state_serializer state_w;
-    state_w.save_at("sim", src);
+    simplemc_save(state_w, rng, updates, meas, stats);
 
     mock_input_config_serializer input_w;
-    auto input_sim = input_w["sim"];
-    simplemc_save_input_config(input_sim, src);
+    const simulation_params params;
+    simplemc_save_input_config(input_w, params, updates, meas);
 
     // State serializer should have the state-only fields:
-    EXPECT_TRUE(state_w.root()["sim"].contains("rng"));
-    EXPECT_TRUE(state_w.root()["sim"].contains("cumulative_steps"));
-    EXPECT_TRUE(state_w.root()["sim"]["updates"]["tunable"].contains("cumulative_nprops"));
-    EXPECT_TRUE(state_w.root()["sim"]["updates"]["tunable"]["user"].contains("state_counter"));
+    EXPECT_TRUE(state_w.root().contains("rng"));
+    EXPECT_TRUE(state_w.root().contains("cumulative_steps"));
+    EXPECT_TRUE(state_w.root()["updates"]["tunable"].contains("cumulative_nprops"));
+    EXPECT_TRUE(state_w.root()["updates"]["tunable"]["user"].contains("state_counter"));
 
     // Input-config serializer should have only the input-config fields, no state fields:
-    EXPECT_FALSE(input_w.root()["sim"].contains("rng"));
-    EXPECT_FALSE(input_w.root()["sim"].contains("cumulative_steps"));
-    EXPECT_FALSE(input_w.root()["sim"]["updates"]["tunable"].contains("cumulative_nprops"));
-    EXPECT_TRUE(input_w.root()["sim"]["updates"]["tunable"].contains("weight"));
-    EXPECT_TRUE(input_w.root()["sim"]["updates"]["tunable"]["user"].contains("config_threshold"));
+    EXPECT_FALSE(input_w.root().contains("rng"));
+    EXPECT_FALSE(input_w.root().contains("cumulative_steps"));
+    EXPECT_FALSE(input_w.root()["updates"]["tunable"].contains("cumulative_nprops"));
+    EXPECT_TRUE(input_w.root()["updates"]["tunable"].contains("weight"));
+    EXPECT_TRUE(input_w.root()["updates"]["tunable"]["user"].contains("config_threshold"));
 
     // Destination: load state from state serializer, then input-config from input-config
     // serializer. Cross-talk would show up as wrong values or extra throws.
-    simulation<mixed_traits> dst;
+    xoshiro256ss dst_rng;
+    update_set<mixed_traits> dst_updates;
+    measurement_set<mixed_traits> dst_meas;
+    simulation_stats dst_stats;
+    simulation_params dst_params;
     dual_update dst_u;
     auto dst_state_counter = dst_u.state_counter;
     auto dst_config_threshold = dst_u.config_threshold;
-    dst.add_update(dst_u, "tunable", 1.0);
+    dst_updates.add({ dst_u, "tunable", 1.0 });
 
     const mock_state_serializer state_r { state_w.root() };
-    state_r.load_at("sim", dst);
+    simplemc_load(state_r, dst_rng, dst_updates, dst_meas, dst_stats);
 
     const mock_input_config_serializer input_r { input_w.root() };
-    const auto input_sim_r = input_r["sim"];
-    simplemc_load_input_config(input_sim_r, dst);
+    simplemc_load_input_config(input_r, dst_params, dst_updates, dst_meas);
 
     // State round-trip:
-    EXPECT_EQ(dst.stats().cumulative_steps, src.stats().cumulative_steps);
+    EXPECT_EQ(dst_stats.cumulative_steps, stats.cumulative_steps);
     EXPECT_EQ(*dst_state_counter, 42);
 
     // Input-config round-trip:
-    EXPECT_DOUBLE_EQ(dst.update_data()[0].weight, 3.0);
+    EXPECT_DOUBLE_EQ(dst_updates.data()[0].weight, 3.0);
     EXPECT_DOUBLE_EQ(*dst_config_threshold, 1.25);
 }
 
-TEST(MCSimulationMixedBackend, OneSidedOptInSilentlySkipsOtherFlavor) {
+TEST(MCMixedBackend, OneSidedOptInSilentlySkipsOtherFlavor) {
     // state_only_update has only the state hook. Input-config save/load should be no-ops on the
     // user slot; no exceptions, no fields written.
-    simulation<mixed_traits> sim;
+    xoshiro256ss rng;
+    update_set<mixed_traits> updates;
+    measurement_set<mixed_traits> meas;
+    simulation_stats stats;
     state_only_update u;
     *u.ticks = 99;
-    sim.add_update(u, "ticker", 1.0);
+    updates.add({ u, "ticker", 1.0 });
 
     mock_state_serializer state_w;
-    state_w.save_at("sim", sim);
-    EXPECT_TRUE(state_w.root()["sim"]["updates"]["ticker"]["user"].contains("ticks"));
+    simplemc_save(state_w, rng, updates, meas, stats);
+    EXPECT_TRUE(state_w.root()["updates"]["ticker"]["user"].contains("ticks"));
 
     mock_input_config_serializer input_w;
-    auto input_sim = input_w["sim"];
-    EXPECT_NO_THROW(simplemc_save_input_config(input_sim, sim));
-    // Per-entry "weight" is still written (it's on update_stats, not the user payload), but the
+    const simulation_params params;
+    EXPECT_NO_THROW(simplemc_save_input_config(input_w, params, updates, meas));
+    // Per-entry "weight" is still written (it's on the update entry, not the user payload), but the
     // user slot is empty because state_only_update doesn't opt into input-config.
-    const auto& ticker = input_w.root()["sim"]["updates"]["ticker"];
+    const auto& ticker = input_w.root()["updates"]["ticker"];
     EXPECT_TRUE(ticker.contains("weight"));
     EXPECT_FALSE(ticker.contains("user"));
 }

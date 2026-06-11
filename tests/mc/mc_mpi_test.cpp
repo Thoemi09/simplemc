@@ -129,30 +129,29 @@ TEST_F(SimplemcMCMPI, MeasurementSetForwardsToWrapperHook) {
     EXPECT_NE(ms.get<counter_meas>("counter"), nullptr);
 }
 
-TEST_F(SimplemcMCMPI, SimulationCompositeReducesAllParts) {
-    simulation<> sim;
-    sim.add_update(null_update {}, "u", 1.0);
+TEST_F(SimplemcMCMPI, CompositeReducesAllComponents) {
+    update_set<> updates;
+    updates.add({ null_update {}, "u", 1.0 });
 
+    measurement_set<> meas;
     mean_meas mm;
     mm.acc << static_cast<double>(rank + 1);
-    sim.add_measurement(mm, "mean");
+    meas.add({ mm, "mean", true });
+
+    simulation_stats stats;
 
     // Seed per-update and per-stats counters with rank-distinct values without running the kernel,
     // so the verification is independent of RNG behavior.
-    auto& uset = sim.updates();
-    uset.at(0).nprops = static_cast<std::uint64_t>(rank + 1);
-    // accumulate_stats() / reset_stats() are noexcept and exposed; instead mutate the underlying
-    // simulation_stats directly via the const-cast escape, which is OK because we own the object.
-    auto& mut_stats = const_cast<simulation_stats&>(sim.stats()); // NOLINT(cppcoreguidelines-pro-type-const-cast)
-    mut_stats.last_steps_done = static_cast<std::uint64_t>(rank + 1);
+    updates.at(0).nprops = static_cast<std::uint64_t>(rank + 1);
+    stats.last_steps_done = static_cast<std::uint64_t>(rank + 1);
 
-    simplemc_mpi_collect(comm, sim);
+    simplemc_mpi_collect(comm, updates, meas, stats);
 
     const std::uint64_t s = static_cast<std::uint64_t>(size * (size + 1) / 2);
-    EXPECT_EQ(sim.updates().at(0).nprops, s);
-    EXPECT_EQ(sim.stats().last_steps_done, s);
+    EXPECT_EQ(updates.at(0).nprops, s);
+    EXPECT_EQ(stats.last_steps_done, s);
 
-    const auto* reduced = sim.get_measurement<mean_meas>("mean");
+    const auto* reduced = meas.get<mean_meas>("mean");
     ASSERT_NE(reduced, nullptr);
     mean_meas::acc_t ref { 1 };
     for (int r = 0; r < size; ++r) {

@@ -21,9 +21,9 @@ namespace simplemc {
  * @brief Bundle of backend types threaded through every simplemc-mc class template.
  *
  * @details All simplemc-mc class templates (simplemc::basic_update, simplemc::update_set,
- * simplemc::simulation, ...) take a single traits parameter rather than spelling each backend type
- * individually. This keeps their signatures stable as the set of mc-wide backend types grows: new
- * typedefs are added here, not bolted on as extra template parameters. The aliases are:
+ * simplemc::measurement_set, ...) take a single traits parameter rather than spelling each backend
+ * type individually. This keeps their signatures stable as the set of mc-wide backend types grows:
+ * new typedefs are added here, not bolted on as extra template parameters. The aliases are:
  *
  * - `checkpoint_serializer_type` — serializer used for checkpoint (state) serialization.
  * - `input_config_serializer_type` — serializer used for input-config serialization.
@@ -31,7 +31,7 @@ namespace simplemc {
  *
  * Any user struct exposing the same three aliases satisfies simplemc::mc_traits_like and can be used
  * in place of this template; `mc_traits` simply provides the defaults and the common spelling, e.g.
- * `simplemc::simulation<simplemc::mc_traits<hdf5_serializer>>` keeps checkpoints in HDF5 while the
+ * `simplemc::update_set<simplemc::mc_traits<hdf5_serializer>>` keeps checkpoints in HDF5 while the
  * input config stays in JSON.
  *
  * @tparam S1 Serializer type used for checkpoint serialization.

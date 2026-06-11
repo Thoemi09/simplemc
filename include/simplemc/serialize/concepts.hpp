@@ -71,6 +71,32 @@ concept has_simplemc_save = requires(const T& t, S& s) { simplemc_save(s, t); };
 template <class T, class S>
 concept has_simplemc_load = requires(T& t, const S& s) { simplemc_load(s, t); };
 
+/**
+ * @brief Check if a serializer of type `S` can write a value of type `T` via `save_at`.
+ *
+ * @details Captures the full `save_at` dispatch (ADL `simplemc_save` first, then the backend's
+ * native fallback), so it accepts more types than simplemc::has_simplemc_save alone. Useful to
+ * guard optional serialization branches with `if constexpr` or to constrain templates that forward
+ * to `save_at`.
+ *
+ * @tparam S Serializer type.
+ * @tparam T Type being serialized.
+ */
+template <class S, class T>
+concept save_at_compatible = requires(S& s, std::string_view key, const T& v) { s.save_at(key, v); };
+
+/**
+ * @brief Check if a serializer of type `S` can read a value of type `T` via `load_at`.
+ *
+ * @details The load-side counterpart of simplemc::save_at_compatible; captures the full `load_at`
+ * dispatch including the backend's native fallback.
+ *
+ * @tparam S Serializer type.
+ * @tparam T Type being deserialized into.
+ */
+template <class S, class T>
+concept load_at_compatible = requires(const S& s, std::string_view key, T& v) { s.load_at(key, v); };
+
 /** @} */
 
 } // namespace simplemc

@@ -10,8 +10,8 @@
  *   convenience factories simplemc::make_step_progress_printer and
  *   simplemc::make_time_progress_printer.
  * - simplemc::json_checkpoint_writer / simplemc::load_json_checkpoint — write/read the persistent
- *   state of any simplemc::simulation (or any other type with `simplemc_save`/`simplemc_load`
- *   overloads for json_serializer) to/from a JSON file.
+ *   state of the run components (RNG, update_set, measurement_set, simulation_stats) plus an
+ *   optional user-supplied config object, to/from a JSON file.
  * - When the library was built with `SIMPLEMC_USE_HDF5=ON`, simplemc::hdf5_checkpoint_writer /
  *   simplemc::load_hdf5_checkpoint — the same pair against the HDF5 backend.
  */
@@ -22,6 +22,7 @@
 #include <simplemc/config.hpp>
 #include <simplemc/mc/run_callbacks.hpp>
 #include <simplemc/mc/simulation_ctx.hpp>
+#include <simplemc/mc/utils.hpp>
 #include <simplemc/serialize/json/file_io.hpp>
 #include <simplemc/serialize/json/json_serializer.hpp>
 #include <simplemc/utils/timer.hpp>
@@ -37,6 +38,7 @@
 #include <cstdio>
 #include <filesystem>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 namespace simplemc {
@@ -159,21 +161,37 @@ struct progress_printer {
 }
 
 /**
- * @brief Checkpoint-writer callback that serializes a borrowed object to a JSON file.
+ * @brief Checkpoint-writer callback that serializes the borrowed run components to a JSON file.
  *
- * @details Each invocation opens a fresh JSON document, calls `simplemc_save(serializer, *sim)`
- * (ADL on the borrowed object's type), and writes it to `path` using the chosen
+ * @details Each invocation opens a fresh JSON document, calls the free
+ * `simplemc_save(serializer, rng, updates, meas, stats)` over the four borrowed components, optionally
+ * appends a user `config` object under `"config"`, and writes the document to `path` using the chosen
  * simplemc::json_io_options (text/cbor/bson/...). Typical usage: install as `on_checkpoint`.
  *
- * The borrowed object must outlive the callable; it is held by pointer so the checkpoint always
+ * The borrowed objects must outlive the callable; they are held by pointer so the checkpoint always
  * reflects the live state at invocation time.
  *
- * @tparam Sim Type to serialize (typically simplemc::simulation<...>).
+ * @tparam Traits Traits bundle satisfying simplemc::mc_traits_like.
+ * @tparam Config Optional extra user state to persist under `"config"`; `void` writes none. When
+ *                non-`void` it must be writable by the JSON backend (simplemc::save_at_compatible).
  */
-template <class Sim>
+template <mc_traits_like Traits, class Config = void>
+    requires(std::is_void_v<Config> || save_at_compatible<json_serializer, Config>)
 struct json_checkpoint_writer {
-    /// Borrowed object to serialize. Must outlive this callable.
-    const Sim* sim = nullptr;
+    /// Borrowed RNG. Must outlive this callable.
+    const typename Traits::rng_type* rng = nullptr;
+
+    /// Borrowed update set. Must outlive this callable.
+    const update_set<Traits>* updates = nullptr;
+
+    /// Borrowed measurement set. Must outlive this callable.
+    const measurement_set<Traits>* meas = nullptr;
+
+    /// Borrowed cumulative statistics. Must outlive this callable.
+    const simulation_stats* stats = nullptr;
+
+    /// Optional borrowed user state written under `"config"` (ignored when `Config` is `void`).
+    const Config* config = nullptr;
 
     /// Destination path; opened with truncate semantics on every call.
     std::filesystem::path path {};
@@ -182,65 +200,150 @@ struct json_checkpoint_writer {
     json_io_options opts {};
 
     /**
-     * @brief Snapshot `*sim` into `path`.
+     * @brief Snapshot the borrowed components (and optional config) into `path`.
      */
     void operator()(const simulation_ctx&) const {
         json_serializer ser;
-        simplemc_save(ser, *sim);
+        simplemc_save(ser, *rng, *updates, *meas, *stats);
+        if constexpr (!std::is_void_v<Config>) {
+            ser.save_at("config", *config);
+        }
         write_json_file(ser.root(), path, opts);
     }
 };
 
 /**
- * @brief Convenience factory: build a simplemc::json_checkpoint_writer.
+ * @brief Convenience factory: build a component-borrowing simplemc::json_checkpoint_writer.
  *
- * @tparam Sim Type to serialize.
- * @param sim Borrowed object whose persistent state will be written.
+ * @tparam Traits Traits bundle, deduced from the set arguments.
+ * @param rng RNG to borrow.
+ * @param updates Update set to borrow.
+ * @param meas Measurement set to borrow.
+ * @param stats Cumulative statistics to borrow.
  * @param path Destination filesystem path.
  * @param opts JSON I/O options.
- * @return Configured simplemc::json_checkpoint_writer<Sim>.
+ * @return Configured writer with no extra config object.
  */
-template <class Sim>
-[[nodiscard]] json_checkpoint_writer<Sim> make_json_checkpoint_writer(
-    const Sim& sim, std::filesystem::path path, json_io_options opts = {}) {
-    return json_checkpoint_writer<Sim> { .sim = &sim, .path = std::move(path), .opts = opts };
+template <mc_traits_like Traits>
+[[nodiscard]] json_checkpoint_writer<Traits> make_json_checkpoint_writer(const typename Traits::rng_type& rng,
+    const update_set<Traits>& updates, const measurement_set<Traits>& meas, const simulation_stats& stats,
+    std::filesystem::path path, json_io_options opts = {}) {
+    return json_checkpoint_writer<Traits> { .rng = &rng,
+        .updates = &updates,
+        .meas = &meas,
+        .stats = &stats,
+        .path = std::move(path),
+        .opts = opts };
 }
 
 /**
- * @brief Free helper to load a previously-written JSON checkpoint into a borrowed object.
+ * @brief Convenience factory overload that also persists a borrowed user `config` object.
+ *
+ * @tparam Traits Traits bundle, deduced from the set arguments.
+ * @tparam Config User state type, deduced from `config`.
+ * @param rng RNG to borrow.
+ * @param updates Update set to borrow.
+ * @param meas Measurement set to borrow.
+ * @param stats Cumulative statistics to borrow.
+ * @param config User state to borrow and persist under `"config"`.
+ * @param path Destination filesystem path.
+ * @param opts JSON I/O options.
+ * @return Configured writer that also writes `*config`.
+ */
+template <mc_traits_like Traits, class Config>
+[[nodiscard]] json_checkpoint_writer<Traits, Config> make_json_checkpoint_writer(
+    const typename Traits::rng_type& rng, const update_set<Traits>& updates,
+    const measurement_set<Traits>& meas, const simulation_stats& stats, const Config* config,
+    std::filesystem::path path, json_io_options opts = {}) {
+    return json_checkpoint_writer<Traits, Config> { .rng = &rng,
+        .updates = &updates,
+        .meas = &meas,
+        .stats = &stats,
+        .config = config,
+        .path = std::move(path),
+        .opts = opts };
+}
+
+/**
+ * @brief Free helper to load a previously-written JSON checkpoint into the borrowed components.
  *
  * @details Symmetric to simplemc::json_checkpoint_writer. Designed to be called once **before**
- * simplemc::simulation::run, so it is a free function and not part of `run_callbacks`.
+ * simplemc::run, so it is a free function and not part of `run_callbacks`.
  *
- * @tparam Sim Object type to deserialize into.
- * @param sim Destination object.
+ * @tparam Traits Traits bundle, deduced from the set arguments.
+ * @param rng RNG to restore.
+ * @param updates Update set to patch in place.
+ * @param meas Measurement set to patch in place.
+ * @param stats Cumulative statistics to restore.
  * @param path Source filesystem path.
  * @param opts JSON I/O options.
  */
-template <class Sim>
-void load_json_checkpoint(Sim& sim, const std::filesystem::path& path, const json_io_options& opts = {}) {
+template <mc_traits_like Traits>
+void load_json_checkpoint(typename Traits::rng_type& rng, update_set<Traits>& updates,
+    measurement_set<Traits>& meas, simulation_stats& stats, const std::filesystem::path& path,
+    const json_io_options& opts = {}) {
     nlohmann::json doc;
     read_json_file(doc, path, opts);
     const json_serializer ser { std::move(doc) };
-    simplemc_load(ser, sim);
+    simplemc_load(ser, rng, updates, meas, stats);
+}
+
+/**
+ * @brief Overload that also restores a borrowed user `config` object from `"config"`.
+ *
+ * @tparam Traits Traits bundle, deduced from the set arguments.
+ * @tparam Config User state type, deduced from `config`; must be readable by the JSON backend.
+ * @param rng RNG to restore.
+ * @param updates Update set to patch in place.
+ * @param meas Measurement set to patch in place.
+ * @param stats Cumulative statistics to restore.
+ * @param config User state to restore from `"config"`.
+ * @param path Source filesystem path.
+ * @param opts JSON I/O options.
+ */
+template <mc_traits_like Traits, class Config>
+    requires load_at_compatible<json_serializer, Config>
+void load_json_checkpoint(typename Traits::rng_type& rng, update_set<Traits>& updates,
+    measurement_set<Traits>& meas, simulation_stats& stats, Config* config,
+    const std::filesystem::path& path, const json_io_options& opts = {}) {
+    nlohmann::json doc;
+    read_json_file(doc, path, opts);
+    const json_serializer ser { std::move(doc) };
+    simplemc_load(ser, rng, updates, meas, stats);
+    ser.load_at("config", *config);
 }
 
 #ifdef SIMPLEMC_USE_HDF5
 
 /**
- * @brief Checkpoint-writer callback that serializes a borrowed object to an HDF5 file.
+ * @brief Checkpoint-writer callback that serializes the borrowed run components to an HDF5 file.
  *
  * @details Mirrors simplemc::json_checkpoint_writer for the HDF5 backend. Opens the file with
  * `hdf5_file_mode::truncate` so each checkpoint replaces the previous content. Available only when
  * the HDF5 backend header is reachable (typically when the project was built with
  * `SIMPLEMC_USE_HDF5=ON`).
  *
- * @tparam Sim Type to serialize.
+ * @tparam Traits Traits bundle satisfying simplemc::mc_traits_like.
+ * @tparam Config Optional extra user state to persist under `"config"`; `void` writes none. When
+ *                non-`void` it must be writable by the HDF5 backend (simplemc::save_at_compatible).
  */
-template <class Sim>
+template <mc_traits_like Traits, class Config = void>
+    requires(std::is_void_v<Config> || save_at_compatible<hdf5_serializer, Config>)
 struct hdf5_checkpoint_writer {
-    /// Borrowed object to serialize.
-    const Sim* sim = nullptr;
+    /// Borrowed RNG. Must outlive this callable.
+    const typename Traits::rng_type* rng = nullptr;
+
+    /// Borrowed update set. Must outlive this callable.
+    const update_set<Traits>* updates = nullptr;
+
+    /// Borrowed measurement set. Must outlive this callable.
+    const measurement_set<Traits>* meas = nullptr;
+
+    /// Borrowed cumulative statistics. Must outlive this callable.
+    const simulation_stats* stats = nullptr;
+
+    /// Optional borrowed user state written under `"config"` (ignored when `Config` is `void`).
+    const Config* config = nullptr;
 
     /// Destination path.
     std::filesystem::path path {};
@@ -249,34 +352,77 @@ struct hdf5_checkpoint_writer {
     hdf5_file_mode mode = hdf5_file_mode::truncate;
 
     /**
-     * @brief Snapshot `*sim` into `path`.
+     * @brief Snapshot the borrowed components (and optional config) into `path`.
      */
     void operator()(const simulation_ctx&) const {
         hdf5_serializer ser { path, mode };
-        simplemc_save(ser, *sim);
+        simplemc_save(ser, *rng, *updates, *meas, *stats);
+        if constexpr (!std::is_void_v<Config>) {
+            ser.save_at("config", *config);
+        }
     }
 };
 
 /**
- * @brief Convenience factory: build a simplemc::hdf5_checkpoint_writer.
+ * @brief Convenience factory: build a component-borrowing simplemc::hdf5_checkpoint_writer.
  */
-template <class Sim>
-[[nodiscard]] hdf5_checkpoint_writer<Sim> make_hdf5_checkpoint_writer(
-    const Sim& sim, std::filesystem::path path, hdf5_file_mode mode = hdf5_file_mode::truncate) {
-    return hdf5_checkpoint_writer<Sim> { .sim = &sim, .path = std::move(path), .mode = mode };
+template <mc_traits_like Traits>
+[[nodiscard]] hdf5_checkpoint_writer<Traits> make_hdf5_checkpoint_writer(const typename Traits::rng_type& rng,
+    const update_set<Traits>& updates, const measurement_set<Traits>& meas, const simulation_stats& stats,
+    std::filesystem::path path, hdf5_file_mode mode = hdf5_file_mode::truncate) {
+    return hdf5_checkpoint_writer<Traits> { .rng = &rng,
+        .updates = &updates,
+        .meas = &meas,
+        .stats = &stats,
+        .path = std::move(path),
+        .mode = mode };
 }
 
 /**
- * @brief Free helper to load a previously-written HDF5 checkpoint into a borrowed object.
+ * @brief Convenience factory overload that also persists a borrowed user `config` object.
+ */
+template <mc_traits_like Traits, class Config>
+[[nodiscard]] hdf5_checkpoint_writer<Traits, Config> make_hdf5_checkpoint_writer(
+    const typename Traits::rng_type& rng, const update_set<Traits>& updates,
+    const measurement_set<Traits>& meas, const simulation_stats& stats, const Config* config,
+    std::filesystem::path path, hdf5_file_mode mode = hdf5_file_mode::truncate) {
+    return hdf5_checkpoint_writer<Traits, Config> { .rng = &rng,
+        .updates = &updates,
+        .meas = &meas,
+        .stats = &stats,
+        .config = config,
+        .path = std::move(path),
+        .mode = mode };
+}
+
+/**
+ * @brief Free helper to load a previously-written HDF5 checkpoint into the borrowed components.
  *
- * @tparam Sim Object type to deserialize into.
- * @param sim Destination object.
+ * @tparam Traits Traits bundle, deduced from the set arguments.
+ * @param rng RNG to restore.
+ * @param updates Update set to patch in place.
+ * @param meas Measurement set to patch in place.
+ * @param stats Cumulative statistics to restore.
  * @param path Source filesystem path.
  */
-template <class Sim>
-void load_hdf5_checkpoint(Sim& sim, const std::filesystem::path& path) {
+template <mc_traits_like Traits>
+void load_hdf5_checkpoint(typename Traits::rng_type& rng, update_set<Traits>& updates,
+    measurement_set<Traits>& meas, simulation_stats& stats, const std::filesystem::path& path) {
     const hdf5_serializer ser { path, hdf5_file_mode::read };
-    simplemc_load(ser, sim);
+    simplemc_load(ser, rng, updates, meas, stats);
+}
+
+/**
+ * @brief Overload that also restores a borrowed user `config` object from `"config"`.
+ */
+template <mc_traits_like Traits, class Config>
+    requires load_at_compatible<hdf5_serializer, Config>
+void load_hdf5_checkpoint(typename Traits::rng_type& rng, update_set<Traits>& updates,
+    measurement_set<Traits>& meas, simulation_stats& stats, Config* config,
+    const std::filesystem::path& path) {
+    const hdf5_serializer ser { path, hdf5_file_mode::read };
+    simplemc_load(ser, rng, updates, meas, stats);
+    ser.load_at("config", *config);
 }
 
 #endif // SIMPLEMC_USE_HDF5

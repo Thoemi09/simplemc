@@ -47,6 +47,23 @@ void simplemc_load(const S& s, trivial_meas& m) {
     s.load_at("count", m.count);
 }
 
+// Serializable user-state object attached to a checkpoint via the writer's optional Config slot.
+struct run_config {
+    int seed = 0;
+    double beta = 0.0;
+
+    template <serializer S>
+    friend void simplemc_save(S& s, const run_config& c) {
+        s.save_at("seed", c.seed);
+        s.save_at("beta", c.beta);
+    }
+    template <serializer S>
+    friend void simplemc_load(const S& s, run_config& c) {
+        s.load_at("seed", c.seed);
+        s.load_at("beta", c.beta);
+    }
+};
+
 // Read all of `fp` (rewinding first) into a std::string for diagnostic assertions.
 std::string read_tmpfile(std::FILE* fp) {
     std::fflush(fp);
@@ -113,87 +130,104 @@ TEST(MCCallbacks, MakeTimeProgressPrinterDefaults) {
     EXPECT_DOUBLE_EQ(pp.throttle_sec, 1.0);
 }
 
-TEST(MCCallbacks, JsonCheckpointWriterRoundTripsSimulation) {
+TEST(MCCallbacks, JsonCheckpointWriterRoundTripsComponents) {
     const auto path = std::filesystem::temp_directory_path() / "simplemc_test_ckpt.json";
     std::filesystem::remove(path);
 
-    // Build a simulation, populate cumulative stats, then write.
-    simulation<> src;
-    src.add_update(trivial_update {}, "u", 1.0);
-    src.add_measurement(trivial_meas {}, "m");
-    {
-        auto& mut_stats = const_cast<simulation_stats&>(src.stats()); // NOLINT
-        mut_stats.cumulative_steps = 1234;
-        mut_stats.cumulative_time = 5.5;
-    }
+    // Assemble the components, populate cumulative stats, then write.
+    xoshiro256ss rng;
+    update_set<> updates;
+    measurement_set<> meas;
+    simulation_stats stats;
+    updates.add({ trivial_update {}, "u", 1.0 });
+    meas.add({ trivial_meas {}, "m" });
+    stats.cumulative_steps = 1234;
+    stats.cumulative_time = 5.5;
 
-    const auto writer = make_json_checkpoint_writer(src, path);
+    const auto writer = make_json_checkpoint_writer(rng, updates, meas, stats, path);
     writer(simulation_ctx {});
     ASSERT_TRUE(std::filesystem::exists(path));
 
-    // Build a fresh simulation with the same registration, load, verify.
-    simulation<> dst;
-    dst.add_update(trivial_update {}, "u", 1.0);
-    dst.add_measurement(trivial_meas {}, "m");
-    load_json_checkpoint(dst, path);
-    EXPECT_EQ(dst.stats().cumulative_steps, 1234u);
-    EXPECT_DOUBLE_EQ(dst.stats().cumulative_time, 5.5);
+    // Fresh components with the same registration, load, verify.
+    xoshiro256ss dst_rng;
+    update_set<> dst_updates;
+    measurement_set<> dst_meas;
+    simulation_stats dst_stats;
+    dst_updates.add({ trivial_update {}, "u", 1.0 });
+    dst_meas.add({ trivial_meas {}, "m" });
+    load_json_checkpoint(dst_rng, dst_updates, dst_meas, dst_stats, path);
+    EXPECT_EQ(dst_stats.cumulative_steps, 1234u);
+    EXPECT_DOUBLE_EQ(dst_stats.cumulative_time, 5.5);
 
     std::filesystem::remove(path);
 }
 
-TEST(MCCallbacks, JsonCheckpointWriterRespectsModeOption) {
+TEST(MCCallbacks, JsonCheckpointWriterRespectsModeOptionAndConfig) {
     const auto path = std::filesystem::temp_directory_path() / "simplemc_test_ckpt.cbor";
     std::filesystem::remove(path);
 
-    simulation<> src;
-    src.add_update(trivial_update {}, "u", 1.0);
-    {
-        auto& mut_stats = const_cast<simulation_stats&>(src.stats()); // NOLINT
-        mut_stats.cumulative_steps = 7;
-    }
+    xoshiro256ss rng;
+    update_set<> updates;
+    measurement_set<> meas;
+    simulation_stats stats;
+    updates.add({ trivial_update {}, "u", 1.0 });
+    stats.cumulative_steps = 7;
+    run_config cfg { .seed = 5, .beta = 2.5 };
 
     json_io_options opts { .mode = json_file_mode::cbor };
-    auto writer = make_json_checkpoint_writer(src, path, opts);
+    auto writer = make_json_checkpoint_writer(rng, updates, meas, stats, &cfg, path, opts);
     writer(simulation_ctx {});
     ASSERT_TRUE(std::filesystem::exists(path));
 
-    simulation<> dst;
-    dst.add_update(trivial_update {}, "u", 1.0);
-    load_json_checkpoint(dst, path, opts);
-    EXPECT_EQ(dst.stats().cumulative_steps, 7u);
+    xoshiro256ss dst_rng;
+    update_set<> dst_updates;
+    measurement_set<> dst_meas;
+    simulation_stats dst_stats;
+    run_config dst_cfg;
+    dst_updates.add({ trivial_update {}, "u", 1.0 });
+    load_json_checkpoint(dst_rng, dst_updates, dst_meas, dst_stats, &dst_cfg, path, opts);
+    EXPECT_EQ(dst_stats.cumulative_steps, 7u);
+    EXPECT_EQ(dst_cfg.seed, 5);
+    EXPECT_DOUBLE_EQ(dst_cfg.beta, 2.5);
 
     std::filesystem::remove(path);
 }
 
 #ifdef SIMPLEMC_USE_HDF5
 
-TEST(MCCallbacks, Hdf5CheckpointWriterRoundTripsSimulation) {
+TEST(MCCallbacks, Hdf5CheckpointWriterRoundTripsComponentsAndConfig) {
+    using traits_t = mc_traits<hdf5_serializer, json_serializer>;
     const auto path = std::filesystem::temp_directory_path() / "simplemc_test_ckpt.h5";
     std::filesystem::remove(path);
 
-    using sim_t = simulation<mc_traits<hdf5_serializer, json_serializer>>;
-    sim_t src;
-    src.add_update(trivial_update {}, "u", 1.0);
-    src.add_measurement(trivial_meas {}, "m");
-    {
-        auto& mut_stats = const_cast<simulation_stats&>(src.stats()); // NOLINT
-        mut_stats.cumulative_steps = 9999;
-        mut_stats.cumulative_time = 12.25;
-    }
+    typename traits_t::rng_type rng;
+    update_set<traits_t> updates;
+    measurement_set<traits_t> meas;
+    simulation_stats stats;
+    updates.add({ trivial_update {}, "u", 1.0 });
+    meas.add({ trivial_meas {}, "m" });
+    stats.cumulative_steps = 9999;
+    stats.cumulative_time = 12.25;
+    run_config cfg { .seed = 3, .beta = 1.5 };
 
-    auto writer = make_hdf5_checkpoint_writer(src, path);
+    auto writer = make_hdf5_checkpoint_writer(rng, updates, meas, stats, &cfg, path);
     writer(simulation_ctx {});
     ASSERT_TRUE(std::filesystem::exists(path));
 
-    sim_t dst;
-    dst.add_update(trivial_update {}, "u", 1.0);
-    dst.add_measurement(trivial_meas {}, "m");
-    load_hdf5_checkpoint(dst, path);
-    EXPECT_EQ(dst.stats().cumulative_steps, 9999u);
-    EXPECT_DOUBLE_EQ(dst.stats().cumulative_time, 12.25);
+    typename traits_t::rng_type dst_rng;
+    update_set<traits_t> dst_updates;
+    measurement_set<traits_t> dst_meas;
+    simulation_stats dst_stats;
+    run_config dst_cfg;
+    dst_updates.add({ trivial_update {}, "u", 1.0 });
+    dst_meas.add({ trivial_meas {}, "m" });
+    load_hdf5_checkpoint(dst_rng, dst_updates, dst_meas, dst_stats, &dst_cfg, path);
+    EXPECT_EQ(dst_stats.cumulative_steps, 9999u);
+    EXPECT_DOUBLE_EQ(dst_stats.cumulative_time, 12.25);
+    EXPECT_EQ(dst_cfg.seed, 3);
+    EXPECT_DOUBLE_EQ(dst_cfg.beta, 1.5);
 
     std::filesystem::remove(path);
 }
 
-#endif // SIMPLEMC_MC_HAVE_HDF5_CALLBACKS
+#endif // SIMPLEMC_USE_HDF5
