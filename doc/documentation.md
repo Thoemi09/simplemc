@@ -125,6 +125,8 @@ various custom nlohmann adapters. Always available.
 HighFive). It requires a system HDF5 install and provides @ref simplemc::hdf5_serializer with
 POSIX-style path navigation and lazy group materialization. Header-only and opt-in via the CMake
 option `SIMPLEMC_USE_HDF5=ON`.
+- @ref simplemc-serialize-variant, erases a set of backends behind a `std::variant`, giving a single
+concrete serializer type whose active backend is chosen at runtime.
 
 Additional backends can be added by satisfying the @ref simplemc::serializer concept.
 

@@ -1364,6 +1364,9 @@
  * nlohmann_json</a> library and is always available.
  * - @ref simplemc-serialize-hdf5 is based on <a href="https://github.com/BlueBrain/HighFive">
  * HighFive</a> over a system HDF5 install. It is opt-in via the CMake option `SIMPLEMC_USE_HDF5=ON`.
+ * - @ref simplemc-serialize-variant is not a storage backend itself but erases a set of backends 
+ * behind a `std::variant`, giving a single concrete serializer type whose active backend is chosen at 
+ * runtime.
  */
 
 /**
@@ -1421,6 +1424,17 @@
  * set. It depends on HighFive and a system HDF5 installation. `HighFive::Exception` is caught at
  * every public boundary and rethrown as a simplemc::simplemc_exception so callers see a consistent
  * error type.
+ */
+
+/**
+ * @defgroup simplemc-serialize-variant Variant serialization
+ * @ingroup simplemc-serialize
+ * @brief Backend-erasing serializer that dispatches to one of several backends at runtime.
+ *
+ * @details simplemc::variant_serializer holds one of a pack of backend serializers in a 
+ * `std::variant` and forwards every operation to the active one via `std::visit`. It is itself a
+ * concrete type satisfying simplemc::serializer, so it can be passed wherever a single, fixed
+ * serializer type is required while keeping the storage backend a runtime choice.
  */
 
 /**

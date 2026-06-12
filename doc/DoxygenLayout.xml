@@ -199,6 +199,9 @@
           <tab type="user" url="@ref simplemc::json_serializer" title="json_serializer"/>
           <tab type="user" url="@ref simplemc::json_io_options" title="json_io_options"/>
         </tab>
+        <tab type="usergroup" url="@ref simplemc-serialize-variant" title="Variant serialization">
+          <tab type="user" url="@ref simplemc::variant_serializer" title="variant_serializer"/>
+        </tab>
         <tab type="user" url="@ref simplemc::has_simplemc_load" title="has_simplemc_load"/>
         <tab type="user" url="@ref simplemc::has_simplemc_save" title="has_simplemc_save"/>
         <tab type="user" url="@ref simplemc::serializer" title="serializer"/>
@@ -242,7 +245,6 @@
           <tab type="user" url="@ref simplemc::json_checkpoint_writer" title="json_checkpoint_writer"/>
         </tab>
         <tab type="usergroup" url="@ref simplemc-mc-sim" title="Simulation tools">
-          <tab type="user" url="@ref simplemc::simulation" title="simulation"/>
           <tab type="user" url="@ref simplemc::simulation_params" title="simulation_params"/>
           <tab type="user" url="@ref simplemc::simulation_stats" title="simulation_stats"/>
           <tab type="user" url="@ref simplemc::simulation_ctx" title="simulation_ctx"/>

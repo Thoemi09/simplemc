@@ -6,7 +6,7 @@
 # detection helpers, and library-shipped simplemc_save / simplemc_load overloads for simplemc-owned 
 # types.
 # simplemc-serialize (simplemc::simplemc-serialize): Interface library aggregating core + all
-# available backends (json, hdf5).
+# available backends (json, hdf5, variant).
 
 # add serialize core interface library
 add_library(simplemc-serialize-core INTERFACE)
@@ -20,12 +20,14 @@ add_subdirectory(json)
 if(SIMPLEMC_USE_HDF5)
     add_subdirectory(hdf5)
 endif()
+add_subdirectory(variant)
 
-# add aggregate interface library — links core + every shipped backend
+# add aggregate interface library — links core + variant + every shipped backend
 add_library(simplemc-serialize INTERFACE)
 add_library(simplemc::simplemc-serialize ALIAS simplemc-serialize)
 target_link_libraries(simplemc-serialize
     INTERFACE
         simplemc::simplemc-serialize-core
+        simplemc::simplemc-serialize-variant
         simplemc::simplemc-serialize-json
         $<$<BOOL:${SIMPLEMC_USE_HDF5}>:simplemc::simplemc-serialize-hdf5>)
