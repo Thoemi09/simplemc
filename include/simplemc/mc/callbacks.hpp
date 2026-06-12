@@ -176,7 +176,7 @@ struct progress_printer {
  *                non-`void` it must be writable by the JSON backend (simplemc::save_at_compatible).
  */
 template <mc_traits_like Traits, class Config = void>
-    requires(std::is_void_v<Config> || save_at_compatible<json_serializer, Config>)
+    requires(std::is_void_v<Config> || save_at_compatible<Config, json_serializer>)
 struct json_checkpoint_writer {
     /// Borrowed RNG. Must outlive this callable.
     const typename Traits::rng_type* rng = nullptr;
@@ -302,7 +302,7 @@ void load_json_checkpoint(typename Traits::rng_type& rng, update_set<Traits>& up
  * @param opts JSON I/O options.
  */
 template <mc_traits_like Traits, class Config>
-    requires load_at_compatible<json_serializer, Config>
+    requires load_at_compatible<Config, json_serializer>
 void load_json_checkpoint(typename Traits::rng_type& rng, update_set<Traits>& updates,
     measurement_set<Traits>& meas, simulation_stats& stats, Config* config,
     const std::filesystem::path& path, const json_io_options& opts = {}) {
@@ -328,7 +328,7 @@ void load_json_checkpoint(typename Traits::rng_type& rng, update_set<Traits>& up
  *                non-`void` it must be writable by the HDF5 backend (simplemc::save_at_compatible).
  */
 template <mc_traits_like Traits, class Config = void>
-    requires(std::is_void_v<Config> || save_at_compatible<hdf5_serializer, Config>)
+    requires(std::is_void_v<Config> || save_at_compatible<Config, hdf5_serializer>)
 struct hdf5_checkpoint_writer {
     /// Borrowed RNG. Must outlive this callable.
     const typename Traits::rng_type* rng = nullptr;
@@ -416,7 +416,7 @@ void load_hdf5_checkpoint(typename Traits::rng_type& rng, update_set<Traits>& up
  * @brief Overload that also restores a borrowed user `config` object from `"config"`.
  */
 template <mc_traits_like Traits, class Config>
-    requires load_at_compatible<hdf5_serializer, Config>
+    requires load_at_compatible<Config, hdf5_serializer>
 void load_hdf5_checkpoint(typename Traits::rng_type& rng, update_set<Traits>& updates,
     measurement_set<Traits>& meas, simulation_stats& stats, Config* config,
     const std::filesystem::path& path) {

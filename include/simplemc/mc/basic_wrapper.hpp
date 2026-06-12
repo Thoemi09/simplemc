@@ -180,7 +180,7 @@ struct basic_model : Iface {
      * @brief Serialize the wrapped value if `checkpoint_serializer_type` supports it; else no-op.
      */
     void save_at(checkpoint_serializer_type& s, std::string_view key) const override {
-        if constexpr (save_at_compatible<checkpoint_serializer_type, T>) {
+        if constexpr (save_at_compatible<T, checkpoint_serializer_type>) {
             s.save_at(key, concrete);
         }
     }
@@ -189,7 +189,7 @@ struct basic_model : Iface {
      * @brief Deserialize the wrapped value if `checkpoint_serializer_type` supports it; else no-op.
      */
     void load_at(const checkpoint_serializer_type& s, std::string_view key) override {
-        if constexpr (load_at_compatible<checkpoint_serializer_type, T>) {
+        if constexpr (load_at_compatible<T, checkpoint_serializer_type>) {
             s.load_at(key, concrete);
         }
     }
