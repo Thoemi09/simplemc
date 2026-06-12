@@ -238,9 +238,6 @@
           <tab type="user" url="@ref simplemc::simulation_ctx" title="simulation_ctx"/>
         </tab>
         <tab type="usergroup" url="@ref simplemc-mc-entities" title="Updates and measurements">
-          <tab type="user" url="@ref simplemc::basic_interface" title="basic_interface"/>
-          <tab type="user" url="@ref simplemc::basic_model" title="basic_model"/>
-          <tab type="user" url="@ref simplemc::basic_wrapper" title="basic_wrapper"/>
           <tab type="user" url="@ref simplemc::named_set" title="named_set"/>
           <tab type="usergroup" url="@ref simplemc-mc-entities-updates" title="Updates">
             <tab type="user" url="@ref simplemc::basic_update" title="basic_update"/>

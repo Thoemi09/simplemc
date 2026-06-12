@@ -8,7 +8,6 @@
 
 #include <simplemc/mc/basic_measurement.hpp>
 #include <simplemc/mc/basic_update.hpp>
-#include <simplemc/mc/basic_wrapper.hpp>
 #include <simplemc/mc/concepts.hpp>
 #include <simplemc/mc/callbacks.hpp>
 #include <simplemc/mc/measurement.hpp>

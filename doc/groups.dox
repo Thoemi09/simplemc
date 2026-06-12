@@ -1601,14 +1601,12 @@
  * small concept (see @ref simplemc-mc-concepts); the library uses **type erasure** to hold it, so
  * there is no base class to inherit from.
  *
- * The supporting classes form a hierarchy, each layer building on the previous one:
+ * The public types form a hierarchy, each layer building on the previous one:
  *
- * - simplemc::basic_interface — the polymorphic base that defines the common interface for updates 
- * and measurements.
- * - simplemc::basic_model — implements the interface and stores a user provided update or 
- * measurement object.
- * - simplemc::basic_wrapper — wraps the model into a regular value type.
- * - simplemc::basic_update / simplemc::basic_measurement — specialize the wrapper for each role.
- * - simplemc::update / simplemc::measurement — add the per-entity bookkeeping.
+ * - simplemc::basic_update / simplemc::basic_measurement — regular value types that wrap any user
+ * object satisfying the role concept (each backed by an internal interface/model pair). They provide
+ * deep-copy semantics, the typed `get<T>()` accessor, and the serialization / MPI forwarders.
+ * - simplemc::update / simplemc::measurement — add the per-entity bookkeeping (name, weight,
+ * counters, activation flag).
  * - simplemc::update_set / simplemc::measurement_set — collect the entities by name.
  */

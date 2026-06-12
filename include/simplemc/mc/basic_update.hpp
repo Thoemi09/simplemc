@@ -6,14 +6,107 @@
 #ifndef SIMPLEMC_MC_BASIC_UPDATE_HPP
 #define SIMPLEMC_MC_BASIC_UPDATE_HPP
 
-#include <simplemc/mc/basic_wrapper.hpp>
 #include <simplemc/mc/concepts.hpp>
 #include <simplemc/mc/serializer.hpp>
+#include <simplemc/mpi/communicator.hpp>
 
 #include <concepts>
 #include <memory>
+#include <string_view>
 #include <type_traits>
+#include <typeinfo>
 #include <utility>
+
+namespace simplemc::detail {
+
+// Type-erasure plumbing for simplemc::basic_update. Internal: not documented, not part of the
+// public API. The interface declares every operation the wrapper forwards; update_model<U>
+// implements them over a wrapped user value U. The role-agnostic overrides (RTTI access,
+// serialization, MPI) are intentionally duplicated with measurement_model rather than shared
+// through a common template base.
+
+struct update_interface {
+    using serializer_type = mc_serializer;
+
+    virtual ~update_interface() = default;
+
+    [[nodiscard]] virtual std::unique_ptr<update_interface> clone() const = 0;
+    [[nodiscard]] virtual const std::type_info& type_id() const noexcept = 0;
+    [[nodiscard]] virtual void* address() noexcept = 0;
+    [[nodiscard]] virtual const void* address() const noexcept = 0;
+
+    virtual void save_at(serializer_type& parent, std::string_view key) const = 0;
+    virtual void load_at(const serializer_type& parent, std::string_view key) = 0;
+    virtual void save_input_config_at(serializer_type& parent, std::string_view key) const = 0;
+    virtual void load_input_config_at(const serializer_type& parent, std::string_view key) = 0;
+    virtual void mpi_collect(const mpi::communicator& comm) = 0;
+
+    // update role
+    virtual double attempt() = 0;
+    virtual void accept() = 0;
+    virtual void reject() = 0;
+};
+
+template <class U>
+struct update_model final : update_interface {
+    U concrete;
+
+    explicit update_model(U v) : concrete { std::move(v) } {}
+
+    [[nodiscard]] const std::type_info& type_id() const noexcept override { return typeid(U); }
+    [[nodiscard]] void* address() noexcept override { return &concrete; }
+    [[nodiscard]] const void* address() const noexcept override { return &concrete; }
+
+    // Each hook compiles to a no-op when the wrapped type does not support it.
+    void save_at(serializer_type& s, std::string_view key) const override {
+        if constexpr (save_at_compatible<U, serializer_type>) {
+            s.save_at(key, concrete);
+        }
+    }
+
+    void load_at(const serializer_type& s, std::string_view key) override {
+        if constexpr (load_at_compatible<U, serializer_type>) {
+            s.load_at(key, concrete);
+        }
+    }
+
+    void save_input_config_at(serializer_type& s, std::string_view key) const override {
+        if constexpr (has_simplemc_save_input_config<U, serializer_type>) {
+            auto sub = s[key];
+            simplemc_save_input_config(sub, concrete);
+        }
+    }
+
+    void load_input_config_at(const serializer_type& s, std::string_view key) override {
+        if constexpr (has_simplemc_load_input_config<U, serializer_type>) {
+            const auto sub = s[key];
+            simplemc_load_input_config(sub, concrete);
+        }
+    }
+
+    void mpi_collect(const mpi::communicator& comm) override {
+        if constexpr (has_simplemc_mpi_collect<U>) {
+            concrete = simplemc_mpi_collect(comm, concrete);
+        }
+    }
+
+    double attempt() override { return concrete.attempt(); }
+
+    void accept() override { concrete.accept(); }
+
+    // reject() is optional on the wrapped type; absent it, this is a no-op.
+    void reject() override {
+        if constexpr (requires { concrete.reject(); }) {
+            concrete.reject();
+        }
+    }
+
+    [[nodiscard]] std::unique_ptr<update_interface> clone() const override {
+        return std::make_unique<update_model>(*this);
+    }
+};
+
+} // namespace simplemc::detail
 
 namespace simplemc {
 
@@ -21,72 +114,6 @@ namespace simplemc {
  * @addtogroup simplemc-mc-entities-updates
  * @{
  */
-
-/**
- * @brief Role interface of the update wrapper: adds the update virtuals to the common set.
- *
- * @details Derives from simplemc::basic_interface and adds the Monte Carlo update operations
- * (`attempt()` / `accept()` / `reject()`). simplemc::basic_update owns one of these (through
- * simplemc::basic_wrapper) and forwards its public update methods to it.
- */
-struct update_interface : basic_interface<update_interface> {
-    /**
-     * @brief Propose a change to the simulation state.
-     *
-     * @return Acceptance probability of the proposed change.
-     */
-    virtual double attempt() = 0;
-
-    /**
-     * @brief Commit the proposed change.
-     */
-    virtual void accept() = 0;
-
-    /**
-     * @brief Roll back any speculative state set up by attempt().
-     */
-    virtual void reject() = 0;
-};
-
-/**
- * @brief Role model of the update wrapper: implements the update virtuals over the wrapped value.
- *
- * @details Derives from simplemc::basic_model (which supplies the role-agnostic overrides) and adds
- * the update overrides. `reject()` is optional on the wrapped type; when the wrapped type omits it,
- * the override is a no-op.
- *
- * @tparam U Wrapped user type.
- */
-template <class U>
-struct update_model final : basic_model<update_interface, U> {
-    using basic_model<update_interface, U>::basic_model;
-
-    /**
-     * @brief Forward to the wrapped value's `attempt()`.
-     */
-    double attempt() override { return this->concrete.attempt(); }
-
-    /**
-     * @brief Forward to the wrapped value's `accept()`.
-     */
-    void accept() override { this->concrete.accept(); }
-
-    /**
-     * @brief Forward to the wrapped value's `reject()` if it has one; otherwise a no-op.
-     */
-    void reject() override {
-        if constexpr (requires { this->concrete.reject(); }) {
-            this->concrete.reject();
-        }
-    }
-
-    /**
-     * @brief Deep-copy this model, preserving the dynamic type.
-     */
-    [[nodiscard]] std::unique_ptr<update_interface> clone() const override {
-        return std::make_unique<update_model>(*this);
-    }
-};
 
 /**
  * @brief A Monte Carlo update.
@@ -130,14 +157,17 @@ struct update_model final : basic_model<update_interface, U> {
  * the *intersection* of those backends: with HDF5 enabled a wrapped payload must be serializable by
  * both JSON and HDF5 for the forwards above to engage.
  *
- * The deep-copy/serialization/MPI machinery is shared with simplemc::basic_measurement through
- * simplemc::basic_wrapper; this class adds only the update role. See @ref simplemc-mc for a
- * description of the implementation strategy.
+ * The type erasure is implemented inline over an internal interface/model pair; the same pattern is
+ * duplicated (not shared) by simplemc::basic_measurement. See @ref simplemc-mc for a description of
+ * the implementation strategy.
  */
-class basic_update : public basic_wrapper<update_interface> {
-    using base_type = basic_wrapper<update_interface>;
-
+class basic_update {
 public:
+    /**
+     * @brief Serializer type used for both checkpoint and input-config serialization.
+     */
+    using serializer_type = mc_serializer;
+
     /**
      * @brief Wrap a user-defined update.
      *
@@ -155,19 +185,121 @@ public:
         requires(!std::same_as<std::remove_cvref_t<U>, basic_update>) && mc_update<std::remove_cvref_t<U>> &&
         std::copy_constructible<std::remove_cvref_t<U>>
     basic_update(U&& u) :
-        base_type { std::make_unique<update_model<std::remove_cvref_t<U>>>(std::forward<U>(u)) } {}
+        pimpl_ { std::make_unique<detail::update_model<std::remove_cvref_t<U>>>(std::forward<U>(u)) } {}
+
+    /**
+     * @brief Copy constructor.
+     *
+     * @details Performs a deep copy: the new wrapper owns an independent copy of `other`'s wrapped
+     * value, produced by the wrapped type's copy constructor. The two wrappers do not share state.
+     *
+     * @param other Wrapper to copy from.
+     */
+    basic_update(const basic_update& other) : pimpl_ { other.pimpl_->clone() } {}
+
+    /**
+     * @brief Default move constructor.
+     */
+    basic_update(basic_update&& other) noexcept = default;
+
+    /**
+     * @brief Copy assignment (deep copy via copy-and-swap).
+     *
+     * @param other Wrapper to copy from.
+     * @return Reference to `*this`.
+     */
+    basic_update& operator=(const basic_update& other) {
+        basic_update tmp { other };
+        std::swap(pimpl_, tmp.pimpl_);
+        return *this;
+    }
+
+    /**
+     * @brief Default move assignment.
+     */
+    basic_update& operator=(basic_update&& other) noexcept = default;
+
+    /**
+     * @brief Default destructor.
+     */
+    ~basic_update() = default;
+
+    /**
+     * @brief Recover a pointer to the wrapped user value, checked by type.
+     *
+     * @details Returns a pointer to the wrapped value if the dynamic type matches `T`, otherwise
+     * `nullptr`. Requires RTTI to be enabled.
+     *
+     * @tparam T Expected concrete type of the wrapped user value.
+     * @return Pointer to the wrapped value, or `nullptr` on type mismatch.
+     */
+    template <class T>
+    [[nodiscard]] T* get() noexcept {
+        return typeid(T) == pimpl_->type_id() ? static_cast<T*>(pimpl_->address()) : nullptr;
+    }
+
+    /**
+     * @brief Const overload of get().
+     */
+    template <class T>
+    [[nodiscard]] const T* get() const noexcept {
+        return typeid(T) == pimpl_->type_id() ? static_cast<const T*>(pimpl_->address()) : nullptr;
+    }
+
+    /**
+     * @brief Serialize the wrapped user type (silent no-op if unsupported).
+     *
+     * @param s Serializer handle.
+     * @param key Sub-key to write into.
+     */
+    void save_at(serializer_type& s, std::string_view key) const { pimpl_->save_at(s, key); }
+
+    /**
+     * @brief Deserialize the wrapped user type (silent no-op if unsupported).
+     *
+     * @param s Serializer handle.
+     * @param key Sub-key to read from.
+     */
+    void load_at(const serializer_type& s, std::string_view key) { pimpl_->load_at(s, key); }
+
+    /**
+     * @brief Serialize the wrapped user type as input config (silent no-op if unsupported).
+     *
+     * @param s Serializer handle.
+     * @param key Sub-key to write into.
+     */
+    void save_input_config_at(serializer_type& s, std::string_view key) const {
+        pimpl_->save_input_config_at(s, key);
+    }
+
+    /**
+     * @brief Deserialize the wrapped user type from input config (silent no-op if unsupported).
+     *
+     * @param s Serializer handle.
+     * @param key Sub-key to read from.
+     */
+    void load_input_config_at(const serializer_type& s, std::string_view key) {
+        pimpl_->load_input_config_at(s, key);
+    }
+
+    /**
+     * @brief All-reduce the wrapped user value across MPI ranks via ADL (silent no-op if unsupported).
+     *
+     * @param comm MPI communicator over which to reduce.
+     */
+    void mpi_collect(const mpi::communicator& comm) { pimpl_->mpi_collect(comm); }
 
     /**
      * @brief Propose a change to the simulation state.
      *
      * @return Acceptance probability of the proposed change.
      */
-    double attempt() { return this->impl().attempt(); }
+    double attempt() { return pimpl_->attempt(); }
 
     /**
      * @brief Commit the proposed change.
      */
-    void accept() { this->impl().accept(); }
+    void accept() { pimpl_->accept(); }
 
     /**
      * @brief Roll back any speculative state set up by attempt().
@@ -175,7 +307,11 @@ public:
      * @details If the wrapped user type defines a `%reject()` member it is invoked; otherwise this
      * is a no-op.
      */
-    void reject() { this->impl().reject(); }
+    void reject() { pimpl_->reject(); }
+
+private:
+    /// Owning pointer to the type-erased model.
+    std::unique_ptr<detail::update_interface> pimpl_;
 };
 
 /** @} */

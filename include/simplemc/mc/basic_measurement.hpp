@@ -6,14 +6,94 @@
 #ifndef SIMPLEMC_MC_BASIC_MEASUREMENT_HPP
 #define SIMPLEMC_MC_BASIC_MEASUREMENT_HPP
 
-#include <simplemc/mc/basic_wrapper.hpp>
 #include <simplemc/mc/concepts.hpp>
 #include <simplemc/mc/serializer.hpp>
+#include <simplemc/mpi/communicator.hpp>
 
 #include <concepts>
 #include <memory>
+#include <string_view>
 #include <type_traits>
+#include <typeinfo>
 #include <utility>
+
+namespace simplemc::detail {
+
+// Type-erasure plumbing for simplemc::basic_measurement. Internal: not documented, not part of the
+// public API. Mirrors the update interface/model pair (the role-agnostic overrides are duplicated
+// rather than shared through a common template base); the only role operation is measure().
+
+struct measurement_interface {
+    using serializer_type = mc_serializer;
+
+    virtual ~measurement_interface() = default;
+
+    [[nodiscard]] virtual std::unique_ptr<measurement_interface> clone() const = 0;
+    [[nodiscard]] virtual const std::type_info& type_id() const noexcept = 0;
+    [[nodiscard]] virtual void* address() noexcept = 0;
+    [[nodiscard]] virtual const void* address() const noexcept = 0;
+
+    virtual void save_at(serializer_type& parent, std::string_view key) const = 0;
+    virtual void load_at(const serializer_type& parent, std::string_view key) = 0;
+    virtual void save_input_config_at(serializer_type& parent, std::string_view key) const = 0;
+    virtual void load_input_config_at(const serializer_type& parent, std::string_view key) = 0;
+    virtual void mpi_collect(const mpi::communicator& comm) = 0;
+
+    // measurement role
+    virtual void measure() = 0;
+};
+
+template <class M>
+struct measurement_model final : measurement_interface {
+    M concrete;
+
+    explicit measurement_model(M v) : concrete { std::move(v) } {}
+
+    [[nodiscard]] const std::type_info& type_id() const noexcept override { return typeid(M); }
+    [[nodiscard]] void* address() noexcept override { return &concrete; }
+    [[nodiscard]] const void* address() const noexcept override { return &concrete; }
+
+    // Each hook compiles to a no-op when the wrapped type does not support it.
+    void save_at(serializer_type& s, std::string_view key) const override {
+        if constexpr (save_at_compatible<M, serializer_type>) {
+            s.save_at(key, concrete);
+        }
+    }
+
+    void load_at(const serializer_type& s, std::string_view key) override {
+        if constexpr (load_at_compatible<M, serializer_type>) {
+            s.load_at(key, concrete);
+        }
+    }
+
+    void save_input_config_at(serializer_type& s, std::string_view key) const override {
+        if constexpr (has_simplemc_save_input_config<M, serializer_type>) {
+            auto sub = s[key];
+            simplemc_save_input_config(sub, concrete);
+        }
+    }
+
+    void load_input_config_at(const serializer_type& s, std::string_view key) override {
+        if constexpr (has_simplemc_load_input_config<M, serializer_type>) {
+            const auto sub = s[key];
+            simplemc_load_input_config(sub, concrete);
+        }
+    }
+
+    void mpi_collect(const mpi::communicator& comm) override {
+        if constexpr (has_simplemc_mpi_collect<M>) {
+            concrete = simplemc_mpi_collect(comm, concrete);
+        }
+    }
+
+    void measure() override { concrete.measure(); }
+
+    [[nodiscard]] std::unique_ptr<measurement_interface> clone() const override {
+        return std::make_unique<measurement_model>(*this);
+    }
+};
+
+} // namespace simplemc::detail
 
 namespace simplemc {
 
@@ -21,45 +101,6 @@ namespace simplemc {
  * @addtogroup simplemc-mc-entities-measurements
  * @{
  */
-
-/**
- * @brief Role interface of the measurement wrapper: adds `measure()` to the common set.
- *
- * @details Derives from simplemc::basic_interface and adds the Monte Carlo measurement operation
- * (`measure()`). simplemc::basic_measurement owns one of these (through simplemc::basic_wrapper)
- * and forwards its public `measure()` to it.
- */
-struct measurement_interface : basic_interface<measurement_interface> {
-    /**
-     * @brief Take a measurement.
-     */
-    virtual void measure() = 0;
-};
-
-/**
- * @brief Role model of the measurement wrapper: implements `measure()` over the wrapped value.
- *
- * @details Derives from simplemc::basic_model (which supplies the role-agnostic overrides) and adds
- * the `measure()` override.
- *
- * @tparam M Wrapped user type.
- */
-template <class M>
-struct measurement_model final : basic_model<measurement_interface, M> {
-    using basic_model<measurement_interface, M>::basic_model;
-
-    /**
-     * @brief Forward to the wrapped value's `measure()`.
-     */
-    void measure() override { this->concrete.measure(); }
-
-    /**
-     * @brief Deep-copy this model, preserving the dynamic type.
-     */
-    [[nodiscard]] std::unique_ptr<measurement_interface> clone() const override {
-        return std::make_unique<measurement_model>(*this);
-    }
-};
 
 /**
  * @brief A Monte Carlo measurement.
@@ -97,18 +138,21 @@ struct measurement_model final : basic_model<measurement_interface, M> {
  * the *intersection* of those backends: with HDF5 enabled a wrapped payload must be serializable by
  * both JSON and HDF5 for the forwards above to engage.
  *
- * The deep-copy/serialization/MPI machinery is shared with simplemc::basic_update through
- * simplemc::basic_wrapper; this class adds only the measurement role. See @ref simplemc-mc
- * for a description of the implementation strategy.
+ * The type erasure is implemented inline over an internal interface/model pair; the same pattern is
+ * duplicated (not shared) by simplemc::basic_update. See @ref simplemc-mc for a description of the
+ * implementation strategy.
  *
  * @note The wrapper takes the user measurement by value. To access the concrete value (e.g. an
  * accumulator) after a run, use the typed accessor get<T>() — it returns a pointer to the wrapped
  * value when the dynamic type matches `T`, or `nullptr` otherwise.
  */
-class basic_measurement : public basic_wrapper<measurement_interface> {
-    using base_type = basic_wrapper<measurement_interface>;
-
+class basic_measurement {
 public:
+    /**
+     * @brief Serializer type used for both checkpoint and input-config serialization.
+     */
+    using serializer_type = mc_serializer;
+
     /**
      * @brief Wrap a user-defined measurement.
      *
@@ -126,12 +170,115 @@ public:
         requires(!std::same_as<std::remove_cvref_t<M>, basic_measurement>) && mc_measurement<std::remove_cvref_t<M>> &&
         std::copy_constructible<std::remove_cvref_t<M>>
     basic_measurement(M&& m) :
-        base_type { std::make_unique<measurement_model<std::remove_cvref_t<M>>>(std::forward<M>(m)) } {}
+        pimpl_ { std::make_unique<detail::measurement_model<std::remove_cvref_t<M>>>(std::forward<M>(m)) } {}
+
+    /**
+     * @brief Copy constructor (deep copy of the wrapped value).
+     *
+     * @param other Wrapper to copy from.
+     */
+    basic_measurement(const basic_measurement& other) : pimpl_ { other.pimpl_->clone() } {}
+
+    /**
+     * @brief Default move constructor.
+     */
+    basic_measurement(basic_measurement&& other) noexcept = default;
+
+    /**
+     * @brief Copy assignment (deep copy via copy-and-swap).
+     *
+     * @param other Wrapper to copy from.
+     * @return Reference to `*this`.
+     */
+    basic_measurement& operator=(const basic_measurement& other) {
+        basic_measurement tmp { other };
+        std::swap(pimpl_, tmp.pimpl_);
+        return *this;
+    }
+
+    /**
+     * @brief Default move assignment.
+     */
+    basic_measurement& operator=(basic_measurement&& other) noexcept = default;
+
+    /**
+     * @brief Default destructor.
+     */
+    ~basic_measurement() = default;
+
+    /**
+     * @brief Recover a pointer to the wrapped user value, checked by type.
+     *
+     * @details Returns a pointer to the wrapped value if the dynamic type matches `T`, otherwise
+     * `nullptr`. Requires RTTI to be enabled.
+     *
+     * @tparam T Expected concrete type of the wrapped user value.
+     * @return Pointer to the wrapped value, or `nullptr` on type mismatch.
+     */
+    template <class T>
+    [[nodiscard]] T* get() noexcept {
+        return typeid(T) == pimpl_->type_id() ? static_cast<T*>(pimpl_->address()) : nullptr;
+    }
+
+    /**
+     * @brief Const overload of get().
+     */
+    template <class T>
+    [[nodiscard]] const T* get() const noexcept {
+        return typeid(T) == pimpl_->type_id() ? static_cast<const T*>(pimpl_->address()) : nullptr;
+    }
+
+    /**
+     * @brief Serialize the wrapped user type (silent no-op if unsupported).
+     *
+     * @param s Serializer handle.
+     * @param key Sub-key to write into.
+     */
+    void save_at(serializer_type& s, std::string_view key) const { pimpl_->save_at(s, key); }
+
+    /**
+     * @brief Deserialize the wrapped user type (silent no-op if unsupported).
+     *
+     * @param s Serializer handle.
+     * @param key Sub-key to read from.
+     */
+    void load_at(const serializer_type& s, std::string_view key) { pimpl_->load_at(s, key); }
+
+    /**
+     * @brief Serialize the wrapped user type as input config (silent no-op if unsupported).
+     *
+     * @param s Serializer handle.
+     * @param key Sub-key to write into.
+     */
+    void save_input_config_at(serializer_type& s, std::string_view key) const {
+        pimpl_->save_input_config_at(s, key);
+    }
+
+    /**
+     * @brief Deserialize the wrapped user type from input config (silent no-op if unsupported).
+     *
+     * @param s Serializer handle.
+     * @param key Sub-key to read from.
+     */
+    void load_input_config_at(const serializer_type& s, std::string_view key) {
+        pimpl_->load_input_config_at(s, key);
+    }
+
+    /**
+     * @brief All-reduce the wrapped user value across MPI ranks via ADL (silent no-op if unsupported).
+     *
+     * @param comm MPI communicator over which to reduce.
+     */
+    void mpi_collect(const mpi::communicator& comm) { pimpl_->mpi_collect(comm); }
 
     /**
      * @brief Take a measurement.
      */
-    void measure() { this->impl().measure(); }
+    void measure() { pimpl_->measure(); }
+
+private:
+    /// Owning pointer to the type-erased model.
+    std::unique_ptr<detail::measurement_interface> pimpl_;
 };
 
 /** @} */
