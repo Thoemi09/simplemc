@@ -99,16 +99,28 @@ public:
         }
     }
 
+    /**
+     * @brief Serialize all registered measurements into the passed serializer, keyed by name.
+     */
     friend void simplemc_save(serializer_type& s, const measurement_set& ms) { ms.save_entries(s); }
 
+    /**
+     * @brief Restore registered measurements from the serializer.
+     */
     friend void simplemc_load(const serializer_type& s, measurement_set& ms) {
         ms.load_entries(s, "measurement");
     }
 
+    /**
+     * @brief Serialize the user-input config of all registered measurements, keyed by name.
+     */
     friend void simplemc_save_input_config(serializer_type& s, const measurement_set& ms) {
         ms.save_input_config_entries(s);
     }
 
+    /**
+     * @brief Restore the user-input config of all registered measurements from the serializer.
+     */
     friend void simplemc_load_input_config(const serializer_type& s, measurement_set& ms) {
         ms.load_input_config_entries(s, "measurement");
     }

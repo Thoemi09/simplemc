@@ -161,7 +161,6 @@ struct measurement {
      * registration data assumed identical across ranks and are not touched.
      *
      * @param comm MPI communicator over which to reduce.
-     * @param m Measurement to reduce in place.
      */
     friend void simplemc_mpi_collect(const mpi::communicator& comm, measurement& m) {
         m.wrapped.mpi_collect(comm);

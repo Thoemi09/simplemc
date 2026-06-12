@@ -17,7 +17,7 @@
 namespace simplemc {
 
 /**
- * @addtogroup simplemc-mc-sim
+ * @addtogroup simplemc-mc-serialize
  * @{
  */
 
@@ -137,7 +137,10 @@ inline void simplemc_load_input_config(const mc_serializer& s, simulation_params
     }
 }
 
+/** @} */
+
 /**
+ * @ingroup simplemc-mc-mpi
  * @brief All-reduce every reducible run component across MPI ranks.
  *
  * @details Composite reducer that forwards to simplemc_mpi_collect on the simplemc::simulation_stats,
@@ -155,8 +158,6 @@ inline void simplemc_mpi_collect(const mpi::communicator& comm, update_set& upda
     simplemc_mpi_collect(comm, updates);
     simplemc_mpi_collect(comm, meas);
 }
-
-/** @} */
 
 } // namespace simplemc
 

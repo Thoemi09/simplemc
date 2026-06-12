@@ -17,7 +17,7 @@
 namespace simplemc {
 
 /**
- * @addtogroup simplemc-mc-concepts
+ * @addtogroup simplemc-mc-serialize
  * @{
  */
 

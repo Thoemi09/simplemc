@@ -1364,31 +1364,9 @@
  * nlohmann_json</a> library and is always available.
  * - @ref simplemc-serialize-hdf5 is based on <a href="https://github.com/BlueBrain/HighFive">
  * HighFive</a> over a system HDF5 install. It is opt-in via the CMake option `SIMPLEMC_USE_HDF5=ON`.
- * - @ref simplemc-serialize-variant is not a storage backend itself but erases a set of backends 
- * behind a `std::variant`, giving a single concrete serializer type whose active backend is chosen at 
+ * - @ref simplemc-serialize-variant is not a storage backend itself but erases a set of backends
+ * behind a `std::variant`, giving a single concrete serializer type whose active backend is chosen at
  * runtime.
- */
-
-/**
- * @defgroup simplemc-serialize-json JSON serialization
- * @ingroup simplemc-serialize
- * @brief JSON backend on top of `nlohmann_json`.
- *
- * @details simplemc::json_serializer satisfies simplemc::serializer.
- *
- * It owns a shared `nlohmann::json` tree via `std::shared_ptr` and tracks the current position via a
- * JSON pointer into the tree. Navigation via `operator[]` returns a new instance sharing the tree but
- * pointing at the sub-node — the non-const overload auto-creates (save side) and the const overload
- * throws on missing keys (load side). Copying uses reference semantices, i.e. a copy aliases the same
- * underlying tree as the original.
- *
- * Per-type customization is via the ADL pattern described in @ref simplemc-serialize-adl. Types
- * without an ADL `%simplemc_save` / `%simplemc_load` fall through to nlohmann's internal
- * serialization machinery.
- *
- * File I/O helpers (simplemc::read_json_file / simplemc::write_json_file) support both text mode and
- * the four nlohmann binary formats — BSON, CBOR, MessagePack, UBJSON — via the
- * simplemc::json_file_mode enum and the simplemc::json_io_options struct.
  */
 
 /**
@@ -1427,11 +1405,33 @@
  */
 
 /**
+ * @defgroup simplemc-serialize-json JSON serialization
+ * @ingroup simplemc-serialize
+ * @brief JSON backend on top of `nlohmann_json`.
+ *
+ * @details simplemc::json_serializer satisfies simplemc::serializer.
+ *
+ * It owns a shared `nlohmann::json` tree via `std::shared_ptr` and tracks the current position via a
+ * JSON pointer into the tree. Navigation via `operator[]` returns a new instance sharing the tree but
+ * pointing at the sub-node — the non-const overload auto-creates (save side) and the const overload
+ * throws on missing keys (load side). Copying uses reference semantices, i.e. a copy aliases the same
+ * underlying tree as the original.
+ *
+ * Per-type customization is via the ADL pattern described in @ref simplemc-serialize-adl. Types
+ * without an ADL `%simplemc_save` / `%simplemc_load` fall through to nlohmann's internal
+ * serialization machinery.
+ *
+ * File I/O helpers (simplemc::read_json_file / simplemc::write_json_file) support both text mode and
+ * the four nlohmann binary formats — BSON, CBOR, MessagePack, UBJSON — via the
+ * simplemc::json_file_mode enum and the simplemc::json_io_options struct.
+ */
+
+/**
  * @defgroup simplemc-serialize-variant Variant serialization
  * @ingroup simplemc-serialize
  * @brief Backend-erasing serializer that dispatches to one of several backends at runtime.
  *
- * @details simplemc::variant_serializer holds one of a pack of backend serializers in a 
+ * @details simplemc::variant_serializer holds one of a pack of backend serializers in a
  * `std::variant` and forwards every operation to the active one via `std::visit`. It is itself a
  * concrete type satisfying simplemc::serializer, so it can be passed wherever a single, fixed
  * serializer type is required while keeping the storage backend a runtime choice.
@@ -1442,61 +1442,46 @@
  * @brief Building blocks for Monte Carlo simulations.
  *
  * @details **simplemc-mc** is the Monte Carlo–specific layer of **simplemc**. It hosts the types and
- * drivers needed to set up, run, and persist a Markov-chain Monte Carlo (MCMC) simulation while
- * leaving the physics entirely to the user.
+ * drivers needed to set up, run, and store/load a Markov-chain Monte Carlo (MCMC) simulation.
  *
  * A Monte Carlo run is assembled from a few orthogonal pieces, each documented in its own subgroup:
  *
  * - The user owns the **configuration** (state) of the Markov chain. **simplemc-mc** never sees its
- * internals.
+ * internals and only interacts with it indirectly through user-defined updates and measurements.
  * - @ref simplemc-mc-entities-updates propose and apply changes to that configuration. An update is
  * any user type whose `attempt()` proposes a move (returning a Metropolis weight ratio) and whose
- * `accept()` / `reject()` commit or roll it back.
- * - @ref simplemc-mc-entities-measurements sample observables off the current configuration through a
- * `measure()` member.
- * - @ref simplemc-mc-kernels define the MC algorithm, i.e. how updates are chosen, applied and 
- * accepted/rejected. One kernel invocation constitutes one MC step. The default is the 
+ * `accept()` / `reject()` commits it or rolls it back.
+ * - @ref simplemc-mc-entities-measurements sample observables by calling the `measure()` member. They
+ * usually inspect the current MC configuration to achieve that.
+ * - @ref simplemc-mc-kernels define the MC algorithm, i.e. how updates are chosen, applied and
+ * accepted/rejected. One kernel invocation constitutes one MC step. The default is the
  * Metropolis-Hastings kernel.
- * - The free simplemc::run drives the simulation by looping over MC cycles. Each cycle consists of a
- * fixed number of steps and ends with a measurement phase. The loop continues until a stop criterion 
- * in satisfied (e.g. a fixed number of cycles, a wall-clock time limit, etc.).
+ * - @ref simplemc-mc-sim drive the simulation via the free simplemc::run function by looping over MC
+ * cycles. Each cycle consists of a fixed number of steps and ends with a measurement phase. The loop
+ * continues until a stop criterion in satisfied (e.g. a fixed number of cycles, a wall-clock time
+ * limit, etc.).
  * - @ref simplemc-mc-callbacks are invoked during the MC loop. They can be used to perform various
  * tasks like logging, checkpointing, debugging, etc.
+ * - @ref simplemc-mc-serialize enables users to save/load the state of a simulation. This makes it
+ * easy to continue a previous run. It also allows users to read and write input configurations.
+ * - @ref simplemc-mc-mpi gathers results from multiple parallel simulations across MPI ranks.
  *
- * The contracts that user updates, measurements, kernels, traits and callbacks must satisfy are
- * expressed as C++20 @ref simplemc-mc-concepts.
+ * The contracts that user updates, measurements, kernels, and callbacks must satisfy are expressed as
+ * C++20 concepts (see @ref simplemc-mc-concepts).
  */
 
 /**
- * @defgroup simplemc-mc-entities Updates and measurements
+ * @defgroup simplemc-mc-concepts Concepts
  * @ingroup simplemc-mc
- * @brief User-extensible polymorphic entities and the machinery behind them.
+ * @brief C++20 concepts that define the contracts of the **simplemc-mc** extension points.
  *
- * @details @ref simplemc-mc-entities-updates and @ref simplemc-mc-entities-measurements are the two
- * user-extensible entity families of **simplemc-mc**. Both follow the same **concept–model
- * type-erasure idiom** and are managed by the same named-collection base, documented here.
+ * @details Every extension point of **simplemc-mc** is expressed as a concept, so user types opt in
+ * structurally without inheriting from any base class:
  *
- * @section simplemc-mc-entities-type-erasure Polymorphic user types
- *
- * The entity families follow the **concept–model type-erasure idiom**: the user writes any plain
- * class that satisfies a small C++20 concept (see @ref simplemc-mc-concepts), and the library wraps
- * it in a value-semantic polymorphic holder. The wrapper hides a `std::unique_ptr` to an internal
- * polymorphic base whose nested model derives from it, stores the user's value, and forwards the
- * concept's operations through it.
- *
- * The result: user code is non-intrusive (no base class to inherit from), the wrapper is a regular
- * value type usable in standard containers, and a single wrapper instance can hold values of
- * arbitrary user types. A typed `get<T>()` accessor recovers the wrapped value by `typeid`-checked
- * cast.
- *
- * See e.g. simplemc::measurement. The reusable machinery behind this idiom is public: a wrapper is
- * built from simplemc::basic_wrapper (the value-semantics shell), simplemc::basic_interface (the
- * role-agnostic polymorphic base), and simplemc::basic_model (the role-agnostic model).
- *
- * @section simplemc-mc-entities-collections Named collections
- *
- * simplemc::named_set provides the shared registration / lookup base — unique-name enforcement and
- * by-name / by-index access — for both simplemc::update_set and simplemc::measurement_set.
+ * - simplemc::mc_kernel — defines a MC algorithm.
+ * - simplemc::mc_measurement — defines a MC measurement.
+ * - simplemc::mc_run_callbacks — defines callback hooks invoked during a MC simulation.
+ * - simplemc::mc_update — defines a proposable/accept-rejectable MC move.
  */
 
 /**
@@ -1529,24 +1514,6 @@
  * name and its active flag. Entries are owned by a simplemc::measurement_set, which caches the active
  * subset so inactive measurements are cheaply skipped during a run while remaining present for
  * serialization and later toggling.
- */
-
-/**
- * @defgroup simplemc-mc-concepts Concepts and typedefs
- * @ingroup simplemc-mc
- * @brief C++20 concepts that define the contracts of the **simplemc-mc** extension points.
- *
- * @details Every extension point of **simplemc-mc** is expressed as a concept, so user types opt in
- * structurally without inheriting from any base class:
- *
- * - simplemc::mc_update — a proposable/accept-rejectable move (`attempt`, `accept`, `reject`).
- * - simplemc::mc_measurement — an observer with a `measure()` member.
- * - simplemc::mc_kernel — a step algorithm exposing `step(rng)`.
- * - simplemc::mc_run_callbacks — the optional per-run callback bundle.
- *
- * These concepts are what let the @ref simplemc-mc-entities, @ref simplemc-mc-kernels,
- * @ref simplemc-mc-callbacks and
- * @ref simplemc-mc-sim subgroups stay decoupled from any concrete user type.
  */
 
 /**
@@ -1590,4 +1557,58 @@
  * cumulative counters folded in on demand.
  * - simplemc::simulation_ctx — the lightweight snapshot (steps done, elapsed time, …) handed to
  * callbacks.
+ */
+
+/**
+ * @defgroup simplemc-mc-serialize Serialization
+ * @ingroup simplemc-mc
+ * @brief State serialization of the **simplemc-mc** run components.
+ *
+ * @details A cross-cutting view of how **simplemc-mc** persists and restores its state through the
+ * `simplemc_save` / `simplemc_load` (checkpoint channel) and `simplemc_save_input_config` /
+ * `simplemc_load_input_config` (input-config channel) ADL customization points. The two channels
+ * are independent: a *checkpoint* captures the persistent run state (RNG, cumulative statistics,
+ * registered updates / measurements), while the *input config* captures the user-facing knobs
+ * (simplemc::simulation_params plus per-entity weights / active flags). Composite helpers over the
+ * whole set of run components live in `mc/utils.hpp`; the per-component overloads live alongside the
+ * types they serialize.
+ *
+ * Every overload here dispatches through the single library-wide simplemc::mc_serializer, so the
+ * same code drives whichever backend (JSON, or HDF5 when built with `SIMPLEMC_USE_HDF5=ON`) was
+ * chosen at run time. See the @ref simplemc-serialize framework group for the backend machinery.
+ */
+
+/**
+ * @defgroup simplemc-mc-mpi MPI collection
+ * @ingroup simplemc-mc
+ * @brief Cross-rank reduction of the **simplemc-mc** run components.
+ *
+ * @details The `simplemc_mpi_collect` ADL customization points all-reduce the reducible run
+ * components (simplemc::simulation_stats and the accumulators owned by the registered updates /
+ * measurements) across the ranks of an simplemc::mpi::communicator, in place. The RNG and the
+ * internal selection distribution are intentionally left untouched. A composite helper over the
+ * whole set of run components lives in `mc/utils.hpp`; the per-component overloads live alongside
+ * the types they reduce.
+ */
+
+/**
+ * @defgroup simplemc-mc-entities Updates and measurements
+ * @ingroup simplemc-mc
+ * @brief User-extensible MC updates and measurements.
+ *
+ * @details @ref simplemc-mc-entities-updates and @ref simplemc-mc-entities-measurements are the two
+ * user-extensible entity families of **simplemc-mc**. The user just writes a plain class satisfying a
+ * small concept (see @ref simplemc-mc-concepts); the library uses **type erasure** to hold it, so
+ * there is no base class to inherit from.
+ *
+ * The supporting classes form a hierarchy, each layer building on the previous one:
+ *
+ * - simplemc::basic_interface — the polymorphic base that defines the common interface for updates 
+ * and measurements.
+ * - simplemc::basic_model — implements the interface and stores a user provided update or 
+ * measurement object.
+ * - simplemc::basic_wrapper — wraps the model into a regular value type.
+ * - simplemc::basic_update / simplemc::basic_measurement — specialize the wrapper for each role.
+ * - simplemc::update / simplemc::measurement — add the per-entity bookkeeping.
+ * - simplemc::update_set / simplemc::measurement_set — collect the entities by name.
  */

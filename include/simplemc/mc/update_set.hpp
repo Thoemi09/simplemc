@@ -198,10 +198,16 @@ public:
         us.load_entries(s, "update");
     }
 
+    /**
+     * @brief Serialize the user-input config of all registered updates, keyed by name.
+     */
     friend void simplemc_save_input_config(serializer_type& s, const update_set& us) {
         us.save_input_config_entries(s);
     }
 
+    /**
+     * @brief Restore the user-input config of all registered updates from the serializer.
+     */
     friend void simplemc_load_input_config(const serializer_type& s, update_set& us) {
         us.load_input_config_entries(s, "update");
     }

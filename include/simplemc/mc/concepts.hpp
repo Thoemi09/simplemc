@@ -81,11 +81,12 @@ template <class K, class RNG>
 concept mc_kernel = requires(K& k, RNG& rng) { k.step(rng); };
 
 /**
- * @brief Contract a type must satisfy to be passed as the callbacks bundle to simplemc::run.
+ * @brief Contract a type must satisfy to be passed as the callback bundle to simplemc::run.
  *
  * @details The run loop supports four callback hooks, each taking the current simulation context
- * `ctx` as an argument (see also simplemc::simulation_ctx). Let `c` be an instance of type `C`. The
- * requirements for a type `C` to be a callback bundle are
+ * `ctx` as an argument (see also simplemc::simulation_ctx). 
+ * 
+ * Let `c` be an instance of type `C`. The requirements for a type `C` to be a callback bundle are
  *
  * - `c.on_step(ctx)` is a valid expression (called after every kernel step),
  * - `c.on_cycle(ctx)` is a valid expression (called after each cycle's measurement sweep),
@@ -94,7 +95,7 @@ concept mc_kernel = requires(K& k, RNG& rng) { k.step(rng); };
  * - `c.stop_when(ctx) -> bool` returns a boolean flag indicating whether to stop the simulation
  * (`false`) or to keep going (`true`). It is polled in the outer loop condition.
  *
- * All four callbacks must be invocable on a `const` bundle.
+ * All four callbacks must be invocable from a `const` bundle.
  *
  * See simplemc::run_callbacks for more information and defaults.
  *
@@ -135,9 +136,10 @@ concept has_simplemc_load_input_config = requires(T& t, const S& s) { simplemc_l
 /**
  * @brief Check if type `T` can be collected across MPI ranks via a call to `simplemc_mpi_collect`.
  *
- * @details The overload must take `(const mpi::communicator&, const T&)` and return a `T`. This is
- * the shape required by the simplemc::basic_measurement / simplemc::basic_update wrapper hook to
- * forward MPI reduction through to the wrapped user value.
+ * @details The overload must take `(const mpi::communicator&, const T&)` and return a `T`.
+ *
+ * This is the shape required by the simplemc::basic_measurement / simplemc::basic_update wrapper hook
+ * to forward MPI reduction through to the wrapped user value.
  *
  * @tparam T Type to check.
  */
