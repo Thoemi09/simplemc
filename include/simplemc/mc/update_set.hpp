@@ -7,7 +7,7 @@
 #define SIMPLEMC_MC_UPDATE_SET_HPP
 
 #include <simplemc/mc/named_set.hpp>
-#include <simplemc/mc/traits.hpp>
+#include <simplemc/mc/serializer.hpp>
 #include <simplemc/mc/update.hpp>
 #include <simplemc/mpi/communicator.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
@@ -45,17 +45,13 @@ namespace simplemc {
  * The set is kernel-agnostic: it stores the `ratio` field on each entry but never applies it. The
  * default simplemc::metropolis_kernel applies it during `step()`; other kernels may ignore it.
  *
- * @tparam Traits Traits bundle satisfying simplemc::mc_traits_like (default: simplemc::mc_traits<>).
  */
-template <mc_traits_like Traits = mc_traits<>>
-class update_set : public named_set<update<Traits>> {
-    using base_type = named_set<update<Traits>>;
+class update_set : public named_set<update> {
+    using base_type = named_set<update>;
 
 public:
-    using traits_type = Traits;
-    using checkpoint_serializer_type = typename Traits::checkpoint_serializer_type;
-    using input_config_serializer_type = typename Traits::input_config_serializer_type;
-    using update_type = update<Traits>;
+    using serializer_type = mc_serializer;
+    using update_type = update;
 
     /**
      * @brief Register a self-inverse update.
@@ -189,7 +185,7 @@ public:
      * the simplemc::update overload of simplemc_save (stats fields plus a `"user"` sub-tree). The
      * caller chooses what key to nest this under (typically `s["updates"]`).
      */
-    friend void simplemc_save(checkpoint_serializer_type& s, const update_set& us) { us.save_entries(s); }
+    friend void simplemc_save(serializer_type& s, const update_set& us) { us.save_entries(s); }
 
     /**
      * @brief Restore registered updates from the serializer.
@@ -198,15 +194,15 @@ public:
      * names) before this call. An entry present in the set but missing in the serialized data
      * throws simplemc::simplemc_exception. The internal selection distribution is not rebuilt.
      */
-    friend void simplemc_load(const checkpoint_serializer_type& s, update_set& us) {
+    friend void simplemc_load(const serializer_type& s, update_set& us) {
         us.load_entries(s, "update");
     }
 
-    friend void simplemc_save_input_config(input_config_serializer_type& s, const update_set& us) {
+    friend void simplemc_save_input_config(serializer_type& s, const update_set& us) {
         us.save_input_config_entries(s);
     }
 
-    friend void simplemc_load_input_config(const input_config_serializer_type& s, update_set& us) {
+    friend void simplemc_load_input_config(const serializer_type& s, update_set& us) {
         us.load_input_config_entries(s, "update");
     }
 

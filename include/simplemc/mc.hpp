@@ -17,10 +17,10 @@
 #include <simplemc/mc/named_set.hpp>
 #include <simplemc/mc/run.hpp>
 #include <simplemc/mc/run_callbacks.hpp>
+#include <simplemc/mc/serializer.hpp>
 #include <simplemc/mc/simulation_ctx.hpp>
 #include <simplemc/mc/simulation_params.hpp>
 #include <simplemc/mc/simulation_stats.hpp>
-#include <simplemc/mc/traits.hpp>
 #include <simplemc/mc/update.hpp>
 #include <simplemc/mc/update_set.hpp>
 #include <simplemc/mc/utils.hpp>

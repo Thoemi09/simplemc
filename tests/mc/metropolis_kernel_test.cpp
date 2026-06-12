@@ -33,7 +33,7 @@ struct always_impossible {
 } // namespace
 
 TEST(MCMetropolisKernel, StepAccepts) {
-    update_set<> us;
+    update_set us;
     always_accept src;
     auto accepts = src.accepts;
     us.add({ src, "u", 1.0 });
@@ -52,7 +52,7 @@ TEST(MCMetropolisKernel, StepAccepts) {
 }
 
 TEST(MCMetropolisKernel, StepImpossible) {
-    update_set<> us;
+    update_set us;
     always_impossible src;
     auto rejects = src.rejects;
     us.add({ src, "u", 1.0 });
@@ -72,7 +72,7 @@ TEST(MCMetropolisKernel, StepImpossible) {
 }
 
 TEST(MCMetropolisKernel, StepRejects) {
-    update_set<> us;
+    update_set us;
     always_reject src;
     auto rejects = src.rejects;
     us.add({ src, "u", 1.0 });
@@ -95,7 +95,7 @@ TEST(MCMetropolisKernel, AppliesRatioFromInversePair) {
     // Pair with weights 2 and 4: ratio for first = 4/2 = 2; always_accept returns 1.0, so the
     // effective acceptance probability is min(1, 1.0*2.0)=1.0. The second has ratio 0.5, effective
     // prob = 0.5. Just verify the kernel reads u.ratio (no crash, counters bump).
-    update_set<> us;
+    update_set us;
     us.add_pair({ always_accept {}, "f", 2.0 }, { always_accept {}, "b", 4.0 });
 
     metropolis_kernel k { us };
@@ -111,6 +111,6 @@ TEST(MCMetropolisKernel, AppliesRatioFromInversePair) {
 }
 
 TEST(MCMetropolisKernel, SatisfiesKernelConcept) {
-    static_assert(mc_kernel<metropolis_kernel<>, xoshiro256ss>);
+    static_assert(mc_kernel<metropolis_kernel, xoshiro256ss>);
     SUCCEED();
 }

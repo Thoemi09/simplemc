@@ -225,15 +225,13 @@
             <tab type="user" url="@ref simplemc::measurement_set" title="measurement_set"/>
           </tab>
         </tab>
-        <tab type="usergroup" url="@ref simplemc-mc-concepts" title="Concepts and traits">
+        <tab type="usergroup" url="@ref simplemc-mc-concepts" title="Concepts and typedefs">
           <tab type="user" url="@ref simplemc::has_simplemc_load_input_config" title="has_simplemc_load_input_config"/>
           <tab type="user" url="@ref simplemc::has_simplemc_mpi_collect" title="has_simplemc_mpi_collect"/>
           <tab type="user" url="@ref simplemc::has_simplemc_save_input_config" title="has_simplemc_save_input_config"/>
           <tab type="user" url="@ref simplemc::mc_kernel" title="mc_kernel"/>
           <tab type="user" url="@ref simplemc::mc_measurement" title="mc_measurement"/>
           <tab type="user" url="@ref simplemc::mc_run_callbacks" title="mc_run_callbacks"/>
-          <tab type="user" url="@ref simplemc::mc_traits_like" title="mc_traits_like"/>
-          <tab type="user" url="@ref simplemc::mc_traits" title="mc_traits"/>
           <tab type="user" url="@ref simplemc::mc_update" title="mc_update"/>
         </tab>
         <tab type="usergroup" url="@ref simplemc-mc-kernels" title="Kernels">

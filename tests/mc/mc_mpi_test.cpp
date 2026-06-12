@@ -68,7 +68,7 @@ TEST_F(SimplemcMCMPI, SimulationStatsAllReduceSumsCounters) {
 }
 
 TEST_F(SimplemcMCMPI, UpdateAllReducesCountersAndDelegatesToWrapper) {
-    update<> u { null_update {}, "u", 1.0 };
+    update u { null_update {}, "u", 1.0 };
     u.nprops = 10 * (rank + 1);
     u.naccs = 3 * (rank + 1);
     u.nimps = (rank == 0) ? 1 : 0;
@@ -92,7 +92,7 @@ TEST_F(SimplemcMCMPI, UpdateAllReducesCountersAndDelegatesToWrapper) {
 }
 
 TEST_F(SimplemcMCMPI, UpdateSetReducesEveryEntry) {
-    update_set<> us;
+    update_set us;
     us.add({ null_update {}, "a", 1.0 });
     us.add({ null_update {}, "b", 2.0 });
     us.at(0).nprops = static_cast<std::uint64_t>(rank + 1);
@@ -107,7 +107,7 @@ TEST_F(SimplemcMCMPI, UpdateSetReducesEveryEntry) {
 
 TEST_F(SimplemcMCMPI, MeasurementSetForwardsToWrapperHook) {
     // Two measurements: one with an ADL simplemc_mpi_collect (mean_meas) and one without (counter_meas).
-    measurement_set<> ms;
+    measurement_set ms;
     mean_meas mm;
     mm.acc << static_cast<double>(rank + 1);
     ms.add({ mm, "mean", true });
@@ -130,10 +130,10 @@ TEST_F(SimplemcMCMPI, MeasurementSetForwardsToWrapperHook) {
 }
 
 TEST_F(SimplemcMCMPI, CompositeReducesAllComponents) {
-    update_set<> updates;
+    update_set updates;
     updates.add({ null_update {}, "u", 1.0 });
 
-    measurement_set<> meas;
+    measurement_set meas;
     mean_meas mm;
     mm.acc << static_cast<double>(rank + 1);
     meas.add({ mm, "mean", true });

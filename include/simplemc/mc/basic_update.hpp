@@ -8,7 +8,7 @@
 
 #include <simplemc/mc/basic_wrapper.hpp>
 #include <simplemc/mc/concepts.hpp>
-#include <simplemc/mc/traits.hpp>
+#include <simplemc/mc/serializer.hpp>
 
 #include <concepts>
 #include <memory>
@@ -28,11 +28,8 @@ namespace simplemc {
  * @details Derives from simplemc::basic_interface and adds the Monte Carlo update operations
  * (`attempt()` / `accept()` / `reject()`). simplemc::basic_update owns one of these (through
  * simplemc::basic_wrapper) and forwards its public update methods to it.
- *
- * @tparam Traits Traits bundle satisfying simplemc::mc_traits_like.
  */
-template <mc_traits_like Traits>
-struct update_interface : basic_interface<Traits, update_interface<Traits>> {
+struct update_interface : basic_interface<update_interface> {
     /**
      * @brief Propose a change to the simulation state.
      *
@@ -58,12 +55,11 @@ struct update_interface : basic_interface<Traits, update_interface<Traits>> {
  * the update overrides. `reject()` is optional on the wrapped type; when the wrapped type omits it,
  * the override is a no-op.
  *
- * @tparam Traits Traits bundle satisfying simplemc::mc_traits_like.
  * @tparam U Wrapped user type.
  */
-template <mc_traits_like Traits, class U>
-struct update_model final : basic_model<Traits, update_interface<Traits>, U> {
-    using basic_model<Traits, update_interface<Traits>, U>::basic_model;
+template <class U>
+struct update_model final : basic_model<update_interface, U> {
+    using basic_model<update_interface, U>::basic_model;
 
     /**
      * @brief Forward to the wrapped value's `attempt()`.
@@ -87,7 +83,7 @@ struct update_model final : basic_model<Traits, update_interface<Traits>, U> {
     /**
      * @brief Deep-copy this model, preserving the dynamic type.
      */
-    [[nodiscard]] std::unique_ptr<update_interface<Traits>> clone() const override {
+    [[nodiscard]] std::unique_ptr<update_interface> clone() const override {
         return std::make_unique<update_model>(*this);
     }
 };
@@ -121,26 +117,25 @@ struct update_model final : basic_model<Traits, update_interface<Traits>, U> {
  * of updates. Because copies are deep, the wrapped user type must be copy-constructible; this is
  * checked at construction time.
  *
- * The wrapper is parameterized on a simplemc::mc_traits_like bundle whose
- * `checkpoint_serializer_type` and `input_config_serializer_type` drive checkpointing and
- * input-config serialization, respectively:
- * - If the wrapped user type provides a serialization path through the checkpoint serializer's
+ * Serialization runs through the library-wide simplemc::mc_serializer (a backend-erasing
+ * simplemc::variant_serializer), used for both the checkpoint and the input-config channels:
+ * - If the wrapped user type provides a serialization path through the serializer's
  * `%save_at()` / `%load_at()`, the wrapper's save_at() / load_at() forward to it.
- * - If the wrapped user type satisfies simplemc::has_simplemc_save_input_config with the
- * input-config serializer, the wrapper's save_input_config_at() / load_input_config_at() forward to
- * the user type's ADL hooks.
+ * - If the wrapped user type satisfies simplemc::has_simplemc_save_input_config with the serializer,
+ * the wrapper's save_input_config_at() / load_input_config_at() forward to the user type's ADL hooks.
  *
  * Otherwise they are silent no-ops.
+ *
+ * @note Because simplemc::mc_serializer is a variant over the shipped backends, its capability is
+ * the *intersection* of those backends: with HDF5 enabled a wrapped payload must be serializable by
+ * both JSON and HDF5 for the forwards above to engage.
  *
  * The deep-copy/serialization/MPI machinery is shared with simplemc::basic_measurement through
  * simplemc::basic_wrapper; this class adds only the update role. See @ref simplemc-mc for a
  * description of the implementation strategy.
- *
- * @tparam Traits Traits bundle satisfying simplemc::mc_traits_like (default: simplemc::mc_traits<>).
  */
-template <mc_traits_like Traits = mc_traits<>>
-class basic_update : public basic_wrapper<Traits, update_interface<Traits>> {
-    using base_type = basic_wrapper<Traits, update_interface<Traits>>;
+class basic_update : public basic_wrapper<update_interface> {
+    using base_type = basic_wrapper<update_interface>;
 
 public:
     /**
@@ -160,7 +155,7 @@ public:
         requires(!std::same_as<std::remove_cvref_t<U>, basic_update>) && mc_update<std::remove_cvref_t<U>> &&
         std::copy_constructible<std::remove_cvref_t<U>>
     basic_update(U&& u) :
-        base_type { std::make_unique<update_model<Traits, std::remove_cvref_t<U>>>(std::forward<U>(u)) } {}
+        base_type { std::make_unique<update_model<std::remove_cvref_t<U>>>(std::forward<U>(u)) } {}
 
     /**
      * @brief Propose a change to the simulation state.
@@ -182,11 +177,6 @@ public:
      */
     void reject() { this->impl().reject(); }
 };
-
-// Deduction guide: basic_update u { my_update{} } deduces to basic_update<mc_traits<>>.
-template <class U>
-    requires mc_update<std::remove_cvref_t<U>> && std::copy_constructible<std::remove_cvref_t<U>>
-basic_update(U&&) -> basic_update<>;
 
 /** @} */
 

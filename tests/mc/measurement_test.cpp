@@ -44,13 +44,13 @@ static_assert(!mc_measurement<not_a_meas>);
 static_assert(!mc_measurement<int>);
 
 // the wrapper itself satisfies the concept — it forwards `measure()`
-static_assert(mc_measurement<basic_measurement<>>);
+static_assert(mc_measurement<basic_measurement>);
 
 // the concept is a pure role description: a move-only measurement still satisfies it
 // (but the wrapper rejects it because of the copyability requirement)
 static_assert(mc_measurement<move_only_meas>);
-static_assert(!std::is_constructible_v<basic_measurement<>, int>);
-static_assert(!std::is_constructible_v<basic_measurement<>, not_a_meas>);
+static_assert(!std::is_constructible_v<basic_measurement, int>);
+static_assert(!std::is_constructible_v<basic_measurement, not_a_meas>);
 
 TEST(MCBasicMeasurement, WrapsAndForwardsMeasure) {
     counter_meas src;
@@ -108,7 +108,7 @@ TEST(MCBasicMeasurement, HeterogeneousStorageInVector) {
     auto a_count = a.count;
     auto b_count = b.count;
 
-    std::vector<basic_measurement<>> v;
+    std::vector<basic_measurement> v;
     v.emplace_back(a);
     v.emplace_back(b);
 
@@ -198,12 +198,12 @@ TEST(MCMeasurement, GetForwardsToWrapper) {
 TEST(MCMeasurement, SerializationRoundTrip) {
     measurement m { counter_meas {}, "m", false };
 
-    json_serializer s;
+    mc_serializer s { json_serializer {} };
     auto entry = s["entry"];
     simplemc_save(entry, m);
 
     measurement v { counter_meas {}, "tmp", true };
-    const auto rentry = json_serializer { s }["entry"];
+    const auto rentry = mc_serializer { s }["entry"];
     simplemc_load(rentry, v);
 
     EXPECT_FALSE(v.is_active);
@@ -212,12 +212,12 @@ TEST(MCMeasurement, SerializationRoundTrip) {
 TEST(MCMeasurement, InputConfigRoundTripTouchesActive) {
     measurement m { counter_meas {}, "m", false };
 
-    json_serializer s;
+    mc_serializer s { json_serializer {} };
     auto entry = s["entry"];
     simplemc_save_input_config(entry, m);
 
     measurement v { counter_meas {}, "m", true };
-    const auto rentry = json_serializer { s }["entry"];
+    const auto rentry = mc_serializer { s }["entry"];
     simplemc_load_input_config(rentry, v);
 
     EXPECT_FALSE(v.is_active);

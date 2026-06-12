@@ -6,7 +6,7 @@
 #ifndef SIMPLEMC_MC_KERNELS_HPP
 #define SIMPLEMC_MC_KERNELS_HPP
 
-#include <simplemc/mc/traits.hpp>
+#include <simplemc/mc/serializer.hpp>
 #include <simplemc/mc/update_set.hpp>
 
 #include <cstddef>
@@ -38,18 +38,11 @@ namespace simplemc {
  * themselves.
  *
  * Lifetime: the kernel stores a non-owning pointer to the set; the caller must keep the set alive
- * for the kernel's lifetime. The convenience simplemc::simulation aggregate constructs a fresh
- * kernel over its own update set for each run, so no dangling pointer can arise there.
- *
- * @tparam Traits Traits bundle satisfying simplemc::mc_traits_like (default: simplemc::mc_traits<>).
- *                The kernel drives an `update_set<Traits>` and steps with `Traits::rng_type`.
+ * for the kernel's lifetime.
  */
-template <mc_traits_like Traits = mc_traits<>>
 class metropolis_kernel {
 public:
-    using traits_type = Traits;
-    using rng_type = typename Traits::rng_type;
-    using update_set_type = update_set<Traits>;
+    using update_set_type = update_set;
 
     /**
      * @brief Construct with a back-pointer to the update set this kernel will drive.
@@ -67,8 +60,12 @@ public:
 
     /**
      * @brief Run a single Metropolis step.
+     *
+     * @tparam RNG Random number generator type.
+     * @param rng Random number generator driving the selection and acceptance draws.
      */
-    void step(rng_type& rng) {
+    template <class RNG>
+    void step(RNG& rng) {
         const std::size_t idx = set_->select(rng);
         auto& u = set_->at(idx);
         ++u.nprops;

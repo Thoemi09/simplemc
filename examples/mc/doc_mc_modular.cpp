@@ -48,10 +48,10 @@ int main() {
     simplemc::simulation_stats stats;
 
     // Assemble the pieces by hand instead of using the simulation aggregate.
-    simplemc::update_set<> updates;
+    simplemc::update_set updates;
     updates.add({ uniform_update { .s = &state, .rng = &rng }, "uniform", 1.0 });
 
-    simplemc::measurement_set<> meas;
+    simplemc::measurement_set meas;
     meas.add({ integral_observer { .s = &state }, "integral" });
 
     simplemc::metropolis_kernel kernel { updates };

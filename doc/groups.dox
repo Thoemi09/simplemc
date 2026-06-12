@@ -1462,9 +1462,6 @@
  * in satisfied (e.g. a fixed number of cycles, a wall-clock time limit, etc.).
  * - @ref simplemc-mc-callbacks are invoked during the MC loop. They can be used to perform various
  * tasks like logging, checkpointing, debugging, etc.
- * - The whole stack is parameterized on a small simplemc::mc_traits_like bundle that selects the RNG
- * and the two serializer backends used to checkpoint state and read input config, so a run can be
- * persisted and resumed.
  *
  * The contracts that user updates, measurements, kernels, traits and callbacks must satisfy are
  * expressed as C++20 @ref simplemc-mc-concepts.
@@ -1535,10 +1532,9 @@
  */
 
 /**
- * @defgroup simplemc-mc-concepts Concepts and traits
+ * @defgroup simplemc-mc-concepts Concepts and typedefs
  * @ingroup simplemc-mc
- * @brief C++20 concepts that define the contracts of the **simplemc-mc** extension points, plus the
- * traits bundle that carries their backend types.
+ * @brief C++20 concepts that define the contracts of the **simplemc-mc** extension points.
  *
  * @details Every extension point of **simplemc-mc** is expressed as a concept, so user types opt in
  * structurally without inheriting from any base class:
@@ -1546,11 +1542,7 @@
  * - simplemc::mc_update — a proposable/accept-rejectable move (`attempt`, `accept`, `reject`).
  * - simplemc::mc_measurement — an observer with a `measure()` member.
  * - simplemc::mc_kernel — a step algorithm exposing `step(rng)`.
- * - simplemc::mc_traits_like — the traits bundle carrying the RNG and the two serializer backends.
  * - simplemc::mc_run_callbacks — the optional per-run callback bundle.
- *
- * simplemc::mc_traits is the canonical model of simplemc::mc_traits_like: the bundle of backend
- * typedefs (the two serializers and the RNG) threaded through every simplemc-mc class template.
  *
  * These concepts are what let the @ref simplemc-mc-entities, @ref simplemc-mc-kernels,
  * @ref simplemc-mc-callbacks and
@@ -1598,9 +1590,4 @@
  * cumulative counters folded in on demand.
  * - simplemc::simulation_ctx — the lightweight snapshot (steps done, elapsed time, …) handed to
  * callbacks.
- * - simplemc::mc_traits — the canonical simplemc::mc_traits_like bundle selecting the checkpoint and
- * input-config serializer backends and the RNG.
- * - simplemc::simulation — the convenience **aggregate** that owns the RNG, an simplemc::update_set,
- * a simplemc::measurement_set and the statistics, and forwards a single `add_update` /
- * `add_measurement` / `run` API over the modular pieces. See its reference page for a worked example.
  */

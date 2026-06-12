@@ -59,7 +59,11 @@ void simplemc_load(const S& s, stateful_measurement& m) {
     s.load_at("tally", *m.tally);
 }
 
-// User update that has only nlohmann to_json / from_json (no simplemc_save).
+#ifndef SIMPLEMC_USE_HDF5
+// User update that has only nlohmann to_json / from_json (no simplemc_save). The to_json fallback
+// only engages when JSON is the sole backend in mc_serializer: a variant_serializer that also
+// includes HDF5 requires the payload be serializable by *every* backend (the capability is the
+// intersection), so this scenario is meaningful only when HDF5 is not compiled in.
 struct nlohmann_only_update {
     int counter = 0;
     double attempt() {
@@ -72,9 +76,13 @@ inline void to_json(nlohmann::json& j, const nlohmann_only_update& u) {
     j = nlohmann::json { { "counter", u.counter } };
 }
 inline void from_json(const nlohmann::json& j, nlohmann_only_update& u) { j.at("counter").get_to(u.counter); }
+#endif // SIMPLEMC_USE_HDF5
+
+// Pull the underlying nlohmann document out of a JSON-backed mc_serializer for inspection / reload.
+const nlohmann::json& doc(const mc_serializer& s) { return std::get<json_serializer>(s.backend()).root(); }
 
 // Drive a short run over the assembled components, then fold counters into the cumulative state.
-void run_and_accumulate(update_set<>& updates, measurement_set<>& meas, simulation_stats& stats,
+void run_and_accumulate(update_set& updates, measurement_set& meas, simulation_stats& stats,
     xoshiro256ss& rng, const simulation_params& p) {
     metropolis_kernel kernel { updates };
     run(kernel, meas, p, stats, rng);
@@ -86,8 +94,8 @@ void run_and_accumulate(update_set<>& updates, measurement_set<>& meas, simulati
 
 TEST(MCCheckpoint, JsonRoundTripPersistsCumulativeAndConfig) {
     xoshiro256ss rng { 42 };
-    update_set<> updates;
-    measurement_set<> meas;
+    update_set updates;
+    measurement_set meas;
     simulation_stats stats;
 
     stateful_update stateful;
@@ -107,13 +115,13 @@ TEST(MCCheckpoint, JsonRoundTripPersistsCumulativeAndConfig) {
     ASSERT_GT(src_counter, 0);
     ASSERT_GT(src_tally, 0);
 
-    json_serializer writer;
+    mc_serializer writer { json_serializer {} };
     simplemc_save(writer, rng, updates, meas, stats);
 
     // Destination: same structure, different RNG seed.
     xoshiro256ss dst_rng { 999 };
-    update_set<> dst_updates;
-    measurement_set<> dst_meas;
+    update_set dst_updates;
+    measurement_set dst_meas;
     simulation_stats dst_stats;
     stateful_update dst_stateful;
     auto dst_stateful_counter = dst_stateful.counter;
@@ -124,7 +132,7 @@ TEST(MCCheckpoint, JsonRoundTripPersistsCumulativeAndConfig) {
     dst_meas.add({ dst_m, "obs" });
     dst_meas.add({ counting_measurement {}, "stateless_meas" });
 
-    const json_serializer reader { writer.root() };
+    const mc_serializer reader { json_serializer { doc(writer) } };
     simplemc_load(reader, dst_rng, dst_updates, dst_meas, dst_stats);
 
     // Persistent fields propagated.
@@ -152,47 +160,47 @@ TEST(MCCheckpoint, JsonRoundTripPersistsCumulativeAndConfig) {
 
 TEST(MCCheckpoint, JsonLoadThrowsOnMissingUpdate) {
     xoshiro256ss rng { 1 };
-    update_set<> updates;
-    measurement_set<> meas;
+    update_set updates;
+    measurement_set meas;
     simulation_stats stats;
     updates.add({ always_accept {}, "a", 1.0 });
     run_and_accumulate(updates, meas, stats, rng,
         { .max_steps = 5, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = 5 });
 
-    json_serializer writer;
+    mc_serializer writer { json_serializer {} };
     simplemc_save(writer, rng, updates, meas, stats);
 
     xoshiro256ss dst_rng { 2 };
-    update_set<> dst_updates;
-    measurement_set<> dst_meas;
+    update_set dst_updates;
+    measurement_set dst_meas;
     simulation_stats dst_stats;
     dst_updates.add({ always_accept {}, "b", 1.0 }); // different name
 
-    const json_serializer reader { writer.root() };
+    const mc_serializer reader { json_serializer { doc(writer) } };
     EXPECT_THROW(simplemc_load(reader, dst_rng, dst_updates, dst_meas, dst_stats), simplemc_exception);
 }
 
 TEST(MCCheckpoint, JsonLoadThrowsOnMissingMeasurement) {
     xoshiro256ss rng { 1 };
-    update_set<> updates;
-    measurement_set<> meas;
+    update_set updates;
+    measurement_set meas;
     simulation_stats stats;
     updates.add({ always_accept {}, "a", 1.0 });
     meas.add({ counting_measurement {}, "obs1" });
     run_and_accumulate(updates, meas, stats, rng,
         { .max_steps = 5, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = 5 });
 
-    json_serializer writer;
+    mc_serializer writer { json_serializer {} };
     simplemc_save(writer, rng, updates, meas, stats);
 
     xoshiro256ss dst_rng { 2 };
-    update_set<> dst_updates;
-    measurement_set<> dst_meas;
+    update_set dst_updates;
+    measurement_set dst_meas;
     simulation_stats dst_stats;
     dst_updates.add({ always_accept {}, "a", 1.0 });
     dst_meas.add({ counting_measurement {}, "different_name" });
 
-    const json_serializer reader { writer.root() };
+    const mc_serializer reader { json_serializer { doc(writer) } };
     EXPECT_THROW(simplemc_load(reader, dst_rng, dst_updates, dst_meas, dst_stats), simplemc_exception);
 }
 
@@ -200,57 +208,60 @@ TEST(MCCheckpoint, JsonRoundTripWorksWithStatelessUserTypes) {
     // Stateless user types have neither simplemc_save nor nlohmann::to_json — the wrapper's
     // save_at silently no-ops. Round-trip still succeeds.
     xoshiro256ss rng { 1 };
-    update_set<> updates;
-    measurement_set<> meas;
+    update_set updates;
+    measurement_set meas;
     simulation_stats stats;
     updates.add({ always_accept {}, "aa", 1.0 });
     meas.add({ counting_measurement {}, "obs" });
     run_and_accumulate(updates, meas, stats, rng,
         { .max_steps = 5, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = 5 });
 
-    json_serializer writer;
+    mc_serializer writer { json_serializer {} };
     EXPECT_NO_THROW(simplemc_save(writer, rng, updates, meas, stats));
 
     xoshiro256ss dst_rng { 2 };
-    update_set<> dst_updates;
-    measurement_set<> dst_meas;
+    update_set dst_updates;
+    measurement_set dst_meas;
     simulation_stats dst_stats;
     dst_updates.add({ always_accept {}, "aa", 1.0 });
     dst_meas.add({ counting_measurement {}, "obs" });
 
-    const json_serializer reader { writer.root() };
+    const mc_serializer reader { json_serializer { doc(writer) } };
     EXPECT_NO_THROW(simplemc_load(reader, dst_rng, dst_updates, dst_meas, dst_stats));
     EXPECT_EQ(dst_stats.cumulative_steps, stats.cumulative_steps);
 }
 
+#ifndef SIMPLEMC_USE_HDF5
 TEST(MCCheckpoint, JsonRoundTripWorksWithNlohmannToJsonUserTypes) {
-    // User type with only nlohmann to_json / from_json (no simplemc_save).
+    // User type with only nlohmann to_json / from_json (no simplemc_save). Only meaningful when JSON
+    // is the sole mc_serializer backend (see the nlohmann_only_update note above).
     xoshiro256ss rng { 1 };
-    update_set<> updates;
-    measurement_set<> meas;
+    update_set updates;
+    measurement_set meas;
     simulation_stats stats;
     updates.add({ nlohmann_only_update {}, "nlh", 1.0 });
     run_and_accumulate(updates, meas, stats, rng,
         { .max_steps = 10, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = 5 });
 
-    json_serializer writer;
+    mc_serializer writer { json_serializer {} };
     simplemc_save(writer, rng, updates, meas, stats);
 
     // Confirm the JSON has a "user" sub-object with the counter populated (i.e., the wrapper
     // fell through to nlohmann's to_json for the user type).
-    const auto& root = writer.root();
+    const auto& root = doc(writer);
     ASSERT_TRUE(root.contains("updates"));
     ASSERT_TRUE(root["updates"].contains("nlh"));
     ASSERT_TRUE(root["updates"]["nlh"].contains("user"));
     EXPECT_GT(root["updates"]["nlh"]["user"]["counter"].get<int>(), 0);
 
     xoshiro256ss dst_rng { 2 };
-    update_set<> dst_updates;
-    measurement_set<> dst_meas;
+    update_set dst_updates;
+    measurement_set dst_meas;
     simulation_stats dst_stats;
     dst_updates.add({ nlohmann_only_update {}, "nlh", 1.0 });
 
-    const json_serializer reader { writer.root() };
+    const mc_serializer reader { json_serializer { doc(writer) } };
     EXPECT_NO_THROW(simplemc_load(reader, dst_rng, dst_updates, dst_meas, dst_stats));
     EXPECT_EQ(dst_stats.cumulative_steps, stats.cumulative_steps);
 }
+#endif // SIMPLEMC_USE_HDF5

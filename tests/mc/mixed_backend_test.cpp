@@ -1,99 +1,30 @@
 #include <simplemc/mc.hpp>
 #include <simplemc/random/xoshiro256.hpp>
 #include <simplemc/serialize/concepts.hpp>
-#include <simplemc/utils/simplemc_exception.hpp>
 
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
 
 #include <memory>
-#include <string>
-#include <string_view>
-#include <utility>
+#include <variant>
 
 using namespace simplemc;
 
 namespace {
 
-// Two strongly-typed mock serializers, identical in implementation, distinct in type. Built atop
-// nlohmann::json with the same shared-document / json_pointer pattern as json_serializer, so they
-// satisfy the simplemc::serializer concept naturally.
-//
-// The whole point of having two distinct types is to prove that the wrapper + free helpers dispatch
-// state hooks to one and input-config hooks to the other, with no cross-talk.
-template <class Tag>
-class tagged_mock_serializer {
-public:
-    explicit tagged_mock_serializer(nlohmann::json doc = {}) :
-        root_ { std::make_shared<nlohmann::json>(std::move(doc)) }, current_ {} {}
+// All mc types now serialize through the single library-wide mc_serializer (a backend-erasing
+// variant_serializer). The checkpoint and input-config channels stay independent not because they
+// use different *types*, but because they are driven by different free functions
+// (simplemc_save / simplemc_load vs simplemc_save_input_config / simplemc_load_input_config) writing
+// into different serializer instances. These tests pin down that disjointness, plus the per-payload
+// opt-in into each channel.
 
-    template <class T>
-    tagged_mock_serializer save_at(std::string_view key, const T& value) {
-        if constexpr (has_simplemc_save<T, tagged_mock_serializer>) {
-            auto sub = (*this)[key];
-            simplemc_save(sub, value);
-        } else {
-            (*root_)[current_ / std::string { key }] = value;
-        }
-        return *this;
-    }
+// Pull the underlying nlohmann document out of a JSON-backed mc_serializer for inspection.
+const nlohmann::json& doc_of(const mc_serializer& s) {
+    return std::get<json_serializer>(s.backend()).root();
+}
 
-    template <class T>
-    tagged_mock_serializer load_at(std::string_view key, T& value) const {
-        if constexpr (has_simplemc_load<T, tagged_mock_serializer>) {
-            const auto sub = (*this)[key];
-            simplemc_load(sub, value);
-        } else {
-            root_->at(current_ / std::string { key }).get_to(value);
-        }
-        return *this;
-    }
-
-    template <class T>
-    bool try_load_at(std::string_view key, T& value) const {
-        if (!has(key)) return false;
-        load_at(key, value);
-        return true;
-    }
-
-    tagged_mock_serializer operator[](std::string_view key) {
-        return tagged_mock_serializer { root_, current_ / std::string { key } };
-    }
-    tagged_mock_serializer operator[](std::string_view key) const {
-        return tagged_mock_serializer { root_, current_ / std::string { key } };
-    }
-
-    [[nodiscard]] bool has(std::string_view key) const {
-        return root_->contains(current_ / std::string { key });
-    }
-
-    nlohmann::json& root() noexcept { return *root_; }
-    [[nodiscard]] const nlohmann::json& root() const noexcept { return *root_; }
-
-private:
-    tagged_mock_serializer(std::shared_ptr<nlohmann::json> root, nlohmann::json::json_pointer current) :
-        root_ { std::move(root) }, current_ { std::move(current) } {}
-
-    std::shared_ptr<nlohmann::json> root_;
-    nlohmann::json::json_pointer current_;
-};
-
-struct state_tag {};
-struct input_config_tag {};
-
-using mock_state_serializer = tagged_mock_serializer<state_tag>;
-using mock_input_config_serializer = tagged_mock_serializer<input_config_tag>;
-
-static_assert(serializer<mock_state_serializer>);
-static_assert(serializer<mock_input_config_serializer>);
-static_assert(!std::is_same_v<mock_state_serializer, mock_input_config_serializer>);
-
-// Traits bundle pairing the two distinct mock backends.
-using mixed_traits = mc_traits<mock_state_serializer, mock_input_config_serializer>;
-static_assert(mc_traits_like<mixed_traits>);
-static_assert(!mc_traits_like<int>);
-
-// User update opting into BOTH flavors, via two ADL hooks typed on different serializer types.
+// User update opting into BOTH channels via generic-over-serializer ADL hooks.
 struct dual_update {
     std::shared_ptr<int> state_counter = std::make_shared<int>(0);
     std::shared_ptr<double> config_threshold = std::make_shared<double>(0.0);
@@ -101,31 +32,43 @@ struct dual_update {
     void accept() {}
 };
 
-void simplemc_save(mock_state_serializer& s, const dual_update& u) { s.save_at("state_counter", *u.state_counter); }
-void simplemc_load(const mock_state_serializer& s, dual_update& u) { s.load_at("state_counter", *u.state_counter); }
-void simplemc_save_input_config(mock_input_config_serializer& s, const dual_update& u) {
+template <serializer S>
+void simplemc_save(S& s, const dual_update& u) {
+    s.save_at("state_counter", *u.state_counter);
+}
+template <serializer S>
+void simplemc_load(const S& s, dual_update& u) {
+    s.load_at("state_counter", *u.state_counter);
+}
+template <serializer S>
+void simplemc_save_input_config(S& s, const dual_update& u) {
     s.save_at("config_threshold", *u.config_threshold);
 }
-void simplemc_load_input_config(const mock_input_config_serializer& s, dual_update& u) {
-    if (s.has("config_threshold")) {
-        s.load_at("config_threshold", *u.config_threshold);
-    }
+template <serializer S>
+void simplemc_load_input_config(const S& s, dual_update& u) {
+    s.try_load_at("config_threshold", *u.config_threshold);
 }
 
-// User update with ONLY the state hook — the input-config side must silently skip it.
+// User update with ONLY the checkpoint hook — the input-config channel must silently skip it.
 struct state_only_update {
     std::shared_ptr<int> ticks = std::make_shared<int>(0);
     double attempt() { return 1.0; }
     void accept() {}
 };
 
-void simplemc_save(mock_state_serializer& s, const state_only_update& u) { s.save_at("ticks", *u.ticks); }
-void simplemc_load(const mock_state_serializer& s, state_only_update& u) { s.load_at("ticks", *u.ticks); }
+template <serializer S>
+void simplemc_save(S& s, const state_only_update& u) {
+    s.save_at("ticks", *u.ticks);
+}
+template <serializer S>
+void simplemc_load(const S& s, state_only_update& u) {
+    s.load_at("ticks", *u.ticks);
+}
 
 // Drive a short run, then fold counters into the cumulative state.
-void run_and_accumulate(update_set<mixed_traits>& updates, measurement_set<mixed_traits>& meas,
-    simulation_stats& stats, xoshiro256ss& rng, const simulation_params& p) {
-    metropolis_kernel<mixed_traits> kernel { updates };
+void run_and_accumulate(update_set& updates, measurement_set& meas, simulation_stats& stats,
+    xoshiro256ss& rng, const simulation_params& p) {
+    metropolis_kernel kernel { updates };
     run(kernel, meas, p, stats, rng);
     accumulate_simulation_stats(stats);
     updates.accumulate_counters();
@@ -134,16 +77,15 @@ void run_and_accumulate(update_set<mixed_traits>& updates, measurement_set<mixed
 } // namespace
 
 TEST(MCMixedBackend, InstantiationCompiles) {
-    // Smoke test: the traits form with two distinct backends instantiates.
-    update_set<mixed_traits> updates;
+    update_set updates;
     updates.add({ dual_update {}, "tunable", 2.5 });
     EXPECT_DOUBLE_EQ(updates.data()[0].weight, 2.5);
 }
 
 TEST(MCMixedBackend, StateAndInputConfigDispatchIndependently) {
     xoshiro256ss rng { 7 };
-    update_set<mixed_traits> updates;
-    measurement_set<mixed_traits> meas;
+    update_set updates;
+    measurement_set meas;
     simulation_stats stats;
     dual_update src_u;
     *src_u.state_counter = 42;
@@ -153,33 +95,32 @@ TEST(MCMixedBackend, StateAndInputConfigDispatchIndependently) {
     run_and_accumulate(updates, meas, stats, rng,
         { .max_steps = 5, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = 5 });
 
-    // Save state to the state serializer; save input config to the (different-type) input-config
-    // serializer.
-    mock_state_serializer state_w;
+    // Save state and input config into two separate (JSON-backed) serializer instances.
+    mc_serializer state_w { json_serializer {} };
     simplemc_save(state_w, rng, updates, meas, stats);
 
-    mock_input_config_serializer input_w;
+    mc_serializer input_w { json_serializer {} };
     const simulation_params params;
     simplemc_save_input_config(input_w, params, updates, meas);
 
-    // State serializer should have the state-only fields:
-    EXPECT_TRUE(state_w.root().contains("rng"));
-    EXPECT_TRUE(state_w.root().contains("cumulative_steps"));
-    EXPECT_TRUE(state_w.root()["updates"]["tunable"].contains("cumulative_nprops"));
-    EXPECT_TRUE(state_w.root()["updates"]["tunable"]["user"].contains("state_counter"));
+    // Checkpoint channel carries the state-only fields:
+    EXPECT_TRUE(doc_of(state_w).contains("rng"));
+    EXPECT_TRUE(doc_of(state_w).contains("cumulative_steps"));
+    EXPECT_TRUE(doc_of(state_w)["updates"]["tunable"].contains("cumulative_nprops"));
+    EXPECT_TRUE(doc_of(state_w)["updates"]["tunable"]["user"].contains("state_counter"));
 
-    // Input-config serializer should have only the input-config fields, no state fields:
-    EXPECT_FALSE(input_w.root().contains("rng"));
-    EXPECT_FALSE(input_w.root().contains("cumulative_steps"));
-    EXPECT_FALSE(input_w.root()["updates"]["tunable"].contains("cumulative_nprops"));
-    EXPECT_TRUE(input_w.root()["updates"]["tunable"].contains("weight"));
-    EXPECT_TRUE(input_w.root()["updates"]["tunable"]["user"].contains("config_threshold"));
+    // Input-config channel carries only the input-config fields, no state fields:
+    EXPECT_FALSE(doc_of(input_w).contains("rng"));
+    EXPECT_FALSE(doc_of(input_w).contains("cumulative_steps"));
+    EXPECT_FALSE(doc_of(input_w)["updates"]["tunable"].contains("cumulative_nprops"));
+    EXPECT_TRUE(doc_of(input_w)["updates"]["tunable"].contains("weight"));
+    EXPECT_TRUE(doc_of(input_w)["updates"]["tunable"]["user"].contains("config_threshold"));
 
-    // Destination: load state from state serializer, then input-config from input-config
-    // serializer. Cross-talk would show up as wrong values or extra throws.
+    // Destination: load state from the state doc, then input-config from the input-config doc.
+    // Cross-talk would show up as wrong values or extra throws.
     xoshiro256ss dst_rng;
-    update_set<mixed_traits> dst_updates;
-    measurement_set<mixed_traits> dst_meas;
+    update_set dst_updates;
+    measurement_set dst_meas;
     simulation_stats dst_stats;
     simulation_params dst_params;
     dual_update dst_u;
@@ -187,10 +128,10 @@ TEST(MCMixedBackend, StateAndInputConfigDispatchIndependently) {
     auto dst_config_threshold = dst_u.config_threshold;
     dst_updates.add({ dst_u, "tunable", 1.0 });
 
-    const mock_state_serializer state_r { state_w.root() };
+    const mc_serializer state_r { json_serializer { doc_of(state_w) } };
     simplemc_load(state_r, dst_rng, dst_updates, dst_meas, dst_stats);
 
-    const mock_input_config_serializer input_r { input_w.root() };
+    const mc_serializer input_r { json_serializer { doc_of(input_w) } };
     simplemc_load_input_config(input_r, dst_params, dst_updates, dst_meas);
 
     // State round-trip:
@@ -202,27 +143,27 @@ TEST(MCMixedBackend, StateAndInputConfigDispatchIndependently) {
     EXPECT_DOUBLE_EQ(*dst_config_threshold, 1.25);
 }
 
-TEST(MCMixedBackend, OneSidedOptInSilentlySkipsOtherFlavor) {
-    // state_only_update has only the state hook. Input-config save/load should be no-ops on the
+TEST(MCMixedBackend, OneSidedOptInSilentlySkipsOtherChannel) {
+    // state_only_update has only the checkpoint hook. Input-config save/load should be no-ops on the
     // user slot; no exceptions, no fields written.
     xoshiro256ss rng;
-    update_set<mixed_traits> updates;
-    measurement_set<mixed_traits> meas;
+    update_set updates;
+    measurement_set meas;
     simulation_stats stats;
     state_only_update u;
     *u.ticks = 99;
     updates.add({ u, "ticker", 1.0 });
 
-    mock_state_serializer state_w;
+    mc_serializer state_w { json_serializer {} };
     simplemc_save(state_w, rng, updates, meas, stats);
-    EXPECT_TRUE(state_w.root()["updates"]["ticker"]["user"].contains("ticks"));
+    EXPECT_TRUE(doc_of(state_w)["updates"]["ticker"]["user"].contains("ticks"));
 
-    mock_input_config_serializer input_w;
+    mc_serializer input_w { json_serializer {} };
     const simulation_params params;
     EXPECT_NO_THROW(simplemc_save_input_config(input_w, params, updates, meas));
     // Per-entry "weight" is still written (it's on the update entry, not the user payload), but the
     // user slot is empty because state_only_update doesn't opt into input-config.
-    const auto& ticker = input_w.root()["updates"]["ticker"];
+    const auto& ticker = doc_of(input_w)["updates"]["ticker"];
     EXPECT_TRUE(ticker.contains("weight"));
     EXPECT_FALSE(ticker.contains("user"));
 }

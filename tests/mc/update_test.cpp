@@ -56,13 +56,13 @@ static_assert(!mc_update<nothing>);
 static_assert(!mc_update<int>);
 
 // The wrapper itself satisfies the concept — it forwards attempt() and accept().
-static_assert(mc_update<basic_update<>>);
+static_assert(mc_update<basic_update>);
 
 // A non-conforming type cannot construct an `update`.
-static_assert(!std::is_constructible_v<basic_update<>, int>);
-static_assert(!std::is_constructible_v<basic_update<>, nothing>);
-static_assert(!std::is_constructible_v<basic_update<>, missing_attempt>);
-static_assert(!std::is_constructible_v<basic_update<>, missing_accept>);
+static_assert(!std::is_constructible_v<basic_update, int>);
+static_assert(!std::is_constructible_v<basic_update, nothing>);
+static_assert(!std::is_constructible_v<basic_update, missing_attempt>);
+static_assert(!std::is_constructible_v<basic_update, missing_accept>);
 
 TEST(MCBasicUpdate, WrapsAndForwardsAttemptAccept) {
     toy_update src;
@@ -148,7 +148,7 @@ TEST(MCBasicUpdate, HeterogeneousStorageInVector) {
     auto a_accepted = a.accepted;
     auto b_committed = b.committed;
 
-    std::vector<basic_update<>> v;
+    std::vector<basic_update> v;
     v.emplace_back(a);
     v.emplace_back(b);
 
@@ -259,12 +259,12 @@ TEST(MCUpdate, SerializationRoundTrip) {
     u.cumulative_naccs = 7;
     u.cumulative_nimps = 1;
 
-    json_serializer s;
+    mc_serializer s { json_serializer {} };
     auto entry = s["entry"];
     simplemc_save(entry, u);
 
     update v { toy_update {}, "tmp", 1.0 };
-    const auto rentry = json_serializer { s }["entry"];
+    const auto rentry = mc_serializer { s }["entry"];
     simplemc_load(rentry, v);
 
     EXPECT_EQ(v.inv_name, "u_inv");
@@ -280,7 +280,7 @@ TEST(MCUpdate, InputConfigRoundTripOnlyTouchesWeight) {
     u.ratio = 0.5;
     u.cumulative_nprops = 42;
 
-    json_serializer s;
+    mc_serializer s { json_serializer {} };
     auto entry = s["entry"];
     simplemc_save_input_config(entry, u);
 
@@ -288,7 +288,7 @@ TEST(MCUpdate, InputConfigRoundTripOnlyTouchesWeight) {
     update v { toy_update {}, "u", 1.0 };
     v.ratio = 9.0;
     v.cumulative_nprops = 0;
-    const auto rentry = json_serializer { s }["entry"];
+    const auto rentry = mc_serializer { s }["entry"];
     simplemc_load_input_config(rentry, v);
 
     EXPECT_DOUBLE_EQ(v.weight, 4.0);

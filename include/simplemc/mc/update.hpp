@@ -8,7 +8,7 @@
 
 #include <simplemc/mc/basic_update.hpp>
 #include <simplemc/mc/concepts.hpp>
-#include <simplemc/mc/traits.hpp>
+#include <simplemc/mc/serializer.hpp>
 #include <simplemc/mpi/all_reduce.hpp>
 #include <simplemc/mpi/communicator.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
@@ -40,30 +40,17 @@ namespace simplemc {
  * Construction validates `name` non-empty and `weight >= 0`. `inv_name` defaults to `name` (i.e.
  * self-inverse) and `ratio` defaults to `1.0`; cross-linked pairs are produced by
  * simplemc::update_set::add_pair.
- *
- * @tparam Traits Traits bundle satisfying simplemc::mc_traits_like (default: simplemc::mc_traits<>).
  */
-template <mc_traits_like Traits = mc_traits<>>
 struct update {
     /**
-     * @brief The traits bundle this update was parameterized on.
+     * @brief Serializer type used for both checkpoint and input-config serialization.
      */
-    using traits_type = Traits;
-
-    /**
-     * @brief Type used for checkpoint serialization.
-     */
-    using checkpoint_serializer_type = typename Traits::checkpoint_serializer_type;
-
-    /**
-     * @brief Type used for input-config serialization.
-     */
-    using input_config_serializer_type = typename Traits::input_config_serializer_type;
+    using serializer_type = mc_serializer;
 
     /**
      * @brief The wrapped user update.
      */
-    basic_update<Traits> wrapped;
+    basic_update wrapped;
 
     /**
      * @brief Identifier used in lookups and printed reports.
@@ -134,11 +121,11 @@ struct update {
      */
     template <class U>
         requires(!std::same_as<std::remove_cvref_t<U>, update>) &&
-                (!std::same_as<std::remove_cvref_t<U>, basic_update<Traits>>) &&
+                (!std::same_as<std::remove_cvref_t<U>, basic_update>) &&
                 mc_update<std::remove_cvref_t<U>> &&
                 std::copy_constructible<std::remove_cvref_t<U>>
     update(U&& u, std::string name, double weight) : update {
-        basic_update<Traits> { std::forward<U>(u) }, std::move(name), weight
+        basic_update { std::forward<U>(u) }, std::move(name), weight
     } {}
 
     /**
@@ -151,7 +138,7 @@ struct update {
      * @param name Identifier.
      * @param weight Unnormalized selection weight.
      */
-    update(basic_update<Traits> w, std::string name, double weight) :
+    update(basic_update w, std::string name, double weight) :
         wrapped { std::move(w) }, name { std::move(name) }, inv_name { this->name }, weight { weight } {
         if (this->name.empty()) {
             throw simplemc_exception("update name must be non-empty");
@@ -210,7 +197,7 @@ struct update {
      * @param s Serializer handle.
      * @param u Update to serialize.
      */
-    friend void simplemc_save(checkpoint_serializer_type& s, const update& u) {
+    friend void simplemc_save(serializer_type& s, const update& u) {
         s.save_at("inv_name", u.inv_name);
         s.save_at("weight", u.weight);
         s.save_at("ratio", u.ratio);
@@ -223,7 +210,7 @@ struct update {
     /**
      * @brief Deserialize the persistent fields of this update.
      */
-    friend void simplemc_load(const checkpoint_serializer_type& s, update& u) {
+    friend void simplemc_load(const serializer_type& s, update& u) {
         s.load_at("inv_name", u.inv_name);
         s.load_at("weight", u.weight);
         s.load_at("ratio", u.ratio);
@@ -241,7 +228,7 @@ struct update {
      * @param s Serializer handle.
      * @param u Update to serialize.
      */
-    friend void simplemc_save_input_config(input_config_serializer_type& s, const update& u) {
+    friend void simplemc_save_input_config(serializer_type& s, const update& u) {
         s.save_at("weight", u.weight);
         u.wrapped.save_input_config_at(s, "user");
     }
@@ -252,7 +239,7 @@ struct update {
      * @details Each field is optional in the input config (uses `try_load_at`) so callers may omit
      * any fields they do not wish to override.
      */
-    friend void simplemc_load_input_config(const input_config_serializer_type& s, update& u) {
+    friend void simplemc_load_input_config(const serializer_type& s, update& u) {
         s.try_load_at("weight", u.weight);
         u.wrapped.load_input_config_at(s, "user");
     }

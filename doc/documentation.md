@@ -132,17 +132,17 @@ Additional backends can be added by satisfying the @ref simplemc::serializer con
 
 ## Monte Carlo library
 
-@ref simplemc-mc is the Monte Carlo–specific layer of **simplemc**. It hosts the types and
-drivers needed to set up, run, and persist a Markov-chain Monte Carlo simulation, while leaving the
-physics entirely to the user.
+@ref simplemc-mc is the Monte Carlo–specific layer of **simplemc**. It hosts the types and drivers 
+needed to set up, run, and persist a Markov-chain Monte Carlo simulation, while leaving the physics 
+entirely to the user.
 
 It provides
 
 - @ref simplemc-mc-entities, containing the user-extensible @ref simplemc-mc-entities-updates and
 @ref simplemc-mc-entities-measurements that propose moves and sample observables, together with the
 value-semantic type-erasure machinery and named collections that manage them.
-- @ref simplemc-mc-concepts that express the contracts user updates, measurements, kernels, traits
-and callbacks must satisfy.
+- @ref simplemc-mc-concepts that express the contracts user updates, measurements, kernels, and 
+callbacks must satisfy.
 - @ref simplemc-mc-kernels, representing the underlying MC algorithm (defaults to 
 Metropolis-Hastings).
 - @ref simplemc-mc-callbacks, which are optional per-run hooks that observe a simulation.

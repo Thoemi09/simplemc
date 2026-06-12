@@ -7,6 +7,7 @@
 #define SIMPLEMC_MC_BASIC_WRAPPER_HPP
 
 #include <simplemc/mc/concepts.hpp>
+#include <simplemc/mc/serializer.hpp>
 #include <simplemc/mpi/communicator.hpp>
 
 #include <memory>
@@ -35,20 +36,14 @@ namespace simplemc {
  * clone() returns a `std::unique_ptr<Final>` rather than a pointer to this base — letting the owning
  * simplemc::basic_wrapper hold the role interface directly.
  *
- * @tparam Traits Traits bundle satisfying simplemc::mc_traits_like.
- * @tparam Final  The most derived (role) interface type, used as the clone() return type.
+ * @tparam Final The most derived (role) interface type, used as the clone() return type.
  */
-template <mc_traits_like Traits, class Final>
+template <class Final>
 struct basic_interface {
     /**
-     * @brief Type used for checkpoint serialization.
+     * @brief Serializer type used for both checkpoint and input-config serialization.
      */
-    using checkpoint_serializer_type = typename Traits::checkpoint_serializer_type;
-
-    /**
-     * @brief Type used for input-config serialization.
-     */
-    using input_config_serializer_type = typename Traits::input_config_serializer_type;
+    using serializer_type = mc_serializer;
 
     /**
      * @brief Virtual destructor.
@@ -89,7 +84,7 @@ struct basic_interface {
      * @param parent Serializer handle.
      * @param key Sub-key to write into.
      */
-    virtual void save_at(checkpoint_serializer_type& parent, std::string_view key) const = 0;
+    virtual void save_at(serializer_type& parent, std::string_view key) const = 0;
 
     /**
      * @brief Deserialize the wrapped value through the checkpoint serializer (no-op if unsupported).
@@ -97,7 +92,7 @@ struct basic_interface {
      * @param parent Serializer handle.
      * @param key Sub-key to read from.
      */
-    virtual void load_at(const checkpoint_serializer_type& parent, std::string_view key) = 0;
+    virtual void load_at(const serializer_type& parent, std::string_view key) = 0;
 
     /**
      * @brief Serialize the wrapped value as input config via its ADL hook (no-op if unsupported).
@@ -105,7 +100,7 @@ struct basic_interface {
      * @param parent Serializer handle.
      * @param key Sub-key to write into.
      */
-    virtual void save_input_config_at(input_config_serializer_type& parent, std::string_view key) const = 0;
+    virtual void save_input_config_at(serializer_type& parent, std::string_view key) const = 0;
 
     /**
      * @brief Deserialize the wrapped value from input config via its ADL hook (no-op if unsupported).
@@ -113,7 +108,7 @@ struct basic_interface {
      * @param parent Serializer handle.
      * @param key Sub-key to read from.
      */
-    virtual void load_input_config_at(const input_config_serializer_type& parent, std::string_view key) = 0;
+    virtual void load_input_config_at(const serializer_type& parent, std::string_view key) = 0;
 
     /**
      * @brief All-reduce the wrapped value across MPI ranks via its ADL hook (no-op if unsupported).
@@ -133,21 +128,15 @@ struct basic_interface {
  * from this and adds only the role overrides plus clone() (which must construct the most derived
  * model type so the dynamic type is preserved across copies).
  *
- * @tparam Traits Traits bundle satisfying simplemc::mc_traits_like.
- * @tparam Iface  Role interface type (derived from simplemc::basic_interface).
- * @tparam T      Wrapped user type.
+ * @tparam Iface Role interface type (derived from simplemc::basic_interface).
+ * @tparam T     Wrapped user type.
  */
-template <mc_traits_like Traits, class Iface, class T>
+template <class Iface, class T>
 struct basic_model : Iface {
     /**
-     * @brief Type used for checkpoint serialization.
+     * @brief Serializer type used for both checkpoint and input-config serialization.
      */
-    using checkpoint_serializer_type = typename Traits::checkpoint_serializer_type;
-
-    /**
-     * @brief Type used for input-config serialization.
-     */
-    using input_config_serializer_type = typename Traits::input_config_serializer_type;
+    using serializer_type = mc_serializer;
 
     /**
      * @brief The wrapped user value.
@@ -177,19 +166,19 @@ struct basic_model : Iface {
     [[nodiscard]] const void* address() const noexcept override { return &concrete; }
 
     /**
-     * @brief Serialize the wrapped value if `checkpoint_serializer_type` supports it; else no-op.
+     * @brief Serialize the wrapped value if `serializer_type` supports it; else no-op.
      */
-    void save_at(checkpoint_serializer_type& s, std::string_view key) const override {
-        if constexpr (save_at_compatible<T, checkpoint_serializer_type>) {
+    void save_at(serializer_type& s, std::string_view key) const override {
+        if constexpr (save_at_compatible<T, serializer_type>) {
             s.save_at(key, concrete);
         }
     }
 
     /**
-     * @brief Deserialize the wrapped value if `checkpoint_serializer_type` supports it; else no-op.
+     * @brief Deserialize the wrapped value if `serializer_type` supports it; else no-op.
      */
-    void load_at(const checkpoint_serializer_type& s, std::string_view key) override {
-        if constexpr (load_at_compatible<T, checkpoint_serializer_type>) {
+    void load_at(const serializer_type& s, std::string_view key) override {
+        if constexpr (load_at_compatible<T, serializer_type>) {
             s.load_at(key, concrete);
         }
     }
@@ -197,8 +186,8 @@ struct basic_model : Iface {
     /**
      * @brief Serialize the wrapped value as input config via ADL if supported; else no-op.
      */
-    void save_input_config_at(input_config_serializer_type& s, std::string_view key) const override {
-        if constexpr (has_simplemc_save_input_config<T, input_config_serializer_type>) {
+    void save_input_config_at(serializer_type& s, std::string_view key) const override {
+        if constexpr (has_simplemc_save_input_config<T, serializer_type>) {
             auto sub = s[key];
             simplemc_save_input_config(sub, concrete);
         }
@@ -207,8 +196,8 @@ struct basic_model : Iface {
     /**
      * @brief Deserialize the wrapped value from input config via ADL if supported; else no-op.
      */
-    void load_input_config_at(const input_config_serializer_type& s, std::string_view key) override {
-        if constexpr (has_simplemc_load_input_config<T, input_config_serializer_type>) {
+    void load_input_config_at(const serializer_type& s, std::string_view key) override {
+        if constexpr (has_simplemc_load_input_config<T, serializer_type>) {
             const auto sub = s[key];
             simplemc_load_input_config(sub, concrete);
         }
@@ -238,29 +227,18 @@ struct basic_model : Iface {
  * To build a custom wrapper on top of this machinery: (1) define a role interface deriving from
  * simplemc::basic_interface with the role's pure virtuals; (2) define a role model deriving from
  * simplemc::basic_model implementing them plus clone(); (3) derive a wrapper from
- * `basic_wrapper<Traits, RoleInterface>` exposing a wrapping constructor and the role forwarders.
+ * `basic_wrapper<RoleInterface>` exposing a wrapping constructor and the role forwarders.
  * See simplemc::basic_update for a worked example.
  *
- * @tparam Traits Traits bundle satisfying simplemc::mc_traits_like.
- * @tparam Iface  Role interface type (derived from simplemc::basic_interface).
+ * @tparam Iface Role interface type (derived from simplemc::basic_interface).
  */
-template <mc_traits_like Traits, class Iface>
+template <class Iface>
 class basic_wrapper {
 public:
     /**
-     * @brief Type used for checkpoint serialization.
+     * @brief Serializer type used for both checkpoint and input-config serialization.
      */
-    using checkpoint_serializer_type = typename Traits::checkpoint_serializer_type;
-
-    /**
-     * @brief Type used for input-config serialization.
-     */
-    using input_config_serializer_type = typename Traits::input_config_serializer_type;
-
-    /**
-     * @brief The traits bundle this wrapper was parameterized on.
-     */
-    using traits_type = Traits;
+    using serializer_type = mc_serializer;
 
     /**
      * @brief Copy constructor.
@@ -330,23 +308,23 @@ public:
      * @brief Serialize the wrapped user type.
      *
      * @details Forwards to the serializer's `save_at()` method. If the wrapped user type is not
-     * serializable through checkpoint_serializer_type, the call is a silent no-op.
+     * serializable through serializer_type, the call is a silent no-op.
      *
      * @param s Serializer handle.
      * @param key Sub-key to write into.
      */
-    void save_at(checkpoint_serializer_type& s, std::string_view key) const { pimpl_->save_at(s, key); }
+    void save_at(serializer_type& s, std::string_view key) const { pimpl_->save_at(s, key); }
 
     /**
      * @brief Deserialize the wrapped user type.
      *
      * @details Forwards to the serializer's `load_at()` method. If the wrapped user type is not
-     * deserializable through checkpoint_serializer_type, the call is a silent no-op.
+     * deserializable through serializer_type, the call is a silent no-op.
      *
      * @param s Serializer handle.
      * @param key Sub-key to read from.
      */
-    void load_at(const checkpoint_serializer_type& s, std::string_view key) { pimpl_->load_at(s, key); }
+    void load_at(const serializer_type& s, std::string_view key) { pimpl_->load_at(s, key); }
 
     /**
      * @brief Serialize the wrapped user type as input config.
@@ -358,7 +336,7 @@ public:
      * @param s Serializer handle.
      * @param key Sub-key to write into.
      */
-    void save_input_config_at(input_config_serializer_type& s, std::string_view key) const {
+    void save_input_config_at(serializer_type& s, std::string_view key) const {
         pimpl_->save_input_config_at(s, key);
     }
 
@@ -372,7 +350,7 @@ public:
      * @param s Serializer handle.
      * @param key Sub-key to read from.
      */
-    void load_input_config_at(const input_config_serializer_type& s, std::string_view key) {
+    void load_input_config_at(const serializer_type& s, std::string_view key) {
         pimpl_->load_input_config_at(s, key);
     }
 

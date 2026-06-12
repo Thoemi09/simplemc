@@ -8,7 +8,7 @@
 
 #include <simplemc/mc/basic_wrapper.hpp>
 #include <simplemc/mc/concepts.hpp>
-#include <simplemc/mc/traits.hpp>
+#include <simplemc/mc/serializer.hpp>
 
 #include <concepts>
 #include <memory>
@@ -28,11 +28,8 @@ namespace simplemc {
  * @details Derives from simplemc::basic_interface and adds the Monte Carlo measurement operation
  * (`measure()`). simplemc::basic_measurement owns one of these (through simplemc::basic_wrapper)
  * and forwards its public `measure()` to it.
- *
- * @tparam Traits Traits bundle satisfying simplemc::mc_traits_like.
  */
-template <mc_traits_like Traits>
-struct measurement_interface : basic_interface<Traits, measurement_interface<Traits>> {
+struct measurement_interface : basic_interface<measurement_interface> {
     /**
      * @brief Take a measurement.
      */
@@ -45,12 +42,11 @@ struct measurement_interface : basic_interface<Traits, measurement_interface<Tra
  * @details Derives from simplemc::basic_model (which supplies the role-agnostic overrides) and adds
  * the `measure()` override.
  *
- * @tparam Traits Traits bundle satisfying simplemc::mc_traits_like.
  * @tparam M Wrapped user type.
  */
-template <mc_traits_like Traits, class M>
-struct measurement_model final : basic_model<Traits, measurement_interface<Traits>, M> {
-    using basic_model<Traits, measurement_interface<Traits>, M>::basic_model;
+template <class M>
+struct measurement_model final : basic_model<measurement_interface, M> {
+    using basic_model<measurement_interface, M>::basic_model;
 
     /**
      * @brief Forward to the wrapped value's `measure()`.
@@ -60,7 +56,7 @@ struct measurement_model final : basic_model<Traits, measurement_interface<Trait
     /**
      * @brief Deep-copy this model, preserving the dynamic type.
      */
-    [[nodiscard]] std::unique_ptr<measurement_interface<Traits>> clone() const override {
+    [[nodiscard]] std::unique_ptr<measurement_interface> clone() const override {
         return std::make_unique<measurement_model>(*this);
     }
 };
@@ -89,14 +85,17 @@ struct measurement_model final : basic_model<Traits, measurement_interface<Trait
  * collection of observers. Because copies are deep, the wrapped user type must be copy-constructible;
  * this is checked at construction time.
  *
- * The wrapper is parameterized on a simplemc::mc_traits_like bundle whose
- * `checkpoint_serializer_type` and `input_config_serializer_type` drive checkpointing and
- * input-config serialization, respectively:
- * - If the wrapped user type provides a serialization path through the checkpoint serializer's
+ * Serialization runs through the library-wide simplemc::mc_serializer (a backend-erasing
+ * simplemc::variant_serializer), used for both the checkpoint and the input-config channels:
+ * - If the wrapped user type provides a serialization path through the serializer's
  * `%save_at()` / `%load_at()`, the wrapper's save_at() / load_at() forward to it.
- * - If the wrapped user type satisfies simplemc::has_simplemc_save_input_config with the
- * input-config serializer, the wrapper's save_input_config_at() / load_input_config_at() forward to
- * the user type's ADL hooks. Otherwise they are silent no-ops.
+ * - If the wrapped user type satisfies simplemc::has_simplemc_save_input_config with the serializer,
+ * the wrapper's save_input_config_at() / load_input_config_at() forward to the user type's ADL hooks.
+ * Otherwise they are silent no-ops.
+ *
+ * @note Because simplemc::mc_serializer is a variant over the shipped backends, its capability is
+ * the *intersection* of those backends: with HDF5 enabled a wrapped payload must be serializable by
+ * both JSON and HDF5 for the forwards above to engage.
  *
  * The deep-copy/serialization/MPI machinery is shared with simplemc::basic_update through
  * simplemc::basic_wrapper; this class adds only the measurement role. See @ref simplemc-mc
@@ -105,12 +104,9 @@ struct measurement_model final : basic_model<Traits, measurement_interface<Trait
  * @note The wrapper takes the user measurement by value. To access the concrete value (e.g. an
  * accumulator) after a run, use the typed accessor get<T>() — it returns a pointer to the wrapped
  * value when the dynamic type matches `T`, or `nullptr` otherwise.
- *
- * @tparam Traits Traits bundle satisfying simplemc::mc_traits_like (default: simplemc::mc_traits<>).
  */
-template <mc_traits_like Traits = mc_traits<>>
-class basic_measurement : public basic_wrapper<Traits, measurement_interface<Traits>> {
-    using base_type = basic_wrapper<Traits, measurement_interface<Traits>>;
+class basic_measurement : public basic_wrapper<measurement_interface> {
+    using base_type = basic_wrapper<measurement_interface>;
 
 public:
     /**
@@ -130,18 +126,13 @@ public:
         requires(!std::same_as<std::remove_cvref_t<M>, basic_measurement>) && mc_measurement<std::remove_cvref_t<M>> &&
         std::copy_constructible<std::remove_cvref_t<M>>
     basic_measurement(M&& m) :
-        base_type { std::make_unique<measurement_model<Traits, std::remove_cvref_t<M>>>(std::forward<M>(m)) } {}
+        base_type { std::make_unique<measurement_model<std::remove_cvref_t<M>>>(std::forward<M>(m)) } {}
 
     /**
      * @brief Take a measurement.
      */
     void measure() { this->impl().measure(); }
 };
-
-// Deduction guide: basic_measurement m { my_meas{} } deduces to basic_measurement<mc_traits<>>.
-template <class M>
-    requires mc_measurement<std::remove_cvref_t<M>> && std::copy_constructible<std::remove_cvref_t<M>>
-basic_measurement(M&&) -> basic_measurement<>;
 
 /** @} */
 

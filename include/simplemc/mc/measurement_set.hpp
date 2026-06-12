@@ -8,7 +8,7 @@
 
 #include <simplemc/mc/measurement.hpp>
 #include <simplemc/mc/named_set.hpp>
-#include <simplemc/mc/traits.hpp>
+#include <simplemc/mc/serializer.hpp>
 #include <simplemc/mpi/communicator.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
@@ -38,17 +38,13 @@ namespace simplemc {
  * Toggling `is_active` on an entry directly does **not** update the cache; call refresh_active()
  * to apply changes between runs.
  *
- * @tparam Traits Traits bundle satisfying simplemc::mc_traits_like (default: simplemc::mc_traits<>).
  */
-template <mc_traits_like Traits = mc_traits<>>
-class measurement_set : public named_set<measurement<Traits>> {
-    using base_type = named_set<measurement<Traits>>;
+class measurement_set : public named_set<measurement> {
+    using base_type = named_set<measurement>;
 
 public:
-    using traits_type = Traits;
-    using checkpoint_serializer_type = typename Traits::checkpoint_serializer_type;
-    using input_config_serializer_type = typename Traits::input_config_serializer_type;
-    using measurement_type = measurement<Traits>;
+    using serializer_type = mc_serializer;
+    using measurement_type = measurement;
 
     /**
      * @brief Register a measurement.
@@ -103,17 +99,17 @@ public:
         }
     }
 
-    friend void simplemc_save(checkpoint_serializer_type& s, const measurement_set& ms) { ms.save_entries(s); }
+    friend void simplemc_save(serializer_type& s, const measurement_set& ms) { ms.save_entries(s); }
 
-    friend void simplemc_load(const checkpoint_serializer_type& s, measurement_set& ms) {
+    friend void simplemc_load(const serializer_type& s, measurement_set& ms) {
         ms.load_entries(s, "measurement");
     }
 
-    friend void simplemc_save_input_config(input_config_serializer_type& s, const measurement_set& ms) {
+    friend void simplemc_save_input_config(serializer_type& s, const measurement_set& ms) {
         ms.save_input_config_entries(s);
     }
 
-    friend void simplemc_load_input_config(const input_config_serializer_type& s, measurement_set& ms) {
+    friend void simplemc_load_input_config(const serializer_type& s, measurement_set& ms) {
         ms.load_input_config_entries(s, "measurement");
     }
 

@@ -10,5 +10,4 @@ target_link_libraries(simplemc-mc
     INTERFACE
         simplemc::simplemc-utils
         simplemc::simplemc-mpi
-        simplemc::simplemc-serialize-core
-        simplemc::simplemc-serialize-json)
+        simplemc::simplemc-serialize)

@@ -20,31 +20,6 @@ namespace simplemc {
  */
 
 /**
- * @brief Contract a traits bundle must satisfy to parameterize the simplemc-mc class templates.
- *
- * @details All **simplemc-mc** class templates (simplemc::basic_update, simplemc::update_set, ...)
- * take a single traits parameter that bundles various types they depend on.
- *
- * A traits type must expose the following member type aliases:
- *
- * - `checkpoint_serializer_type` — simplemc::serializer backend used for checkpoint (state)
- * serialization.
- * - `input_config_serializer_type` — simplemc::serializer backend used for input-config
- * serialization.
- * - `rng_type` — random number generator type.
- *
- * See also simplemc::mc_traits.
- *
- * @tparam T Type to check.
- */
-template <class T>
-concept mc_traits_like = requires {
-    typename T::checkpoint_serializer_type;
-    typename T::input_config_serializer_type;
-    typename T::rng_type;
-} && serializer<typename T::checkpoint_serializer_type> && serializer<typename T::input_config_serializer_type>;
-
-/**
  * @brief Contract a type must satisfy to be wrapped in a simplemc::measurement.
  *
  * @details A Monte Carlo measurement is an observer of the simulation state that simplemc::run

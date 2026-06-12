@@ -77,10 +77,10 @@ int main() {
     simplemc::xoshiro256ss rng { 0xc0ffee };
     simplemc::simulation_stats stats;
 
-    simplemc::update_set<> updates;
+    simplemc::update_set updates;
     updates.add({ uniform_update { .s = &state, .rng = &rng }, "uniform", 1.0 });
 
-    simplemc::measurement_set<> meas;
+    simplemc::measurement_set meas;
     meas.add({ integral_observer { .s = &state }, "integral" });
 
     simplemc::metropolis_kernel kernel { updates };
@@ -100,10 +100,10 @@ int main() {
     simplemc::xoshiro256ss rng2;
     simplemc::simulation_stats stats2;
 
-    simplemc::update_set<> updates2;
+    simplemc::update_set updates2;
     updates2.add({ uniform_update { .s = &restored, .rng = &rng2 }, "uniform", 1.0 });
 
-    simplemc::measurement_set<> meas2;
+    simplemc::measurement_set meas2;
     meas2.add({ integral_observer { .s = &restored }, "integral" });
 
     simplemc::load_json_checkpoint(rng2, updates2, meas2, stats2, &restored, path);

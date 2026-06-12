@@ -27,7 +27,7 @@ struct other_update {
 } // namespace
 
 TEST(MCUpdateSet, AddRegistersEntries) {
-    update_set<> us;
+    update_set us;
     us.add({ toy_update {}, "a", 1.0 });
     us.add({ toy_update {}, "b", 2.0 });
 
@@ -42,13 +42,13 @@ TEST(MCUpdateSet, AddRegistersEntries) {
 }
 
 TEST(MCUpdateSet, AddDuplicateNameThrows) {
-    update_set<> us;
+    update_set us;
     us.add({ toy_update {}, "a", 1.0 });
     EXPECT_THROW(us.add({ toy_update {}, "a", 1.0 }), simplemc_exception);
 }
 
 TEST(MCUpdateSet, AddPairCrossLinksAndRebuildComputesRatios) {
-    update_set<> us;
+    update_set us;
     us.add_pair({ toy_update {}, "f", 2.0 }, { toy_update {}, "b", 3.0 });
 
     EXPECT_EQ(us.size(), 2u);
@@ -63,7 +63,7 @@ TEST(MCUpdateSet, AddPairCrossLinksAndRebuildComputesRatios) {
 }
 
 TEST(MCUpdateSet, SetWeightThenRebuildRecomputesRatios) {
-    update_set<> us;
+    update_set us;
     us.add_pair({ toy_update {}, "f", 2.0 }, { toy_update {}, "b", 4.0 });
     us.rebuild_distribution();
     EXPECT_DOUBLE_EQ(us.at(0).ratio, 2.0);
@@ -77,7 +77,7 @@ TEST(MCUpdateSet, SetWeightThenRebuildRecomputesRatios) {
 }
 
 TEST(MCUpdateSet, RebuildThrowsOnAsymmetricZeroPair) {
-    update_set<> us;
+    update_set us;
     us.add({ toy_update {}, "a", 1.0 }); // keeps a positive total weight
     us.add_pair({ toy_update {}, "f", 2.0 }, { toy_update {}, "b", 4.0 });
 
@@ -86,7 +86,7 @@ TEST(MCUpdateSet, RebuildThrowsOnAsymmetricZeroPair) {
 }
 
 TEST(MCUpdateSet, RebuildKeepsUnitRatioOnBothZeroPair) {
-    update_set<> us;
+    update_set us;
     us.add({ toy_update {}, "a", 1.0 });
     us.add_pair({ toy_update {}, "f", 0.0 }, { toy_update {}, "b", 0.0 });
 
@@ -96,30 +96,30 @@ TEST(MCUpdateSet, RebuildKeepsUnitRatioOnBothZeroPair) {
 }
 
 TEST(MCUpdateSet, AddPairBothZeroAllowed) {
-    update_set<> us;
+    update_set us;
     EXPECT_NO_THROW(us.add_pair({ toy_update {}, "f", 0.0 }, { toy_update {}, "b", 0.0 }));
     EXPECT_DOUBLE_EQ(us.at(0).ratio, 1.0);
     EXPECT_DOUBLE_EQ(us.at(1).ratio, 1.0);
 }
 
 TEST(MCUpdateSet, AddPairOneZeroThrows) {
-    update_set<> us;
+    update_set us;
     EXPECT_THROW(us.add_pair({ toy_update {}, "f", 0.0 }, { toy_update {}, "b", 1.0 }), simplemc_exception);
 }
 
 TEST(MCUpdateSet, AddPairSameNameThrows) {
-    update_set<> us;
+    update_set us;
     EXPECT_THROW(us.add_pair({ toy_update {}, "x", 1.0 }, { toy_update {}, "x", 1.0 }), simplemc_exception);
 }
 
 TEST(MCUpdateSet, AddPairExistingNameThrows) {
-    update_set<> us;
+    update_set us;
     us.add({ toy_update {}, "a", 1.0 });
     EXPECT_THROW(us.add_pair({ toy_update {}, "a", 1.0 }, { toy_update {}, "b", 1.0 }), simplemc_exception);
 }
 
 TEST(MCUpdateSet, SetWeight) {
-    update_set<> us;
+    update_set us;
     us.add({ toy_update {}, "a", 1.0 });
     us.set_weight("a", 5.5);
     EXPECT_DOUBLE_EQ(us.at(0).weight, 5.5);
@@ -129,7 +129,7 @@ TEST(MCUpdateSet, SetWeight) {
 }
 
 TEST(MCUpdateSet, FindReturnsIndexOrNullopt) {
-    update_set<> us;
+    update_set us;
     us.add({ toy_update {}, "a", 1.0 });
     us.add({ toy_update {}, "b", 1.0 });
     EXPECT_EQ(us.find("a"), std::optional<std::size_t> { 0 });
@@ -138,13 +138,13 @@ TEST(MCUpdateSet, FindReturnsIndexOrNullopt) {
 }
 
 TEST(MCUpdateSet, RebuildDistributionThrowsIfAllZero) {
-    update_set<> us;
+    update_set us;
     us.add({ toy_update {}, "a", 0.0 });
     EXPECT_THROW(us.rebuild_distribution(), simplemc_exception);
 }
 
 TEST(MCUpdateSet, SelectReturnsValidIndex) {
-    update_set<> us;
+    update_set us;
     us.add({ toy_update {}, "a", 1.0 });
     us.add({ toy_update {}, "b", 1.0 });
     us.rebuild_distribution();
@@ -157,7 +157,7 @@ TEST(MCUpdateSet, SelectReturnsValidIndex) {
 }
 
 TEST(MCUpdateSet, ResetAndAccumulateCounters) {
-    update_set<> us;
+    update_set us;
     us.add({ toy_update {}, "a", 1.0 });
     us.add({ toy_update {}, "b", 1.0 });
     us.at(0).nprops = 10;
@@ -178,7 +178,7 @@ TEST(MCUpdateSet, ResetAndAccumulateCounters) {
 }
 
 TEST(MCUpdateSet, GetReturnsTypedPointer) {
-    update_set<> us;
+    update_set us;
     toy_update src;
     src.prob = 0.42;
     us.add({ src, "a", 1.0 });
@@ -192,21 +192,21 @@ TEST(MCUpdateSet, GetReturnsTypedPointer) {
 }
 
 TEST(MCUpdateSet, SerializationRoundTrip) {
-    update_set<> us;
+    update_set us;
     us.add({ toy_update {}, "a", 2.0 });
     us.add_pair({ toy_update {}, "f", 3.0 }, { toy_update {}, "b", 4.0 });
     us.at(0).cumulative_nprops = 100;
     us.at(1).cumulative_naccs = 50;
 
-    json_serializer s;
+    mc_serializer s { json_serializer {} };
     auto entry = s["updates"];
     simplemc_save(entry, us);
 
-    update_set<> v;
+    update_set v;
     v.add({ toy_update {}, "a", 0.0 });
     v.add_pair({ toy_update {}, "f", 0.0 }, { toy_update {}, "b", 0.0 });
 
-    const auto rentry = json_serializer { s }["updates"];
+    const auto rentry = mc_serializer { s }["updates"];
     simplemc_load(rentry, v);
 
     EXPECT_DOUBLE_EQ(v.at(0).weight, 2.0);
@@ -218,33 +218,33 @@ TEST(MCUpdateSet, SerializationRoundTrip) {
 }
 
 TEST(MCUpdateSet, InputConfigRoundTrip) {
-    update_set<> us;
+    update_set us;
     us.add({ toy_update {}, "a", 2.5 });
 
-    json_serializer s;
+    mc_serializer s { json_serializer {} };
     auto entry = s["updates"];
     simplemc_save_input_config(entry, us);
 
-    update_set<> v;
+    update_set v;
     v.add({ toy_update {}, "a", 1.0 });
-    const auto rentry = json_serializer { s }["updates"];
+    const auto rentry = mc_serializer { s }["updates"];
     simplemc_load_input_config(rentry, v);
 
     EXPECT_DOUBLE_EQ(v.at(0).weight, 2.5);
 }
 
 TEST(MCUpdateSet, LoadThrowsOnMissingEntry) {
-    update_set<> us;
+    update_set us;
     us.add({ toy_update {}, "a", 1.0 });
     us.add({ toy_update {}, "b", 1.0 });
 
-    json_serializer s;
+    mc_serializer s { json_serializer {} };
     auto entry = s["updates"];
     // serialize only one
-    update_set<> partial;
+    update_set partial;
     partial.add({ toy_update {}, "a", 1.0 });
     simplemc_save(entry, partial);
 
-    const auto rentry = json_serializer { s }["updates"];
+    const auto rentry = mc_serializer { s }["updates"];
     EXPECT_THROW(simplemc_load(rentry, us), simplemc_exception);
 }

@@ -57,7 +57,6 @@ namespace simplemc {
  * `accumulate_counters()` / `reset_run_counters()` is called on the update set.
  *
  * @tparam Kernel Step kernel satisfying simplemc::mc_kernel for the given RNG.
- * @tparam Traits Traits bundle satisfying simplemc::mc_traits_like, carried by the measurement_set.
  * @tparam RNG    Random number generator type.
  * @tparam Cbs    Callbacks bundle satisfying simplemc::mc_run_callbacks. Defaults to
  *                simplemc::run_callbacks<> (all no-ops); any user type with the four hooks works.
@@ -69,10 +68,9 @@ namespace simplemc {
  * @param rng RNG threaded into the kernel's `step()`.
  * @param cbs Optional callbacks; default = all no-ops.
  */
-template <class Kernel, mc_traits_like Traits, class RNG,
-    mc_run_callbacks Cbs = run_callbacks<>>
+template <class Kernel, class RNG, mc_run_callbacks Cbs = run_callbacks<>>
     requires mc_kernel<Kernel, RNG>
-void run(Kernel& kernel, measurement_set<Traits>& meas, const simulation_params& p,
+void run(Kernel& kernel, measurement_set& meas, const simulation_params& p,
     simulation_stats& stats, RNG& rng, const Cbs& cbs = {}) {
     validate_simulation_params(p);
     if constexpr (requires { kernel.prepare(); }) {

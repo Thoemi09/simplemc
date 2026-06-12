@@ -136,8 +136,8 @@ TEST(MCCallbacks, JsonCheckpointWriterRoundTripsComponents) {
 
     // Assemble the components, populate cumulative stats, then write.
     xoshiro256ss rng;
-    update_set<> updates;
-    measurement_set<> meas;
+    update_set updates;
+    measurement_set meas;
     simulation_stats stats;
     updates.add({ trivial_update {}, "u", 1.0 });
     meas.add({ trivial_meas {}, "m" });
@@ -150,8 +150,8 @@ TEST(MCCallbacks, JsonCheckpointWriterRoundTripsComponents) {
 
     // Fresh components with the same registration, load, verify.
     xoshiro256ss dst_rng;
-    update_set<> dst_updates;
-    measurement_set<> dst_meas;
+    update_set dst_updates;
+    measurement_set dst_meas;
     simulation_stats dst_stats;
     dst_updates.add({ trivial_update {}, "u", 1.0 });
     dst_meas.add({ trivial_meas {}, "m" });
@@ -167,8 +167,8 @@ TEST(MCCallbacks, JsonCheckpointWriterRespectsModeOptionAndConfig) {
     std::filesystem::remove(path);
 
     xoshiro256ss rng;
-    update_set<> updates;
-    measurement_set<> meas;
+    update_set updates;
+    measurement_set meas;
     simulation_stats stats;
     updates.add({ trivial_update {}, "u", 1.0 });
     stats.cumulative_steps = 7;
@@ -180,8 +180,8 @@ TEST(MCCallbacks, JsonCheckpointWriterRespectsModeOptionAndConfig) {
     ASSERT_TRUE(std::filesystem::exists(path));
 
     xoshiro256ss dst_rng;
-    update_set<> dst_updates;
-    measurement_set<> dst_meas;
+    update_set dst_updates;
+    measurement_set dst_meas;
     simulation_stats dst_stats;
     run_config dst_cfg;
     dst_updates.add({ trivial_update {}, "u", 1.0 });
@@ -196,13 +196,12 @@ TEST(MCCallbacks, JsonCheckpointWriterRespectsModeOptionAndConfig) {
 #ifdef SIMPLEMC_USE_HDF5
 
 TEST(MCCallbacks, Hdf5CheckpointWriterRoundTripsComponentsAndConfig) {
-    using traits_t = mc_traits<hdf5_serializer, json_serializer>;
     const auto path = std::filesystem::temp_directory_path() / "simplemc_test_ckpt.h5";
     std::filesystem::remove(path);
 
-    typename traits_t::rng_type rng;
-    update_set<traits_t> updates;
-    measurement_set<traits_t> meas;
+    xoshiro256ss rng;
+    update_set updates;
+    measurement_set meas;
     simulation_stats stats;
     updates.add({ trivial_update {}, "u", 1.0 });
     meas.add({ trivial_meas {}, "m" });
@@ -214,9 +213,9 @@ TEST(MCCallbacks, Hdf5CheckpointWriterRoundTripsComponentsAndConfig) {
     writer(simulation_ctx {});
     ASSERT_TRUE(std::filesystem::exists(path));
 
-    typename traits_t::rng_type dst_rng;
-    update_set<traits_t> dst_updates;
-    measurement_set<traits_t> dst_meas;
+    xoshiro256ss dst_rng;
+    update_set dst_updates;
+    measurement_set dst_meas;
     simulation_stats dst_stats;
     run_config dst_cfg;
     dst_updates.add({ trivial_update {}, "u", 1.0 });

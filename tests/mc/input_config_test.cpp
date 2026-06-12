@@ -58,6 +58,9 @@ void simplemc_load_input_config(const S& s, configurable_measurement& m) {
     }
 }
 
+// Pull the underlying nlohmann document out of a JSON-backed mc_serializer for inspection / reload.
+const nlohmann::json& doc(const mc_serializer& s) { return std::get<json_serializer>(s.backend()).root(); }
+
 } // namespace
 
 TEST(MCInputConfig, RoundTripPersistsParamsWeightActiveAndUserConfig) {
@@ -67,36 +70,36 @@ TEST(MCInputConfig, RoundTripPersistsParamsWeightActiveAndUserConfig) {
         .cycles_per_check = 13,
         .skip_measurements = true };
 
-    update_set<> updates;
+    update_set updates;
     configurable_update src_up;
     *src_up.threshold = 0.75;
     updates.add({ src_up, "tunable", 2.5 });
     updates.add({ always_accept {}, "stateless", 1.0 });
 
-    measurement_set<> meas;
+    measurement_set meas;
     configurable_measurement src_meas;
     *src_meas.bins = 64;
     meas.add({ src_meas, "histogram", /*is_active=*/false });
     meas.add({ counting_measurement {}, "stateless_meas" });
 
-    json_serializer w;
+    mc_serializer w { json_serializer {} };
     simplemc_save_input_config(w, src_params, updates, meas);
 
     // Destination: same registration, different initial values.
     simulation_params dst_params;
-    update_set<> dst_updates;
+    update_set dst_updates;
     configurable_update dst_up;
     auto dst_threshold = dst_up.threshold;
     dst_updates.add({ dst_up, "tunable", 1.0 });
     dst_updates.add({ always_accept {}, "stateless", 1.0 });
 
-    measurement_set<> dst_meas;
+    measurement_set dst_meas;
     configurable_measurement dst_meas_obj;
     auto dst_bins = dst_meas_obj.bins;
     dst_meas.add({ dst_meas_obj, "histogram", /*is_active=*/true });
     dst_meas.add({ counting_measurement {}, "stateless_meas" });
 
-    const json_serializer r { w.root() };
+    const mc_serializer r { json_serializer { doc(w) } };
     simplemc_load_input_config(r, dst_params, dst_updates, dst_meas);
 
     // Params from input config:
@@ -119,15 +122,15 @@ TEST(MCInputConfig, RoundTripPersistsParamsWeightActiveAndUserConfig) {
 
 TEST(MCInputConfig, OmitsStateOnlyFields) {
     const simulation_params params;
-    update_set<> updates;
+    update_set updates;
     updates.add_pair({ always_accept {}, "a", 1.0 }, { always_accept {}, "b", 2.0 }); // gets inv_name/ratio
-    measurement_set<> meas;
+    measurement_set meas;
     meas.add({ counting_measurement {}, "obs" });
 
-    json_serializer w;
+    mc_serializer w { json_serializer {} };
     simplemc_save_input_config(w, params, updates, meas);
 
-    const auto& root = w.root();
+    const auto& root = doc(w);
 
     // No RNG, no cumulative simulation-stats fields at the top level:
     EXPECT_FALSE(root.contains("rng"));
@@ -154,62 +157,62 @@ TEST(MCInputConfig, UserSlotSilentlySkippedForNonOptIn) {
     // Update / measurement without input-config hooks — the wrapper's
     // save_input_config_at silently no-ops, so "user" key is absent.
     const simulation_params params;
-    update_set<> updates;
+    update_set updates;
     updates.add({ always_accept {}, "a", 1.0 });
-    measurement_set<> meas;
+    measurement_set meas;
     meas.add({ counting_measurement {}, "obs" });
 
-    json_serializer w;
+    mc_serializer w { json_serializer {} };
     EXPECT_NO_THROW(simplemc_save_input_config(w, params, updates, meas));
 
-    EXPECT_FALSE(w.root()["updates"]["a"].contains("user"));
-    EXPECT_FALSE(w.root()["measurements"]["obs"].contains("user"));
+    EXPECT_FALSE(doc(w)["updates"]["a"].contains("user"));
+    EXPECT_FALSE(doc(w)["measurements"]["obs"].contains("user"));
 
     // Loading the absent "user" slot must not throw either.
     simulation_params dst_params;
-    update_set<> dst_updates;
+    update_set dst_updates;
     dst_updates.add({ always_accept {}, "a", 1.0 });
-    measurement_set<> dst_meas;
+    measurement_set dst_meas;
     dst_meas.add({ counting_measurement {}, "obs" });
 
-    const json_serializer r { w.root() };
+    const mc_serializer r { json_serializer { doc(w) } };
     EXPECT_NO_THROW(simplemc_load_input_config(r, dst_params, dst_updates, dst_meas));
 }
 
 TEST(MCInputConfig, LoadThrowsOnMissingUpdate) {
     const simulation_params params;
-    update_set<> updates;
+    update_set updates;
     updates.add({ always_accept {}, "a", 1.0 });
-    measurement_set<> meas;
+    measurement_set meas;
 
-    json_serializer w;
+    mc_serializer w { json_serializer {} };
     simplemc_save_input_config(w, params, updates, meas);
 
     simulation_params dst_params;
-    update_set<> dst_updates;
+    update_set dst_updates;
     dst_updates.add({ always_accept {}, "b", 1.0 }); // different name
-    measurement_set<> dst_meas;
+    measurement_set dst_meas;
 
-    const json_serializer r { w.root() };
+    const mc_serializer r { json_serializer { doc(w) } };
     EXPECT_THROW(simplemc_load_input_config(r, dst_params, dst_updates, dst_meas), simplemc_exception);
 }
 
 TEST(MCInputConfig, LoadThrowsOnMissingMeasurement) {
     const simulation_params params;
-    update_set<> updates;
+    update_set updates;
     updates.add({ always_accept {}, "a", 1.0 });
-    measurement_set<> meas;
+    measurement_set meas;
     meas.add({ counting_measurement {}, "obs1" });
 
-    json_serializer w;
+    mc_serializer w { json_serializer {} };
     simplemc_save_input_config(w, params, updates, meas);
 
     simulation_params dst_params;
-    update_set<> dst_updates;
+    update_set dst_updates;
     dst_updates.add({ always_accept {}, "a", 1.0 });
-    measurement_set<> dst_meas;
+    measurement_set dst_meas;
     dst_meas.add({ counting_measurement {}, "obs2" });
 
-    const json_serializer r { w.root() };
+    const mc_serializer r { json_serializer { doc(w) } };
     EXPECT_THROW(simplemc_load_input_config(r, dst_params, dst_updates, dst_meas), simplemc_exception);
 }

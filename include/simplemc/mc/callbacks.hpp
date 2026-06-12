@@ -40,6 +40,7 @@
 #include <string>
 #include <type_traits>
 #include <utility>
+#include <variant>
 
 namespace simplemc {
 
@@ -171,21 +172,21 @@ struct progress_printer {
  * The borrowed objects must outlive the callable; they are held by pointer so the checkpoint always
  * reflects the live state at invocation time.
  *
- * @tparam Traits Traits bundle satisfying simplemc::mc_traits_like.
+ * @tparam RNG Random number generator type.
  * @tparam Config Optional extra user state to persist under `"config"`; `void` writes none. When
  *                non-`void` it must be writable by the JSON backend (simplemc::save_at_compatible).
  */
-template <mc_traits_like Traits, class Config = void>
+template <class RNG, class Config = void>
     requires(std::is_void_v<Config> || save_at_compatible<Config, json_serializer>)
 struct json_checkpoint_writer {
     /// Borrowed RNG. Must outlive this callable.
-    const typename Traits::rng_type* rng = nullptr;
+    const RNG* rng = nullptr;
 
     /// Borrowed update set. Must outlive this callable.
-    const update_set<Traits>* updates = nullptr;
+    const update_set* updates = nullptr;
 
     /// Borrowed measurement set. Must outlive this callable.
-    const measurement_set<Traits>* meas = nullptr;
+    const measurement_set* meas = nullptr;
 
     /// Borrowed cumulative statistics. Must outlive this callable.
     const simulation_stats* stats = nullptr;
@@ -203,19 +204,20 @@ struct json_checkpoint_writer {
      * @brief Snapshot the borrowed components (and optional config) into `path`.
      */
     void operator()(const simulation_ctx&) const {
-        json_serializer ser;
+        mc_serializer ser { json_serializer {} };
         simplemc_save(ser, *rng, *updates, *meas, *stats);
+        auto& json = std::get<json_serializer>(ser.backend());
         if constexpr (!std::is_void_v<Config>) {
-            ser.save_at("config", *config);
+            json.save_at("config", *config);
         }
-        write_json_file(ser.root(), path, opts);
+        write_json_file(json.root(), path, opts);
     }
 };
 
 /**
  * @brief Convenience factory: build a component-borrowing simplemc::json_checkpoint_writer.
  *
- * @tparam Traits Traits bundle, deduced from the set arguments.
+ * @tparam RNG Random number generator type, deduced from `rng`.
  * @param rng RNG to borrow.
  * @param updates Update set to borrow.
  * @param meas Measurement set to borrow.
@@ -224,11 +226,11 @@ struct json_checkpoint_writer {
  * @param opts JSON I/O options.
  * @return Configured writer with no extra config object.
  */
-template <mc_traits_like Traits>
-[[nodiscard]] json_checkpoint_writer<Traits> make_json_checkpoint_writer(const typename Traits::rng_type& rng,
-    const update_set<Traits>& updates, const measurement_set<Traits>& meas, const simulation_stats& stats,
+template <class RNG>
+[[nodiscard]] json_checkpoint_writer<RNG> make_json_checkpoint_writer(const RNG& rng,
+    const update_set& updates, const measurement_set& meas, const simulation_stats& stats,
     std::filesystem::path path, json_io_options opts = {}) {
-    return json_checkpoint_writer<Traits> { .rng = &rng,
+    return json_checkpoint_writer<RNG> { .rng = &rng,
         .updates = &updates,
         .meas = &meas,
         .stats = &stats,
@@ -239,7 +241,7 @@ template <mc_traits_like Traits>
 /**
  * @brief Convenience factory overload that also persists a borrowed user `config` object.
  *
- * @tparam Traits Traits bundle, deduced from the set arguments.
+ * @tparam RNG Random number generator type, deduced from `rng`.
  * @tparam Config User state type, deduced from `config`.
  * @param rng RNG to borrow.
  * @param updates Update set to borrow.
@@ -250,12 +252,12 @@ template <mc_traits_like Traits>
  * @param opts JSON I/O options.
  * @return Configured writer that also writes `*config`.
  */
-template <mc_traits_like Traits, class Config>
-[[nodiscard]] json_checkpoint_writer<Traits, Config> make_json_checkpoint_writer(
-    const typename Traits::rng_type& rng, const update_set<Traits>& updates,
-    const measurement_set<Traits>& meas, const simulation_stats& stats, const Config* config,
-    std::filesystem::path path, json_io_options opts = {}) {
-    return json_checkpoint_writer<Traits, Config> { .rng = &rng,
+template <class RNG, class Config>
+[[nodiscard]] json_checkpoint_writer<RNG, Config> make_json_checkpoint_writer(
+    const RNG& rng, const update_set& updates, const measurement_set& meas,
+    const simulation_stats& stats, const Config* config, std::filesystem::path path,
+    json_io_options opts = {}) {
+    return json_checkpoint_writer<RNG, Config> { .rng = &rng,
         .updates = &updates,
         .meas = &meas,
         .stats = &stats,
@@ -270,7 +272,7 @@ template <mc_traits_like Traits, class Config>
  * @details Symmetric to simplemc::json_checkpoint_writer. Designed to be called once **before**
  * simplemc::run, so it is a free function and not part of `run_callbacks`.
  *
- * @tparam Traits Traits bundle, deduced from the set arguments.
+ * @tparam RNG Random number generator type, deduced from `rng`.
  * @param rng RNG to restore.
  * @param updates Update set to patch in place.
  * @param meas Measurement set to patch in place.
@@ -278,20 +280,19 @@ template <mc_traits_like Traits, class Config>
  * @param path Source filesystem path.
  * @param opts JSON I/O options.
  */
-template <mc_traits_like Traits>
-void load_json_checkpoint(typename Traits::rng_type& rng, update_set<Traits>& updates,
-    measurement_set<Traits>& meas, simulation_stats& stats, const std::filesystem::path& path,
-    const json_io_options& opts = {}) {
+template <class RNG>
+void load_json_checkpoint(RNG& rng, update_set& updates, measurement_set& meas,
+    simulation_stats& stats, const std::filesystem::path& path, const json_io_options& opts = {}) {
     nlohmann::json doc;
     read_json_file(doc, path, opts);
-    const json_serializer ser { std::move(doc) };
+    const mc_serializer ser { json_serializer { std::move(doc) } };
     simplemc_load(ser, rng, updates, meas, stats);
 }
 
 /**
  * @brief Overload that also restores a borrowed user `config` object from `"config"`.
  *
- * @tparam Traits Traits bundle, deduced from the set arguments.
+ * @tparam RNG Random number generator type, deduced from `rng`.
  * @tparam Config User state type, deduced from `config`; must be readable by the JSON backend.
  * @param rng RNG to restore.
  * @param updates Update set to patch in place.
@@ -301,16 +302,16 @@ void load_json_checkpoint(typename Traits::rng_type& rng, update_set<Traits>& up
  * @param path Source filesystem path.
  * @param opts JSON I/O options.
  */
-template <mc_traits_like Traits, class Config>
+template <class RNG, class Config>
     requires load_at_compatible<Config, json_serializer>
-void load_json_checkpoint(typename Traits::rng_type& rng, update_set<Traits>& updates,
-    measurement_set<Traits>& meas, simulation_stats& stats, Config* config,
-    const std::filesystem::path& path, const json_io_options& opts = {}) {
+void load_json_checkpoint(RNG& rng, update_set& updates, measurement_set& meas,
+    simulation_stats& stats, Config* config, const std::filesystem::path& path,
+    const json_io_options& opts = {}) {
     nlohmann::json doc;
     read_json_file(doc, path, opts);
-    const json_serializer ser { std::move(doc) };
+    const mc_serializer ser { json_serializer { std::move(doc) } };
     simplemc_load(ser, rng, updates, meas, stats);
-    ser.load_at("config", *config);
+    std::get<json_serializer>(ser.backend()).load_at("config", *config);
 }
 
 #ifdef SIMPLEMC_USE_HDF5
@@ -323,21 +324,21 @@ void load_json_checkpoint(typename Traits::rng_type& rng, update_set<Traits>& up
  * the HDF5 backend header is reachable (typically when the project was built with
  * `SIMPLEMC_USE_HDF5=ON`).
  *
- * @tparam Traits Traits bundle satisfying simplemc::mc_traits_like.
+ * @tparam RNG Random number generator type.
  * @tparam Config Optional extra user state to persist under `"config"`; `void` writes none. When
  *                non-`void` it must be writable by the HDF5 backend (simplemc::save_at_compatible).
  */
-template <mc_traits_like Traits, class Config = void>
+template <class RNG, class Config = void>
     requires(std::is_void_v<Config> || save_at_compatible<Config, hdf5_serializer>)
 struct hdf5_checkpoint_writer {
     /// Borrowed RNG. Must outlive this callable.
-    const typename Traits::rng_type* rng = nullptr;
+    const RNG* rng = nullptr;
 
     /// Borrowed update set. Must outlive this callable.
-    const update_set<Traits>* updates = nullptr;
+    const update_set* updates = nullptr;
 
     /// Borrowed measurement set. Must outlive this callable.
-    const measurement_set<Traits>* meas = nullptr;
+    const measurement_set* meas = nullptr;
 
     /// Borrowed cumulative statistics. Must outlive this callable.
     const simulation_stats* stats = nullptr;
@@ -355,10 +356,10 @@ struct hdf5_checkpoint_writer {
      * @brief Snapshot the borrowed components (and optional config) into `path`.
      */
     void operator()(const simulation_ctx&) const {
-        hdf5_serializer ser { path, mode };
+        mc_serializer ser { hdf5_serializer { path, mode } };
         simplemc_save(ser, *rng, *updates, *meas, *stats);
         if constexpr (!std::is_void_v<Config>) {
-            ser.save_at("config", *config);
+            std::get<hdf5_serializer>(ser.backend()).save_at("config", *config);
         }
     }
 };
@@ -366,11 +367,11 @@ struct hdf5_checkpoint_writer {
 /**
  * @brief Convenience factory: build a component-borrowing simplemc::hdf5_checkpoint_writer.
  */
-template <mc_traits_like Traits>
-[[nodiscard]] hdf5_checkpoint_writer<Traits> make_hdf5_checkpoint_writer(const typename Traits::rng_type& rng,
-    const update_set<Traits>& updates, const measurement_set<Traits>& meas, const simulation_stats& stats,
+template <class RNG>
+[[nodiscard]] hdf5_checkpoint_writer<RNG> make_hdf5_checkpoint_writer(const RNG& rng,
+    const update_set& updates, const measurement_set& meas, const simulation_stats& stats,
     std::filesystem::path path, hdf5_file_mode mode = hdf5_file_mode::truncate) {
-    return hdf5_checkpoint_writer<Traits> { .rng = &rng,
+    return hdf5_checkpoint_writer<RNG> { .rng = &rng,
         .updates = &updates,
         .meas = &meas,
         .stats = &stats,
@@ -381,12 +382,12 @@ template <mc_traits_like Traits>
 /**
  * @brief Convenience factory overload that also persists a borrowed user `config` object.
  */
-template <mc_traits_like Traits, class Config>
-[[nodiscard]] hdf5_checkpoint_writer<Traits, Config> make_hdf5_checkpoint_writer(
-    const typename Traits::rng_type& rng, const update_set<Traits>& updates,
-    const measurement_set<Traits>& meas, const simulation_stats& stats, const Config* config,
-    std::filesystem::path path, hdf5_file_mode mode = hdf5_file_mode::truncate) {
-    return hdf5_checkpoint_writer<Traits, Config> { .rng = &rng,
+template <class RNG, class Config>
+[[nodiscard]] hdf5_checkpoint_writer<RNG, Config> make_hdf5_checkpoint_writer(
+    const RNG& rng, const update_set& updates, const measurement_set& meas,
+    const simulation_stats& stats, const Config* config, std::filesystem::path path,
+    hdf5_file_mode mode = hdf5_file_mode::truncate) {
+    return hdf5_checkpoint_writer<RNG, Config> { .rng = &rng,
         .updates = &updates,
         .meas = &meas,
         .stats = &stats,
@@ -398,31 +399,30 @@ template <mc_traits_like Traits, class Config>
 /**
  * @brief Free helper to load a previously-written HDF5 checkpoint into the borrowed components.
  *
- * @tparam Traits Traits bundle, deduced from the set arguments.
+ * @tparam RNG Random number generator type, deduced from `rng`.
  * @param rng RNG to restore.
  * @param updates Update set to patch in place.
  * @param meas Measurement set to patch in place.
  * @param stats Cumulative statistics to restore.
  * @param path Source filesystem path.
  */
-template <mc_traits_like Traits>
-void load_hdf5_checkpoint(typename Traits::rng_type& rng, update_set<Traits>& updates,
-    measurement_set<Traits>& meas, simulation_stats& stats, const std::filesystem::path& path) {
-    const hdf5_serializer ser { path, hdf5_file_mode::read };
+template <class RNG>
+void load_hdf5_checkpoint(RNG& rng, update_set& updates, measurement_set& meas,
+    simulation_stats& stats, const std::filesystem::path& path) {
+    const mc_serializer ser { hdf5_serializer { path, hdf5_file_mode::read } };
     simplemc_load(ser, rng, updates, meas, stats);
 }
 
 /**
  * @brief Overload that also restores a borrowed user `config` object from `"config"`.
  */
-template <mc_traits_like Traits, class Config>
+template <class RNG, class Config>
     requires load_at_compatible<Config, hdf5_serializer>
-void load_hdf5_checkpoint(typename Traits::rng_type& rng, update_set<Traits>& updates,
-    measurement_set<Traits>& meas, simulation_stats& stats, Config* config,
-    const std::filesystem::path& path) {
-    const hdf5_serializer ser { path, hdf5_file_mode::read };
+void load_hdf5_checkpoint(RNG& rng, update_set& updates, measurement_set& meas,
+    simulation_stats& stats, Config* config, const std::filesystem::path& path) {
+    const mc_serializer ser { hdf5_serializer { path, hdf5_file_mode::read } };
     simplemc_load(ser, rng, updates, meas, stats);
-    ser.load_at("config", *config);
+    std::get<hdf5_serializer>(ser.backend()).load_at("config", *config);
 }
 
 #endif // SIMPLEMC_USE_HDF5

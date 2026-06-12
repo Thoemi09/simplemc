@@ -10,7 +10,7 @@
 #include <simplemc/mc/measurement_set.hpp>
 #include <simplemc/mc/simulation_params.hpp>
 #include <simplemc/mc/simulation_stats.hpp>
-#include <simplemc/mc/traits.hpp>
+#include <simplemc/mc/serializer.hpp>
 #include <simplemc/mc/update_set.hpp>
 #include <simplemc/mpi/communicator.hpp>
 
@@ -30,7 +30,6 @@ namespace simplemc {
  * are intentionally not part of a checkpoint. Mirrors the per-entity schema produced by the
  * component-level `simplemc_save` overloads.
  *
- * @tparam Traits Traits bundle satisfying simplemc::mc_traits_like.
  * @tparam RNG Random number generator type.
  * @param s Checkpoint serializer handle.
  * @param rng Random number generator to persist.
@@ -38,9 +37,9 @@ namespace simplemc {
  * @param meas Measurement set to persist.
  * @param stats Cumulative simulation statistics to persist.
  */
-template <mc_traits_like Traits, class RNG>
-void simplemc_save(typename Traits::checkpoint_serializer_type& s, const RNG& rng,
-    const update_set<Traits>& updates, const measurement_set<Traits>& meas, const simulation_stats& stats) {
+template <class RNG>
+void simplemc_save(mc_serializer& s, const RNG& rng, const update_set& updates,
+    const measurement_set& meas, const simulation_stats& stats) {
     s.save_at("rng", rng);
     simplemc_save(s, stats);
 
@@ -59,7 +58,6 @@ void simplemc_save(typename Traits::checkpoint_serializer_type& s, const RNG& rn
  * simplemc::simplemc_exception; empty sets are skipped. Per-run state and the internal selection
  * distribution are not touched.
  *
- * @tparam Traits Traits bundle satisfying simplemc::mc_traits_like.
  * @tparam RNG Random number generator type.
  * @param s Const checkpoint serializer handle.
  * @param rng Random number generator to restore.
@@ -67,9 +65,9 @@ void simplemc_save(typename Traits::checkpoint_serializer_type& s, const RNG& rn
  * @param meas Measurement set to patch in place.
  * @param stats Cumulative simulation statistics to restore.
  */
-template <mc_traits_like Traits, class RNG>
-void simplemc_load(const typename Traits::checkpoint_serializer_type& s, RNG& rng, update_set<Traits>& updates,
-    measurement_set<Traits>& meas, simulation_stats& stats) {
+template <class RNG>
+void simplemc_load(const mc_serializer& s, RNG& rng, update_set& updates,
+    measurement_set& meas, simulation_stats& stats) {
     s.load_at("rng", rng);
     simplemc_load(s, stats);
 
@@ -91,15 +89,13 @@ void simplemc_load(const typename Traits::checkpoint_serializer_type& s, RNG& rn
  * per-measurement `is_active` (plus any opt-in user input-config) under `"updates"` /
  * `"measurements"`.
  *
- * @tparam Traits Traits bundle satisfying simplemc::mc_traits_like.
  * @param s Input-config serializer handle.
  * @param p Simulation parameters to persist.
  * @param updates Update set whose input config to persist.
  * @param meas Measurement set whose input config to persist.
  */
-template <mc_traits_like Traits>
-void simplemc_save_input_config(typename Traits::input_config_serializer_type& s, const simulation_params& p,
-    const update_set<Traits>& updates, const measurement_set<Traits>& meas) {
+inline void simplemc_save_input_config(mc_serializer& s, const simulation_params& p,
+    const update_set& updates, const measurement_set& meas) {
     auto params = s["params"];
     simplemc_save_input_config(params, p);
 
@@ -118,15 +114,13 @@ void simplemc_save_input_config(typename Traits::input_config_serializer_type& s
  * set with an entry missing from the input config throws simplemc::simplemc_exception, mirroring
  * simplemc_load.
  *
- * @tparam Traits Traits bundle satisfying simplemc::mc_traits_like.
  * @param s Const input-config serializer handle.
  * @param p Simulation parameters to read into.
  * @param updates Update set to patch in place.
  * @param meas Measurement set to patch in place.
  */
-template <mc_traits_like Traits>
-void simplemc_load_input_config(const typename Traits::input_config_serializer_type& s, simulation_params& p,
-    update_set<Traits>& updates, measurement_set<Traits>& meas) {
+inline void simplemc_load_input_config(const mc_serializer& s, simulation_params& p,
+    update_set& updates, measurement_set& meas) {
     if (s.has("params")) {
         const auto params = s["params"];
         simplemc_load_input_config(params, p);
@@ -150,15 +144,13 @@ void simplemc_load_input_config(const typename Traits::input_config_serializer_t
  * simplemc::update_set, and simplemc::measurement_set in turn. The RNG and the internal selection
  * distribution are intentionally not touched. Reduction is in-place.
  *
- * @tparam Traits Traits bundle satisfying simplemc::mc_traits_like.
  * @param comm MPI communicator over which to reduce.
  * @param updates Update set to reduce in place.
  * @param meas Measurement set to reduce in place.
  * @param stats Simulation statistics to reduce in place.
  */
-template <mc_traits_like Traits>
-void simplemc_mpi_collect(const mpi::communicator& comm, update_set<Traits>& updates,
-    measurement_set<Traits>& meas, simulation_stats& stats) {
+inline void simplemc_mpi_collect(const mpi::communicator& comm, update_set& updates,
+    measurement_set& meas, simulation_stats& stats) {
     simplemc_mpi_collect(comm, stats);
     simplemc_mpi_collect(comm, updates);
     simplemc_mpi_collect(comm, meas);

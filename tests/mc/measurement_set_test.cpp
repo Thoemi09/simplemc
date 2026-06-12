@@ -22,7 +22,7 @@ struct other_meas {
 } // namespace
 
 TEST(MCMeasurementSet, AddRegistersEntries) {
-    measurement_set<> ms;
+    measurement_set ms;
     ms.add({ counter_meas {}, "a" });
     ms.add({ counter_meas {}, "b", false });
     EXPECT_EQ(ms.size(), 2u);
@@ -31,13 +31,13 @@ TEST(MCMeasurementSet, AddRegistersEntries) {
 }
 
 TEST(MCMeasurementSet, AddDuplicateNameThrows) {
-    measurement_set<> ms;
+    measurement_set ms;
     ms.add({ counter_meas {}, "a" });
     EXPECT_THROW(ms.add({ counter_meas {}, "a" }), simplemc_exception);
 }
 
 TEST(MCMeasurementSet, SetActive) {
-    measurement_set<> ms;
+    measurement_set ms;
     ms.add({ counter_meas {}, "a", true });
     ms.set_active("a", false);
     EXPECT_FALSE(ms.at(0).is_active);
@@ -46,14 +46,14 @@ TEST(MCMeasurementSet, SetActive) {
 }
 
 TEST(MCMeasurementSet, FindReturnsIndexOrNullopt) {
-    measurement_set<> ms;
+    measurement_set ms;
     ms.add({ counter_meas {}, "a" });
     EXPECT_EQ(ms.find("a"), std::optional<std::size_t> { 0 });
     EXPECT_FALSE(ms.find("missing").has_value());
 }
 
 TEST(MCMeasurementSet, RefreshActiveBuildsCache) {
-    measurement_set<> ms;
+    measurement_set ms;
     ms.add({ counter_meas {}, "a", true });
     ms.add({ counter_meas {}, "b", false });
     ms.add({ counter_meas {}, "c", true });
@@ -66,7 +66,7 @@ TEST(MCMeasurementSet, RefreshActiveBuildsCache) {
 }
 
 TEST(MCMeasurementSet, RefreshActiveSeesUpdatedFlags) {
-    measurement_set<> ms;
+    measurement_set ms;
     ms.add({ counter_meas {}, "a", true });
     ms.refresh_active();
     EXPECT_EQ(ms.active_indices().size(), 1u);
@@ -78,7 +78,7 @@ TEST(MCMeasurementSet, RefreshActiveSeesUpdatedFlags) {
 }
 
 TEST(MCMeasurementSet, ClearActiveEmptiesCache) {
-    measurement_set<> ms;
+    measurement_set ms;
     ms.add({ counter_meas {}, "a", true });
     ms.refresh_active();
     EXPECT_EQ(ms.active_indices().size(), 1u);
@@ -94,7 +94,7 @@ TEST(MCMeasurementSet, MeasureAllInvokesActiveOnly) {
     auto cb = b.count;
     auto cc = c.count;
 
-    measurement_set<> ms;
+    measurement_set ms;
     ms.add({ a, "a", true });
     ms.add({ b, "b", false });
     ms.add({ c, "c", true });
@@ -109,7 +109,7 @@ TEST(MCMeasurementSet, MeasureAllInvokesActiveOnly) {
 }
 
 TEST(MCMeasurementSet, GetReturnsTypedPointer) {
-    measurement_set<> ms;
+    measurement_set ms;
     counter_meas src;
     auto count = src.count;
     ms.add({ src, "a", true });
@@ -123,18 +123,18 @@ TEST(MCMeasurementSet, GetReturnsTypedPointer) {
 }
 
 TEST(MCMeasurementSet, SerializationRoundTrip) {
-    measurement_set<> ms;
+    measurement_set ms;
     ms.add({ counter_meas {}, "a", true });
     ms.add({ counter_meas {}, "b", false });
 
-    json_serializer s;
+    mc_serializer s { json_serializer {} };
     auto entry = s["measurements"];
     simplemc_save(entry, ms);
 
-    measurement_set<> v;
+    measurement_set v;
     v.add({ counter_meas {}, "a", false });
     v.add({ counter_meas {}, "b", true });
-    const auto rentry = json_serializer { s }["measurements"];
+    const auto rentry = mc_serializer { s }["measurements"];
     simplemc_load(rentry, v);
 
     EXPECT_TRUE(v.at(0).is_active);
@@ -142,32 +142,32 @@ TEST(MCMeasurementSet, SerializationRoundTrip) {
 }
 
 TEST(MCMeasurementSet, InputConfigRoundTrip) {
-    measurement_set<> ms;
+    measurement_set ms;
     ms.add({ counter_meas {}, "a", false });
 
-    json_serializer s;
+    mc_serializer s { json_serializer {} };
     auto entry = s["measurements"];
     simplemc_save_input_config(entry, ms);
 
-    measurement_set<> v;
+    measurement_set v;
     v.add({ counter_meas {}, "a", true });
-    const auto rentry = json_serializer { s }["measurements"];
+    const auto rentry = mc_serializer { s }["measurements"];
     simplemc_load_input_config(rentry, v);
 
     EXPECT_FALSE(v.at(0).is_active);
 }
 
 TEST(MCMeasurementSet, LoadThrowsOnMissingEntry) {
-    measurement_set<> ms;
+    measurement_set ms;
     ms.add({ counter_meas {}, "a", true });
     ms.add({ counter_meas {}, "b", true });
 
-    json_serializer s;
+    mc_serializer s { json_serializer {} };
     auto entry = s["measurements"];
-    measurement_set<> partial;
+    measurement_set partial;
     partial.add({ counter_meas {}, "a", true });
     simplemc_save(entry, partial);
 
-    const auto rentry = json_serializer { s }["measurements"];
+    const auto rentry = mc_serializer { s }["measurements"];
     EXPECT_THROW(simplemc_load(rentry, ms), simplemc_exception);
 }
