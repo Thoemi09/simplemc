@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Library-wide serializer type used throughout the simplemc-mc sublibrary.
+ * @brief Library-wide serializer type used throughout the **simplemc-mc** sublibrary.
  */
 
 #ifndef SIMPLEMC_MC_SERIALIZER_HPP
@@ -10,14 +10,13 @@
 #include <simplemc/serialize/variant/variant_serializer.hpp>
 
 #ifdef SIMPLEMC_USE_HDF5
-#include <simplemc/serialize/hdf5.hpp> // umbrella: pulls in highfive/eigen.hpp so Eigen-backed
-                                       // payloads (e.g. accumulators) are HDF5-writable
+#include <simplemc/serialize/hdf5.hpp>
 #endif
 
 namespace simplemc {
 
 /**
- * @addtogroup simplemc-mc-serialize
+ * @addtogroup simplemc-mc-utils
  * @{
  */
 

@@ -32,7 +32,7 @@ namespace simplemc {
  *
  * @tparam M Type to check.
  */
-template <class M>
+template <typename M>
 concept mc_measurement = requires(M& m) { m.measure(); };
 
 /**
@@ -52,7 +52,7 @@ concept mc_measurement = requires(M& m) { m.measure(); };
  *
  * @tparam U Type to check.
  */
-template <class U>
+template <typename U>
 concept mc_update = requires(U& u) {
     { u.attempt() } -> std::convertible_to<double>;
     u.accept();
@@ -77,7 +77,7 @@ concept mc_update = requires(U& u) {
  * @tparam K Type to check.
  * @tparam RNG RNG type the kernel will receive.
  */
-template <class K, class RNG>
+template <typename K, typename RNG>
 concept mc_kernel = requires(K& k, RNG& rng) { k.step(rng); };
 
 /**
@@ -101,7 +101,7 @@ concept mc_kernel = requires(K& k, RNG& rng) { k.step(rng); };
  *
  * @tparam C Type to check.
  */
-template <class C>
+template <typename C>
 concept mc_run_callbacks = requires(const C& c, const simulation_ctx& x) {
     c.on_step(x);
     c.on_cycle(x);
@@ -118,7 +118,7 @@ concept mc_run_callbacks = requires(const C& c, const simulation_ctx& x) {
  * @tparam T Type being serialized.
  * @tparam S Serializer type.
  */
-template <class T, class S>
+template <typename T, typename S>
 concept has_simplemc_save_input_config = requires(const T& t, S& s) { simplemc_save_input_config(s, t); };
 
 /**
@@ -130,7 +130,7 @@ concept has_simplemc_save_input_config = requires(const T& t, S& s) { simplemc_s
  * @tparam T Type being deserialized into.
  * @tparam S Serializer type.
  */
-template <class T, class S>
+template <typename T, typename S>
 concept has_simplemc_load_input_config = requires(T& t, const S& s) { simplemc_load_input_config(s, t); };
 
 /**
@@ -143,7 +143,7 @@ concept has_simplemc_load_input_config = requires(T& t, const S& s) { simplemc_l
  *
  * @tparam T Type to check.
  */
-template <class T>
+template <typename T>
 concept has_simplemc_mpi_collect = requires(const mpi::communicator& c, const T& v) {
     { simplemc_mpi_collect(c, v) } -> std::same_as<T>;
 };

@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Reusable named-collection base for simplemc::update_set / simplemc::measurement_set.
+ * @brief Base class of simplemc::update_set / simplemc::measurement_set.
  */
 
 #ifndef SIMPLEMC_MC_NAMED_SET_HPP
@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <iterator>
 #include <optional>
 #include <span>
 #include <string_view>
@@ -27,31 +28,33 @@ namespace simplemc {
  */
 
 /**
- * @brief Ordered collection of named entries shared by the simplemc-mc sets.
+ * @brief Ordered collection of named entries.
  *
- * @details Provides the registration / lookup / typed-access API common to simplemc::update_set and
- * simplemc::measurement_set, plus protected helpers that implement the per-entry serialization and
- * MPI-reduction loops. A derived set inherits the public read API directly and calls the protected
- * helpers from its own `simplemc_save` / `simplemc_load` / `simplemc_mpi_collect` overloads.
+ * @details It defines the registration, lookup and typed-access API common to simplemc::update_set
+ * and simplemc::measurement_set. Protected helpers that implement the per-entry serialization and
+ * MPI-reduction loops are also provided.
  *
- * `Entry` must expose a public `std::string name` member, a typed `get<T>()` accessor, and the
- * per-entity ADL hooks (`simplemc_save`, `simplemc_load`, `simplemc_save_input_config`,
- * `simplemc_load_input_config`, `simplemc_mpi_collect`) used by the loop helpers that the derived
- * set opts into.
+ * Individual entries are stored in a `std::vector<T>`. Each entry `e` is required to have a unique
+ * name which can be accessed via `e.name`. The name is used as the key for lookup and serialization.
  *
- * @tparam Entry Per-entity aggregate type (simplemc::update or simplemc::measurement).
+ * @tparam T Value type (simplemc::update or simplemc::measurement).
  */
-template <class Entry>
+template <typename T>
 class named_set {
 public:
     /**
+     * @brief Value type of the set entries.
+     */
+    using value_type = T;
+
+    /**
      * @brief Look up an entry by name.
      *
-     * @param name Entry name to search for.
-     * @return Index of the entry, or `std::nullopt` if no entry has that name.
+     * @param name Name to search for.
+     * @return Index of the entry in the vector, or `std::nullopt` if no entry has that name.
      */
     [[nodiscard]] std::optional<std::size_t> find(std::string_view name) const noexcept {
-        const auto it = std::ranges::find_if(entries_, [name](const Entry& e) { return e.name == name; });
+        const auto it = std::ranges::find_if(entries_, [name](const value_type& e) { return e.name == name; });
         if (it == entries_.end()) {
             return std::nullopt;
         }
@@ -66,69 +69,74 @@ public:
     [[nodiscard]] std::size_t size() const noexcept { return entries_.size(); }
 
     /**
-     * @brief Whether the set has no registered entries.
+     * @brief Whether the set is empty.
      *
-     * @return `true` if empty.
+     * @return True if no entries are registered, false otherwise.
      */
     [[nodiscard]] bool empty() const noexcept { return entries_.empty(); }
 
     /**
-     * @brief Mutable access to the i-th entry.
+     * @brief Subscript operator to access the i-th entry.
      *
      * @param i Entry index (unchecked).
      * @return Reference to the entry.
      */
-    [[nodiscard]] Entry& at(std::size_t i) noexcept { return entries_[i]; }
+    [[nodiscard]] value_type& operator[](std::size_t i) noexcept { return entries_[i]; }
 
     /**
-     * @brief Const access to the i-th entry.
+     * @brief Subscript operator to access the i-th entry.
      *
      * @param i Entry index (unchecked).
      * @return Const reference to the entry.
      */
-    [[nodiscard]] const Entry& at(std::size_t i) const noexcept { return entries_[i]; }
+    [[nodiscard]] const value_type& operator[](std::size_t i) const noexcept { return entries_[i]; }
 
     /**
      * @brief Read-only view over all registered entries.
      *
      * @return Span over the entries, in registration order.
      */
-    [[nodiscard]] std::span<const Entry> data() const noexcept { return entries_; }
+    [[nodiscard]] std::span<const value_type> data() const noexcept { return entries_; }
 
     /**
      * @brief Recover a typed pointer to a registered entry's wrapped user value.
      *
-     * @tparam T Concrete user type.
+     * @tparam U Concrete user type.
      * @param name Entry name.
      * @return Pointer to the wrapped user value, or `nullptr` if the name is unknown or the type
-     *         does not match.
+     * does not match.
      */
-    template <class T>
-    [[nodiscard]] T* get(std::string_view name) noexcept {
+    template <typename U>
+    [[nodiscard]] U* get(std::string_view name) noexcept {
         const auto idx = find(name);
-        return idx ? entries_[*idx].template get<T>() : nullptr;
+        return idx ? entries_[*idx].template get<U>() : nullptr;
     }
 
     /**
-     * @brief Const overload of get().
+     * @brief Recover a typed pointer to a registered entry's wrapped user value.
+     *
+     * @tparam U Concrete user type.
+     * @param name Entry name.
+     * @return Const pointer to the wrapped user value, or `nullptr` if the name is unknown or the
+     * type does not match.
      */
-    template <class T>
-    [[nodiscard]] const T* get(std::string_view name) const noexcept {
+    template <typename U>
+    [[nodiscard]] const U* get(std::string_view name) const noexcept {
         const auto idx = find(name);
-        return idx ? entries_[*idx].template get<T>() : nullptr;
+        return idx ? entries_[*idx].template get<U>() : nullptr;
     }
 
 protected:
     /**
      * @brief Register an entry, enforcing name uniqueness within the set.
      *
-     * @details Throws simplemc::simplemc_exception if an entry with the same name is already
-     * registered; otherwise moves the entry into the collection.
+     * @details It throws simplemc::simplemc_exception if an entry with the same name is already
+     * registered. Otherwise it moves the entry into the collection.
      *
-     * @param e Entry to register (moved in).
+     * @param e Entry to register.
      * @param kind Entity word used in the error message (e.g. "update").
      */
-    void add_checked(Entry e, std::string_view kind) {
+    void add_checked(T e, std::string_view kind) {
         if (find(e.name).has_value()) {
             throw simplemc_exception(fmt::format("{} '{}' is already registered", kind, e.name));
         }
@@ -136,12 +144,14 @@ protected:
     }
 
     /**
-     * @brief Serialize all entries into the passed serializer, keyed by name.
+     * @brief Serialize all entries, keyed by name.
+     *
+     * @details It calls the ADL hook `%simplemc_save` for each entry.
      *
      * @tparam S Serializer type.
      * @param s Serializer handle to write into.
      */
-    template <class S>
+    template <typename S>
     void save_entries(S& s) const {
         for (const auto& e : entries_) {
             auto entry = s[e.name];
@@ -150,13 +160,18 @@ protected:
     }
 
     /**
-     * @brief Restore all entries from the serializer; throws when a registered name is missing.
+     * @brief Deserialize all entries.
+     *
+     * @details It calls the ADL hook `%simplemc_load` for each entry.
+     *
+     * It throws a simplemc::simplemc_exception when a registered name is missing from the serialized
+     * data.
      *
      * @tparam S Serializer type.
      * @param s Serializer handle to read from.
      * @param kind Entity word used in the error message (e.g. "update").
      */
-    template <class S>
+    template <typename S>
     void load_entries(const S& s, std::string_view kind) {
         for (auto& e : entries_) {
             if (!s.has(e.name)) {
@@ -170,10 +185,12 @@ protected:
     /**
      * @brief Serialize the user-input config of all entries, keyed by name.
      *
+     * @details It calls the ADL hook `%simplemc_save_input_config` for each entry.
+     *
      * @tparam S Serializer type.
      * @param s Serializer handle to write into.
      */
-    template <class S>
+    template <typename S>
     void save_input_config_entries(S& s) const {
         for (const auto& e : entries_) {
             auto entry = s[e.name];
@@ -182,13 +199,18 @@ protected:
     }
 
     /**
-     * @brief Restore the user-input config of all entries; throws when a registered name is missing.
+     * @brief Deserialize the user-input config of all entries.
+     *
+     * @details It calls the ADL hook `%simplemc_load_input_config` for each entry.
+     *
+     * It throws a simplemc::simplemc_exception when a registered name is missing from the serialized
+     * data.
      *
      * @tparam S Serializer type.
      * @param s Serializer handle to read from.
      * @param kind Entity word used in the error message (e.g. "update").
      */
-    template <class S>
+    template <typename S>
     void load_input_config_entries(const S& s, std::string_view kind) {
         for (auto& e : entries_) {
             if (!s.has(e.name)) {
@@ -200,9 +222,11 @@ protected:
     }
 
     /**
-     * @brief All-reduce every entry across MPI ranks via the per-entity ADL hook.
+     * @brief Collect all entries from different MPI processes.
      *
-     * @param comm MPI communicator over which to reduce.
+     * @details It calls the ADL hook `%simplemc_mpi_collect` for each entry.
+     *
+     * @param comm simplemc::mpi::communicator object.
      */
     void mpi_collect_entries(const mpi::communicator& comm) {
         for (auto& e : entries_) {
@@ -211,7 +235,7 @@ protected:
     }
 
     /// The registered entries, in registration order.
-    std::vector<Entry> entries_;
+    std::vector<T> entries_;
 };
 
 /** @} */

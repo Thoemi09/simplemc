@@ -21,19 +21,19 @@ public:
     explicit mock_serializer(nlohmann::json doc = {}) : inner_ { std::move(doc) } {}
     explicit mock_serializer(json_serializer s) : inner_ { std::move(s) } {}
 
-    template <class T>
+    template <typename T>
     mock_serializer save_at(std::string_view key, const T& value) {
         inner_.save_at(key, value);
         return *this;
     }
 
-    template <class T>
+    template <typename T>
     mock_serializer load_at(std::string_view key, T& value) const {
         inner_.load_at(key, value);
         return *this;
     }
 
-    template <class T>
+    template <typename T>
     bool try_load_at(std::string_view key, T& value) const {
         return inner_.try_load_at(key, value);
     }

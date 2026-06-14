@@ -13,7 +13,7 @@
 #include <vector>
 
 // In-memory save → load round-trip through json_serializer. File IO has its own smoke tests below.
-template <class T>
+template <typename T>
 void roundtrip_json(const T& src, T& dst) {
     simplemc::json_serializer s;
     simplemc_save(s, src);

@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Free run-loop driver that advances a kernel over a measurement set.
+ * @brief Run a Monte Carlo simulation.
  */
 
 #ifndef SIMPLEMC_MC_RUN_HPP
@@ -25,7 +25,7 @@ namespace simplemc {
  */
 
 /**
- * @brief Free run-loop driver that advances a kernel over a measurement set.
+ * @brief Run a Monte Carlo simulation.
  *
  * @details Creates a fresh simplemc::simulation_ctx for this run (live step counter + wall-clock)
  * and drives the standard nested loop: outer `while` polls the stop criteria
@@ -68,10 +68,10 @@ namespace simplemc {
  * @param rng RNG threaded into the kernel's `step()`.
  * @param cbs Optional callbacks; default = all no-ops.
  */
-template <class Kernel, class RNG, mc_run_callbacks Cbs = run_callbacks<>>
+template <typename Kernel, typename RNG, mc_run_callbacks Cbs = run_callbacks<>>
     requires mc_kernel<Kernel, RNG>
-void run(Kernel& kernel, measurement_set& meas, const simulation_params& p,
-    simulation_stats& stats, RNG& rng, const Cbs& cbs = {}) {
+void run(Kernel& kernel, measurement_set& meas, const simulation_params& p, simulation_stats& stats, RNG& rng,
+    const Cbs& cbs = {}) {
     validate_simulation_params(p);
     if constexpr (requires { kernel.prepare(); }) {
         kernel.prepare();
@@ -101,8 +101,7 @@ void run(Kernel& kernel, measurement_set& meas, const simulation_params& p,
         last_runtime = ctx.elapsed();
 
         steps_since_ck += p.steps_per_cycle * p.cycles_per_check;
-        if (steps_since_ck >= p.checkpoint_after_steps
-            || last_runtime - time_at_last_ck >= p.checkpoint_after_time) {
+        if (steps_since_ck >= p.checkpoint_after_steps || last_runtime - time_at_last_ck >= p.checkpoint_after_time) {
             cbs.on_checkpoint(ctx);
             steps_since_ck = 0;
             time_at_last_ck = last_runtime;

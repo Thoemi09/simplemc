@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Per-update aggregate: wrapped user value plus registration data and counters.
+ * @brief Type-erased MC update together with some metadata.
  */
 
 #ifndef SIMPLEMC_MC_UPDATE_HPP
@@ -29,17 +29,18 @@ namespace simplemc {
  */
 
 /**
- * @brief One Monte Carlo update entry: the wrapped user value plus registration data and counters.
+ * @brief Type-erased MC update together with some metadata.
  *
- * @details simplemc::update owns a simplemc::basic_update together with the metadata that identifies
- * and configures it (`name`, `inv_name`, `weight`, detailed-balance `ratio`) and the counters that
- * track its behavior over a run (`nprops`, `naccs`, `nimps`) and over the full lifetime
- * (`cumulative_*`). All fields are public so kernels and reporting code can read and write them
- * directly.
+ * @details simplemc::update owns a simplemc::basic_update together with its metadata:
  *
- * Construction validates `name` non-empty and `weight >= 0`. `inv_name` defaults to `name` (i.e.
- * self-inverse) and `ratio` defaults to `1.0`; cross-linked pairs are produced by
- * simplemc::update_set::add_pair.
+ * - a unique name that identifies the update,
+ * - the name of the inverse update,
+ * - an unnormalized selection weight,
+ * - a detailed-balance correction ratio, and
+ * - counters tracking the number of proposals, acceptances, and impossible signals over the current
+ * run and across multiple runs.
+ *
+ * All fields are public so kernels and reporting code can read and write them directly.
  */
 struct update {
     /**
@@ -71,9 +72,6 @@ struct update {
      * @brief Detailed-balance correction multiplier applied by the kernel to `attempt()`.
      *
      * @details \f$ 1 \f$ for a self-inverse update; \f$ w_{\text{inv}} / w \f$ for a paired update.
-     * Derived state: recomputed from the current weights by
-     * simplemc::update_set::rebuild_distribution (called at run entry), so manual weight changes
-     * cannot leave it stale.
      */
     double ratio = 1.0;
 
@@ -108,48 +106,54 @@ struct update {
     std::uint64_t cumulative_nimps = 0;
 
     /**
-     * @brief Construct by wrapping a user-defined update value.
+     * @brief Constructor wraps a user-defined update value.
      *
-     * @details Forwards `u` into an internally-constructed simplemc::basic_update. Validates
-     * `name` non-empty and `weight >= 0`. The forwarded type must satisfy simplemc::mc_update and
-     * `std::copy_constructible`.
+     * @details It forwards the given update into an internally-constructed simplemc::basic_update
+     * and validates that the name is not empty and that the weight is non-negative. Otherwise, it
+     * throws a simplemc::simplemc_exception.
+     *
+     * The forwarded type must satisfy simplemc::mc_update and `std::copy_constructible`.
      *
      * @tparam U User update type.
-     * @param u User value to wrap.
+     * @param u User update to wrap.
      * @param name Identifier.
      * @param weight Unnormalized selection weight.
      */
-    template <class U>
+    template <typename U>
         requires(!std::same_as<std::remove_cvref_t<U>, update>) &&
-                (!std::same_as<std::remove_cvref_t<U>, basic_update>) &&
-                mc_update<std::remove_cvref_t<U>> &&
-                std::copy_constructible<std::remove_cvref_t<U>>
-    update(U&& u, std::string name, double weight) : update {
-        basic_update { std::forward<U>(u) }, std::move(name), weight
-    } {}
+        (!std::same_as<std::remove_cvref_t<U>, basic_update>) && mc_update<std::remove_cvref_t<U>> &&
+        std::copy_constructible<std::remove_cvref_t<U>>
+    update(U&& u, std::string name, double weight) :
+        update { basic_update { std::forward<U>(u) }, std::move(name), weight } {}
 
     /**
-     * @brief Construct from a pre-built simplemc::basic_update wrapper.
+     * @brief Construct an update from a pre-built simplemc::basic_update wrapper.
      *
-     * @details Validates `name` non-empty and `weight >= 0`. Sets `inv_name = name`,
-     * `ratio = 1.0`. Counters default to zero.
+     * @details It validates that the name is not empty and that the weight is non-negative.
+     * Otherwise, it throws a simplemc::simplemc_exception.
      *
-     * @param w Pre-built wrapper.
+     * It sets `inv_name = name` and `ratio = 1.0`. The counters default to zero.
+     *
+     * @param w Pre-built simplemc::basic_update wrapper.
      * @param name Identifier.
      * @param weight Unnormalized selection weight.
      */
     update(basic_update w, std::string name, double weight) :
-        wrapped { std::move(w) }, name { std::move(name) }, inv_name { this->name }, weight { weight } {
+        wrapped { std::move(w) },
+        name { std::move(name) },
+        inv_name { this->name },
+        weight { weight } {
         if (this->name.empty()) {
             throw simplemc_exception("update name must be non-empty");
         }
         if (this->weight < 0.0) {
-            throw simplemc_exception(fmt::format("update weight must be >= 0 (got {} on '{}')", this->weight, this->name));
+            throw simplemc_exception(
+                fmt::format("update weight must be >= 0 (got {} on '{}')", this->weight, this->name));
         }
     }
 
     /**
-     * @brief Zero the current-run counters; leaves the cumulative counters untouched.
+     * @brief Zero the current-run counters but leave the cumulative counters untouched.
      */
     void reset_run_counters() noexcept {
         nprops = 0;
@@ -158,7 +162,7 @@ struct update {
     }
 
     /**
-     * @brief Fold the current-run counters into the cumulative counters and reset the current ones.
+     * @brief Add the current-run counters to the cumulative counters and call reset_run_counters().
      */
     void accumulate_counters() noexcept {
         cumulative_nprops += nprops;
@@ -168,12 +172,14 @@ struct update {
     }
 
     /**
-     * @brief Recover a pointer to the wrapped user value, checked by type.
+     * @brief Recover a pointer to the wrapped user update.
      *
-     * @tparam T Expected concrete type of the wrapped user value.
-     * @return Pointer to the wrapped value, or `nullptr` on type mismatch.
+     * @details It simply calls basic_update::get<T>().
+     *
+     * @tparam T Expected type of the wrapped user update.
+     * @return Pointer to the wrapped update, or `nullptr` on type mismatch.
      */
-    template <class T>
+    template <typename T>
     [[nodiscard]] T* get() noexcept {
         return wrapped.template get<T>();
     }
@@ -181,18 +187,15 @@ struct update {
     /**
      * @brief Const overload of get().
      */
-    template <class T>
+    template <typename T>
     [[nodiscard]] const T* get() const noexcept {
         return wrapped.template get<T>();
     }
 
     /**
-     * @brief Serialize persistent fields of this update.
+     * @brief Serialize a simplemc::update.
      *
-     * @details Writes `inv_name`, `weight`, `ratio`, the three `cumulative_*` counters, and
-     * delegates to the wrapper for the `"user"` sub-key. Schema matches the previous
-     * simplemc::update_stats layout exactly (plus the wrapper's `"user"` sub-tree), so existing
-     * checkpoints round-trip.
+     * @details It serializes all metadata except `name` and calls basic_update::save_at().
      *
      * @param s Serializer handle.
      * @param u Update to serialize.
@@ -208,7 +211,12 @@ struct update {
     }
 
     /**
-     * @brief Deserialize the persistent fields of this update.
+     * @brief Deserialize a simplemc::update.
+     *
+     * @details It deserializes all metadata except `name` and calls basic_update::load_at().
+     *
+     * @param s Serializer handle.
+     * @param u Update to deserialize into.
      */
     friend void simplemc_load(const serializer_type& s, update& u) {
         s.load_at("inv_name", u.inv_name);
@@ -221,9 +229,9 @@ struct update {
     }
 
     /**
-     * @brief Serialize the user-input config of this update.
+     * @brief Serialize the user-input config of a simplemc::update.
      *
-     * @details Writes only `weight` and delegates to the wrapper for the `"user"` sub-key.
+     * @details It serializes `weight` and calls basic_update::save_input_config_at().
      *
      * @param s Serializer handle.
      * @param u Update to serialize.
@@ -234,10 +242,12 @@ struct update {
     }
 
     /**
-     * @brief Deserialize the user-input config of this update.
+     * @brief Deserialize the user-input config of a simplemc::update.
      *
-     * @details Each field is optional in the input config (uses `try_load_at`) so callers may omit
-     * any fields they do not wish to override.
+     * @details It deserializes `weight` and calls basic_update::load_input_config_at().
+     *
+     * @param s Serializer handle.
+     * @param u Update to deserialize into.
      */
     friend void simplemc_load_input_config(const serializer_type& s, update& u) {
         s.try_load_at("weight", u.weight);
@@ -245,15 +255,11 @@ struct update {
     }
 
     /**
-     * @brief All-reduce this update's counters and wrapped payload across MPI ranks.
+     * @brief Collect simplemc::update objects from different MPI processes.
      *
-     * @details Allreduces the six counter fields (`nprops`, `naccs`, `nimps`, plus the three
-     * `cumulative_*`) with `MPI_SUM`, then forwards to the wrapper's `mpi_collect()` so the wrapped
-     * user value is reduced via its own ADL hook. Identification fields (`name`, `inv_name`,
-     * `weight`, `ratio`) are intentionally not touched — they are local registration data assumed
-     * identical across ranks.
+     * @details It all-reduces the six counter fields and calls basic_update::mpi_collect().
      *
-     * @param comm MPI communicator over which to reduce.
+     * @param comm simplemc::mpi::communicator object.
      * @param u Update to reduce in place.
      */
     friend void simplemc_mpi_collect(const mpi::communicator& comm, update& u) {

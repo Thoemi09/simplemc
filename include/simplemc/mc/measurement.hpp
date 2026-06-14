@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Per-measurement aggregate: wrapped user value plus registration metadata.
+ * @brief Type-erased MC measurement together with some metadata.
  */
 
 #ifndef SIMPLEMC_MC_MEASUREMENT_HPP
@@ -25,13 +25,14 @@ namespace simplemc {
  */
 
 /**
- * @brief One Monte Carlo measurement entry: the wrapped user value plus registration metadata.
+ * @brief Type-erased MC measurement together with some metadata.
  *
- * @details simplemc::measurement owns a simplemc::basic_measurement together with the metadata that
- * identifies it (`name`) and controls when it fires (`is_active`). All fields are public so the
- * driver and reporting code can read and write them directly.
+ * @details simplemc::measurement owns a simplemc::basic_measurement together with its metadata:
  *
- * Construction validates `name` non-empty.
+ * - a unique name that identifies the measurement, and
+ * - a boolean flag indicating whether the measurement is active during an MC simulation.
+ *
+ * All fields are public so the driver and reporting code can read and write them directly.
  */
 struct measurement {
     /**
@@ -55,54 +56,59 @@ struct measurement {
     bool is_active;
 
     /**
-     * @brief Construct by wrapping a user-defined measurement value.
+     * @brief Constructor wraps a user-defined measurement value.
      *
-     * @details Forwards `m` into an internally-constructed simplemc::basic_measurement. Validates
-     * `name` non-empty. The forwarded type must satisfy simplemc::mc_measurement and
-     * `std::copy_constructible`.
+     * @details It forwards the given measurement into an internally-constructed
+     * simplemc::basic_measurement and validates that the name is not empty. Otherwise, it throws
+     * a simplemc::simplemc_exception.
+     *
+     * The forwarded type must satisfy simplemc::mc_measurement and `std::copy_constructible`.
      *
      * @tparam M User measurement type.
-     * @param m User value to wrap.
+     * @param m User measurement to wrap.
      * @param name Identifier.
      * @param is_active Initial activation state.
      */
-    template <class M>
+    template <typename M>
         requires(!std::same_as<std::remove_cvref_t<M>, measurement>) &&
-                (!std::same_as<std::remove_cvref_t<M>, basic_measurement>) &&
-                mc_measurement<std::remove_cvref_t<M>> &&
-                std::copy_constructible<std::remove_cvref_t<M>>
-    measurement(M&& m, std::string name, bool is_active = true) : measurement {
-        basic_measurement { std::forward<M>(m) }, std::move(name), is_active
-    } {}
+        (!std::same_as<std::remove_cvref_t<M>, basic_measurement>) && mc_measurement<std::remove_cvref_t<M>> &&
+        std::copy_constructible<std::remove_cvref_t<M>>
+    measurement(M&& m, std::string name, bool is_active = true) :
+        measurement { basic_measurement { std::forward<M>(m) }, std::move(name), is_active } {}
 
     /**
-     * @brief Construct from a pre-built simplemc::basic_measurement wrapper.
+     * @brief Construct a measurement from a pre-built simplemc::basic_measurement wrapper.
      *
-     * @details Validates `name` non-empty.
+     * @details It validates that the name is not empty. Otherwise, it throws a
+     * simplemc::simplemc_exception.
      *
-     * @param w Pre-built wrapper.
+     * @param w Pre-built simplemc::basic_measurement wrapper.
      * @param name Identifier.
      * @param is_active Initial activation state.
      */
     measurement(basic_measurement w, std::string name, bool is_active = true) :
-        wrapped { std::move(w) }, name { std::move(name) }, is_active { is_active } {
+        wrapped { std::move(w) },
+        name { std::move(name) },
+        is_active { is_active } {
         if (this->name.empty()) {
             throw simplemc_exception("measurement name must be non-empty");
         }
     }
 
     /**
-     * @brief Take a measurement (delegates to the wrapped user type).
+     * @brief Perform the measurement by calling the `%measure()` member of the wrapped user type.
      */
     void measure() { wrapped.measure(); }
 
     /**
-     * @brief Recover a pointer to the wrapped user value, checked by type.
+     * @brief Recover a pointer to the wrapped user measurement.
      *
-     * @tparam T Expected concrete type of the wrapped user value.
-     * @return Pointer to the wrapped value, or `nullptr` on type mismatch.
+     * @details It simply calls basic_measurement::get<T>().
+     *
+     * @tparam T Expected type of the wrapped user measurement.
+     * @return Pointer to the wrapped measurement, or `nullptr` on type mismatch.
      */
-    template <class T>
+    template <typename T>
     [[nodiscard]] T* get() noexcept {
         return wrapped.template get<T>();
     }
@@ -110,16 +116,18 @@ struct measurement {
     /**
      * @brief Const overload of get().
      */
-    template <class T>
+    template <typename T>
     [[nodiscard]] const T* get() const noexcept {
         return wrapped.template get<T>();
     }
 
     /**
-     * @brief Serialize persistent fields of this measurement.
+     * @brief Serialize a simplemc::measurement.
      *
-     * @details Writes `is_active` and delegates to the wrapper for the `"user"` sub-key. Schema
-     * matches the previous simplemc::measurement_stats layout (plus the wrapper's `"user"` sub-tree).
+     * @details It serializes `is_active` and calls basic_measurement::save_at().
+     *
+     * @param s Serializer handle.
+     * @param m Measurement to serialize.
      */
     friend void simplemc_save(serializer_type& s, const measurement& m) {
         s.save_at("is_active", m.is_active);
@@ -127,7 +135,12 @@ struct measurement {
     }
 
     /**
-     * @brief Deserialize the persistent fields of this measurement.
+     * @brief Deserialize a simplemc::measurement.
+     *
+     * @details It deserializes `is_active` and calls basic_measurement::load_at().
+     *
+     * @param s Serializer handle.
+     * @param m Measurement to deserialize into.
      */
     friend void simplemc_load(const serializer_type& s, measurement& m) {
         s.load_at("is_active", m.is_active);
@@ -135,9 +148,12 @@ struct measurement {
     }
 
     /**
-     * @brief Serialize the user-input config of this measurement.
+     * @brief Serialize the user-input config of a simplemc::measurement.
      *
-     * @details Writes `is_active` and delegates to the wrapper for the `"user"` sub-key.
+     * @details It serializes `is_active` and calls basic_measurement::save_input_config_at().
+     *
+     * @param s Serializer handle.
+     * @param m Measurement to serialize.
      */
     friend void simplemc_save_input_config(serializer_type& s, const measurement& m) {
         s.save_at("is_active", m.is_active);
@@ -145,7 +161,12 @@ struct measurement {
     }
 
     /**
-     * @brief Deserialize the user-input config of this measurement.
+     * @brief Deserialize the user-input config of a simplemc::measurement.
+     *
+     * @details It deserializes `is_active` and calls basic_measurement::load_input_config_at().
+     *
+     * @param s Serializer handle.
+     * @param m Measurement to deserialize into.
      */
     friend void simplemc_load_input_config(const serializer_type& s, measurement& m) {
         s.try_load_at("is_active", m.is_active);
@@ -153,18 +174,14 @@ struct measurement {
     }
 
     /**
-     * @brief All-reduce this measurement's wrapped payload across MPI ranks.
+     * @brief Collect simplemc::measurement objects from different MPI processes.
      *
-     * @details Forwards to the wrapper's `mpi_collect()`, which dispatches via ADL to the wrapped
-     * user type's `simplemc_mpi_collect(comm, T&)` overload (silent no-op when the user type does
-     * not provide one). The measurement's identification fields (`name`, `is_active`) are local
-     * registration data assumed identical across ranks and are not touched.
+     * @details It simply calls basic_measurement::mpi_collect().
      *
-     * @param comm MPI communicator over which to reduce.
+     * @param comm simplemc::mpi::communicator object.
+     * @param m Measurement to reduce in place.
      */
-    friend void simplemc_mpi_collect(const mpi::communicator& comm, measurement& m) {
-        m.wrapped.mpi_collect(comm);
-    }
+    friend void simplemc_mpi_collect(const mpi::communicator& comm, measurement& m) { m.wrapped.mpi_collect(comm); }
 };
 
 /** @} */

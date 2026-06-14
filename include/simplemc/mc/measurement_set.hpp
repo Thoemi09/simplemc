@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Owns a collection of simplemc::measurement entries plus a cached active set.
+ * @brief Set of MC measurements.
  */
 
 #ifndef SIMPLEMC_MC_MEASUREMENT_SET_HPP
@@ -15,6 +15,7 @@
 #include <fmt/format.h>
 
 #include <cstddef>
+#include <span>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -27,53 +28,63 @@ namespace simplemc {
  */
 
 /**
- * @brief Owns a collection of simplemc::measurement entries plus a cached active set.
+ * @brief Set of MC measurements.
  *
- * @details The set holds registered measurements (each carrying its own wrapper and metadata) and
- * a cache of indices for those currently flagged active. refresh_active() rebuilds the cache from
- * the per-entry `is_active` flags; measure_all() iterates the cache and calls `measure()` on each
- * active entry. The registration / lookup APIs are shared with simplemc::update_set through
- * simplemc::named_set.
+ * @details The set holds registered simplemc::measurement objects and a cache of indices for those
+ * currently flagged active. The cache is updated by calling refresh_active(), which iterates the
+ * stored measurements and rebuilds the cache from their measurement::is_active flags.
  *
- * Toggling `is_active` on an entry directly does **not** update the cache; call refresh_active()
- * to apply changes between runs.
+ * Simulation drivers call measure_all() to invoke `measure()` on every measurement in the active
+ * cache.
  *
+ * Registration, lookup and typed access are provided by the base class simplemc::named_set. The same
+ * API is shared with simplemc::update_set.
  */
 class measurement_set : public named_set<measurement> {
-    using base_type = named_set<measurement>;
-
 public:
+    /**
+     * @brief Serializer type used for both checkpoint and input-config serialization.
+     */
     using serializer_type = mc_serializer;
-    using measurement_type = measurement;
 
     /**
-     * @brief Register a measurement.
+     * @brief Register a simplemc::measurement in the set.
      *
-     * @details The simplemc::measurement constructor validated `name` non-empty. This method
-     * additionally validates that the name is unique within the set.
+     * @details It calls named_set::add_checked(). A simplemc::simplemc_exception is thrown if the
+     * name is already registered.
+     *
+     * @param m Measurement to register.
      */
-    void add(measurement_type m) { this->add_checked(std::move(m), "measurement"); }
+    void add(measurement m) { this->add_checked(std::move(m), "measurement"); }
 
     /**
-     * @brief Toggle the active state of a registered measurement.
+     * @brief Set the active state of a registered measurement.
      *
-     * @details Takes effect on the next refresh_active() (or the next `run()` that calls it).
+     * @details It throws a simplemc::simplemc_exception if the name is not registered.
+     *
+     * @param name Name of the measurement to toggle.
+     * @param is_active New active state.
      */
-    void set_active(std::string_view name, bool b) {
+    void set_active(std::string_view name, bool is_active) {
         const auto idx = this->find(name);
         if (!idx) {
             throw simplemc_exception(fmt::format("measurement '{}' is not registered", name));
         }
-        this->entries_[*idx].is_active = b;
+        this->entries_[*idx].is_active = is_active;
     }
 
     /**
      * @brief Cached indices of currently-active measurements.
+     *
+     * @return Span over the indices of currently-active measurements.
      */
-    [[nodiscard]] const std::vector<std::size_t>& active_indices() const noexcept { return active_; }
+    [[nodiscard]] std::span<const std::size_t> active_indices() const noexcept { return active_; }
 
     /**
-     * @brief Rebuild the active-set cache from each entry's `is_active` flag.
+     * @brief Rebuild the active set cache.
+     *
+     * @details It iterates over all registered measurements and updates the cache according to their
+     * measurement::is_active flags.
      */
     void refresh_active() {
         active_.clear();
@@ -86,7 +97,7 @@ public:
     }
 
     /**
-     * @brief Clear the active-set cache (useful for `skip_measurements`).
+     * @brief Clear the active set cache.
      */
     void clear_active() noexcept { active_.clear(); }
 
@@ -100,40 +111,57 @@ public:
     }
 
     /**
-     * @brief Serialize all registered measurements into the passed serializer, keyed by name.
+     * @brief Serialize a simplemc::measurement_set.
+     *
+     * @details It serializes all registered measurements by calling named_set::save_entries().
+     *
+     * @param s Serializer handle.
+     * @param ms Measurement set to serialize.
      */
     friend void simplemc_save(serializer_type& s, const measurement_set& ms) { ms.save_entries(s); }
 
     /**
-     * @brief Restore registered measurements from the serializer.
+     * @brief Deserialize a simplemc::measurement_set.
+     *
+     * @details It deserializes all registered measurements by calling named_set::load_entries().
+     *
+     * @param s Serializer handle.
+     * @param ms Measurement set to deserialize into.
      */
-    friend void simplemc_load(const serializer_type& s, measurement_set& ms) {
-        ms.load_entries(s, "measurement");
-    }
+    friend void simplemc_load(const serializer_type& s, measurement_set& ms) { ms.load_entries(s, "measurement"); }
 
     /**
-     * @brief Serialize the user-input config of all registered measurements, keyed by name.
+     * @brief Serialize the user-input config of a simplemc::measurement_set.
+     *
+     * @details It serializes all registered measurements by calling
+     * named_set::save_input_config_entries().
+     *
+     * @param s Serializer handle.
+     * @param ms Measurement set to serialize.
      */
     friend void simplemc_save_input_config(serializer_type& s, const measurement_set& ms) {
         ms.save_input_config_entries(s);
     }
 
     /**
-     * @brief Restore the user-input config of all registered measurements from the serializer.
+     * @brief Deserialize the user-input config of a simplemc::measurement_set.
+     *
+     * @details It deserializes all registered measurements by calling
+     * named_set::load_input_config_entries().
+     *
+     * @param s Serializer handle.
+     * @param ms Measurement set to deserialize into.
      */
     friend void simplemc_load_input_config(const serializer_type& s, measurement_set& ms) {
         ms.load_input_config_entries(s, "measurement");
     }
 
     /**
-     * @brief All-reduce every registered measurement across MPI ranks.
+     * @brief Collect simplemc::measurement_set objects from different MPI processes.
      *
-     * @details Iterates the registered measurements and forwards to the per-`measurement<>`
-     * `simplemc_mpi_collect`, which in turn delegates to the wrapper's `mpi_collect()`. Names,
-     * ordering, and the active cache are local and not touched; all are assumed identical across
-     * ranks by construction.
+     * @details It simply calls named_set::mpi_collect_entries().
      *
-     * @param comm MPI communicator over which to reduce.
+     * @param comm simplemc::mpi::communicator object.
      * @param ms Measurement set to reduce in place.
      */
     friend void simplemc_mpi_collect(const mpi::communicator& comm, measurement_set& ms) {

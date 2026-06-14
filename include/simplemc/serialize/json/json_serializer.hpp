@@ -41,7 +41,7 @@ class json_serializer;
  *
  * @tparam T Type to check.
  */
-template <class T>
+template <typename T>
 concept json_savable = requires(nlohmann::json& j, const T& v) { j = v; } || has_simplemc_save<T, json_serializer>;
 
 /**
@@ -58,7 +58,7 @@ concept json_savable = requires(nlohmann::json& j, const T& v) { j = v; } || has
  *
  * @tparam T Type to check.
  */
-template <class T>
+template <typename T>
 concept json_loadable =
     requires(const nlohmann::json& j, T& v) { j.get_to(v); } || has_simplemc_load<T, json_serializer>;
 
@@ -141,7 +141,7 @@ public:
      * @param value Value to write.
      * @return A copy of `*this`.
      */
-    template <class T>
+    template <typename T>
         requires json_savable<T>
     json_serializer save_at(std::string_view key, const T& value) {
         if constexpr (has_simplemc_save<T, json_serializer>) {
@@ -176,7 +176,7 @@ public:
      * @param value Value to read into.
      * @return A copy of `*this`.
      */
-    template <class T>
+    template <typename T>
         requires json_loadable<T>
     json_serializer load_at(std::string_view key, T& value) const {
         if constexpr (has_simplemc_load<T, json_serializer>) {
@@ -199,7 +199,7 @@ public:
      * @param value Value to read into.
      * @return True if the key was present and the read occurred, false otherwise.
      */
-    template <class T>
+    template <typename T>
         requires json_loadable<T>
     bool try_load_at(std::string_view key, T& value) const {
         if (!has(key)) {

@@ -26,8 +26,8 @@ TEST(MCMeasurementSet, AddRegistersEntries) {
     ms.add({ counter_meas {}, "a" });
     ms.add({ counter_meas {}, "b", false });
     EXPECT_EQ(ms.size(), 2u);
-    EXPECT_TRUE(ms.at(0).is_active);
-    EXPECT_FALSE(ms.at(1).is_active);
+    EXPECT_TRUE(ms[0].is_active);
+    EXPECT_FALSE(ms[1].is_active);
 }
 
 TEST(MCMeasurementSet, AddDuplicateNameThrows) {
@@ -40,7 +40,7 @@ TEST(MCMeasurementSet, SetActive) {
     measurement_set ms;
     ms.add({ counter_meas {}, "a", true });
     ms.set_active("a", false);
-    EXPECT_FALSE(ms.at(0).is_active);
+    EXPECT_FALSE(ms[0].is_active);
 
     EXPECT_THROW(ms.set_active("missing", false), simplemc_exception);
 }
@@ -137,8 +137,8 @@ TEST(MCMeasurementSet, SerializationRoundTrip) {
     const auto rentry = mc_serializer { s }["measurements"];
     simplemc_load(rentry, v);
 
-    EXPECT_TRUE(v.at(0).is_active);
-    EXPECT_FALSE(v.at(1).is_active);
+    EXPECT_TRUE(v[0].is_active);
+    EXPECT_FALSE(v[1].is_active);
 }
 
 TEST(MCMeasurementSet, InputConfigRoundTrip) {
@@ -154,7 +154,7 @@ TEST(MCMeasurementSet, InputConfigRoundTrip) {
     const auto rentry = mc_serializer { s }["measurements"];
     simplemc_load_input_config(rentry, v);
 
-    EXPECT_FALSE(v.at(0).is_active);
+    EXPECT_FALSE(v[0].is_active);
 }
 
 TEST(MCMeasurementSet, LoadThrowsOnMissingEntry) {

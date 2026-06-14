@@ -43,7 +43,7 @@ class hdf5_serializer;
  *
  * @tparam T Value type.
  */
-template <class T>
+template <typename T>
 concept hdf5_savable = requires(HighFive::File& f, const T& v) { f.createDataSet(std::string {}, v); } ||
     has_simplemc_save<T, hdf5_serializer>;
 
@@ -61,7 +61,7 @@ concept hdf5_savable = requires(HighFive::File& f, const T& v) { f.createDataSet
  *
  * @tparam T Value type.
  */
-template <class T>
+template <typename T>
 concept hdf5_loadable = requires(HighFive::DataSet& ds, T& v) { ds.read(v); } || has_simplemc_load<T, hdf5_serializer>;
 
 /**
@@ -215,7 +215,7 @@ public:
      * @param value Value to write.
      * @return A copy of `*this`.
      */
-    template <class T>
+    template <typename T>
         requires hdf5_savable<T>
     hdf5_serializer save_at(std::string_view key, const T& value) {
         if constexpr (has_simplemc_save<T, hdf5_serializer>) {
@@ -256,7 +256,7 @@ public:
      * @param value Value to read into.
      * @return A copy of `*this`.
      */
-    template <class T>
+    template <typename T>
         requires hdf5_loadable<T>
     hdf5_serializer load_at(std::string_view key, T& value) const {
         if constexpr (has_simplemc_load<T, hdf5_serializer>) {
@@ -284,7 +284,7 @@ public:
      * @param value Value to read into.
      * @return True if the key was present and the read occurred, false otherwise.
      */
-    template <class T>
+    template <typename T>
         requires hdf5_loadable<T>
     bool try_load_at(std::string_view key, T& value) const {
         if (!has(key)) {

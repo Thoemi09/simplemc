@@ -18,13 +18,16 @@ namespace simplemc {
  */
 
 /**
- * @brief Live state of the run currently in progress.
+ * @brief Simulation context containing the live state of the run currently in progress.
  *
- * @details Holds the transient quantities that evolve while simplemc::run is executing: the live
- * step counter and a wall-clock timer. It is created fresh inside simplemc::run for each run and
- * handed to the run-loop callbacks (see simplemc::mc_run_callbacks), which read the live step count
- * via `steps_done` and the live elapsed seconds via elapsed(). The recorded, post-run statistics
- * (last-run totals and cumulative totals) live separately in simplemc::simulation_stats.
+ * @details It holds the transient quantities that evolve while simplemc::run is executing: the live
+ * step counter and a wall-clock timer.
+ *
+ * A simulation context is created fresh inside simplemc::run for each run and handed to the run-loop
+ * callbacks (see simplemc::run_callbacks), which can read the live step count via `steps_done` and
+ * the live elapsed seconds via elapsed().
+ *
+ * Persistent and post-run statistics live separately in simplemc::simulation_stats.
  *
  * This type is intentionally not serialized or MPI-reduced — it is per-run scratch state.
  */
@@ -35,7 +38,7 @@ struct simulation_ctx {
     std::uint64_t steps_done = 0;
 
     /**
-     * @brief Wall-clock timer for the current run; started by simplemc::run before the loop.
+     * @brief Wall-clock timer for the current run (started by simplemc::run before the loop).
      */
     timer<> clk {};
 

@@ -64,7 +64,7 @@ public:
      * @tparam B Backend type.
      * @param backend Backend handle to adopt.
      */
-    template <class B>
+    template <typename B>
         requires(!std::is_same_v<std::remove_cvref_t<B>, variant_serializer> &&
             (std::is_same_v<std::remove_cvref_t<B>, Bs> || ...))
     variant_serializer(B&& backend) : backend_ { std::forward<B>(backend) } {}
@@ -77,7 +77,7 @@ public:
      * @param value Value to write.
      * @return A handle wrapping the active backend (for chaining).
      */
-    template <class T>
+    template <typename T>
         requires save_at_compatible<T, Bs...>
     variant_serializer save_at(std::string_view key, const T& value) {
         return std::visit(
@@ -94,7 +94,7 @@ public:
      * @param value Value to read into.
      * @return A handle wrapping the active backend (for chaining).
      */
-    template <class T>
+    template <typename T>
         requires load_at_compatible<T, Bs...>
     variant_serializer load_at(std::string_view key, T& value) const {
         return std::visit(
@@ -112,7 +112,7 @@ public:
      * @param value Value to read into.
      * @return True if the key was present and the read occurred, false otherwise.
      */
-    template <class T>
+    template <typename T>
         requires load_at_compatible<T, Bs...>
     bool try_load_at(std::string_view key, T& value) const {
         return std::visit([&](const auto& s) -> bool { return s.try_load_at(key, value); }, backend_);

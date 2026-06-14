@@ -63,8 +63,8 @@ struct no_op_stop_callback {
  * @tparam CheckpointCb Type of the per-checkpoint callback. Defaults to simplemc::no_op_callback.
  * @tparam StopCb       Type of the early-stop predicate. Defaults to simplemc::no_op_stop_callback.
  */
-template <class StepCb = no_op_callback, class CycleCb = no_op_callback,
-    class CheckpointCb = no_op_callback, class StopCb = no_op_stop_callback>
+template <typename StepCb = no_op_callback, typename CycleCb = no_op_callback, typename CheckpointCb = no_op_callback,
+    typename StopCb = no_op_stop_callback>
 struct run_callbacks {
     [[no_unique_address]] StepCb on_step {};
     [[no_unique_address]] CycleCb on_cycle {};

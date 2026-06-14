@@ -23,14 +23,14 @@
 #include <utility>
 
 // Check that two mean_acc instances have equal state.
-template <class T, simplemc::varalg A>
+template <typename T, simplemc::varalg A>
 void check_state_equal(const simplemc::mean_acc<T, A>& a, const simplemc::mean_acc<T, A>& b) {
     EXPECT_EQ(a.count(), b.count());
     check_near(a.mdata(), b.mdata());
 }
 
 // Check that two var_acc instances have equal state.
-template <class T, simplemc::varalg A>
+template <typename T, simplemc::varalg A>
 void check_state_equal(const simplemc::var_acc<T, A>& a, const simplemc::var_acc<T, A>& b) {
     EXPECT_EQ(a.count(), b.count());
     check_near(a.mdata(), b.mdata());
@@ -42,7 +42,7 @@ void check_state_equal(const simplemc::var_acc<T, A>& a, const simplemc::var_acc
 }
 
 // Check that two covar_acc instances have equal state.
-template <class T, simplemc::varalg A>
+template <typename T, simplemc::varalg A>
 void check_state_equal(const simplemc::covar_acc<T, A>& a, const simplemc::covar_acc<T, A>& b) {
     EXPECT_EQ(a.count(), b.count());
     check_near(a.mdata(), b.mdata());
@@ -54,7 +54,7 @@ void check_state_equal(const simplemc::covar_acc<T, A>& a, const simplemc::covar
 }
 
 // Check that two batch_acc instances have equal state.
-template <class T, simplemc::varalg A>
+template <typename T, simplemc::varalg A>
 void check_state_equal(const simplemc::batch_acc<T, A>& a, const simplemc::batch_acc<T, A>& b) {
     const auto& a_full = a.batch_vector_full();
     const auto& b_full = b.batch_vector_full();
@@ -69,7 +69,7 @@ void check_state_equal(const simplemc::batch_acc<T, A>& a, const simplemc::batch
 }
 
 // Check that two block_acc instances have equal state.
-template <class Acc>
+template <typename Acc>
 void check_state_equal(const simplemc::block_acc<Acc>& a, const simplemc::block_acc<Acc>& b) {
     EXPECT_EQ(a.block_size(), b.block_size());
     check_state_equal(a.accumulator(), b.accumulator());
@@ -77,7 +77,7 @@ void check_state_equal(const simplemc::block_acc<Acc>& a, const simplemc::block_
 }
 
 // Check that two autocorr_acc instances have equal state.
-template <class Acc>
+template <typename Acc>
 void check_state_equal(const simplemc::autocorr_acc<Acc>& a, const simplemc::autocorr_acc<Acc>& b) {
     EXPECT_EQ(a.factor(), b.factor());
     EXPECT_EQ(a.min_levels(), b.min_levels());
@@ -117,7 +117,7 @@ inline void check_state_equal(const simplemc::custom_grid& a, const simplemc::cu
 }
 
 // Check that two nd_grid instances have equal state.
-template <class... Grids>
+template <typename... Grids>
 void check_state_equal(const simplemc::nd_grid<Grids...>& a, const simplemc::nd_grid<Grids...>& b) {
     [&]<std::size_t... I>(std::index_sequence<I...>) {
         (check_state_equal(std::get<I>(a.grids()), std::get<I>(b.grids())), ...);

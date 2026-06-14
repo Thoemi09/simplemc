@@ -143,12 +143,9 @@ It provides
 callbacks must satisfy.
 - @ref simplemc-mc-kernels, representing the underlying MC algorithm (defaults to 
 Metropolis-Hastings).
-- @ref simplemc-mc-mpi, covering the `simplemc_mpi_collect` helpers that all-reduce the various MC
-components across MPI ranks.
-- @ref simplemc-mc-serialize, defining the library-wide simplemc::mc_serializer and covering the 
-`simplemc_save` / `simplemc_load` and `simplemc_save_input_config` / `simplemc_load_input_config` ADL
-hooks for supported MC types.
 - @ref simplemc-mc-sim, including the free simplemc::run function that performs a simulation.
 - @ref simplemc-mc-entities, containing the user-extensible @ref simplemc-mc-entities-updates and
 @ref simplemc-mc-entities-measurements that propose moves and sample observables, together with the
 value-semantic type-erasure machinery and named collections that manage them.
+- @ref simplemc-mc-utils, defining the library-wide simplemc::mc_serializer and various other helpers 
+to support serialization and MPI communication. 

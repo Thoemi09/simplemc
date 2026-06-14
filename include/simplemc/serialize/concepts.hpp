@@ -42,7 +42,7 @@ namespace simplemc {
  * @tparam S Type to check.
  * @tparam T Type used in the smoke test (defaults to `int`).
  */
-template <class S, class T = int>
+template <typename S, typename T = int>
 concept serializer = requires(S& s, const S& cs, std::string_view key, const T& value, T& mvalue) {
     { s[key] } -> std::same_as<S>;
     { cs[key] } -> std::same_as<S>;
@@ -58,7 +58,7 @@ concept serializer = requires(S& s, const S& cs, std::string_view key, const T& 
  * @tparam T Type being serialized.
  * @tparam S Serializer type.
  */
-template <class T, class S>
+template <typename T, typename S>
 concept has_simplemc_save = requires(const T& t, S& s) { simplemc_save(s, t); };
 
 /**
@@ -68,7 +68,7 @@ concept has_simplemc_save = requires(const T& t, S& s) { simplemc_save(s, t); };
  * @tparam T Type being deserialized into.
  * @tparam S Serializer type.
  */
-template <class T, class S>
+template <typename T, typename S>
 concept has_simplemc_load = requires(T& t, const S& s) { simplemc_load(s, t); };
 
 /**
@@ -77,7 +77,7 @@ concept has_simplemc_load = requires(T& t, const S& s) { simplemc_load(s, t); };
  * @tparam T Type being serialized.
  * @tparam Bs Serializer backend types.
  */
-template <class T, class... Bs>
+template <typename T, typename... Bs>
 concept save_at_compatible = (requires(Bs& s, std::string_view key, const T& v) { s.save_at(key, v); } && ...);
 
 /**
@@ -86,7 +86,7 @@ concept save_at_compatible = (requires(Bs& s, std::string_view key, const T& v) 
  * @tparam T Type being deserialized into.
  * @tparam Bs Serializer backend types.
  */
-template <class T, class... Bs>
+template <typename T, typename... Bs>
 concept load_at_compatible = (requires(const Bs& s, std::string_view key, T& v) { s.load_at(key, v); } && ...);
 
 /** @} */

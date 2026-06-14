@@ -64,10 +64,10 @@ public:
      * @tparam RNG Random number generator type.
      * @param rng Random number generator driving the selection and acceptance draws.
      */
-    template <class RNG>
+    template <typename RNG>
     void step(RNG& rng) {
         const std::size_t idx = set_->select(rng);
-        auto& u = set_->at(idx);
+        auto& u = (*set_)[idx];
         ++u.nprops;
         const double p = u.wrapped.attempt() * u.ratio;
         if (p <= 0.0) {

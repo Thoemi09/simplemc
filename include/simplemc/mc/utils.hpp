@@ -17,7 +17,7 @@
 namespace simplemc {
 
 /**
- * @addtogroup simplemc-mc-serialize
+ * @addtogroup simplemc-mc-utils
  * @{
  */
 
@@ -37,9 +37,9 @@ namespace simplemc {
  * @param meas Measurement set to persist.
  * @param stats Cumulative simulation statistics to persist.
  */
-template <class RNG>
-void simplemc_save(mc_serializer& s, const RNG& rng, const update_set& updates,
-    const measurement_set& meas, const simulation_stats& stats) {
+template <typename RNG>
+void simplemc_save(mc_serializer& s, const RNG& rng, const update_set& updates, const measurement_set& meas,
+    const simulation_stats& stats) {
     s.save_at("rng", rng);
     simplemc_save(s, stats);
 
@@ -65,9 +65,9 @@ void simplemc_save(mc_serializer& s, const RNG& rng, const update_set& updates,
  * @param meas Measurement set to patch in place.
  * @param stats Cumulative simulation statistics to restore.
  */
-template <class RNG>
-void simplemc_load(const mc_serializer& s, RNG& rng, update_set& updates,
-    measurement_set& meas, simulation_stats& stats) {
+template <typename RNG>
+void simplemc_load(
+    const mc_serializer& s, RNG& rng, update_set& updates, measurement_set& meas, simulation_stats& stats) {
     s.load_at("rng", rng);
     simplemc_load(s, stats);
 
@@ -94,8 +94,8 @@ void simplemc_load(const mc_serializer& s, RNG& rng, update_set& updates,
  * @param updates Update set whose input config to persist.
  * @param meas Measurement set whose input config to persist.
  */
-inline void simplemc_save_input_config(mc_serializer& s, const simulation_params& p,
-    const update_set& updates, const measurement_set& meas) {
+inline void simplemc_save_input_config(
+    mc_serializer& s, const simulation_params& p, const update_set& updates, const measurement_set& meas) {
     auto params = s["params"];
     simplemc_save_input_config(params, p);
 
@@ -119,8 +119,8 @@ inline void simplemc_save_input_config(mc_serializer& s, const simulation_params
  * @param updates Update set to patch in place.
  * @param meas Measurement set to patch in place.
  */
-inline void simplemc_load_input_config(const mc_serializer& s, simulation_params& p,
-    update_set& updates, measurement_set& meas) {
+inline void simplemc_load_input_config(
+    const mc_serializer& s, simulation_params& p, update_set& updates, measurement_set& meas) {
     if (s.has("params")) {
         const auto params = s["params"];
         simplemc_load_input_config(params, p);
@@ -137,10 +137,7 @@ inline void simplemc_load_input_config(const mc_serializer& s, simulation_params
     }
 }
 
-/** @} */
-
 /**
- * @ingroup simplemc-mc-mpi
  * @brief All-reduce every reducible run component across MPI ranks.
  *
  * @details Composite reducer that forwards to simplemc_mpi_collect on the simplemc::simulation_stats,
@@ -152,8 +149,8 @@ inline void simplemc_load_input_config(const mc_serializer& s, simulation_params
  * @param meas Measurement set to reduce in place.
  * @param stats Simulation statistics to reduce in place.
  */
-inline void simplemc_mpi_collect(const mpi::communicator& comm, update_set& updates,
-    measurement_set& meas, simulation_stats& stats) {
+inline void simplemc_mpi_collect(
+    const mpi::communicator& comm, update_set& updates, measurement_set& meas, simulation_stats& stats) {
     simplemc_mpi_collect(comm, stats);
     simplemc_mpi_collect(comm, updates);
     simplemc_mpi_collect(comm, meas);

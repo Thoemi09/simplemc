@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Simulation statistics gathered during a Monte Carlo run.
+ * @brief Post-run, persistent MC simulation statistics.
  */
 
 #ifndef SIMPLEMC_MC_SIMULATION_STATS_HPP
@@ -23,12 +23,21 @@ namespace simplemc {
  */
 
 /**
- * @brief Plain aggregate of recorded simulation statistics.
+ * @brief Post-run, persistent MC simulation statistics.
  *
- * @details Holds the post-run record: the totals of the most recently finalized run
- * (`last_steps_done`, `last_runtime`) and the cumulative totals across runs (`cumulative_steps`,
- * `cumulative_time`). The live state of a run still in progress (the running step counter and
- * wall-clock) lives separately in simplemc::simulation_ctx.
+ * @details It holds the persistent quantities that survive across runs: the totals of the most
+ * recently finalized run and the cumulative totals over all runs.
+ *
+ * After a run completes, simplemc::accumulate_simulation_stats folds the last-run totals into the
+ * cumulative ones and resets the last-run counters, while simplemc::reset_simulation_stats clears
+ * only the last-run counters.
+ *
+ * The live state of a run still in progress (the running step counter and wall-clock) lives
+ * separately in simplemc::simulation_ctx.
+ *
+ * Only the cumulative fields are serialized (see simplemc_save(S&, const simulation_stats&)). All
+ * four fields are MPI-reduced in place (see simplemc_mpi_collect(const mpi::communicator&,
+ * simulation_stats&)).
  */
 struct simulation_stats {
     /**
@@ -52,7 +61,10 @@ struct simulation_stats {
     double cumulative_time = 0.0;
 };
 
+/** @} */
+
 /**
+ * @relates simplemc::simulation_stats
  * @brief Reset the current-run counters to zero.
  *
  * @details The cumulative fields are left untouched.
@@ -65,6 +77,7 @@ inline void reset_simulation_stats(simulation_stats& s) noexcept {
 }
 
 /**
+ * @relates simplemc::simulation_stats
  * @brief Accumulate the current-run counters into the cumulative ones and reset the current ones.
  *
  * @details It calls simplemc::reset_simulation_stats after accumulating.
@@ -78,9 +91,10 @@ inline void accumulate_simulation_stats(simulation_stats& s) noexcept {
 }
 
 /**
+ * @relates simplemc::simulation_stats
  * @brief Print a simplemc::simulation_stats as a human-readable block.
  *
- * @param fp Destination file handle.
+ * @param fp Destination file pointer.
  * @param s Statistics to print.
  */
 inline void print(std::FILE* fp, const simulation_stats& s) {
@@ -96,11 +110,17 @@ inline void print(std::FILE* fp, const simulation_stats& s) {
 }
 
 /**
+ * @relates simplemc::simulation_stats
  * @brief Serialize the persistent fields of simplemc::simulation_stats.
+ * 
+ * @details Persistent fields include 
+ * 
+ * - simulation_stats::cumulative_steps and 
+ * - simulation_stats::cumulative_time.
  *
  * @tparam S Serializer type.
  * @param s Serializer handle.
- * @param st Stats to write.
+ * @param st Stats to serialize.
  */
 template <serializer S>
 void simplemc_save(S& s, const simulation_stats& st) {
@@ -109,11 +129,14 @@ void simplemc_save(S& s, const simulation_stats& st) {
 }
 
 /**
+ * @relates simplemc::simulation_stats
  * @brief Deserialize the persistent fields of simplemc::simulation_stats.
+ * 
+ * @details See also simplemc::simplemc_save(S&, const simulation_stats&).
  *
  * @tparam S Serializer type.
  * @param s Serializer handle.
- * @param st Stats to read into.
+ * @param st Stats to deserialize into.
  */
 template <serializer S>
 void simplemc_load(const S& s, simulation_stats& st) {
@@ -122,13 +145,10 @@ void simplemc_load(const S& s, simulation_stats& st) {
 }
 
 /**
- * @brief All-reduce a simplemc::simulation_stats across MPI ranks (`MPI_SUM`, in place).
+ * @relates simplemc::simulation_stats
+ * @brief Collect simplemc::simulation_stats from different MPI processes.
  *
- * @details Reduces all four counter fields (`last_steps_done`, `last_runtime`, `cumulative_steps`,
- * `cumulative_time`) with `MPI_SUM`, leaving every rank with the global sum. Unlike the accumulator
- * `simplemc_mpi_collect` overloads, which return a new accumulator, this is in-place because
- * simplemc::simulation_stats is a plain aggregate of counters with no internal invariants and the
- * sets that contain it follow the same in-place convention.
+ * @details It uses mpi::all_reduce_in_place with `MPI_SUM` on all fields.
  *
  * @param comm MPI communicator over which to reduce.
  * @param st Stats to reduce in place.
@@ -139,8 +159,6 @@ inline void simplemc_mpi_collect(const mpi::communicator& comm, simulation_stats
     mpi::all_reduce_in_place(st.cumulative_steps, MPI_SUM, comm);
     mpi::all_reduce_in_place(st.cumulative_time, MPI_SUM, comm);
 }
-
-/** @} */
 
 } // namespace simplemc
 

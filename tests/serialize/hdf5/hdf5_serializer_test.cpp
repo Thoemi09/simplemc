@@ -24,7 +24,7 @@ std::filesystem::path temp_h5_path() {
 }
 
 // Round-trip src through a temp HDF5 file into dst. The file is removed afterwards.
-template <class T>
+template <typename T>
 void roundtrip_hdf5(const T& src, T& dst) {
     const auto path = temp_h5_path();
     {

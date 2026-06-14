@@ -95,14 +95,14 @@ TEST_F(SimplemcMCMPI, UpdateSetReducesEveryEntry) {
     update_set us;
     us.add({ null_update {}, "a", 1.0 });
     us.add({ null_update {}, "b", 2.0 });
-    us.at(0).nprops = static_cast<std::uint64_t>(rank + 1);
-    us.at(1).nprops = static_cast<std::uint64_t>(2 * (rank + 1));
+    us[0].nprops = static_cast<std::uint64_t>(rank + 1);
+    us[1].nprops = static_cast<std::uint64_t>(2 * (rank + 1));
 
     simplemc_mpi_collect(comm, us);
 
     const std::uint64_t s = static_cast<std::uint64_t>(size * (size + 1) / 2);
-    EXPECT_EQ(us.at(0).nprops, s);
-    EXPECT_EQ(us.at(1).nprops, 2u * s);
+    EXPECT_EQ(us[0].nprops, s);
+    EXPECT_EQ(us[1].nprops, 2u * s);
 }
 
 TEST_F(SimplemcMCMPI, MeasurementSetForwardsToWrapperHook) {
@@ -142,13 +142,13 @@ TEST_F(SimplemcMCMPI, CompositeReducesAllComponents) {
 
     // Seed per-update and per-stats counters with rank-distinct values without running the kernel,
     // so the verification is independent of RNG behavior.
-    updates.at(0).nprops = static_cast<std::uint64_t>(rank + 1);
+    updates[0].nprops = static_cast<std::uint64_t>(rank + 1);
     stats.last_steps_done = static_cast<std::uint64_t>(rank + 1);
 
     simplemc_mpi_collect(comm, updates, meas, stats);
 
     const std::uint64_t s = static_cast<std::uint64_t>(size * (size + 1) / 2);
-    EXPECT_EQ(updates.at(0).nprops, s);
+    EXPECT_EQ(updates[0].nprops, s);
     EXPECT_EQ(stats.last_steps_done, s);
 
     const auto* reduced = meas.get<mean_meas>("mean");

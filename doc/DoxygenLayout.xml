@@ -228,27 +228,26 @@
         <tab type="usergroup" url="@ref simplemc-mc-kernels" title="Kernels">
           <tab type="user" url="@ref simplemc::metropolis_kernel" title="metropolis_kernel"/>
         </tab>
-        <tab type="user" url="@ref simplemc-mc-mpi" title="MPI collection"/>
-        <tab type="usergroup" url="@ref simplemc-mc-serialize" title="Serialization">
-          <tab type="user" url="@ref simplemc::mc_serializer" title="mc_serializer"/>
-        </tab>
         <tab type="usergroup" url="@ref simplemc-mc-sim" title="Simulation tools">
+          <tab type="user" url="@ref simplemc::simulation_ctx" title="simulation_ctx"/>
           <tab type="user" url="@ref simplemc::simulation_params" title="simulation_params"/>
           <tab type="user" url="@ref simplemc::simulation_stats" title="simulation_stats"/>
-          <tab type="user" url="@ref simplemc::simulation_ctx" title="simulation_ctx"/>
         </tab>
         <tab type="usergroup" url="@ref simplemc-mc-entities" title="Updates and measurements">
-          <tab type="user" url="@ref simplemc::named_set" title="named_set"/>
-          <tab type="usergroup" url="@ref simplemc-mc-entities-updates" title="Updates">
-            <tab type="user" url="@ref simplemc::basic_update" title="basic_update"/>
-            <tab type="user" url="@ref simplemc::update" title="update"/>
-            <tab type="user" url="@ref simplemc::update_set" title="update_set"/>
-          </tab>
           <tab type="usergroup" url="@ref simplemc-mc-entities-measurements" title="Measurements">
             <tab type="user" url="@ref simplemc::basic_measurement" title="basic_measurement"/>
             <tab type="user" url="@ref simplemc::measurement" title="measurement"/>
             <tab type="user" url="@ref simplemc::measurement_set" title="measurement_set"/>
           </tab>
+          <tab type="usergroup" url="@ref simplemc-mc-entities-updates" title="Updates">
+            <tab type="user" url="@ref simplemc::basic_update" title="basic_update"/>
+            <tab type="user" url="@ref simplemc::update" title="update"/>
+            <tab type="user" url="@ref simplemc::update_set" title="update_set"/>
+          </tab>
+          <tab type="user" url="@ref simplemc::named_set" title="named_set"/>
+        </tab>
+        <tab type="usergroup" url="@ref simplemc-mc-utils" title="Utilities">
+          <tab type="user" url="@ref simplemc::mc_serializer" title="mc_serializer"/>
         </tab>
       </tab>
       <tab type="filelist" visible="yes" title="" intro=""/>
