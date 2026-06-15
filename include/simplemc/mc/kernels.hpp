@@ -20,79 +20,79 @@ namespace simplemc {
  */
 
 /**
- * @brief Default Metropolis step kernel.
+ * @brief Metropolis kernel.
  *
- * @details Holds a non-owning pointer to a simplemc::update_set and a private
- * `std::uniform_real_distribution<double>` for the acceptance draw. The `step(rng)` method samples
- * an update via the set's discrete distribution, calls `attempt()` on the wrapper, multiplies the
- * result by the entry's detailed-balance `ratio`, and applies the standard Metropolis branch:
+ * @details Implementation of the standard Metropolis algorithm (see step()).
  *
- * - if `attempt() * ratio <= 0`, the proposal is counted as impossible (`nimps`) and `reject()` is
- *   called so any speculative state set up by `attempt()` is rolled back;
- * - if `attempt() * ratio >= uniform_draw`, the proposal is accepted (`naccs`) and `accept()` is
- *   called on the wrapped update;
- * - otherwise it is rejected and `reject()` is called.
+ * It holds a non-owning pointer to a simplemc::update_set which it uses to select and execute updates
+ * to advance the Markov chain. Since simplemc::run is not aware of the update set, it is the kernel's
+ * responsibility to make sure that the selection distribution is valid (see prepare()) and to also
+ * keep track of update statistics (number of proposed, accepted and impossible updates).
  *
- * Every `attempt()` is therefore followed by exactly one of `accept()` / `reject()`. In every case
- * the proposal counter (`nprops`) is bumped. The counters live on the simplemc::update entries
- * themselves.
- *
- * Lifetime: the kernel stores a non-owning pointer to the set; the caller must keep the set alive
- * for the kernel's lifetime.
+ * @note The stored update set is required to outlive the kernel.
  */
 class metropolis_kernel {
 public:
-    using update_set_type = update_set;
-
     /**
-     * @brief Construct with a back-pointer to the update set this kernel will drive.
-     */
-    explicit metropolis_kernel(update_set_type& set) noexcept : set_ { &set } {}
-
-    /**
-     * @brief Build the selection distribution from current weights.
+     * @brief Construct a Metropolis kernel with a pointer to the given update set.
      *
-     * @details Detected by simplemc::run via `if constexpr (requires { kernel.prepare(); })` and
-     * invoked once at the start of each run. Equivalent to calling
-     * simplemc::update_set::rebuild_distribution on the owning set.
+     * @param ups Set of updates.
      */
-    void prepare() { set_->rebuild_distribution(); }
+    explicit metropolis_kernel(update_set& ups) noexcept : ups_ { &ups } {}
+
+    /**
+     * @brief Build the update selection distribution from their weights.
+     *
+     * @details It calls simplemc::update_set::rebuild_distribution on the stored update set.
+     *
+     * The function is executed automatically by simplemc::run before the main MC loop starts.
+     */
+    void prepare() { ups_->rebuild_distribution(); }
 
     /**
      * @brief Run a single Metropolis step.
      *
+     * @details Standard implementation of a Metropolis algorithm:
+     *
+     * - Select an update from the set with probability proportional to its update::weight.
+     * - Propose a new MC configuration by calling basic_update::attempt() of the selected update and
+     * by increasing the counter for *proposed* updates, update::nprops.
+     * - Calculate the acceptance probability \f$ p \f$ by multiplying the return value of
+     * basic_update::attempt() with the detailed-balance update::ratio.
+     * - Acceptance/Rejection step:
+     *   - if \f$ p < 0 \f$: The proposed MC configuration is not \f$ \in \f$ the allowed state
+     *   space. The counter for *impossible* updates, update::nimps, is increased and
+     *   basic_update::reject() is called.
+     *   - \f$ p >= u \f$, where \f$ u \f$ is a uniform random number on \f$ [0, 1) \f$: The proposed
+     *   MC configuration is accepted. The counter for *accepted* updates, update::naccs, is increased
+     *   and basic_update::accept() is called.
+     *   - Otherwise, the proposed MC configuration is rejected. basic_update::reject() is called.
+     *
      * @tparam RNG Random number generator type.
-     * @param rng Random number generator driving the selection and acceptance draws.
+     * @param rng Random number generator driving the update selection and acceptance/rejection.
      */
     template <typename RNG>
     void step(RNG& rng) {
-        const std::size_t idx = set_->select(rng);
-        auto& u = (*set_)[idx];
-        ++u.nprops;
-        const double p = u.wrapped.attempt() * u.ratio;
-        if (p <= 0.0) {
-            ++u.nimps;
-            u.wrapped.reject();
+        const std::size_t idx = ups_->select(rng);
+        auto& up = (*ups_)[idx];
+        ++up.nprops;
+        const double p = up.wrapped.attempt() * up.ratio;
+        if (p < 0.0) {
+            // impossible --> rejected
+            ++up.nimps;
+            up.wrapped.reject();
         } else if (p >= uni01_(rng)) {
-            u.wrapped.accept();
-            ++u.naccs;
+            // accepted
+            up.wrapped.accept();
+            ++up.naccs;
         } else {
-            u.wrapped.reject();
+            // rejected
+            up.wrapped.reject();
         }
     }
 
-    /**
-     * @brief Access the owning update set.
-     */
-    [[nodiscard]] update_set_type& updates() noexcept { return *set_; }
-
-    /**
-     * @brief Const access to the owning update set.
-     */
-    [[nodiscard]] const update_set_type& updates() const noexcept { return *set_; }
-
 private:
-    update_set_type* set_;
+    update_set* ups_;
     std::uniform_real_distribution<double> uni01_ { 0.0, 1.0 };
 };
 
