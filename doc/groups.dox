@@ -1464,7 +1464,7 @@
  * tasks like logging, checkpointing, debugging, etc.
  *
  * The contracts that user updates, measurements, kernels, and callbacks must satisfy are expressed as
- * C++20 concepts (see @ref simplemc-mc-concepts).
+ * C++20 concepts, documented alongside the feature each one governs.
  *
  * Other utilities and helper functions are provided by @ref simplemc-mc-utils.
  *
@@ -1480,29 +1480,17 @@
  */
 
 /**
- * @defgroup simplemc-mc-concepts Concepts
- * @ingroup simplemc-mc
- * @brief C++20 concepts that define the contracts of the **simplemc-mc** extension points.
- *
- * @details Every extension point of **simplemc-mc** is expressed as a concept, so user types opt in
- * structurally without inheriting from any base class:
- *
- * - simplemc::mc_kernel — defines a MC algorithm.
- * - simplemc::mc_measurement — defines a MC measurement.
- * - simplemc::mc_run_callbacks — defines callback hooks invoked during a MC simulation.
- * - simplemc::mc_update — defines a proposable/accept-rejectable MC move.
- */
-
-/**
  * @defgroup simplemc-mc-kernels Kernels
  * @ingroup simplemc-mc
  * @brief The Monte Carlo step algorithm.
  *
- * @details A **kernel** implements the simplemc::mc_kernel contract: given an RNG, `step(rng)`
- * performs one Monte Carlo step — picking an update by weight, calling its `attempt()`, and applying
- * the Metropolis accept/reject decision. simplemc::metropolis_kernel is the default implementation,
- * stepping over an simplemc::update_set; users can plug in their own kernel satisfying the same
- * concept.
+ * @details A **kernel** implements the actual Monte Carlo algorithm: it defines how updates are
+ * chosen, applied, and accepted/rejected. 
+ * 
+ * **simplemc-mc** provides the simplemc::metropolis_kernel, which implements the standard
+ * Metropolis-Hastings algorithm.
+ * 
+ * Users can plug in their own kernel as long as they satisfy the simplemc::mc_kernel concept.
  */
 
 /**

@@ -15,11 +15,7 @@
 namespace simplemc {
 
 /**
- * @addtogroup simplemc-mc-concepts
- * @{
- */
-
-/**
+ * @ingroup simplemc-mc-entities-measurements
  * @brief Contract a type must satisfy to be wrapped in a simplemc::measurement.
  *
  * @details A Monte Carlo measurement is an observer of the simulation state that simplemc::run
@@ -36,6 +32,7 @@ template <typename M>
 concept mc_measurement = requires(M& m) { m.measure(); };
 
 /**
+ * @ingroup simplemc-mc-entities-updates
  * @brief Contract a type must satisfy to be wrapped in a simplemc::update.
  *
  * @details A Monte Carlo update proposes a change to the simulation state via `attempt()`, which
@@ -59,6 +56,7 @@ concept mc_update = requires(U& u) {
 };
 
 /**
+ * @ingroup simplemc-mc-kernels
  * @brief Contract a type must satisfy to drive a Monte Carlo simulation as a kernel.
  *
  * @details A kernel is the algorithm that advances the simulation by one MC step. The free
@@ -81,6 +79,7 @@ template <typename K, typename RNG>
 concept mc_kernel = requires(K& k, RNG& rng) { k.step(rng); };
 
 /**
+ * @ingroup simplemc-mc-callbacks
  * @brief Contract a type must satisfy to be passed as the callback bundle to simplemc::run.
  *
  * @details The run loop supports four callback hooks, each taking the current simulation context
@@ -110,6 +109,7 @@ concept mc_run_callbacks = requires(const C& c, const simulation_ctx& x) {
 };
 
 /**
+ * @ingroup simplemc-mc-utils
  * @brief Check if type `T` is serializable by a serializer of type `S` via a call to
  * `simplemc_save_input_config`.
  *
@@ -122,6 +122,7 @@ template <typename T, typename S>
 concept has_simplemc_save_input_config = requires(const T& t, S& s) { simplemc_save_input_config(s, t); };
 
 /**
+ * @ingroup simplemc-mc-utils
  * @brief Check if type `T` is deserializable by a serializer of type `S` via a call to
  * `simplemc_load_input_config`.
  *
@@ -134,6 +135,7 @@ template <typename T, typename S>
 concept has_simplemc_load_input_config = requires(T& t, const S& s) { simplemc_load_input_config(s, t); };
 
 /**
+ * @ingroup simplemc-mc-utils
  * @brief Check if type `T` can be collected across MPI ranks via a call to `simplemc_mpi_collect`.
  *
  * @details The overload must take `(const mpi::communicator&, const T&)` and return a `T`.
@@ -147,8 +149,6 @@ template <typename T>
 concept has_simplemc_mpi_collect = requires(const mpi::communicator& c, const T& v) {
     { simplemc_mpi_collect(c, v) } -> std::same_as<T>;
 };
-
-/** @} */
 
 } // namespace simplemc
 

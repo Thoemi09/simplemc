@@ -139,8 +139,6 @@ entirely to the user.
 It provides
 
 - @ref simplemc-mc-callbacks, optional per-run hooks that observe a simulation.
-- @ref simplemc-mc-concepts, expressing the contracts user updates, measurements, kernels, and 
-callbacks must satisfy.
 - @ref simplemc-mc-kernels, representing the underlying MC algorithm (defaults to 
 Metropolis-Hastings).
 - @ref simplemc-mc-sim, including the free simplemc::run function that performs a simulation.

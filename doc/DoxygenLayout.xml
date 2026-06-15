@@ -210,22 +210,15 @@
       </tab>
       <tab type="usergroup" url="@ref simplemc-mc" title="simplemc-mc">
         <tab type="usergroup" url="@ref simplemc-mc-callbacks" title="Callbacks">
+          <tab type="user" url="@ref simplemc::mc_run_callbacks" title="mc_run_callbacks"/>
           <tab type="user" url="@ref simplemc::json_checkpoint_writer" title="json_checkpoint_writer"/>
           <tab type="user" url="@ref simplemc::no_op_callback" title="no_op_callback"/>
           <tab type="user" url="@ref simplemc::no_op_stop_callback" title="no_op_stop_callback"/>
           <tab type="user" url="@ref simplemc::progress_printer" title="progress_printer"/>
           <tab type="user" url="@ref simplemc::run_callbacks" title="run_callbacks"/>
         </tab>
-        <tab type="usergroup" url="@ref simplemc-mc-concepts" title="Concepts">
-          <tab type="user" url="@ref simplemc::has_simplemc_load_input_config" title="has_simplemc_load_input_config"/>
-          <tab type="user" url="@ref simplemc::has_simplemc_mpi_collect" title="has_simplemc_mpi_collect"/>
-          <tab type="user" url="@ref simplemc::has_simplemc_save_input_config" title="has_simplemc_save_input_config"/>
-          <tab type="user" url="@ref simplemc::mc_kernel" title="mc_kernel"/>
-          <tab type="user" url="@ref simplemc::mc_measurement" title="mc_measurement"/>
-          <tab type="user" url="@ref simplemc::mc_run_callbacks" title="mc_run_callbacks"/>
-          <tab type="user" url="@ref simplemc::mc_update" title="mc_update"/>
-        </tab>
         <tab type="usergroup" url="@ref simplemc-mc-kernels" title="Kernels">
+          <tab type="user" url="@ref simplemc::mc_kernel" title="mc_kernel"/>
           <tab type="user" url="@ref simplemc::metropolis_kernel" title="metropolis_kernel"/>
         </tab>
         <tab type="usergroup" url="@ref simplemc-mc-sim" title="Simulation tools">
@@ -235,11 +228,13 @@
         </tab>
         <tab type="usergroup" url="@ref simplemc-mc-entities" title="Updates and measurements">
           <tab type="usergroup" url="@ref simplemc-mc-entities-measurements" title="Measurements">
+            <tab type="user" url="@ref simplemc::mc_measurement" title="mc_measurement"/>
             <tab type="user" url="@ref simplemc::basic_measurement" title="basic_measurement"/>
             <tab type="user" url="@ref simplemc::measurement" title="measurement"/>
             <tab type="user" url="@ref simplemc::measurement_set" title="measurement_set"/>
           </tab>
           <tab type="usergroup" url="@ref simplemc-mc-entities-updates" title="Updates">
+            <tab type="user" url="@ref simplemc::mc_update" title="mc_update"/>
             <tab type="user" url="@ref simplemc::basic_update" title="basic_update"/>
             <tab type="user" url="@ref simplemc::update" title="update"/>
             <tab type="user" url="@ref simplemc::update_set" title="update_set"/>
@@ -247,6 +242,9 @@
           <tab type="user" url="@ref simplemc::named_set" title="named_set"/>
         </tab>
         <tab type="usergroup" url="@ref simplemc-mc-utils" title="Utilities">
+          <tab type="user" url="@ref simplemc::has_simplemc_load_input_config" title="has_simplemc_load_input_config"/>
+          <tab type="user" url="@ref simplemc::has_simplemc_mpi_collect" title="has_simplemc_mpi_collect"/>
+          <tab type="user" url="@ref simplemc::has_simplemc_save_input_config" title="has_simplemc_save_input_config"/>
           <tab type="user" url="@ref simplemc::mc_serializer" title="mc_serializer"/>
         </tab>
       </tab>
