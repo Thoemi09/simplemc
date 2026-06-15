@@ -27,67 +27,75 @@ namespace simplemc {
 /**
  * @brief Run a Monte Carlo simulation.
  *
- * @details Creates a fresh simplemc::simulation_ctx for this run (live step counter + wall-clock)
- * and drives the standard nested loop: outer `while` polls the stop criteria
- * (`ctx.steps_done < params.max_steps`, `ctx.elapsed() < params.max_time`, and
- * `!cbs.stop_when(ctx)`); inner `for (cycles_per_check)` runs that many cycles; each cycle runs
- * `params.steps_per_cycle` Metropolis steps via `kernel.step(rng)` and then invokes
- * `meas.measure_all()` (a no-op when `params.skip_measurements` cleared the active cache at
- * entry). All four callbacks receive `ctx`, so a hook can read the live step count
- * (`ctx.steps_done`) and live wall-clock (`ctx.elapsed()`).
+ * @details This function drives every MC simulation. It takes a random number generator, an MC kernel,
+ * a set of measurements, simulation statistics, optional simulation parameters and callback functions
+ * as arguments to do the following:
  *
- * Before the loop, validates `params` and (if the kernel exposes one) calls `kernel.prepare()`.
- * Builds the active-set cache on `meas` from each entry's `is_active` flag (cleared instead if
- * `skip_measurements`).
+ * 1. It validates the parameters by calling simplemc::validate_simulation_params().
+ * 2. It calls the kernel's `prepare()` method (if it is available).
+ * 3. It rebuilds the active set of measurements by calling measurement_set::refresh_active.
+ * 4. It initializes a current simplemc::simulation_ctx and other local variables.
+ * 5. It performs the actual **MC loop** until some stop criterion is satisfied.
+ * 6. It updates the simulation statistics.
  *
- * After each block of `cycles_per_check` cycles, the checkpoint thresholds are checked against the
- * elapsed step / time deltas since the last checkpoint, and `on_checkpoint` is invoked if either
- * threshold is crossed.
+ * The **MC loop** is a 3-fold nested loop which works as follows:
  *
- * @note `max_time` and `stop_when` are polled only once per `cycles_per_check` block, i.e. every
- * `steps_per_cycle * cycles_per_check` steps. With the default `cycles_per_check` of \f$ 10^6 \f$,
- * a slow step function can overshoot `max_time` considerably — tune `cycles_per_check` to the cost
- * of a step.
+ * - The innermost loop performs simulation_params::steps_per_cycle MC steps by invoking the kernel's
+ * `step(rng)` function, increasing the local simulation_ctx::steps_done counter and calling the
+ * `on_step(ctx)` callback function (no-op by default).
+ * - The middle loop performs simulation_params::cycles_per_check MC cycles. A single cycle executes
+ * the inner loop, calls measurement_set::measure_all() on the given set of measurements and invokes
+ * the `on_cycle(ctx)` callback (no-op by default).
+ * - The outermost loop executes the two inner loops and the `on_checkpoint(ctx)` callback (no-op by
+ * default). However, in contrast to previous callbacks, this one is only called periodically, either
+ * when simulation_params::checkpoint_after_steps MC steps or simulation_params::checkpoint_after_time
+ * seconds have passed since the last call. The (outer) loop stops as soon as
+ *   - simulation_params::max_steps or more MC steps have been done,
+ *   - the run has taken simulation_params::max_time seconds or longer,
+ *   - the user-defined `stop_when()` callback returns true.
  *
- * On exit, the run's final totals are recorded into `stats`: `last_steps_done = ctx.steps_done`
- * and `last_runtime = ctx.elapsed()`. The cumulative fields on `stats` are left untouched (fold
- * them in with simplemc::accumulate_simulation_stats). Per-update counters (`nprops`, `naccs`,
- * `nimps`) are written by the kernel; note the asymmetry with `stats.last_*`: the per-update
- * current-run counters are **not** reset at run entry — they keep accumulating until
- * `accumulate_counters()` / `reset_run_counters()` is called on the update set.
+ * On exit, the fields simulation_stats::last_steps_done and simulation_stats::last_runtime are
+ * recorded in the given simulation statistics. Per-update counters are written by the kernel.
  *
- * @tparam Kernel Step kernel satisfying simplemc::mc_kernel for the given RNG.
- * @tparam RNG    Random number generator type.
- * @tparam Cbs    Callbacks bundle satisfying simplemc::mc_run_callbacks. Defaults to
- *                simplemc::run_callbacks<> (all no-ops); any user type with the four hooks works.
+ * @note Successful simulations always perform a number of MC steps which is a multiple of
+ * simulation_params::cycles_per_check times simulation_params::steps_per_cycle.
  *
- * @param kernel Kernel that performs each step.
- * @param meas Measurement set; its active cache is rebuilt at entry.
- * @param p Parameters controlling the run.
- * @param stats Recorded statistics; the run's final totals are written to `last_*` at exit.
- * @param rng RNG threaded into the kernel's `step()`.
- * @param cbs Optional callbacks; default = all no-ops.
+ * @tparam RNG Random number generator type.
+ * @tparam Kernel simplemc::mc_kernel type.
+ * @tparam Cbs simplemc::mc_run_callbacks bundle type.
+ * @param rng Random number generator.
+ * @param kernel Kernel that implements the desired MC algorithm.
+ * @param meas Measurement set. Its active cache is rebuilt at entry.
+ * @param stats Simulation statistics.
+ * @param p Simulation parameters controlling the run.
+ * @param cbs Optional callbacks.
  */
-template <typename Kernel, typename RNG, mc_run_callbacks Cbs = run_callbacks<>>
-    requires mc_kernel<Kernel, RNG>
-void run(Kernel& kernel, measurement_set& meas, const simulation_params& p, simulation_stats& stats, RNG& rng,
+template <typename RNG, mc_kernel<RNG> Kernel, mc_run_callbacks Cbs = run_callbacks<>>
+void run(RNG& rng, Kernel& kernel, measurement_set& meas, simulation_stats& stats, const simulation_params& p = {},
     const Cbs& cbs = {}) {
+    // validate parameters
     validate_simulation_params(p);
+
+    // optionally prepare the kernel
     if constexpr (requires { kernel.prepare(); }) {
         kernel.prepare();
     }
+
+    // reset active measurements
     if (p.skip_measurements) {
         meas.clear_active();
     } else {
         meas.refresh_active();
     }
 
+    // simulation context + local variables
     simulation_ctx ctx;
     ctx.clk.start();
     std::uint64_t steps_since_ck = 0;
     double time_at_last_ck = 0.0;
     double last_runtime = 0.0;
 
+    // MC loop
     while (ctx.steps_done < p.max_steps && last_runtime < p.max_time && !cbs.stop_when(ctx)) {
         for (std::uint64_t c = 0; c < p.cycles_per_check; ++c) {
             for (std::uint64_t s = 0; s < p.steps_per_cycle; ++s) {
@@ -100,6 +108,7 @@ void run(Kernel& kernel, measurement_set& meas, const simulation_params& p, simu
         }
         last_runtime = ctx.elapsed();
 
+        // checkpoint callback
         steps_since_ck += p.steps_per_cycle * p.cycles_per_check;
         if (steps_since_ck >= p.checkpoint_after_steps || last_runtime - time_at_last_ck >= p.checkpoint_after_time) {
             cbs.on_checkpoint(ctx);
@@ -108,6 +117,7 @@ void run(Kernel& kernel, measurement_set& meas, const simulation_params& p, simu
         }
     }
 
+    // record simulation stats
     stats.last_steps_done = ctx.steps_done;
     stats.last_runtime = ctx.elapsed();
 }

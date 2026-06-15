@@ -6,7 +6,6 @@
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
 
-#include <cstdint>
 #include <memory>
 
 using namespace simplemc;
@@ -85,7 +84,7 @@ const nlohmann::json& doc(const mc_serializer& s) { return std::get<json_seriali
 void run_and_accumulate(update_set& updates, measurement_set& meas, simulation_stats& stats,
     xoshiro256ss& rng, const simulation_params& p) {
     metropolis_kernel kernel { updates };
-    run(kernel, meas, p, stats, rng);
+    run(rng, kernel, meas, stats, p);
     accumulate_simulation_stats(stats);
     updates.accumulate_counters();
 }

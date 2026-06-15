@@ -85,9 +85,8 @@ int main() {
 
     simplemc::metropolis_kernel kernel { updates };
 
-    simplemc::run(kernel, meas,
-        { .max_steps = 1'000'000, .max_time = 60.0, .steps_per_cycle = 1, .cycles_per_check = 10'000 },
-        stats, rng);
+    simplemc::run(rng, kernel, meas, stats,
+        { .max_steps = 1'000'000, .max_time = 60.0, .steps_per_cycle = 1, .cycles_per_check = 10'000 });
 
     // Fold the run into the cumulative counters, then snapshot the components plus the user state.
     accumulate_simulation_stats(stats);
@@ -111,8 +110,8 @@ int main() {
     const auto* m = meas2.get<integral_observer>("integral");
     const double result = m->acc.mean() * (restored.b - restored.a);
     const double exact = std::sin(restored.b) - std::sin(restored.a);
-    fmt::print("restored cumulative steps: {}\nrestored x: {}\nresult: {}\nexact:  {}\n",
-        stats2.cumulative_steps, restored.x, result, exact);
+    fmt::print("restored cumulative steps: {}\nrestored x: {}\nresult: {}\nexact:  {}\n", stats2.cumulative_steps,
+        restored.x, result, exact);
 
     std::filesystem::remove(path);
 }

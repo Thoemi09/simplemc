@@ -6,7 +6,6 @@
 #include <nlohmann/json.hpp>
 
 #include <memory>
-#include <variant>
 
 using namespace simplemc;
 
@@ -66,10 +65,10 @@ void simplemc_load(const S& s, state_only_update& u) {
 }
 
 // Drive a short run, then fold counters into the cumulative state.
-void run_and_accumulate(update_set& updates, measurement_set& meas, simulation_stats& stats,
-    xoshiro256ss& rng, const simulation_params& p) {
+void run_and_accumulate(update_set& updates, measurement_set& meas, simulation_stats& stats, xoshiro256ss& rng,
+    const simulation_params& p) {
     metropolis_kernel kernel { updates };
-    run(kernel, meas, p, stats, rng);
+    run(rng, kernel, meas, stats, p);
     accumulate_simulation_stats(stats);
     updates.accumulate_counters();
 }
@@ -92,8 +91,8 @@ TEST(MCMixedBackend, StateAndInputConfigDispatchIndependently) {
     *src_u.config_threshold = 1.25;
     updates.add({ src_u, "tunable", 3.0 });
 
-    run_and_accumulate(updates, meas, stats, rng,
-        { .max_steps = 5, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = 5 });
+    run_and_accumulate(
+        updates, meas, stats, rng, { .max_steps = 5, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = 5 });
 
     // Save state and input config into two separate (JSON-backed) serializer instances.
     mc_serializer state_w { json_serializer {} };

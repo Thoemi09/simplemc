@@ -3,11 +3,8 @@
 
 #include <gtest/gtest.h>
 
-#include <atomic>
-#include <chrono>
 #include <cstdint>
 #include <memory>
-#include <thread>
 
 using namespace simplemc;
 
@@ -57,7 +54,7 @@ TEST(MCRun, MaxStepsBounds) {
     xoshiro256ss rng { 1 };
 
     simulation_params p { .max_steps = 1000, .max_time = 1e6, .steps_per_cycle = 5, .cycles_per_check = 4 };
-    run(kernel, ms, p, stats, rng);
+    run(rng, kernel, ms, stats, p);
 
     // The loop checks bounds only at outer-block boundaries; steps_done may overshoot by up to
     // one block of cycles_per_check * steps_per_cycle = 20 steps.
@@ -80,7 +77,7 @@ TEST(MCRun, MaxTimeBounds) {
         .steps_per_cycle = 1,
         .cycles_per_check = 1,
     };
-    run(kernel, ms, p, stats, rng);
+    run(rng, kernel, ms, stats, p);
     EXPECT_GT(stats.last_steps_done, 0u);
     EXPECT_GE(stats.last_runtime, 0.0);
 }
@@ -97,7 +94,7 @@ TEST(MCRun, OnStepFiresEverySingleStep) {
     auto cbs = run_callbacks { .on_step = [&](const simulation_ctx&) { ++step_calls; } };
 
     simulation_params p { .max_steps = 100, .max_time = 1e6, .steps_per_cycle = 5, .cycles_per_check = 4 };
-    run(kernel, ms, p, stats, rng, cbs);
+    run(rng, kernel, ms, stats, p, cbs);
 
     EXPECT_EQ(step_calls, stats.last_steps_done);
 }
@@ -114,7 +111,7 @@ TEST(MCRun, OnCycleFiresEveryCycle) {
     auto cbs = run_callbacks { .on_cycle = [&](const simulation_ctx&) { ++cycle_calls; } };
 
     simulation_params p { .max_steps = 100, .max_time = 1e6, .steps_per_cycle = 5, .cycles_per_check = 4 };
-    run(kernel, ms, p, stats, rng, cbs);
+    run(rng, kernel, ms, stats, p, cbs);
 
     // Total cycles = steps_done / steps_per_cycle.
     EXPECT_EQ(cycle_calls, stats.last_steps_done / p.steps_per_cycle);
@@ -138,7 +135,7 @@ TEST(MCRun, StopWhenEndsEarly) {
         .steps_per_cycle = 5,
         .cycles_per_check = 4,
     };
-    run(kernel, ms, p, stats, rng, cbs);
+    run(rng, kernel, ms, stats, p, cbs);
     EXPECT_GE(stats.last_steps_done, 50u);
     EXPECT_LT(stats.last_steps_done, 200u); // stopped early
 }
@@ -165,7 +162,7 @@ TEST(MCRun, OnCheckpointFiresWhenStepThresholdCrossed) {
         .skip_measurements = false,
         .checkpoint_after_steps = 50,
     };
-    run(kernel, ms, p, stats, rng, cbs);
+    run(rng, kernel, ms, stats, p, cbs);
 
     // 200 steps / 50 per checkpoint = 4 (loop exits on max_steps before another fires).
     EXPECT_GE(checkpoint_calls, 1);
@@ -186,7 +183,7 @@ TEST(MCRun, NoCheckpointWhenNoThreshold) {
     };
 
     simulation_params p { .max_steps = 100, .max_time = 1e6, .steps_per_cycle = 5, .cycles_per_check = 4 };
-    run(kernel, ms, p, stats, rng, cbs);
+    run(rng, kernel, ms, stats, p, cbs);
 
     EXPECT_EQ(checkpoint_calls, 0);
 }
@@ -203,10 +200,13 @@ TEST(MCRun, SkipMeasurementsLeavesCounterUntouched) {
     xoshiro256ss rng { 8 };
 
     simulation_params p {
-        .max_steps = 100, .max_time = 1e6, .steps_per_cycle = 5, .cycles_per_check = 4,
+        .max_steps = 100,
+        .max_time = 1e6,
+        .steps_per_cycle = 5,
+        .cycles_per_check = 4,
         .skip_measurements = true,
     };
-    run(kernel, ms, p, stats, rng);
+    run(rng, kernel, ms, stats, p);
     EXPECT_EQ(*count, 0);
 }
 
@@ -222,7 +222,7 @@ TEST(MCRun, MeasureAllFiresWhenActive) {
     xoshiro256ss rng { 9 };
 
     simulation_params p { .max_steps = 100, .max_time = 1e6, .steps_per_cycle = 5, .cycles_per_check = 4 };
-    run(kernel, ms, p, stats, rng);
+    run(rng, kernel, ms, stats, p);
 
     EXPECT_EQ(static_cast<std::uint64_t>(*count), stats.last_steps_done / p.steps_per_cycle);
 }
@@ -243,7 +243,7 @@ TEST(MCRun, AcceptsUserDefinedCallbacksBundle) {
         .steps_per_cycle = 5,
         .cycles_per_check = 4,
     };
-    run(kernel, ms, p, stats, rng, cbs);
+    run(rng, kernel, ms, stats, p, cbs);
 
     EXPECT_EQ(*cbs.steps, stats.last_steps_done);
     EXPECT_GE(stats.last_steps_done, 50u);
@@ -258,7 +258,7 @@ TEST(MCRun, AcceptsCustomKernelWithoutUpdateSet) {
     xoshiro256ss rng { 10 };
 
     simulation_params p { .max_steps = 200, .max_time = 1e6, .steps_per_cycle = 5, .cycles_per_check = 4 };
-    run(kernel, ms, p, stats, rng);
+    run(rng, kernel, ms, stats, p);
 
     EXPECT_GE(stats.last_steps_done, 200u);
     EXPECT_EQ(kernel.calls, stats.last_steps_done);

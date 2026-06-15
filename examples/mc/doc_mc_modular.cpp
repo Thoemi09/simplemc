@@ -58,15 +58,19 @@ int main() {
 
     // Optional callbacks: print progress every cycle batch (i.e. once per cycles_per_check).
     auto cbs = simplemc::run_callbacks {
-        .on_checkpoint = [](const simplemc::simulation_ctx& x) {
-            fmt::print("  ... checkpoint at step {} (runtime {:.3f} s)\n", x.steps_done, x.elapsed());
-        },
+        .on_checkpoint =
+            [](const simplemc::simulation_ctx& x) {
+                fmt::print("  ... checkpoint at step {} (runtime {:.3f} s)\n", x.steps_done, x.elapsed());
+            },
     };
 
-    simplemc::run(kernel, meas,
-        { .max_steps = 1'000'000, .max_time = 60.0, .steps_per_cycle = 1, .cycles_per_check = 10'000,
+    simplemc::run(rng, kernel, meas, stats,
+        { .max_steps = 1'000'000,
+            .max_time = 60.0,
+            .steps_per_cycle = 1,
+            .cycles_per_check = 10'000,
             .checkpoint_after_steps = 250'000 },
-        stats, rng, cbs);
+        cbs);
 
     const auto* m = meas.get<integral_observer>("integral");
     const double result = m->acc.mean() * (state.b - state.a);
