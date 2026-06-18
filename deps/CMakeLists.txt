@@ -108,7 +108,7 @@ simplemc_fetch_or_find_dependency(
     SHOULD_FETCH ${SIMPLEMC_FETCH_FMT}
     FETCH_CONTENT_NAME fmt
     GIT_REPO https://github.com/fmtlib/fmt
-    GIT_TAG origin/master  # 0acf106c
+    GIT_TAG origin/main  # 0acf106c
     CACHE_OPTIONS "FMT_INSTALL=OFF"
 )
 
