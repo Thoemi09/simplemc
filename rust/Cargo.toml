@@ -1,0 +1,15 @@
+[package]
+name = "rmc-core"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+description = "Greenfield Rust Monte Carlo core"
+license = "MIT"
+
+[dependencies]
+num-complex = "0.4"
+rand = "0.8"
+rand_core = "0.6"
+rand_xoshiro = "0.6"
+rayon = "1"
+thiserror = "1"
