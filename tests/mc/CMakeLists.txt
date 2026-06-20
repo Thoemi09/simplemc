@@ -2,19 +2,19 @@
 #
 # The following targets are defined:
 # ---------------------------------
-# mc-stats-and-params-test:     Test simulation_params and simulation_stats.
-# mc-measurement-test:          Test basic_measurement wrapper + measurement struct + mc_measurement concept.
-# mc-measurement-set-test:      Test measurement_set (add, active cache, measure_all, serialization).
-# mc-update-test:               Test basic_update wrapper + update struct + mc_update concept.
-# mc-update-set-test:           Test update_set (add, add_pair, weight, select, serialization).
-# mc-kernel-test:                Test the mc_kernel concept.
-# mc-metropolis-kernel-test:    Test the default Metropolis step kernel.
-# mc-run-test:                  Test the free run() driver + run_callbacks + custom kernels.
-# mc-checkpoint-test:           Test the free save/load helpers over the run components.
-# mc-input-config-test:         Test input-config serialization of params + run components.
-# mc-mixed-backend-test:        Test that the checkpoint and input-config channels stay independent.
-# mc-callbacks-test:                  Test progress_printer and JSON/HDF5 checkpoint helpers.
-# mc-mpi-test:                        Test MPI reduction helpers on simplemc-mc types (mpirun -n 4).
+# mc-stats-and-params-test: Test simulation_params and simulation_stats.
+# mc-measurement-test: Test basic_measurement wrapper + measurement struct + mc_measurement concept.
+# mc-measurement-set-test: Test measurement_set (add, active cache, measure_all, serialization).
+# mc-update-test: Test basic_update wrapper + update struct + mc_update concept.
+# mc-update-set-test: Test update_set (add, add_pair, weight, select, serialization).
+# mc-kernel-test: Test the mc_kernel concept.
+# mc-metropolis-kernel-test: Test the default Metropolis step kernel.
+# mc-run-test: Test the free run() driver + run_callbacks + custom kernels.
+# mc-checkpoint-test: Test the free save/load helpers over the run components.
+# mc-input-config-test: Test input-config serialization of params + run components.
+# mc-mixed-backend-test: Test that the checkpoint and input-config channels stay independent.
+# mc-callbacks-test: Test progress_printer and JSON/HDF5 checkpoint helpers.
+# mc-mpi-test: Test MPI reduction helpers on simplemc-mc types (mpirun -n 4).
 
 # create executables
 add_executable(mc-stats-and-params-test stats_and_params_test.cpp)

@@ -18,14 +18,14 @@ struct always_accept {
 
 struct always_reject {
     std::shared_ptr<int> rejects = std::make_shared<int>(0);
-    double attempt() { return 0.0001; } // > 0 so not impossible, but tiny acceptance prob
+    double attempt() { return 0.0; }
     void accept() {}
     void reject() { ++*rejects; }
 };
 
 struct always_impossible {
     std::shared_ptr<int> rejects = std::make_shared<int>(0);
-    double attempt() { return 0.0; } // impossible
+    double attempt() { return -1.0; }
     void accept() {}
     void reject() { ++*rejects; }
 };
@@ -67,7 +67,6 @@ TEST(MCMetropolisKernel, StepImpossible) {
     EXPECT_EQ(us[0].nprops, 50u);
     EXPECT_EQ(us[0].naccs, 0u);
     EXPECT_EQ(us[0].nimps, 50u);
-    // Impossible proposals are rejected: attempt() is always followed by accept() or reject().
     EXPECT_EQ(*rejects, 50);
 }
 
