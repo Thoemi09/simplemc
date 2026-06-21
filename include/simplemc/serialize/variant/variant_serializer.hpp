@@ -29,14 +29,18 @@ namespace simplemc {
  * choose the storage backend (e.g. JSON, HDF5, etc.) at **runtime** while passing a single fixed
  * serializer type around.
  *
- * **Capability is the intersection of the backends.** Because `std::visit` instantiates every arm,
- * `save_at` / `load_at` / `try_load_at` are constrained by simplemc::save_at_compatible /
- * simplemc::load_at_compatible folded over the whole backend pack: a value type must be serializable
- * by *every* backend, not just the active one. In practice the shipped backends cover overlapping
- * type sets.
+ * **Dispatch.** For a value type with an ADL `%simplemc_save` / `%simplemc_load` written against the
+ * variant handle itself, `save_at` / `load_at` / `try_load_at` descend into a sub-handle and dispatch
+ * to that overload (the **simplemc-mc** value types rely on this). Otherwise they delegate to the
+ * active backend's same-named member.
  *
- * The backend currently held can be inspected via backend(), e.g. with `std::get_if` or
- * `std::visit`.
+ * **Capability is the intersection of the backends.** For the backend-delegating path, because
+ * `std::visit` instantiates every arm, the operations are constrained by simplemc::save_at_compatible
+ * / simplemc::load_at_compatible folded over the whole backend pack: a value type must be
+ * serializable by *every* backend, not just the active one. In practice the shipped backends cover
+ * overlapping type sets.
+ *
+ * The backend currently held can be inspected via backend(), e.g. with `std::get_if` or `std::visit`.
  *
  * @tparam Bs Backend serializer types.
  */
@@ -70,52 +74,89 @@ public:
     variant_serializer(B&& backend) : backend_ { std::forward<B>(backend) } {}
 
     /**
-     * @brief Serialize a value at sub-location `key` through the active backend.
+     * @brief Serialize a value at sub-location `key`.
      *
-     * @tparam T Value type; must be writable by every backend (simplemc::save_at_compatible).
+     * @details If an ADL `%simplemc_save(variant_serializer&, const T&)` is reachable for `T` (i.e.
+     * the type's serialization is written against this variant handle itself), descend into a
+     * sub-handle and dispatch to it.
+     *
+     * Otherwise delegate to the active backend's `save_at`, which requires every backend to handle
+     * `T` (simplemc::save_at_compatible).
+     *
+     * @tparam T Value type.
      * @param key Sub-key relative to the current location.
      * @param value Value to write.
-     * @return A handle wrapping the active backend (for chaining).
+     * @return A copy of *this.
      */
     template <typename T>
-        requires save_at_compatible<T, Bs...>
+        requires(has_simplemc_save<T, variant_serializer> || save_at_compatible<T, Bs...>)
     variant_serializer save_at(std::string_view key, const T& value) {
-        return std::visit(
-            [&](auto& s) -> variant_serializer { return variant_serializer { s.save_at(key, value) }; }, backend_);
+        if constexpr (has_simplemc_save<T, variant_serializer>) {
+            auto sub = (*this)[key];
+            simplemc_save(sub, value);
+        } else {
+            std::visit([&](auto& s) { s.save_at(key, value); }, backend_);
+        }
+        return *this;
     }
 
     /**
-     * @brief Deserialize a value at sub-location `key` through the active backend.
+     * @brief Deserialize a value at sub-location `key`.
      *
-     * @details Throws (via the active backend) if the key is missing.
+     * @details If an ADL `%simplemc_load(const variant_serializer&, T&)` is reachable for `T` (i.e.
+     * the type's deserialization is written against this variant handle itself), descend into a
+     * sub-handle and dispatch to it.
      *
-     * @tparam T Value type; must be readable by every backend (simplemc::load_at_compatible).
+     * Otherwise delegate to the active backend's `load_at`, which requires every backend to handle
+     * `T` (simplemc::load_at_compatible).
+     *
+     * @tparam T Value type.
      * @param key Sub-key relative to the current location.
      * @param value Value to read into.
-     * @return A handle wrapping the active backend (for chaining).
+     * @return A copy of *this.
      */
     template <typename T>
-        requires load_at_compatible<T, Bs...>
+        requires(has_simplemc_load<T, variant_serializer> || load_at_compatible<T, Bs...>)
     variant_serializer load_at(std::string_view key, T& value) const {
-        return std::visit(
-            [&](const auto& s) -> variant_serializer { return variant_serializer { s.load_at(key, value) }; },
-            backend_);
+        if constexpr (has_simplemc_load<T, variant_serializer>) {
+            const auto sub = (*this)[key];
+            simplemc_load(sub, value);
+        } else {
+            std::visit([&](const auto& s) { s.load_at(key, value); }, backend_);
+        }
+        return *this;
     }
 
     /**
      * @brief Try to deserialize a value at sub-location `key` through the active backend.
      *
-     * @details Leaves `value` untouched and returns false if the key is missing.
+     * @details If an ADL `%simplemc_load(const variant_serializer&, T&)` is reachable for `T` (i.e.
+     * the type's deserialization is written against this variant handle itself), descend into a
+     * sub-handle and dispatch to it.
      *
-     * @tparam T Value type; must be readable by every backend (simplemc::load_at_compatible).
+     * Otherwise delegate to the active backend's `try_load_at`, which requires every backend to
+     * handle `T` (simplemc::load_at_compatible).
+     *
+     * It leaves `value` untouched and returns false if the key is missing.
+     *
+     * @tparam T Value type.
      * @param key Sub-key relative to the current location.
      * @param value Value to read into.
      * @return True if the key was present and the read occurred, false otherwise.
      */
     template <typename T>
-        requires load_at_compatible<T, Bs...>
+        requires(has_simplemc_load<T, variant_serializer> || load_at_compatible<T, Bs...>)
     bool try_load_at(std::string_view key, T& value) const {
-        return std::visit([&](const auto& s) -> bool { return s.try_load_at(key, value); }, backend_);
+        if constexpr (has_simplemc_load<T, variant_serializer>) {
+            if (!has(key)) {
+                return false;
+            }
+            const auto sub = (*this)[key];
+            simplemc_load(sub, value);
+            return true;
+        } else {
+            return std::visit([&](const auto& s) -> bool { return s.try_load_at(key, value); }, backend_);
+        }
     }
 
     /**

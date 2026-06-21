@@ -54,6 +54,23 @@ static_assert(serializer<mock_serializer>);
 
 using var_serializer = variant_serializer<json_serializer, mock_serializer>;
 
+// A type whose serialization is written against the variant handle itself (the pattern the
+// simplemc-mc value types use). It exercises the variant-level ADL dispatch branch of save_at /
+// load_at / try_load_at, rather than per-backend delegation.
+struct nested_thing {
+    int a = 0;
+    double b = 0.0;
+
+    friend void simplemc_save(var_serializer& s, const nested_thing& v) { // NOLINT
+        s.save_at("a", v.a);
+        s.save_at("b", v.b);
+    }
+    friend void simplemc_load(const var_serializer& s, nested_thing& v) { // NOLINT
+        s.load_at("a", v.a);
+        s.load_at("b", v.b);
+    }
+};
+
 } // namespace
 
 // The variant serializer models the serializer concept.
@@ -135,6 +152,33 @@ TEST(VariantSerializer, TryLoadMissingKey) {
     int untouched = 99;
     EXPECT_FALSE(d.try_load_at("absent", untouched));
     EXPECT_EQ(untouched, 99);
+}
+
+// A type with a variant-level simplemc_save/load dispatches through the variant's own ADL branch:
+// save_at nests the fields under the key, and load_at / try_load_at round-trip it.
+TEST(VariantSerializer, VariantLevelAdlDispatch) {
+    var_serializer s { json_serializer {} };
+    s.save_at("thing", nested_thing { 7, 2.5 });
+
+    auto* js = std::get_if<json_serializer>(&s.backend());
+    ASSERT_NE(js, nullptr);
+    EXPECT_EQ(js->root().dump(), R"({"thing":{"a":7,"b":2.5}})");
+
+    const var_serializer d { json_serializer { std::move(js->root()) } };
+    nested_thing loaded;
+    d.load_at("thing", loaded);
+    EXPECT_EQ(loaded.a, 7);
+    EXPECT_DOUBLE_EQ(loaded.b, 2.5);
+
+    nested_thing via_try;
+    EXPECT_TRUE(d.try_load_at("thing", via_try));
+    EXPECT_EQ(via_try.a, 7);
+    EXPECT_DOUBLE_EQ(via_try.b, 2.5);
+
+    nested_thing untouched { -1, -1.0 };
+    EXPECT_FALSE(d.try_load_at("absent", untouched));
+    EXPECT_EQ(untouched.a, -1);
+    EXPECT_DOUBLE_EQ(untouched.b, -1.0);
 }
 
 // has() reflects presence through the active backend.
