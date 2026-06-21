@@ -86,15 +86,15 @@ struct progress_printer {
     bool rank_zero_only = false;
 
     /// Wall-clock timer used to throttle. Reset by emit() after a print.
-    mutable timer<> throttle_clk {};
+    timer<> throttle_clk {};
 
     /// Whether the first call has been observed (so the first call always prints).
-    mutable bool started = false;
+    bool started = false;
 
     /**
      * @brief Print one status line if rank-gated emission is enabled and the throttle has elapsed.
      */
-    void operator()(const simulation_ctx& x) const {
+    void operator()(const simulation_ctx& x) {
         if (rank_zero_only && rank != 0) {
             return;
         }

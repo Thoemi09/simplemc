@@ -94,14 +94,15 @@ concept mc_kernel = requires(K& k, RNG& rng) { k.step(rng); };
  * - `c.stop_when(ctx) -> bool` returns a boolean flag indicating whether to stop the simulation
  * (`false`) or to keep going (`true`). It is polled in the outer loop condition.
  *
- * All four callbacks must be invocable from a `const` bundle.
+ * All four callbacks must be invocable from a non-const bundle (so callbacks may mutate their own
+ * state).
  *
  * See simplemc::run_callbacks for more information and defaults.
  *
  * @tparam C Type to check.
  */
 template <typename C>
-concept mc_run_callbacks = requires(const C& c, const simulation_ctx& x) {
+concept mc_run_callbacks = requires(C& c, const simulation_ctx& x) {
     c.on_step(x);
     c.on_cycle(x);
     c.on_checkpoint(x);

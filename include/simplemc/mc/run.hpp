@@ -16,6 +16,7 @@
 #include <simplemc/utils/timer.hpp>
 
 #include <cstdint>
+#include <type_traits>
 
 namespace simplemc {
 
@@ -70,9 +71,10 @@ namespace simplemc {
  * @param p Simulation parameters controlling the run.
  * @param cbs Optional callbacks.
  */
-template <typename RNG, mc_kernel<RNG> Kernel, mc_run_callbacks Cbs = run_callbacks<>>
-void run(RNG& rng, Kernel& kernel, measurement_set& meas, simulation_stats& stats, const simulation_params& p = {},
-    const Cbs& cbs = {}) {
+template <typename RNG, typename Kernel, typename Cbs = run_callbacks<>>
+    requires mc_kernel<std::remove_cvref_t<Kernel>, RNG> && mc_run_callbacks<std::remove_cvref_t<Cbs>>
+void run(RNG& rng, Kernel&& kernel, measurement_set& meas, simulation_stats& stats, // NOLINT
+    const simulation_params& p = {}, Cbs&& cbs = {}) { // NOLINT
     // validate parameters
     validate_simulation_params(p);
 
