@@ -104,13 +104,13 @@ TEST(MCMixedBackend, StateAndInputConfigDispatchIndependently) {
 
     // Checkpoint channel carries the state-only fields:
     EXPECT_TRUE(doc_of(state_w).contains("rng"));
-    EXPECT_TRUE(doc_of(state_w).contains("cumulative_steps"));
+    EXPECT_TRUE(doc_of(state_w).contains("stats"));
     EXPECT_TRUE(doc_of(state_w)["updates"]["tunable"].contains("cumulative_nprops"));
     EXPECT_TRUE(doc_of(state_w)["updates"]["tunable"]["user"].contains("state_counter"));
 
     // Input-config channel carries only the input-config fields, no state fields:
     EXPECT_FALSE(doc_of(input_w).contains("rng"));
-    EXPECT_FALSE(doc_of(input_w).contains("cumulative_steps"));
+    EXPECT_FALSE(doc_of(input_w).contains("stats"));
     EXPECT_FALSE(doc_of(input_w)["updates"]["tunable"].contains("cumulative_nprops"));
     EXPECT_TRUE(doc_of(input_w)["updates"]["tunable"].contains("weight"));
     EXPECT_TRUE(doc_of(input_w)["updates"]["tunable"]["user"].contains("config_threshold"));

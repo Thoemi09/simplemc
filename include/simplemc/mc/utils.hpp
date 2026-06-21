@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Free composite save / load / MPI-collect helpers over the simplemc-mc run components.
+ * @brief Utilities for **simplemc-mc** library.
  */
 
 #ifndef SIMPLEMC_MC_UTILS_HPP
@@ -22,77 +22,65 @@ namespace simplemc {
  */
 
 /**
- * @brief Serialize the persistent run state held across the four run components.
+ * @brief Serialize the persistent run state of a MC simulation.
  *
- * @details Writes the RNG state under `"rng"`, the cumulative simulation counters at the current
- * location, and the registered updates / measurements under `"updates"` / `"measurements"`. Per-run
- * state (current-run counters, last step count / runtime) and the per-call simplemc::simulation_params
- * are intentionally not part of a checkpoint. Mirrors the per-entity schema produced by the
- * component-level `simplemc_save` overloads.
+ * @details Convenience function that serializes the random number generator, update set, measurement
+ * set and simulation statistics in a single call.
  *
  * @tparam RNG Random number generator type.
  * @param s Checkpoint serializer handle.
- * @param rng Random number generator to persist.
- * @param updates Update set to persist.
- * @param meas Measurement set to persist.
- * @param stats Cumulative simulation statistics to persist.
+ * @param rng Random number generator to serialize.
+ * @param updates Update set to serialize.
+ * @param meas Measurement set to serialize.
+ * @param stats Simulation statistics to serialize.
  */
 template <typename RNG>
 void simplemc_save(mc_serializer& s, const RNG& rng, const update_set& updates, const measurement_set& meas,
     const simulation_stats& stats) {
     s.save_at("rng", rng);
-    simplemc_save(s, stats);
-
-    auto u = s["updates"];
-    simplemc_save(u, updates);
-
-    auto m = s["measurements"];
-    simplemc_save(m, meas);
+    s.save_at("stats", stats);
+    s.save_at("updates", updates);
+    s.save_at("measurements", meas);
 }
 
 /**
- * @brief Restore the persistent run state into the four run components.
+ * @brief Deserialize the persistent run state of a MC simulation.
  *
- * @details The destination update / measurement sets must already have the same entries (matching
- * names) registered. An entry present in a non-empty set but missing from the checkpoint throws
- * simplemc::simplemc_exception; empty sets are skipped. Per-run state and the internal selection
- * distribution are not touched.
+ * @details Convenience function that deserializes the random number generator, update set,
+ * measurement set and simulation statistics in a single call.
+ *
+ * Update and measurement sets are only deserialized if the destination set is non-empty.
  *
  * @tparam RNG Random number generator type.
- * @param s Const checkpoint serializer handle.
- * @param rng Random number generator to restore.
- * @param updates Update set to patch in place.
- * @param meas Measurement set to patch in place.
- * @param stats Cumulative simulation statistics to restore.
+ * @param s Checkpoint serializer handle.
+ * @param rng Random number generator to deserialize into.
+ * @param updates Update set to deserialize into.
+ * @param meas Measurement set to deserialize into.
+ * @param stats Simulation statistics to deserialize into.
  */
 template <typename RNG>
 void simplemc_load(
     const mc_serializer& s, RNG& rng, update_set& updates, measurement_set& meas, simulation_stats& stats) {
     s.load_at("rng", rng);
-    simplemc_load(s, stats);
-
+    s.load_at("stats", stats);
     if (!updates.empty()) {
-        const auto u = s["updates"];
-        simplemc_load(u, updates);
+        s.load_at("updates", updates);
     }
-
     if (!meas.empty()) {
-        const auto m = s["measurements"];
-        simplemc_load(m, meas);
+        s.load_at("measurements", meas);
     }
 }
 
 /**
- * @brief Serialize the user-facing input config of the run components.
+ * @brief Serialize the user-facing input config of a MC simulation.
  *
- * @details Writes the simplemc::simulation_params under `"params"`, then per-update `weight` and
- * per-measurement `is_active` (plus any opt-in user input-config) under `"updates"` /
- * `"measurements"`.
+ * @details Convenience function that serializes the user-facing input config of the simulation
+ * parameters, update set and measurement set in a single call.
  *
  * @param s Input-config serializer handle.
- * @param p Simulation parameters to persist.
- * @param updates Update set whose input config to persist.
- * @param meas Measurement set whose input config to persist.
+ * @param p Simulation parameters to serialize.
+ * @param updates Update set to serialize.
+ * @param meas Measurement set to serialize.
  */
 inline void simplemc_save_input_config(
     mc_serializer& s, const simulation_params& p, const update_set& updates, const measurement_set& meas) {
@@ -107,17 +95,15 @@ inline void simplemc_save_input_config(
 }
 
 /**
- * @brief Restore the user-facing input config into the run components.
+ * @brief Deserialize the user-facing input config of a MC simulation.
  *
- * @details The destination update / measurement sets must already have the same entries (matching
- * names) registered. Parameters are read leniently (missing fields keep their defaults); a non-empty
- * set with an entry missing from the input config throws simplemc::simplemc_exception, mirroring
- * simplemc_load.
+ * @details Convenience function that deserializes the user-facing input config of the simulation
+ * parameters, update set and measurement set in a single call.
  *
- * @param s Const input-config serializer handle.
- * @param p Simulation parameters to read into.
- * @param updates Update set to patch in place.
- * @param meas Measurement set to patch in place.
+ * @param s Input-config serializer handle.
+ * @param p Simulation parameters to deserialize into.
+ * @param updates Update set to deserialize into.
+ * @param meas Measurement set to deserialize into.
  */
 inline void simplemc_load_input_config(
     const mc_serializer& s, simulation_params& p, update_set& updates, measurement_set& meas) {
@@ -126,23 +112,22 @@ inline void simplemc_load_input_config(
         simplemc_load_input_config(params, p);
     }
 
-    if (!updates.empty()) {
+    if (!updates.empty() && s.has("updates")) {
         const auto u = s["updates"];
         simplemc_load_input_config(u, updates);
     }
 
-    if (!meas.empty()) {
+    if (!meas.empty() && s.has("measurements")) {
         const auto m = s["measurements"];
         simplemc_load_input_config(m, meas);
     }
 }
 
 /**
- * @brief All-reduce every reducible run component across MPI ranks.
+ * @brief Collect MC simulation components from different MPI processes.
  *
- * @details Composite reducer that forwards to simplemc_mpi_collect on the simplemc::simulation_stats,
- * simplemc::update_set, and simplemc::measurement_set in turn. The RNG and the internal selection
- * distribution are intentionally not touched. Reduction is in-place.
+ * @details Convenience function that collects the update set, measurement set and simulation
+ * statistics from different MPI processes in a single call.
  *
  * @param comm MPI communicator over which to reduce.
  * @param updates Update set to reduce in place.
