@@ -68,8 +68,8 @@ void simplemc_load(const S& s, state_only_update& u) {
 void run_and_accumulate(update_set& updates, measurement_set& meas, simulation_stats& stats, xoshiro256ss& rng,
     const simulation_params& p) {
     metropolis_kernel kernel { updates };
-    run(rng, kernel, meas, stats, p);
-    accumulate_simulation_stats(stats);
+    const auto ctx = run(rng, kernel, meas, p);
+    accumulate_simulation_stats(stats, ctx);
     updates.accumulate_counters();
 }
 

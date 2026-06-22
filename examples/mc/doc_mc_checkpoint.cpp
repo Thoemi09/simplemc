@@ -85,11 +85,11 @@ int main() {
 
     simplemc::metropolis_kernel kernel { updates };
 
-    simplemc::run(rng, kernel, meas, stats,
+    const auto ctx = simplemc::run(rng, kernel, meas,
         { .max_steps = 1'000'000, .max_time = 60.0, .steps_per_cycle = 1, .cycles_per_check = 10'000 });
 
     // Fold the run into the cumulative counters, then snapshot the components plus the user state.
-    accumulate_simulation_stats(stats);
+    accumulate_simulation_stats(stats, ctx);
     const auto writer = simplemc::make_json_checkpoint_writer(rng, updates, meas, stats, &state, path);
     writer(simplemc::simulation_ctx {});
     fmt::print("wrote checkpoint to {}\n", path.string());

@@ -11,7 +11,6 @@
 #include <simplemc/mc/run_callbacks.hpp>
 #include <simplemc/mc/simulation_ctx.hpp>
 #include <simplemc/mc/simulation_params.hpp>
-#include <simplemc/mc/simulation_stats.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 #include <simplemc/utils/timer.hpp>
 
@@ -29,15 +28,15 @@ namespace simplemc {
  * @brief Run a Monte Carlo simulation.
  *
  * @details This function drives every MC simulation. It takes a random number generator, an MC kernel,
- * a set of measurements, simulation statistics, optional simulation parameters and callback functions
- * as arguments to do the following:
+ * a set of measurements, optional simulation parameters and callback functions as arguments to do the
+ * following:
  *
  * 1. It validates the parameters by calling simplemc::validate_simulation_params().
  * 2. It calls the kernel's `prepare()` method (if it is available).
  * 3. It rebuilds the active set of measurements by calling measurement_set::refresh_active.
  * 4. It initializes a current simplemc::simulation_ctx and other local variables.
  * 5. It performs the actual **MC loop** until some stop criterion is satisfied.
- * 6. It updates the simulation statistics.
+ * 6. It writes the final runtime into the context and returns it.
  *
  * The **MC loop** is a 3-fold nested loop which works as follows:
  *
@@ -55,8 +54,10 @@ namespace simplemc {
  *   - the run has taken simulation_params::max_time seconds or longer,
  *   - the user-defined `stop_when()` callback returns true.
  *
- * On exit, the fields simulation_stats::last_steps_done and simulation_stats::last_runtime are
- * recorded in the given simulation statistics. Per-update counters are written by the kernel.
+ * On exit, the returned simplemc::simulation_ctx holds the final simulation_ctx::steps_done and
+ * simulation_ctx::runtime of the completed run. Per-update counters are written by the kernel. Users
+ * can fold the current simulation context into cumulative (over multiple runs) simulation stats with
+ * simplemc::accumulate_simulation_stats.
  *
  * @note Successful simulations always perform a number of MC steps which is a multiple of
  * simulation_params::cycles_per_check times simulation_params::steps_per_cycle.
@@ -67,13 +68,14 @@ namespace simplemc {
  * @param rng Random number generator.
  * @param kernel Kernel that implements the desired MC algorithm.
  * @param meas Measurement set. Its active cache is rebuilt at entry.
- * @param stats Simulation statistics.
  * @param p Simulation parameters controlling the run.
  * @param cbs Optional callbacks.
+ * @return The final simplemc::simulation_ctx of the run containing the total MC steps done and the
+ * total runtime.
  */
 template <typename RNG, typename Kernel, typename Cbs = run_callbacks<>>
     requires mc_kernel<std::remove_cvref_t<Kernel>, RNG> && mc_run_callbacks<std::remove_cvref_t<Cbs>>
-void run(RNG& rng, Kernel&& kernel, measurement_set& meas, simulation_stats& stats, // NOLINT
+simulation_ctx run(RNG& rng, Kernel&& kernel, measurement_set& meas, // NOLINT
     const simulation_params& p = {}, Cbs&& cbs = {}) { // NOLINT
     // validate parameters
     validate_simulation_params(p);
@@ -119,9 +121,9 @@ void run(RNG& rng, Kernel&& kernel, measurement_set& meas, simulation_stats& sta
         }
     }
 
-    // record simulation stats
-    stats.last_steps_done = ctx.steps_done;
-    stats.last_runtime = ctx.elapsed();
+    // write the final runtime and hand back the context
+    ctx.runtime = ctx.elapsed();
+    return ctx;
 }
 
 /** @} */

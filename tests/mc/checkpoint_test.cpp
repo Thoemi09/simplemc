@@ -84,8 +84,8 @@ const nlohmann::json& doc(const mc_serializer& s) { return std::get<json_seriali
 void run_and_accumulate(update_set& updates, measurement_set& meas, simulation_stats& stats,
     xoshiro256ss& rng, const simulation_params& p) {
     metropolis_kernel kernel { updates };
-    run(rng, kernel, meas, stats, p);
-    accumulate_simulation_stats(stats);
+    const auto ctx = run(rng, kernel, meas, p);
+    accumulate_simulation_stats(stats, ctx);
     updates.accumulate_counters();
 }
 
@@ -144,9 +144,7 @@ TEST(MCCheckpoint, JsonRoundTripPersistsCumulativeAndConfig) {
     EXPECT_DOUBLE_EQ(dst_updates.data()[0].ratio, updates.data()[0].ratio);
     EXPECT_EQ(dst_meas.data()[0].is_active, meas.data()[0].is_active);
 
-    // Per-run fields are zero on dst.
-    EXPECT_EQ(dst_stats.last_steps_done, 0u);
-    EXPECT_DOUBLE_EQ(dst_stats.last_runtime, 0.0);
+    // Per-run update counters are zero on dst.
     EXPECT_EQ(dst_updates.data()[0].nprops, 0u);
 
     // User-state round-trip via simplemc_save / simplemc_load.

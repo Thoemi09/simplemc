@@ -45,7 +45,6 @@ struct integral_observer {
 int main() {
     my_state state;
     simplemc::xoshiro256ss rng { 0xc0ffee };
-    simplemc::simulation_stats stats;
 
     // Assemble the pieces by hand instead of using the simulation aggregate.
     simplemc::update_set updates;
@@ -64,7 +63,7 @@ int main() {
             },
     };
 
-    simplemc::run(rng, kernel, meas, stats,
+    const auto ctx = simplemc::run(rng, kernel, meas,
         { .max_steps = 1'000'000,
             .max_time = 60.0,
             .steps_per_cycle = 1,
@@ -75,5 +74,5 @@ int main() {
     const auto* m = meas.get<integral_observer>("integral");
     const double result = m->acc.mean() * (state.b - state.a);
     const double exact = std::sin(state.b) - std::sin(state.a);
-    fmt::print("steps:  {}\nresult: {}\nexact:  {}\n", stats.last_steps_done, result, exact);
+    fmt::print("steps:  {}\nresult: {}\nexact:  {}\n", ctx.steps_done, result, exact);
 }

@@ -52,17 +52,12 @@ protected:
 
 TEST_F(SimplemcMCMPI, SimulationStatsAllReduceSumsCounters) {
     simulation_stats st;
-    st.last_steps_done = static_cast<std::uint64_t>(rank + 1);              // ranks contribute 1..size
-    st.last_runtime = 1.5 * (rank + 1);
-    st.cumulative_steps = static_cast<std::uint64_t>(100 * (rank + 1));
+    st.cumulative_steps = static_cast<std::uint64_t>(100 * (rank + 1)); // ranks contribute 100..100*size
     st.cumulative_time = 0.25 * (rank + 1);
 
     simplemc_mpi_collect(comm, st);
 
     const std::uint64_t expected_int_sum = static_cast<std::uint64_t>(size * (size + 1) / 2);
-    const double expected_dbl_sum = 1.5 * static_cast<double>(size * (size + 1)) / 2.0;
-    EXPECT_EQ(st.last_steps_done, expected_int_sum);
-    EXPECT_DOUBLE_EQ(st.last_runtime, expected_dbl_sum);
     EXPECT_EQ(st.cumulative_steps, 100u * expected_int_sum);
     EXPECT_DOUBLE_EQ(st.cumulative_time, 0.25 * static_cast<double>(size * (size + 1)) / 2.0);
 }
@@ -143,13 +138,13 @@ TEST_F(SimplemcMCMPI, CompositeReducesAllComponents) {
     // Seed per-update and per-stats counters with rank-distinct values without running the kernel,
     // so the verification is independent of RNG behavior.
     updates[0].nprops = static_cast<std::uint64_t>(rank + 1);
-    stats.last_steps_done = static_cast<std::uint64_t>(rank + 1);
+    stats.cumulative_steps = static_cast<std::uint64_t>(rank + 1);
 
     simplemc_mpi_collect(comm, updates, meas, stats);
 
     const std::uint64_t s = static_cast<std::uint64_t>(size * (size + 1) / 2);
     EXPECT_EQ(updates[0].nprops, s);
-    EXPECT_EQ(stats.last_steps_done, s);
+    EXPECT_EQ(stats.cumulative_steps, s);
 
     const auto* reduced = meas.get<mean_meas>("mean");
     ASSERT_NE(reduced, nullptr);

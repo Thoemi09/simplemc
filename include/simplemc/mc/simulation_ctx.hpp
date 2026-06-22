@@ -38,6 +38,11 @@ struct simulation_ctx {
     std::uint64_t steps_done = 0;
 
     /**
+     * @brief Wall-clock time in seconds of the completed run.
+     */
+    double runtime = 0.0;
+
+    /**
      * @brief Wall-clock timer for the current run (started by simplemc::run before the loop).
      */
     timer<> clk {};
