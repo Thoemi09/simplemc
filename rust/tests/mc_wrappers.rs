@@ -16,10 +16,10 @@ impl CounterMeasurement {
     }
 }
 
-impl Measurement for CounterMeasurement {
+impl Measurement<()> for CounterMeasurement {
     type Output = i32;
 
-    fn measure(&mut self) {
+    fn measure(&mut self, _state: &()) {
         self.count.set(self.count.get() + 1);
     }
 
@@ -45,16 +45,16 @@ impl ToyUpdate {
     }
 }
 
-impl Update for ToyUpdate {
-    fn attempt(&mut self, _rng: &mut dyn rand::RngCore) -> f64 {
+impl Update<()> for ToyUpdate {
+    fn attempt<R: rand::Rng + ?Sized>(&mut self, _state: &mut (), _rng: &mut R) -> f64 {
         self.prob
     }
 
-    fn accept(&mut self) {
+    fn accept(&mut self, _state: &mut ()) {
         self.accepted.set(self.accepted.get() + 1);
     }
 
-    fn reject(&mut self) {
+    fn reject(&mut self, _state: &mut ()) {
         self.rejected.set(self.rejected.get() + 1);
     }
 }
@@ -72,12 +72,12 @@ impl MinimalUpdate {
     }
 }
 
-impl Update for MinimalUpdate {
-    fn attempt(&mut self, _rng: &mut dyn rand::RngCore) -> f64 {
+impl Update<()> for MinimalUpdate {
+    fn attempt<R: rand::Rng + ?Sized>(&mut self, _state: &mut (), _rng: &mut R) -> f64 {
         1.0
     }
 
-    fn accept(&mut self) {
+    fn accept(&mut self, _state: &mut ()) {
         self.accepted.set(self.accepted.get() + 1);
     }
 }
@@ -98,11 +98,11 @@ fn dyn_measurement_wraps_and_clones_unit_output_measurements() {
 #[derive(Clone)]
 struct UnitMeasurement(CounterMeasurement);
 
-impl Measurement for UnitMeasurement {
+impl Measurement<()> for UnitMeasurement {
     type Output = ();
 
-    fn measure(&mut self) {
-        self.0.measure();
+    fn measure(&mut self, state: &()) {
+        self.0.measure(state);
     }
 
     fn finish(self) -> Self::Output {}

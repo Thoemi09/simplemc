@@ -13,3 +13,10 @@ rand_core = "0.6"
 rand_xoshiro = "0.6"
 rayon = "1"
 thiserror = "1"
+
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "hot_path"
+harness = false

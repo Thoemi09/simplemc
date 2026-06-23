@@ -18,16 +18,16 @@ impl ToyUpdate {
     }
 }
 
-impl Update for ToyUpdate {
-    fn attempt(&mut self, _rng: &mut dyn rand::RngCore) -> f64 {
+impl Update<()> for ToyUpdate {
+    fn attempt<R: rand::Rng + ?Sized>(&mut self, _state: &mut (), _rng: &mut R) -> f64 {
         self.prob
     }
 
-    fn accept(&mut self) {
+    fn accept(&mut self, _state: &mut ()) {
         self.accepts.set(self.accepts.get() + 1);
     }
 
-    fn reject(&mut self) {}
+    fn reject(&mut self, _state: &mut ()) {}
 }
 
 fn update(name: &str, weight: f64) -> UpdateEntry {

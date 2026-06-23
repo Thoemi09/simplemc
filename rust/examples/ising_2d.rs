@@ -14,23 +14,23 @@
 //! The lattice is owned as the chain state. The update receives `&mut IsingLattice` when it
 //! proposes and accepts a flip, while the measurement receives `&IsingLattice` once per simulation
 //! cycle. The measurement records the magnetization per spin and absolute magnetization per spin,
-//! then returns a typed `IsingSummary` from `StatefulMeasurement::finish`. `IsingSummary`
-//! implements `Merge`, which lets `run_stateful_parallel` combine independent chains with the same
+//! then returns a typed `IsingSummary` from `Measurement::finish`. `IsingSummary` implements
+//! `Merge`, which lets `run_parallel` combine independent chains with the same
 //! reduction mechanism used by the rest of the prototype.
 //!
 //! The example runs the same model in two modes:
 //!
-//! 1. A single chain via `run_stateful_typed`.
-//! 2. Eight independent chains via `run_stateful_parallel`.
+//! 1. A single chain via `run_typed`.
+//! 2. Eight independent chains via `run_parallel`.
 //!
 //! This is still a prototype example, but unlike the first version it does not use `Arc<Mutex<_>>`
 //! in the hot path. Each rayon worker owns a complete independent chain state.
 
 use rmc_core::mc::{
-    run_stateful_parallel, run_stateful_typed, ParallelConfig, SimulationParams,
-    SingleStatefulUpdateSet, StatefulMeasurement, StatefulMetropolisKernel, StatefulUpdate,
+    run_parallel, run_typed, Measurement, MetropolisKernel, ParallelConfig, SimulationParams,
+    SingleUpdateSet, Update,
 };
-use rmc_core::random::{ChainId, SeedSource};
+use rmc_core::random::{uniform_index, ChainId, SeedSource};
 use rmc_core::Merge;
 
 #[derive(Clone)]
@@ -99,8 +99,8 @@ impl SpinFlipUpdate {
     }
 }
 
-impl StatefulUpdate<IsingLattice> for SpinFlipUpdate {
-    fn attempt(&mut self, state: &mut IsingLattice, rng: &mut dyn rand::RngCore) -> f64 {
+impl Update<IsingLattice> for SpinFlipUpdate {
+    fn attempt<R: rand::Rng + ?Sized>(&mut self, state: &mut IsingLattice, rng: &mut R) -> f64 {
         self.proposed_idx = uniform_index(rng, state.len());
         let delta_energy = state.delta_energy_for_flip(self.proposed_idx);
         if delta_energy <= 0 {
@@ -113,10 +113,6 @@ impl StatefulUpdate<IsingLattice> for SpinFlipUpdate {
     fn accept(&mut self, state: &mut IsingLattice) {
         state.flip(self.proposed_idx);
     }
-}
-
-fn uniform_index(rng: &mut dyn rand::RngCore, upper: usize) -> usize {
-    (rng.next_u64() as usize) % upper
 }
 
 struct MagnetizationMeasurement {
@@ -135,7 +131,7 @@ impl MagnetizationMeasurement {
     }
 }
 
-impl StatefulMeasurement<IsingLattice> for MagnetizationMeasurement {
+impl Measurement<IsingLattice> for MagnetizationMeasurement {
     type Output = IsingSummary;
 
     fn measure(&mut self, state: &IsingLattice) {
@@ -186,13 +182,13 @@ fn build_chain(
     _chain: ChainId,
 ) -> (
     IsingLattice,
-    StatefulMetropolisKernel<SingleStatefulUpdateSet<SpinFlipUpdate>>,
+    MetropolisKernel<SingleUpdateSet<SpinFlipUpdate>>,
     MagnetizationMeasurement,
 ) {
     let state = IsingLattice::ordered(16, 16);
     let update = SpinFlipUpdate::new(0.44); // critical point is at beta=0.440686
     let measurement = MagnetizationMeasurement::new();
-    let kernel = StatefulMetropolisKernel::new(SingleStatefulUpdateSet::new(update));
+    let kernel = MetropolisKernel::new(SingleUpdateSet::new(update));
     (state, kernel, measurement)
 }
 
@@ -209,7 +205,7 @@ fn main() -> rmc_core::Result<()> {
     let mut rng = seed.rng_for(ChainId(0));
     let (state, mut kernel, measurement) = build_chain(ChainId(0));
     let (_state, single_stats, single_summary) =
-        run_stateful_typed(state, &mut rng, &mut kernel, measurement, params())?;
+        run_typed(state, &mut rng, &mut kernel, measurement, params())?;
 
     println!(
         "single chain: steps={}, samples={}, mean_m={:.3}, mean_abs_m={:.3}",
@@ -220,7 +216,7 @@ fn main() -> rmc_core::Result<()> {
     );
 
     let chains = 8;
-    let (parallel_stats, parallel_summary) = run_stateful_parallel(
+    let (parallel_stats, parallel_summary) = run_parallel(
         ParallelConfig {
             chains,
             seed,

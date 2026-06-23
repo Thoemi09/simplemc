@@ -1,31 +1,44 @@
-use rand::RngCore;
+use rand::Rng;
 
 use crate::Result;
 
-pub trait Measurement {
-    type Output;
+/// A single Monte Carlo update acting on a chain's `State`.
+///
+/// This is the one update trait: there is no separate "stateless" variant. A stateless update is
+/// simply `Update<()>` — its `state` argument is the zero-sized unit and carries no information.
+/// Owning the mutated data in `State` (threaded by the run loop) is preferred over reaching for
+/// `Arc`/`Rc` shared cells, because each parallel chain then owns an independent `State`.
+///
+/// `attempt` is generic over the concrete RNG (`R: Rng + ?Sized`) so that, on the static
+/// (monomorphized) update-set path, every `rng.next_u64()` / `rng.gen()` call inside an update
+/// inlines instead of going through a vtable. This makes `Update` object-unsafe; the runtime
+/// (boxed) [`DynUpdateSet`](crate::mc::DynUpdateSet) path therefore type-erases `Update<()>` through
+/// a separate object-safe bridge that instantiates `attempt` with `R = dyn RngCore` (`dyn RngCore`
+/// implements `Rng` via `rand`'s blanket impl).
+pub trait Update<State> {
+    /// Propose a move and return its acceptance probability.
+    ///
+    /// A returned value `< 0.0` marks the move as *impossible* (rejected, counted separately);
+    /// `>= 1.0` is always accepted; otherwise it is accepted with the returned probability.
+    fn attempt<R: Rng + ?Sized>(&mut self, state: &mut State, rng: &mut R) -> f64;
 
-    fn measure(&mut self);
-    fn finish(self) -> Self::Output;
+    /// Commit the proposed move to `state`.
+    fn accept(&mut self, state: &mut State);
+
+    /// Roll back the proposed move. Defaults to a no-op (the common case where `attempt` does not
+    /// mutate `state` until `accept`).
+    fn reject(&mut self, _state: &mut State) {}
 }
 
-pub trait StatefulMeasurement<State> {
+/// A per-cycle measurement of a chain's `State`, returning a typed `Output` by ownership.
+///
+/// A stateless measurement is `Measurement<()>`. Results flow back through `finish` with no
+/// `Any`/downcast; see [`run_typed`](crate::mc::run_typed).
+pub trait Measurement<State> {
     type Output;
 
     fn measure(&mut self, state: &State);
     fn finish(self) -> Self::Output;
-}
-
-pub trait Update {
-    fn attempt(&mut self, rng: &mut dyn RngCore) -> f64;
-    fn accept(&mut self);
-    fn reject(&mut self) {}
-}
-
-pub trait StatefulUpdate<State> {
-    fn attempt(&mut self, state: &mut State, rng: &mut dyn RngCore) -> f64;
-    fn accept(&mut self, state: &mut State);
-    fn reject(&mut self, _state: &mut State) {}
 }
 
 pub struct StepOutcome {
@@ -42,29 +55,23 @@ pub struct UpdateStats {
     pub nimps: u64,
 }
 
+/// Common, dispatch-free view over an update set's per-update statistics.
 pub trait UpdateSet {
     fn stats(&self) -> &[UpdateStats];
 }
 
-pub trait SteppingUpdateSet<R>: UpdateSet {
-    fn prepare(&mut self) -> Result<()>;
-    fn select_and_step(&mut self, rng: &mut R) -> Result<StepOutcome>;
-}
-
-pub trait SteppingStatefulUpdateSet<State, R>: UpdateSet {
+/// An update set that can be driven for one MC step against a chain's `State`.
+///
+/// The static implementors ([`SingleUpdateSet`](crate::mc::SingleUpdateSet),
+/// [`TwoUpdateSet`](crate::mc::TwoUpdateSet)) are monomorphized over `R`, so RNG draws inline. The
+/// boxed [`DynUpdateSet`](crate::mc::DynUpdateSet) implements this only for `State = ()`.
+pub trait SteppingUpdateSet<State, R>: UpdateSet {
     fn prepare(&mut self, state: &mut State) -> Result<()>;
     fn select_and_step(&mut self, state: &mut State, rng: &mut R) -> Result<StepOutcome>;
 }
 
-pub trait Kernel<R> {
-    fn prepare(&mut self) -> Result<()> {
-        Ok(())
-    }
-
-    fn step(&mut self, rng: &mut R) -> Result<StepOutcome>;
-}
-
-pub trait StatefulKernel<State, R> {
+/// A kernel advances a chain by one MC step. A stateless kernel is `Kernel<(), R>`.
+pub trait Kernel<State, R> {
     fn prepare(&mut self, _state: &mut State) -> Result<()> {
         Ok(())
     }

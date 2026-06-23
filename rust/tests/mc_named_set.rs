@@ -3,10 +3,10 @@ use rmc_core::mc::{Measurement, MeasurementEntry, NamedSet};
 #[derive(Clone)]
 struct NoopMeasurement;
 
-impl Measurement for NoopMeasurement {
+impl Measurement<()> for NoopMeasurement {
     type Output = ();
 
-    fn measure(&mut self) {}
+    fn measure(&mut self, _state: &()) {}
 
     fn finish(self) -> Self::Output {}
 }

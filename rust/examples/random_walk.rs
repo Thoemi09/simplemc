@@ -1,64 +1,64 @@
-use std::sync::atomic::{AtomicI64, Ordering};
-use std::sync::Arc;
+//! Minimal 1-D random-walk simulation on the unified state-generic `rmc-core` API.
+//!
+//! The walker's integer position is the chain `State`. Each MC step proposes a `+/-1` move (always
+//! accepted), and the per-cycle measurement records the current position. Because the position lives
+//! in `State` — threaded by the run loop and owned independently per chain — there is no
+//! `Arc<AtomicI64>` or other shared-mutable-state in the hot path, even for the parallel run.
 
 use rmc_core::mc::{
-    run_parallel, run_typed, Measurement, ParallelConfig, SimulationParams, SingleUpdateSet,
-    StaticMetropolisKernel, Update,
+    run_parallel, run_typed, Measurement, MetropolisKernel, ParallelConfig, SimulationParams,
+    SingleUpdateSet, Update,
 };
 use rmc_core::random::{ChainId, SeedSource};
 use rmc_core::Merge;
 
 #[derive(Clone)]
 struct RandomWalkUpdate {
-    position: Arc<AtomicI64>,
     proposed_delta: i64,
 }
 
 impl RandomWalkUpdate {
-    fn new(position: Arc<AtomicI64>) -> Self {
-        Self {
-            position,
-            proposed_delta: 0,
-        }
+    fn new() -> Self {
+        Self { proposed_delta: 0 }
     }
 }
 
-impl Update for RandomWalkUpdate {
-    fn attempt(&mut self, rng: &mut dyn rand::RngCore) -> f64 {
+impl Update<i64> for RandomWalkUpdate {
+    fn attempt<R: rand::Rng + ?Sized>(&mut self, _position: &mut i64, rng: &mut R) -> f64 {
         self.proposed_delta = if rng.next_u64() & 1 == 0 { -1 } else { 1 };
         1.0
     }
 
-    fn accept(&mut self) {
-        self.position
-            .fetch_add(self.proposed_delta, Ordering::Relaxed);
+    fn accept(&mut self, position: &mut i64) {
+        *position += self.proposed_delta;
     }
 }
 
 struct WalkMeasurement {
-    position: Arc<AtomicI64>,
     cycles: u64,
+    final_position: i64,
 }
 
 impl WalkMeasurement {
-    fn new(position: Arc<AtomicI64>) -> Self {
+    fn new() -> Self {
         Self {
-            position,
             cycles: 0,
+            final_position: 0,
         }
     }
 }
 
-impl Measurement for WalkMeasurement {
+impl Measurement<i64> for WalkMeasurement {
     type Output = WalkSummary;
 
-    fn measure(&mut self) {
+    fn measure(&mut self, position: &i64) {
         self.cycles += 1;
+        self.final_position = *position;
     }
 
     fn finish(self) -> Self::Output {
         WalkSummary {
-            final_position_sum: self.position.load(Ordering::Relaxed),
+            final_position_sum: self.final_position,
             measured_cycles: self.cycles,
         }
     }
@@ -82,16 +82,13 @@ impl Merge for WalkSummary {
 fn build_chain(
     _chain: ChainId,
 ) -> (
-    StaticMetropolisKernel<SingleUpdateSet<RandomWalkUpdate>>,
+    i64,
+    MetropolisKernel<SingleUpdateSet<RandomWalkUpdate>>,
     WalkMeasurement,
 ) {
-    let position = Arc::new(AtomicI64::new(0));
-    let update = RandomWalkUpdate::new(Arc::clone(&position));
-    let measurement = WalkMeasurement::new(position);
-    (
-        StaticMetropolisKernel::new(SingleUpdateSet::new(update)),
-        measurement,
-    )
+    let state = 0_i64;
+    let kernel = MetropolisKernel::new(SingleUpdateSet::new(RandomWalkUpdate::new()));
+    (state, kernel, WalkMeasurement::new())
 }
 
 fn params() -> SimulationParams {
@@ -105,8 +102,9 @@ fn params() -> SimulationParams {
 fn main() -> rmc_core::Result<()> {
     let seed = SeedSource::new(0x5eed);
     let mut rng = seed.rng_for(ChainId(0));
-    let (mut kernel, measurement) = build_chain(ChainId(0));
-    let (single_stats, single_summary) = run_typed(&mut rng, &mut kernel, measurement, params())?;
+    let (state, mut kernel, measurement) = build_chain(ChainId(0));
+    let (_final_state, single_stats, single_summary) =
+        run_typed(state, &mut rng, &mut kernel, measurement, params())?;
 
     println!(
         "single chain: steps={}, cycles={}, final_position={}",

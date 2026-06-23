@@ -6,6 +6,10 @@ use super::named_set::NamedEntry;
 use super::traits::{Measurement, Update};
 use super::wrappers::{DynMeasurement, DynUpdate};
 
+// The boxed entry types below carry type-erased *stateless* updates/measurements (`Update<()>` /
+// `Measurement<(), Output = ()>`). The monomorphized static path is the one that threads a real
+// `State`; the runtime-flexible boxed path is specialized to `State = ()`.
+
 #[derive(Clone)]
 pub struct MeasurementEntry {
     pub wrapped: DynMeasurement,
@@ -16,7 +20,7 @@ pub struct MeasurementEntry {
 impl MeasurementEntry {
     pub fn new<M>(measurement: M, name: impl Into<String>) -> Result<Self>
     where
-        M: Measurement<Output = ()> + Clone + 'static,
+        M: Measurement<(), Output = ()> + Clone + 'static,
     {
         Self::new_with_active(measurement, name, true)
     }
@@ -27,7 +31,7 @@ impl MeasurementEntry {
         is_active: bool,
     ) -> Result<Self>
     where
-        M: Measurement<Output = ()> + Clone + 'static,
+        M: Measurement<(), Output = ()> + Clone + 'static,
     {
         Self::from_dyn(DynMeasurement::new(measurement), name, is_active)
     }
@@ -52,14 +56,11 @@ impl MeasurementEntry {
     }
 }
 
-impl Measurement for MeasurementEntry {
-    type Output = ();
-
-    fn measure(&mut self) {
+impl MeasurementEntry {
+    /// Run the type-erased measurement (side-effecting; produces no typed output).
+    pub fn measure(&mut self) {
         self.wrapped.measure();
     }
-
-    fn finish(self) -> Self::Output {}
 }
 
 impl NamedEntry for MeasurementEntry {
@@ -86,7 +87,7 @@ pub struct UpdateEntry {
 impl UpdateEntry {
     pub fn new<U>(update: U, name: impl Into<String>, weight: f64) -> Result<Self>
     where
-        U: Update + Clone + 'static,
+        U: Update<()> + Clone + 'static,
     {
         Self::from_dyn(DynUpdate::new(update), name, weight)
     }
@@ -133,16 +134,20 @@ impl UpdateEntry {
     }
 }
 
-impl Update for UpdateEntry {
-    fn attempt(&mut self, rng: &mut dyn RngCore) -> f64 {
+impl UpdateEntry {
+    /// Forward an attempt to the type-erased inner update.
+    ///
+    /// Inherent (not an `Update` impl) for the same reason as [`DynUpdate::attempt`]: `Update` is
+    /// object-unsafe under the generic-RNG signature, and the dyn boxed path needs a concrete RNG.
+    pub fn attempt<R: RngCore>(&mut self, rng: &mut R) -> f64 {
         self.wrapped.attempt(rng)
     }
 
-    fn accept(&mut self) {
+    pub fn accept(&mut self) {
         self.wrapped.accept();
     }
 
-    fn reject(&mut self) {
+    pub fn reject(&mut self) {
         self.wrapped.reject();
     }
 }

@@ -1,7 +1,6 @@
 use rmc_core::mc::{
-    run_stateful_parallel, run_stateful_typed, ParallelConfig, SimulationParams,
-    SingleStatefulUpdateSet, StatefulMeasurement, StatefulMetropolisKernel, StatefulUpdate,
-    UpdateSet,
+    run_parallel, run_typed, Measurement, MetropolisKernel, ParallelConfig, SimulationParams,
+    SingleUpdateSet, Update, UpdateSet,
 };
 use rmc_core::random::{ChainId, SeedSource};
 
@@ -15,8 +14,8 @@ struct AddUpdate {
     delta: i64,
 }
 
-impl StatefulUpdate<CounterState> for AddUpdate {
-    fn attempt(&mut self, _state: &mut CounterState, _rng: &mut dyn rand::RngCore) -> f64 {
+impl Update<CounterState> for AddUpdate {
+    fn attempt<R: rand::Rng + ?Sized>(&mut self, _state: &mut CounterState, _rng: &mut R) -> f64 {
         1.0
     }
 
@@ -31,7 +30,7 @@ struct CounterMeasurement {
     sum: i64,
 }
 
-impl StatefulMeasurement<CounterState> for CounterMeasurement {
+impl Measurement<CounterState> for CounterMeasurement {
     type Output = i64;
 
     fn measure(&mut self, state: &CounterState) {
@@ -45,12 +44,11 @@ impl StatefulMeasurement<CounterState> for CounterMeasurement {
 }
 
 #[test]
-fn run_stateful_typed_owns_and_returns_state() {
+fn run_typed_owns_and_returns_state() {
     let mut rng = SeedSource::new(123).rng_for(ChainId(0));
-    let mut kernel =
-        StatefulMetropolisKernel::new(SingleStatefulUpdateSet::new(AddUpdate { delta: 2 }));
+    let mut kernel = MetropolisKernel::new(SingleUpdateSet::new(AddUpdate { delta: 2 }));
 
-    let (state, stats, measured_sum) = run_stateful_typed(
+    let (state, stats, measured_sum) = run_typed(
         CounterState { value: 0 },
         &mut rng,
         &mut kernel,
@@ -72,8 +70,8 @@ fn run_stateful_typed_owns_and_returns_state() {
 }
 
 #[test]
-fn run_stateful_parallel_merges_outputs_from_independent_states() {
-    let (stats, measured_sum) = run_stateful_parallel(
+fn run_parallel_merges_outputs_from_independent_states() {
+    let (stats, measured_sum) = run_parallel(
         ParallelConfig {
             chains: 4,
             seed: SeedSource::new(123),
@@ -87,8 +85,7 @@ fn run_stateful_parallel_merges_outputs_from_independent_states() {
             let state = CounterState {
                 value: chain.0 as i64,
             };
-            let kernel =
-                StatefulMetropolisKernel::new(SingleStatefulUpdateSet::new(AddUpdate { delta: 1 }));
+            let kernel = MetropolisKernel::new(SingleUpdateSet::new(AddUpdate { delta: 1 }));
             (state, kernel, CounterMeasurement::default())
         },
     )

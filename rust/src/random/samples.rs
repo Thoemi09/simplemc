@@ -1,5 +1,19 @@
 use std::f64::consts::PI;
 
+use rand::Rng;
+
+/// Draw a uniform index in `0..len` without modulo bias.
+///
+/// Prefer this over `rng.next_u64() as usize % len`: the modulo pattern skews the distribution when
+/// `len` does not divide `2^64`. Delegates to `rand`'s `gen_range`, which uses rejection sampling.
+///
+/// # Panics
+/// Panics if `len == 0`.
+pub fn uniform_index<R: Rng + ?Sized>(rng: &mut R, len: usize) -> usize {
+    assert!(len > 0, "uniform_index requires len > 0");
+    rng.gen_range(0..len)
+}
+
 pub const fn uniform_sample(r: f64, a: f64, b: f64) -> f64 {
     assert!(b > a);
     a + r * (b - a)

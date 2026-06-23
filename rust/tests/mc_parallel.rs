@@ -2,8 +2,8 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 use rmc_core::mc::{
-    run_parallel, run_parallel_in_pool, Measurement, ParallelConfig, SimulationParams,
-    SingleUpdateSet, StaticMetropolisKernel, Update,
+    run_parallel, run_parallel_in_pool, Measurement, MetropolisKernel, ParallelConfig,
+    SimulationParams, SingleUpdateSet, Update,
 };
 use rmc_core::random::{ChainId, SeedSource};
 
@@ -11,12 +11,12 @@ struct AtomicIncrementUpdate {
     value: Arc<AtomicU64>,
 }
 
-impl Update for AtomicIncrementUpdate {
-    fn attempt(&mut self, _rng: &mut dyn rand::RngCore) -> f64 {
+impl Update<()> for AtomicIncrementUpdate {
+    fn attempt<R: rand::Rng + ?Sized>(&mut self, _state: &mut (), _rng: &mut R) -> f64 {
         1.0
     }
 
-    fn accept(&mut self) {
+    fn accept(&mut self, _state: &mut ()) {
         self.value.fetch_add(1, Ordering::Relaxed);
     }
 }
@@ -25,12 +25,12 @@ struct ProbabilisticAtomicIncrementUpdate {
     value: Arc<AtomicU64>,
 }
 
-impl Update for ProbabilisticAtomicIncrementUpdate {
-    fn attempt(&mut self, _rng: &mut dyn rand::RngCore) -> f64 {
+impl Update<()> for ProbabilisticAtomicIncrementUpdate {
+    fn attempt<R: rand::Rng + ?Sized>(&mut self, _state: &mut (), _rng: &mut R) -> f64 {
         0.5
     }
 
-    fn accept(&mut self) {
+    fn accept(&mut self, _state: &mut ()) {
         self.value.fetch_add(1, Ordering::Relaxed);
     }
 }
@@ -39,10 +39,10 @@ struct FinalValueMeasurement {
     value: Arc<AtomicU64>,
 }
 
-impl Measurement for FinalValueMeasurement {
+impl Measurement<()> for FinalValueMeasurement {
     type Output = u64;
 
-    fn measure(&mut self) {}
+    fn measure(&mut self, _state: &()) {}
 
     fn finish(self) -> Self::Output {
         self.value.load(Ordering::Relaxed)
@@ -68,7 +68,8 @@ fn run_parallel_merges_independent_chain_outputs() {
             };
             let measurement = FinalValueMeasurement { value };
             (
-                StaticMetropolisKernel::new(SingleUpdateSet::new(update)),
+                (),
+                MetropolisKernel::new(SingleUpdateSet::new(update)),
                 measurement,
             )
         },
@@ -83,7 +84,8 @@ fn run_parallel_merges_independent_chain_outputs() {
 #[test]
 fn run_parallel_rejects_zero_chains() {
     let err = run_parallel::<
-        StaticMetropolisKernel<SingleUpdateSet<AtomicIncrementUpdate>>,
+        (),
+        MetropolisKernel<SingleUpdateSet<AtomicIncrementUpdate>>,
         FinalValueMeasurement,
         _,
     >(
@@ -95,7 +97,8 @@ fn run_parallel_rejects_zero_chains() {
         |_chain| {
             let value = Arc::new(AtomicU64::new(0));
             (
-                StaticMetropolisKernel::new(SingleUpdateSet::new(AtomicIncrementUpdate {
+                (),
+                MetropolisKernel::new(SingleUpdateSet::new(AtomicIncrementUpdate {
                     value: Arc::clone(&value),
                 })),
                 FinalValueMeasurement { value },
@@ -137,7 +140,8 @@ fn run_parallel_is_reproducible_across_thread_counts() {
 fn probabilistic_chain(
     _chain: ChainId,
 ) -> (
-    StaticMetropolisKernel<SingleUpdateSet<ProbabilisticAtomicIncrementUpdate>>,
+    (),
+    MetropolisKernel<SingleUpdateSet<ProbabilisticAtomicIncrementUpdate>>,
     FinalValueMeasurement,
 ) {
     let value = Arc::new(AtomicU64::new(0));
@@ -146,7 +150,8 @@ fn probabilistic_chain(
     };
     let measurement = FinalValueMeasurement { value };
     (
-        StaticMetropolisKernel::new(SingleUpdateSet::new(update)),
+        (),
+        MetropolisKernel::new(SingleUpdateSet::new(update)),
         measurement,
     )
 }

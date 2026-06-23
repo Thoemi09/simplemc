@@ -16,10 +16,10 @@ impl CounterMeasurement {
     }
 }
 
-impl Measurement for CounterMeasurement {
+impl Measurement<()> for CounterMeasurement {
     type Output = ();
 
-    fn measure(&mut self) {
+    fn measure(&mut self, _state: &()) {
         self.count.set(self.count.get() + 1);
     }
 
