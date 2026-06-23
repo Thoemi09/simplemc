@@ -28,7 +28,7 @@ namespace simplemc {
  * @brief Run a Monte Carlo simulation.
  *
  * @details This function drives every MC simulation. It takes a random number generator, an MC kernel,
- * a set of measurements, optional simulation parameters and callback functions as arguments to do the
+ * a set of measurements, simulation parameters and optional callback functions as arguments to do the
  * following:
  *
  * 1. It validates the parameters by calling simplemc::validate_simulation_params().
@@ -75,8 +75,8 @@ namespace simplemc {
  */
 template <typename RNG, typename Kernel, typename Cbs = run_callbacks<>>
     requires mc_kernel<std::remove_cvref_t<Kernel>, RNG> && mc_run_callbacks<std::remove_cvref_t<Cbs>>
-simulation_ctx run(RNG& rng, Kernel&& kernel, measurement_set& meas, // NOLINT
-    const simulation_params& p = {}, Cbs&& cbs = {}) { // NOLINT
+simulation_ctx run(
+    RNG& rng, Kernel&& kernel, measurement_set& meas, const simulation_params& p, Cbs&& cbs = {}) { // NOLINT
     // validate parameters
     validate_simulation_params(p);
 
