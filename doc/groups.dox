@@ -1485,11 +1485,11 @@
  * @brief The Monte Carlo step algorithm.
  *
  * @details A **kernel** implements the actual Monte Carlo algorithm: it defines how updates are
- * chosen, applied, and accepted/rejected. 
- * 
+ * chosen, applied, and accepted/rejected.
+ *
  * **simplemc-mc** provides the simplemc::metropolis_kernel, which implements the standard
  * Metropolis-Hastings algorithm.
- * 
+ *
  * Users can plug in their own kernel as long as they satisfy the simplemc::mc_kernel concept.
  */
 
@@ -1498,11 +1498,15 @@
  * @ingroup simplemc-mc
  * @brief Optional per-run hooks that observe a simulation without modifying the loop.
  *
- * @details **Callbacks** let user code observe a run without modifying the loop. A bundle satisfying
- * simplemc::mc_run_callbacks (default simplemc::run_callbacks, whose no-op members compile out
- * completely) is passed to simplemc::run; its hooks fire at well-defined points and receive a
- * simplemc::simulation_ctx snapshot. Ready-made callback helpers — e.g. a progress printer and
- * checkpoint writers — are provided for common needs.
+ * @details **Callbacks** let user code observe a run without modifying the loop. A type satisfying
+ * simplemc::mc_run_callbacks is passed to simplemc::run. The different hooks fire at well-defined
+ * points and receive a simplemc::simulation_ctx snapshot.
+ *
+ * simplemc::run_callbacks satifies the concept and uses no-op hooks as defaults. Users can use this
+ * type to set individual hooks.
+ *
+ * Ready-made callback helpers — e.g. a progress printer and checkpoint writers — are provided for
+ * common needs.
  */
 
 /**

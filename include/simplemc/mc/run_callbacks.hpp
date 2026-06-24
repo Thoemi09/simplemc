@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Callback infrastructure for the simplemc::run loop: no-op defaults and the bundle struct.
+ * @brief Default callbacks for simplemc::run.
  */
 
 #ifndef SIMPLEMC_MC_RUN_CALLBACKS_HPP
@@ -18,58 +18,69 @@ namespace simplemc {
 /**
  * @brief Default no-op callable used when the user does not provide a callback.
  *
- * @details `operator()` is a `constexpr` empty function; the compiler inlines it to nothing at
- * `-O1`+, so the run loop emits no extra code when a callback slot is left at its default. Used
- * for the void-returning hooks `on_step`, `on_cycle`, `on_checkpoint`.
+ * @details It can be used for the void-returning hooks run_callbacks::on_step,
+ * run_callbacks::on_cycle and run_callbacks::on_checkpoint.
  */
 struct no_op_callback {
+    /**
+     * @brief Void returning no-op.
+     */
     constexpr void operator()(const simulation_ctx&) const noexcept {}
 };
 
 /**
- * @brief Default no-op stop predicate; always returns `false`.
+ * @brief Default no-op stop predicate always returning `false`.
  *
- * @details Used as the default for `stop_when`. When the compiler inlines this, the outer-loop
- * condition `!stop_when(stats)` constant-folds to `true` and drops out of codegen.
+ * @details It can be used for the run_callbacks::stop_when hook.
  */
 struct no_op_stop_callback {
+    /**
+     * @brief Always `false` returning no-op.
+     */
     constexpr bool operator()(const simulation_ctx&) const noexcept { return false; }
 };
 
 /**
  * @brief Bundle of optional callbacks accepted by simplemc::run.
  *
- * @details Each field is a callable; default-constructed instances are no-ops, so leaving slots
- * unset has zero runtime cost at `-O1`+. C++20 aggregate-CTAD with designated initializers lets
- * the user write any subset:
+ * @details It satisfies simplemc::mc_run_callbacks. Each field is a callable. Default-constructed
+ * instances are no-ops.
+ *
+ * Users can construct a callback bundle with designated initializers and lambdas:
  *
  * @code{.cpp}
  * auto cbs = simplemc::run_callbacks{ .on_cycle = [&](const auto& s) { print(s); } };
  * @endcode
  *
- * Firing cadence:
- *   - `on_step`       — after every kernel.step(rng), inside the inner step loop.
- *   - `on_cycle`      — after each cycle's measurement sweep (cycle-boundary).
- *   - `on_checkpoint` — at most once per cycles_per_check, gated by
- *                       `params.checkpoint_after_steps` and `params.checkpoint_after_time`.
- *   - `stop_when`     — once per cycles_per_check, in the outer while condition; returns true to
- *                       stop early.
- *
- * This struct is the canonical model of simplemc::mc_run_callbacks; simplemc::run accepts any
- * type satisfying that concept, so a user-defined bundle with the four hooks works as well.
- *
- * @tparam StepCb       Type of the per-step callback. Defaults to simplemc::no_op_callback.
- * @tparam CycleCb      Type of the per-cycle callback. Defaults to simplemc::no_op_callback.
- * @tparam CheckpointCb Type of the per-checkpoint callback. Defaults to simplemc::no_op_callback.
- * @tparam StopCb       Type of the early-stop predicate. Defaults to simplemc::no_op_stop_callback.
+ * @tparam StepCB Type of the per-step callback.
+ * @tparam CycleCB Type of the per-cycle callback.
+ * @tparam CheckpointCB Type of the per-checkpoint callback.
+ * @tparam StopCB Type of the early-stop predicate.
  */
-template <typename StepCb = no_op_callback, typename CycleCb = no_op_callback, typename CheckpointCb = no_op_callback,
-    typename StopCb = no_op_stop_callback>
+template <typename StepCB = no_op_callback, typename CycleCB = no_op_callback, typename CheckpointCB = no_op_callback,
+    typename StopCB = no_op_stop_callback>
 struct run_callbacks {
-    [[no_unique_address]] StepCb on_step {};
-    [[no_unique_address]] CycleCb on_cycle {};
-    [[no_unique_address]] CheckpointCb on_checkpoint {};
-    [[no_unique_address]] StopCb stop_when {};
+    /**
+     * @brief Callback invoked after every MC kernel step.
+     */
+    [[no_unique_address]] StepCB on_step {};
+
+    /**
+     * @brief Callback invoked after every MC cycle.
+     */
+    [[no_unique_address]] CycleCB on_cycle {};
+
+    /**
+     * @brief Callback invoked periodically depending on simulation_params::checkpoint_after_steps and
+     * simulation_params::checkpoint_after_time.
+     */
+    [[no_unique_address]] CheckpointCB on_checkpoint {};
+
+    /**
+     * @brief Callback invoked in the outer `while` condition returning either `false` to keep the MC
+     * simulation going or `true` to stop the simulation.
+     */
+    [[no_unique_address]] StopCB stop_when {};
 };
 
 /** @} */
