@@ -19,26 +19,43 @@ the core, not the tail.
 
 ## 1. Design philosophy
 
-1. **No parity constraint.** Correctness is judged against **analytical truth** (known moments,
+Status legend used below:
+- **DONE**: implemented and verified in the Rust workspace.
+- **PARTIAL**: implemented for the shipped subset, with planned pieces still missing.
+- **TODO**: not implemented yet.
+- **DEFERRED**: intentionally postponed to a later optional phase.
+
+1. **DONE — No parity constraint.** Correctness is judged against **analytical truth** (known moments,
    known Ising critical temperature, closed-form integrals, exact polynomial reconstruction) and
    **property-based invariants** — not against the C++ outputs. There is no reference dumper, no
    bit-exact fixtures, no 644-test translation.
-2. **Parallelism is a core, day-one capability.** Independent Markov chains are embarrassingly
+2. **DONE — Parallelism is a core, day-one capability.** Independent Markov chains are embarrassingly
    parallel and are *the* common MC parallelism pattern. The `run` API, RNG seeding, and result
    reduction are designed for multi-chain execution from the start. Threads/`rayon` are the default
    backend; MPI is an *optional* HPC-cluster backend that reuses the same reduction abstraction.
-3. **Static dispatch on the hot path.** Updates run every MC step; a per-step vtable call is wasted
-   overhead for cheap updates. Update sets are **monomorphized**. `dyn` is reserved for the cold
-   path (measurements, run per cycle) and for an explicit opt-in dynamic-config path.
-4. **No type-erasure result retrieval.** No `Any`/`downcast`/`typeid`. Results flow back through
-   ownership: `run` *returns* the (typed) measurements/accumulators, or measurements write into a
-   caller-owned sink.
-5. **serde everywhere; HDF5 only for output data.** Checkpoints are serde blobs (compact binary +
-   optional JSON). HDF5 is reserved for large scientific *output datasets*, behind a feature — not
-   for framework plumbing. No bespoke navigable serializer abstraction.
-6. **Reuse the ecosystem.** Use `rand` + `rand_xoshiro` for RNG (no hand-rolled engines),
+3. **DONE — Static dispatch on the hot path.** Updates run every MC step; a per-step vtable call is
+   wasted overhead for cheap updates. Update sets are **monomorphized**. `dyn` is reserved for the
+   cold path (measurements, run per cycle) and for an explicit opt-in dynamic-config path.
+4. **DONE/PARTIAL — No type-erasure result retrieval.** No `Any`/`downcast`/`typeid`. Results flow
+   back through ownership: `run` *returns* the (typed) measurements/accumulators, or measurements
+   write into a caller-owned sink. Typed results are implemented; the dynamic measurement
+   result-sink design is deliberately deferred.
+5. **PARTIAL — serde for checkpoints, opt-in; HDF5 only for output data.** Checkpoints are serde blobs
+   (compact binary + optional JSON). serde is an **opt-in `serde` feature**, *not* a bound on
+   `Scalar`/state traits — keeping the default core lean and bound-free (principle #7). State and
+   accumulator types carry `#[cfg_attr(feature = "serde", derive(...))]` as they are written, so
+   checkpointing is not a late retrofit. HDF5 is reserved for large scientific *output datasets*,
+   behind its own feature — not for framework plumbing. No bespoke navigable serializer abstraction.
+   serde derives and round-trips exist for implemented config/RNG/stat/grid/numeric types, and the
+   `rmc-io` MVP now provides versioned JSON checkpoint save/restore with restart validation. A
+   compact binary checkpoint format and HDF5 output remain TODO/deferred.
+6. **PARTIAL — Reuse the ecosystem.** Use `rand` + `rand_xoshiro` for RNG (no hand-rolled engines),
    `nalgebra` for linear algebra, `rayon` for parallelism, `thiserror` for errors.
-7. **Lean core, batteries opt-in.** A user who only needs the engine should not compile `nalgebra`.
+   Implemented so far: `rand`, `rand_xoshiro`, `rayon`, `thiserror`, `serde`, `criterion`,
+   `proptest`, and `nalgebra`; MPI and HDF5 are not introduced yet.
+7. **DONE/PARTIAL — Lean core, batteries opt-in.** A user who only needs the engine should not compile
+   `nalgebra`. The current core/stats/facade split preserves that; future grids/numeric/io backends
+   still need to maintain it.
 
 ---
 
@@ -49,50 +66,63 @@ the core, not the tail.
 A small Cargo **workspace** with a lean core and opt-in batteries/backends (the from-scratch payoff:
 the engine crate stays dependency-light).
 
+> **Status (2026-06-26):** the first workspace split is complete. `rust/` is a Cargo workspace with
+> `crates/rmc-core`, `crates/rmc-stats`, and the `crates/rmc` façade. Future subsystems should be
+> added as sibling crates so module boundaries and feature gating stay enforced early.
+
 ```
 rmc/                       (workspace)
   crates/
-    rmc-core/              # traits, run loop, RNG seeding, parallel execution, Merge
+    rmc-core/              # DONE: traits, run loop, RNG seeding, parallel execution, Merge
                            #   deps: rand, rand_xoshiro, rayon, thiserror, serde
-    rmc-stats/             # accumulators (mean/var/covar/autocorr/batch/block/jackknife)
+    rmc-stats/             # PARTIAL: scalar/vector moments+covar, autocorr, batch, jackknife
                            #   deps: rmc-core, nalgebra, num-complex
-    rmc-grids/             # 1-D + N-D grids
-    rmc-numeric/           # polynomials, interpolation, quadrature, lattices  (nalgebra)
-    rmc-io/                # serde checkpointing; hdf5 output behind feature
-    rmc-mpi/               # optional MPI chain-distribution + reduction backend (rsmpi)
-    rmc/                   # façade: re-exports, feature flags, prelude
-  examples/                # Ising, harmonic oscillator, etc.
-  benches/                 # criterion: RNG, accumulators, run loop, parallel scaling
+    rmc-grids/             # PARTIAL: 1-D grids + const-generic N-D grids
+    rmc-numeric/           # PARTIAL: checked linear interpolation MVP
+    rmc-io/                # PARTIAL: versioned JSON checkpoints/restart; hdf5 output behind feature
+    rmc-mpi/               # TODO/DEFERRED: optional MPI chain-distribution + reduction backend
+    rmc/                   # DONE/PARTIAL: façade re-exports + placeholder feature flags
+  examples/                # PARTIAL: random walk and Ising examples exist
+  benches/                 # PARTIAL: core hot-path criterion benchmark exists
 ```
 
-Features on the `rmc` façade: `default = ["stats", "grids", "numeric", "io"]`, plus `mpi`, `hdf5`.
+Current features on the `rmc` façade: `default = ["stats", "grids"]`, implemented opt-in
+`numeric` and `io`, plus placeholder `mpi` and `hdf5`.
 
 ### 2.2 Dependencies
 
 | Concern | Crate | Notes |
 |---|---|---|
-| RNG | `rand`, `rand_xoshiro` (or `rand_pcg`) | off-the-shelf; no hand-rolled engines |
-| Parallelism | `rayon` | data-parallel independent chains |
-| Linear algebra | `nalgebra` (+ `num-complex`) | vectors, covariance matrices, `SymmetricEigen` |
-| Errors | `thiserror` | `Result<_, RmcError>` |
-| Serialization | `serde` + `bincode`/`postcard` + `serde_json` | binary checkpoints + human-readable |
-| Ordered maps | `indexmap` | named sets preserve insertion order |
-| Output data (opt) | `hdf5` / `hdf5-metno` | large measurement datasets only |
-| MPI (opt) | `mpi` (rsmpi) | cluster backend; `#[derive(Equivalence)]` |
-| Tests | `proptest`, `approx`, `rstest` | property + analytical + parametrized |
-| Benches | `criterion` | parallel scaling, hot-path dispatch |
+| RNG | `rand`, `rand_xoshiro` (or `rand_pcg`) | **DONE**: off-the-shelf; no hand-rolled engines |
+| Parallelism | `rayon` | **DONE**: data-parallel independent chains |
+| Linear algebra | `nalgebra` (+ `num-complex`) | **PARTIAL**: `num-complex` supports scalar complex values; `nalgebra` powers vector moments/covariance in `rmc-stats`; numeric eigensolver work is TODO |
+| Errors | `thiserror` | **DONE**: `Result<_, RmcError>` |
+| Serialization | `serde` + `bincode`/`postcard` + `serde_json` | **PARTIAL**: opt-in serde derives and JSON round-trips exist for core/stats/grids/numeric; `rmc-io` implements versioned JSON checkpointing/restart; compact binary format selection is TODO |
+| Ordered maps | `indexmap` | **TODO**: named sets currently use local storage, no `indexmap` dependency yet |
+| Output data (opt) | `hdf5` / `hdf5-metno` | **TODO/DEFERRED**: large measurement datasets only |
+| MPI (opt) | `mpi` (rsmpi) | **TODO/DEFERRED**: cluster backend; `#[derive(Equivalence)]` |
+| Tests | `proptest` (selective), `approx`, `rstest` | **PARTIAL**: `proptest` is used selectively; `approx`/`rstest` are not needed yet |
+| Benches | `criterion` | **PARTIAL**: hot-path dispatch benchmark exists; broader scaling benches are TODO |
 
 ---
 
 ## 3. Core trait design
 
 ### 3.1 Scalars & samples
+**PARTIAL:** `Scalar`/`SampleType` exist for scalar samples (`f64`, `Complex64`). `rmc-stats` now
+supports vector-valued samples directly through `nalgebra::DVector`; wiring `DVector` into the core
+`SampleType` abstraction remains optional future cleanup.
+
 ```rust
-pub trait Scalar: Copy + /* arithmetic, conj */ + Serialize + DeserializeOwned {}  // f64, Complex64
+pub trait Scalar: Copy + /* arithmetic, conj, abs_sqr */ {}  // f64, Complex64; serde stays opt-in, NOT a bound here
 pub trait SampleType { type Value: Scalar; fn size(&self) -> usize; }              // scalar | DVector
 ```
 
 ### 3.2 MC contracts
+**DONE/PARTIAL:** the shipped API is state-generic (`Update<State>`, `Measurement<State>`,
+`Kernel<State, R>`), typed measurement output is implemented, and callbacks exist. The sketch below
+is conceptual and differs from the final generic signatures.
+
 ```rust
 pub trait Update {
     fn attempt(&mut self) -> f64;     // acceptance probability
@@ -117,6 +147,9 @@ pub trait RunCallbacks {
 ```
 
 ### 3.3 The unifying abstraction: `Merge`
+**DONE:** `Merge` exists in `rmc-core`, common scalar impls exist, simulation stats merge, and
+implemented stats accumulators use it.
+
 The single most important trait. It expresses "combine results from independent chains" and is the
 **one reduction primitive used by both the thread backend (now) and the MPI backend (later).**
 ```rust
@@ -131,6 +164,10 @@ across ranks. Designing accumulators to be mergeable from day one is what makes 
 backends fall out cleanly.
 
 ### 3.4 Update sets — monomorphized hot path
+**DONE/PARTIAL:** `SingleUpdateSet`, `TwoUpdateSet`, `WeightedUpdateSet`, and `DynUpdateSet` exist.
+The enum-backed homogeneous `WeightedUpdateSet<U>` path is shipped; macro/derive ergonomics remain
+optional future work.
+
 The kernel is generic over a concrete update set so per-step dispatch is **static**:
 ```rust
 pub trait UpdateSet {
@@ -147,6 +184,11 @@ Measurements run per cycle (cold), so a `Vec<Box<dyn Measurement>>` set is fine 
 are also offered for when results need to come back typed.
 
 ### 3.5 Accumulator hierarchy (`rmc-stats`)
+**PARTIAL:** scalar `Accumulator`, `MeanAccumulator`, and `VarianceAccumulator` traits exist, plus
+`ScalarMoments`, `WeightedScalarMoments`, `ScalarCovariance`, `ScalarAutocorrelation`,
+`ScalarBatchMeans`, `ScalarJackknife`, `VectorMoments`, and `VectorCovariance`. Remaining work is
+mostly explicit block abstractions, API polish, and broader docs/property coverage.
+
 ```rust
 pub trait Accumulator: Merge { type Sample: SampleType; type Value: Scalar;
     fn count(&self)->u64; fn size(&self)->usize; fn accumulate(&mut self, x:&Self::Sample); }
@@ -159,6 +201,12 @@ Online, numerically stable algorithms (Welford / batched). `Merge` lets per-chai
 reduced into a global one.
 
 ### 3.6 Grids (`rmc-grids`)
+**PARTIAL:** `Grid1d`, `LinearGrid`, `PowerGrid`, `SymmetricPowerGrid`, `CustomGrid`, `AxisGrid`,
+and `NdGrid<G, const N: usize>` are implemented with validated constructors, safe point/bin queries,
+endpoint-aware bin indexing, point/center/width/volume iterators, row-major flat/N-D index helpers,
+integer/grid subrange helpers, and serde round-trips. Mixed-axis N-D grids are supported via
+`NdGrid<AxisGrid, N>`; remaining grid work is API polish around downstream interpolation needs.
+
 `GridCommon` / `Grid1d` / `GridNd<const N: usize>` with const-generic dimension; iterator impls
 instead of bespoke iterator classes. (Same shape as the port's grid traits.)
 
@@ -167,6 +215,9 @@ instead of bespoke iterator classes. (Same shape as the port's grid traits.)
 ## 4. Parallel execution model (the core differentiator)
 
 ### 4.1 Reproducible per-chain RNG
+**DONE:** `SeedSource`, `ChainId`, deterministic per-chain `DefaultRng`, diffusion tests, and
+reproducibility/separation property tests are implemented.
+
 A master seed deterministically derives a **well-separated, non-overlapping** stream per chain, so
 results are **reproducible regardless of thread scheduling**:
 ```rust
@@ -181,6 +232,9 @@ Property test: distinct `chain` indices yield statistically independent streams;
 chain count yields identical aggregate results across runs and thread counts.
 
 ### 4.2 Multi-chain run
+**DONE:** `run_parallel` and `run_parallel_in_pool` exist over rayon, preserve deterministic chain
+order, and reduce `SimulationStats` plus typed measurement output via `Merge`. MPI remains TODO.
+
 ```rust
 pub fn run_parallel<S, K, M>(cfg: ParallelConfig, build: impl Fn(ChainId) -> (S, K, M) + Sync) -> M::Output
 where K: Kernel, M: Measurement + Merge { /* rayon: per-chain run, then reduce via Merge */ }
@@ -197,33 +251,50 @@ and the thread/MPI split is a single swappable reduction step.
 
 ## 5. Serialization & I/O (`rmc-io`)
 
-- **serde derive** on all simulation state. Checkpoint = `bincode`/`postcard` (compact) or
-  `serde_json` (human-readable); chosen by the caller. No custom navigable store trait.
-- **Restart**: deserialize state + RNG (the chosen RNG crate types are `Serialize`); continue.
-- **HDF5 (feature `hdf5`)**: for large scientific *output* arrays only (measurement time series,
-  histograms), not framework checkpoints. Keeps the binary scientific format decoupled from the
-  engine.
+- **PARTIAL — serde derive** on implemented simulation state. Checkpoint MVP = versioned
+  `serde_json` envelope around caller-owned payloads. No custom navigable store trait.
+- **DONE — Restart MVP**: `rmc-io` deserializes state + RNG + serializable kernel/update-set payloads
+  and validates that a checkpointed run continues the same trajectory as an uninterrupted run.
+- **TODO — Compact checkpoint format**: add `bincode`/`postcard` after choosing the crate and format
+  compatibility policy.
+- **TODO/DEFERRED — HDF5 (feature `hdf5`)**: for large scientific *output* arrays only
+  (measurement time series, histograms), not framework checkpoints. Keeps the binary scientific
+  format decoupled from the engine.
 
 ---
 
 ## 6. Validation strategy (no reference oracle)
 
-Correctness is established intrinsically:
+Correctness is established intrinsically. **Hybrid strategy:** hand-written analytical/deterministic
+tests are the primary mechanism; `proptest` is used selectively for invariants where randomized input
+genuinely adds coverage.
 
-- **Analytical truth:** RNG/sampler moments vs closed forms; Ising 2-D vs known `T_c`; quadrature of
-  known integrals; interpolation exact on polynomials up to its order; autocorrelation of an AR(1)
-  process vs known integrated autocorrelation time.
-- **Property tests (`proptest`):** mean of constants == constant; variance ≥ 0; covariance symmetric
-  & PSD; grid `index(at(i)) == i`; serialization round-trips; **`Merge` associativity/commutativity**;
-  **parallel result == sequential result** for the same seeds.
-- **Reproducibility guard:** identical master seed + chain count ⇒ identical aggregate, independent
-  of thread count / scheduling.
-- **Statistical sanity:** light chi-square/KS on samplers (the `rand` engines are already
+- **PARTIAL — Analytical truth (primary):** RNG/sampler moments vs closed forms; Ising 2-D vs known
+  `T_c`; quadrature of known integrals; interpolation exact on polynomials up to its order;
+  autocorrelation of an AR(1) process vs known integrated autocorrelation time. Includes
+  deterministic enumeration checks (e.g. 2×2 Ising vs exact magnetization).
+- **DONE/PARTIAL — Property tests (`proptest`, selective):** reserved for the laws that benefit from
+  randomized input — **`Merge` associativity/commutativity**, **parallel result == sequential
+  result** for the same seeds, **seed-stream independence** across chains, serialization
+  round-trips. Cheap algebraic facts (mean of constants == constant, variance ≥ 0, covariance
+  symmetric/PSD, grid `index(at(i)) == i`) are covered by direct analytical tests, not necessarily
+  proptest.
+- **DONE — Reproducibility guard:** identical master seed + chain count ⇒ identical aggregate,
+  independent of thread count / scheduling.
+- **PARTIAL — Statistical sanity:** light chi-square/KS on samplers (the `rand` engines are already
   battle-tested, so this is a thin layer).
-- **Benchmarks (`criterion`):** confirm the monomorphized hot path has no per-step vtable cost; track
-  parallel scaling.
+- **PARTIAL — Benchmarks (`criterion`):** confirm the monomorphized hot path has no per-step vtable
+  cost; track parallel scaling.
 
 Exit criterion per subsystem: analytical + property tests green, examples run, benches recorded.
+
+> **Status (2026-06-26):** the validation suite includes deterministic 2×2 infinite-temperature
+> Ising enumeration and a lightweight finite-size 8×8 Binder-cumulant smoke test at
+> `β_c = 0.5 ln(1 + sqrt(2))`. `rmc-stats` currently covers scalar moments, weighted scalar moments,
+> scalar covariance, fixed-lag scalar autocorrelation, scalar batch means, scalar jackknife, vector
+> moments, and vector covariance. `rmc-grids` currently covers 1D linear, power, symmetric-power,
+> custom grids, mixed-axis const-generic N-D grids via `AxisGrid`, row-major flat/N-D indexing, and
+> subrange helpers.
 
 ---
 
@@ -231,59 +302,76 @@ Exit criterion per subsystem: analytical + property tests green, examples run, b
 
 Core-first; one subsystem end-to-end; MPI and HDF5 last. **Parallel execution is part of the core.**
 
-### Phase 0 — Workspace & validation tooling
+### DONE — Phase 0 — Workspace & validation tooling
 Workspace, crate skeletons, CI (`fmt`, `clippy -D warnings`, test matrix), `proptest`/`criterion`
 setup. **Spike the reproducible per-chain RNG + rayon reduction** (the riskiest novel piece) before
 committing to the API. **Est: 2–3 days.**
 
-### Phase 1 — `rmc-core` foundation
+### DONE — Phase 1 — `rmc-core` foundation
 `RmcError`/`Result`, `Scalar`/`SampleType`, RNG integration (`rand_xoshiro` + `SeedSource`), `Merge`
 trait. Reproducibility property tests. **Est: 3–4 days.**
 
-### Phase 2 — `rmc-core` MC engine (sequential)
+### DONE — Phase 2 — `rmc-core` MC engine (sequential)
 `Update`/`Measurement`/`Kernel`/`RunCallbacks` traits; monomorphized `UpdateSet` (+ dyn fallback);
 `MetropolisKernel` (owns its update set); sequential `run` loop → `Result`; `SimulationParams`/
 `Stats`/`Ctx`. Analytical end-to-end test (single-chain Ising). **Est: ~1 week.**
 
-### Phase 3 ★ — Parallel execution (CORE SHIP → `0.1.0`)
+### DONE — Phase 3 ★ — Parallel execution (CORE SHIP → `0.1.0`)
 `run_parallel` over rayon; per-chain reproducible RNG; cross-chain reduction via `Merge`. Property
 test: parallel == sequential for matched seeds; reproducibility across thread counts. **This is the
 shippable core: a parallel MC engine.** **Est: 3–5 days.**
 
-### Phase 4 — `rmc-stats`
+### PARTIAL — Phase 4 — `rmc-stats`
 Accumulator trait hierarchy (mean/var/covar/autocorr/batch/block/jackknife/multivalue), each `Merge`.
 Scalar + nalgebra-vector samples; stable online algorithms. Analytical + property validation.
+Implemented so far: scalar moments, weighted scalar moments, scalar covariance, fixed-lag scalar
+autocorrelation, scalar batch means, scalar jackknife, vector moments, vector covariance, serde
+round-trips, and analytical/property tests. TODO: decide any remaining block abstractions over
+scalar batch means and complete Phase 4 API/docs polish.
 **Est: 1–1.5 weeks.**
 
-### Phase 5 — `rmc-grids`
+### PARTIAL — Phase 5 — `rmc-grids`
 Linear/power/symmetric-power/custom 1-D grids, N-D grids (const generics), iterator impls.
+Implemented so far: `Grid1d`, `LinearGrid`, `PowerGrid`, `SymmetricPowerGrid`, `CustomGrid`,
+`AxisGrid`, `NdGrid<G, const N: usize>` including mixed-axis `NdGrid<AxisGrid, N>`, safe point/bin
+APIs, point/center/width/volume iterators, row-major flat/N-D indexing helpers, integer/grid
+subrange helpers, facade re-export, and serde round-trips. TODO: remaining API polish driven by
+interpolation.
 **Est: ~1 week.**
 
-### Phase 6 — `rmc-numeric`
+### PARTIAL — Phase 6 — `rmc-numeric`
 Orthogonal polynomials, interpolation, quadrature, Bravais lattices, linear map (nalgebra;
-`SymmetricEigen` where needed). **Est: 1.5–2 weeks.**
+`SymmetricEigen` where needed).
+Implemented so far: checked owned 1-D and const-generic N-D linear interpolation over `rmc-grids`,
+including mixed-axis `NdGrid<AxisGrid, N>` support, affine-function analytical tests, facade
+re-export, and serde round-trips. TODO: polynomial/spline interpolation, quadrature, orthogonal
+polynomials, lattices, and linear-map/eigensolver helpers.
+**Est: 1.5–2 weeks.**
 
-### Phase 7 — `rmc-io`
-serde checkpoint save/restore (bincode/json); RNG-state round-trip; restart-continues-run test.
+### DONE/PARTIAL — Phase 7 — `rmc-io`
+Implemented so far: `rmc-io` crate, versioned `Checkpoint<T>` envelope, JSON string/bytes/file
+save/load helpers, atomic JSON save, payload convenience helpers, unsupported-version errors, facade
+`io` feature/re-export, RNG/kernel checkpoint restart test, and facade feature smoke test. TODO:
+compact binary checkpoint format (`bincode`/`postcard`) if needed.
 **Est: 3–5 days.**
 
-### Phase 8 — `rmc-mpi` (optional backend)
+### TODO/DEFERRED — Phase 8 — `rmc-mpi` (optional backend)
 rsmpi backend implementing the **same `run_parallel`/`Merge` contract across ranks**; datatypes via
 `#[derive(Equivalence)]`; multi-process CI under `mpirun`. User code unchanged from the thread
 backend. **Est: 1–2 weeks.**
 
-### Phase 9 — `rmc-io` HDF5 output (optional)
+### TODO/DEFERRED — Phase 9 — `rmc-io` HDF5 output (optional)
 `hdf5`-crate output for large measurement datasets, behind the `hdf5` feature. **Est: 3–5 days.**
 
 ---
 
 ## 8. Timeline summary
 
-| Milestone | Phases | Cumulative est. |
-|---|---|---|
-| **Parallel core shipped (`0.1.0`)** | 0–3 | **~2.5–3.5 weeks** |
-| Full single-node library (stats, grids, numerics, checkpointing) | 0–7 | ~6–8 weeks |
-| Full incl. MPI + HDF5 | 0–9 | **~8–10 weeks** |
+| Milestone | Phases | Cumulative est. | Status |
+|---|---|---|---|
+| **Parallel core shipped (`0.1.0`)** | 0–3 | **~2.5–3.5 weeks** | **DONE** |
+| Full single-node library (stats, grids, numerics, checkpointing) | 0–7 | ~6–8 weeks | **PARTIAL** |
+| Full incl. MPI + HDF5 | 0–9 | **~8–10 weeks** | **TODO/DEFERRED** |
 
 Roughly comparable to the port, but the work is redistributed: the parity harness, hand-rolled RNG,
 and 644-test translation are gone (saving time), while a proper parallel core and analytical
@@ -294,28 +382,33 @@ budget, because effort goes into design rather than reproduction.
 
 ## 9. Risk register
 
-| Risk | Likelihood | Mitigation |
-|---|---|---|
-| Per-chain RNG streams overlap / non-reproducible | Med | Spike in Phase 0; well-separated seeds (xoshiro `jump()` or splitmix-hashed); independence + reproducibility property tests |
-| Monomorphized update-set ergonomics (macro complexity) | Med | Ship `dyn` path first; add typed set + optional derive macro incrementally |
-| `Merge` abstraction leaks between thread & MPI backends | Med | Constrain to associative+commutative combine; test parallel == sequential before MPI work |
-| nalgebra eigensolver/API gaps vs Eigen | Med | Phase 0 spike; validate eigen paths against analytical results |
-| rsmpi maturity / MPI CI setup | Med-High | Deferred, feature-gated; containerized `mpirun` CI; same contract as thread backend limits surface |
-| HDF5 build complexity (`libhdf5`) | Low | Optional feature; output-only scope |
-| Over-design from greenfield freedom | Med | Analytical/property tests + "ship core at Phase 3" are the discipline; YAGNI on generality |
+| Risk | Likelihood | Mitigation | Status |
+|---|---|---|---|
+| Per-chain RNG streams overlap / non-reproducible | Med | Spike in Phase 0; well-separated seeds (xoshiro `jump()` or splitmix-hashed); independence + reproducibility property tests | **DONE** for thread backend |
+| Monomorphized update-set ergonomics (macro complexity) | Med | Ship `dyn` path first; add typed set + optional derive macro incrementally | **PARTIAL**: static sets and enum path exist; derive macro TODO |
+| `Merge` abstraction leaks between thread & MPI backends | Med | Constrain to associative+commutative combine; test parallel == sequential before MPI work | **PARTIAL**: thread backend validated; MPI TODO |
+| nalgebra eigensolver/API gaps vs Eigen | Med | Phase 0 spike; validate eigen paths against analytical results | **TODO** |
+| rsmpi maturity / MPI CI setup | Med-High | Deferred, feature-gated; containerized `mpirun` CI; same contract as thread backend limits surface | **TODO/DEFERRED** |
+| HDF5 build complexity (`libhdf5`) | Low | Optional feature; output-only scope | **TODO/DEFERRED** |
+| Over-design from greenfield freedom | Med | Analytical/property tests + "ship core at Phase 3" are the discipline; YAGNI on generality | **ONGOING** |
 
 ---
 
 ## 10. Definition of done
 
-- Phases 0–9 complete; every subsystem's analytical + property tests pass, examples run, benches
-  recorded.
-- A parallel, fixed-seed Ising simulation is **reproducible across thread counts** and reproduces
-  known physics (`T_c`); the **MPI backend yields the same aggregate as the thread backend**.
-- `cargo build`/`test`/`clippy -D warnings`/`doc` green for default and `--features mpi,hdf5`.
-- Benchmarks confirm no per-step vtable cost on the default update path and show parallel scaling.
-- Rustdoc + README document the trait API, the parallel model, and feature flags; tutorials shipped
-  as examples.
+- **PARTIAL:** Phases 0–9 complete; every subsystem's analytical + property tests pass, examples
+  run, benches recorded. Phases 0–3 are done; Phases 4–5 are partial; Phases 6–9 are TODO.
+- **PARTIAL:** A parallel, fixed-seed Ising simulation is **reproducible across thread counts** and
+  reproduces known physics (`T_c`); the **MPI backend yields the same aggregate as the thread
+  backend**. Thread reproducibility and a lightweight Binder validation are done; MPI is TODO.
+- **PARTIAL:** `cargo build`/`test`/`clippy -D warnings`/`doc` green for default and
+  `--features mpi,hdf5`. Current workspace checks are green for implemented features, including
+  all-features placeholders; MPI/HDF5 implementations are TODO.
+- **PARTIAL:** Benchmarks confirm no per-step vtable cost on the default update path and show
+  parallel scaling. Hot-path static-vs-dyn benchmark exists; broader scaling benches are TODO.
+- **PARTIAL:** Rustdoc + README document the trait API, the parallel model, and feature flags;
+  tutorials shipped as examples. Crate/module docs and random-walk/Ising examples exist; broader
+  README/tutorial docs are TODO.
 
 ---
 
