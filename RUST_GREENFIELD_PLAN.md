@@ -3,9 +3,18 @@
 A design for a **new, from-scratch** Monte Carlo framework in Rust, covering the same scientific
 scope as `simplemc` (RNG, statistical accumulators, grids, numerics, an MC driver, checkpointing,
 and parallel execution) but **without any obligation to match the C++ implementation's source,
-APIs, or bit-level outputs.** Freed from parity, the design optimizes for idiomatic Rust,
-correctness against analytical truth, and Rust's strongest advantage for this domain: **fearless
-parallelism.**
+APIs, or bit-level outputs.** Freed from *correctness*-parity, the design optimizes for idiomatic
+Rust, correctness against analytical truth, and Rust's strongest advantage for this domain:
+**fearless parallelism.**
+
+> **Performance parity *is* a goal.** Source/API/bit-level parity are explicitly not required, but
+> the framework must let applications hit the **same runtime performance** as the C++ original — in
+> particular it must not force a state representation that defeats the C++ algorithm's complexity.
+> The validation vehicle is the **self-energy DiagMC port** (`plan-self-energy-diagmc.md`), whose
+> diagram needs **O(1) structural updates**; it uses a `slotmap` arena + intrusive doubly-linked
+> list (matching the C++ `std::list` + vector-of-pointers), which is expressible precisely because
+> chain state is fully caller-owned and threaded by value (§4). So: drop correctness-parity, keep
+> performance-parity.
 
 Working title: **`rmc`** (placeholder — rename freely). This plan keeps `simplemc`'s sequencing
 philosophy — *ship the core first, do one subsystem end-to-end before the next, MPI and HDF5 last* —
@@ -25,10 +34,14 @@ Status legend used below:
 - **TODO**: not implemented yet.
 - **DEFERRED**: intentionally postponed to a later optional phase.
 
-1. **DONE — No parity constraint.** Correctness is judged against **analytical truth** (known moments,
-   known Ising critical temperature, closed-form integrals, exact polynomial reconstruction) and
-   **property-based invariants** — not against the C++ outputs. There is no reference dumper, no
-   bit-exact fixtures, no 644-test translation.
+1. **DONE — No *correctness*-parity constraint, but performance parity is in scope.** Correctness is
+   judged against **analytical truth** (known moments, known Ising critical temperature, closed-form
+   integrals, exact polynomial reconstruction) and **property-based invariants** — not against the
+   C++ outputs. There is no reference dumper, no bit-exact fixtures, no 644-test translation.
+   *However*, **runtime performance must match the C++ implementation**: the core's design choices
+   (caller-owned state threaded by value, static hot-path dispatch — principles #2/#3) exist partly
+   to let applications express C++-equivalent data structures (e.g. an O(1)-update `slotmap`-based
+   diagram). Performance parity is verified by the DiagMC port + criterion benches, not waived.
 2. **DONE — Parallelism is a core, day-one capability.** Independent Markov chains are embarrassingly
    parallel and are *the* common MC parallelism pattern. The `run` API, RNG seeding, and result
    reduction are designed for multi-chain execution from the start. Threads/`rayon` are the default
@@ -395,6 +408,7 @@ budget, because effort goes into design rather than reproduction.
 | rsmpi maturity / MPI CI setup | Med-High | Deferred, feature-gated; containerized `mpirun` CI; same contract as thread backend limits surface | **TODO/DEFERRED** |
 | HDF5 build complexity (`libhdf5`) | Low | Optional feature; output-only scope | **TODO/DEFERRED** |
 | Over-design from greenfield freedom | Med | Analytical/property tests + "ship core at Phase 3" are the discipline; YAGNI on generality | **ONGOING** |
+| Idiomatic-Rust state shape defeats C++ performance (e.g. O(n²) diagram updates) | Med | Performance parity is an explicit goal; caller-owns-state design admits arena/`slotmap` structures; verify with the DiagMC port + criterion O(1)-update bench | **ONGOING** (DiagMC port in `plan-self-energy-diagmc.md`) |
 
 ---
 
@@ -421,6 +435,7 @@ budget, because effort goes into design rather than reproduction.
 | Aspect | Port (`RUST_PORT_PLAN.md`) | Greenfield (this doc) |
 |---|---|---|
 | Correctness oracle | bit/tolerance parity vs C++ fixtures | analytical truth + property tests |
+| Performance target | match C++ (parity is the point) | **match C++** (in scope; verified by the DiagMC port + benches) — same conclusion, different reason |
 | RNG | hand-port xoshiro/splitmix for bit-parity | off-the-shelf `rand_xoshiro` |
 | Parallelism | MPI only, last phase | thread/rayon in core (Phase 3), MPI optional backend |
 | Hot-path dispatch | type-erased (vtable per step, as in C++) | monomorphized update set; `dyn` cold path only |

@@ -4,6 +4,7 @@ members = [
     "crates/rmc-grids",
     "crates/rmc-io",
     "crates/rmc-numeric",
+    "crates/rmc-polaron",
     "crates/rmc-stats",
     "crates/rmc",
 ]
@@ -17,10 +18,13 @@ license = "MIT"
 
 [workspace.dependencies]
 criterion = "0.5"
+erased-serde = "0.4"
+indicatif = "0.17"
 nalgebra = { version = "0.33", default-features = false, features = ["std"] }
 num-complex = "0.4"
 proptest = "1"
 rand = "0.8"
+rand_distr = "0.4"
 rand_core = "0.6"
 rand_xoshiro = "0.6"
 rayon = "1"
@@ -31,4 +35,6 @@ rmc-numeric = { path = "crates/rmc-numeric" }
 rmc-stats = { path = "crates/rmc-stats" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+slotmap = { version = "1", features = ["serde"] }
 thiserror = "1"
+rustfft = "6"

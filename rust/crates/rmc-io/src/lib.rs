@@ -4,10 +4,13 @@
 //! decides what belongs in the payload: typically state, RNG, kernel/update set, measurements, and
 //! any user metadata needed to resume.
 
+use std::collections::BTreeMap;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
+use rmc_core::mc::ResultSink;
+use rmc_core::RmcError;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -15,6 +18,8 @@ use thiserror::Error;
 pub const CHECKPOINT_VERSION: u32 = 1;
 
 pub type Result<T> = std::result::Result<T, IoError>;
+pub type ResultMap = BTreeMap<String, serde_json::Value>;
+pub type EncodedResultMap = BTreeMap<String, Vec<u8>>;
 
 #[derive(Debug, Error)]
 pub enum IoError {
@@ -33,6 +38,82 @@ pub enum IoError {
 pub struct Checkpoint<T> {
     pub version: u32,
     pub payload: T,
+}
+
+/// In-memory result sink for dynamic measurements.
+///
+/// Paths are written exactly as passed by `rmc-core`'s scoped sink, typically
+/// `"{measurement}/{key}"`.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct MapSink {
+    results: ResultMap,
+}
+
+impl MapSink {
+    pub fn new() -> Self {
+        Self {
+            results: BTreeMap::new(),
+        }
+    }
+
+    pub fn results(&self) -> &ResultMap {
+        &self.results
+    }
+
+    pub fn into_results(self) -> ResultMap {
+        self.results
+    }
+
+    pub fn into_checkpoint(self) -> Checkpoint<ResultMap> {
+        Checkpoint::new(self.into_results())
+    }
+
+    pub fn from_checkpoint(checkpoint: Checkpoint<ResultMap>) -> Result<Self> {
+        checkpoint.validate_version()?;
+        Ok(Self {
+            results: checkpoint.into_payload(),
+        })
+    }
+
+    /// Encode result values as JSON bytes inside a checkpoint payload.
+    ///
+    /// This representation round-trips through binary checkpoint formats such as bincode, unlike
+    /// `serde_json::Value` directly.
+    pub fn to_encoded_checkpoint(&self) -> Result<Checkpoint<EncodedResultMap>> {
+        let mut encoded = BTreeMap::new();
+        for (path, value) in &self.results {
+            encoded.insert(path.clone(), serde_json::to_vec(value)?);
+        }
+        Ok(Checkpoint::new(encoded))
+    }
+
+    pub fn from_encoded_checkpoint(checkpoint: Checkpoint<EncodedResultMap>) -> Result<Self> {
+        checkpoint.validate_version()?;
+        let mut results = BTreeMap::new();
+        for (path, value) in checkpoint.into_payload() {
+            results.insert(path, serde_json::from_slice(&value)?);
+        }
+        Ok(Self { results })
+    }
+}
+
+impl From<ResultMap> for MapSink {
+    fn from(results: ResultMap) -> Self {
+        Self { results }
+    }
+}
+
+impl ResultSink for MapSink {
+    fn put(&mut self, path: &str, value: &dyn erased_serde::Serialize) -> rmc_core::Result<()> {
+        if self.results.contains_key(path) {
+            return Err(RmcError::DuplicateResult(path.to_string()));
+        }
+
+        let value = erased_serde::serialize(value, serde_json::value::Serializer)
+            .map_err(|err| RmcError::Message(format!("result serialization failed: {err}")))?;
+        self.results.insert(path.to_string(), value);
+        Ok(())
+    }
 }
 
 impl<T> Checkpoint<T> {

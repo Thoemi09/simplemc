@@ -7,6 +7,7 @@ use crate::{Result, RmcError};
 
 use super::entries::{MeasurementEntry, UpdateEntry};
 use super::named_set::NamedSet;
+use super::sink::{ResultSink, ScopedResultSink, SinkMeasurement};
 use super::traits::{StepOutcome, SteppingUpdateSet, Update, UpdateSet, UpdateStats};
 
 #[derive(Clone, Default)]
@@ -101,6 +102,110 @@ impl Index<usize> for DynMeasurementSet {
 impl IndexMut<usize> for DynMeasurementSet {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         &mut self.entries[index]
+    }
+}
+
+impl<State> super::named_set::NamedEntry for Box<dyn SinkMeasurement<State>> {
+    fn name(&self) -> &str {
+        SinkMeasurement::name(self.as_ref())
+    }
+}
+
+pub struct SinkMeasurementSet<State> {
+    entries: NamedSet<Box<dyn SinkMeasurement<State>>>,
+    active: Vec<usize>,
+}
+
+impl<State> Default for SinkMeasurementSet<State> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<State> SinkMeasurementSet<State> {
+    /// Create an empty dynamic result-sink measurement set.
+    pub fn new() -> Self {
+        Self {
+            entries: NamedSet::new(),
+            active: Vec::new(),
+        }
+    }
+
+    /// Add a named sink measurement.
+    pub fn add<M>(&mut self, measurement: M) -> Result<()>
+    where
+        M: SinkMeasurement<State> + 'static,
+    {
+        if measurement.name().is_empty() {
+            return Err(RmcError::InvalidArgument(
+                "measurement name must be non-empty".to_string(),
+            ));
+        }
+        self.entries.add(Box::new(measurement), "measurement")
+    }
+
+    pub fn refresh_active(&mut self) {
+        self.active.clear();
+        self.active.reserve(self.entries.len());
+        self.active.extend(0..self.entries.len());
+    }
+
+    pub fn clear_active(&mut self) {
+        self.active.clear();
+    }
+
+    pub fn active_indices(&self) -> &[usize] {
+        &self.active
+    }
+
+    pub fn measure_all(&mut self, state: &State) {
+        for idx in &self.active {
+            self.entries[*idx].measure(state);
+        }
+    }
+
+    pub fn write_all(&self, sink: &mut dyn ResultSink) -> Result<()> {
+        for idx in &self.active {
+            let measurement = &self.entries[*idx];
+            let mut scoped = ScopedResultSink::new(sink, measurement.name());
+            measurement.write_result(&mut scoped)?;
+        }
+        Ok(())
+    }
+
+    pub fn find(&self, name: &str) -> Option<usize> {
+        self.entries.find(name)
+    }
+
+    pub fn get_by_name(&self, name: &str) -> Option<&(dyn SinkMeasurement<State> + '_)> {
+        self.entries
+            .get_by_name(name)
+            .map(|measurement| measurement.as_ref())
+    }
+
+    pub fn get_by_name_mut(
+        &mut self,
+        name: &str,
+    ) -> Option<&mut (dyn SinkMeasurement<State> + '_)> {
+        match self.entries.get_by_name_mut(name) {
+            Some(measurement) => Some(measurement.as_mut()),
+            None => None,
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+
+    pub fn entries(&self) -> impl Iterator<Item = &dyn SinkMeasurement<State>> {
+        self.entries
+            .entries()
+            .iter()
+            .map(|measurement| measurement.as_ref())
     }
 }
 

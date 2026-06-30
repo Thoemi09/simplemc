@@ -4,8 +4,8 @@ use rayon::ThreadPool;
 use crate::random::{ChainId, SeedSource};
 use crate::{Merge, Result, RmcError};
 
-use super::run::{run_typed, SimulationParams, SimulationStats};
-use super::traits::{Kernel, Measurement};
+use super::run::{run_typed, run_typed_with_callbacks, SimulationParams, SimulationStats};
+use super::traits::{Kernel, Measurement, RunCallbacks};
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -48,6 +48,27 @@ where
     run_parallel_impl(config, &build)
 }
 
+/// Like [`run_parallel`], but constructs one callback value per chain.
+///
+/// This is useful for progress bars, per-chain logging, or convergence probes that do not require
+/// access to the chain state. The callback factory receives the stable [`ChainId`] for the chain.
+pub fn run_parallel_with_callbacks<State, K, M, B, C, CB>(
+    config: ParallelConfig,
+    build: B,
+    callbacks: CB,
+) -> Result<(SimulationStats, M::Output)>
+where
+    State: Send,
+    K: Kernel<State, crate::random::DefaultRng> + Send,
+    M: Measurement<State> + Send,
+    M::Output: Merge + Send,
+    B: Fn(ChainId) -> (State, K, M) + Send + Sync,
+    C: RunCallbacks<super::run::SimulationCtx> + Send,
+    CB: Fn(ChainId) -> C + Send + Sync,
+{
+    run_parallel_impl_with_callbacks(config, &build, &callbacks)
+}
+
 /// Like [`run_parallel`] but executes inside the provided rayon thread pool.
 pub fn run_parallel_in_pool<State, K, M, B>(
     pool: &ThreadPool,
@@ -62,6 +83,25 @@ where
     B: Fn(ChainId) -> (State, K, M) + Send + Sync,
 {
     pool.install(|| run_parallel_impl(config, &build))
+}
+
+/// Like [`run_parallel_with_callbacks`] but executes inside the provided rayon thread pool.
+pub fn run_parallel_in_pool_with_callbacks<State, K, M, B, C, CB>(
+    pool: &ThreadPool,
+    config: ParallelConfig,
+    build: B,
+    callbacks: CB,
+) -> Result<(SimulationStats, M::Output)>
+where
+    State: Send,
+    K: Kernel<State, crate::random::DefaultRng> + Send,
+    M: Measurement<State> + Send,
+    M::Output: Merge + Send,
+    B: Fn(ChainId) -> (State, K, M) + Send + Sync,
+    C: RunCallbacks<super::run::SimulationCtx> + Send,
+    CB: Fn(ChainId) -> C + Send + Sync,
+{
+    pool.install(|| run_parallel_impl_with_callbacks(config, &build, &callbacks))
 }
 
 fn run_parallel_impl<State, K, M>(
@@ -84,6 +124,51 @@ where
             let (state, mut kernel, measurement) = build(chain_id);
             run_typed(state, &mut rng, &mut kernel, measurement, config.params)
                 .map(|(_state, stats, output)| (stats, output))
+        })
+        .collect::<Vec<_>>();
+
+    let mut merged: Option<(SimulationStats, M::Output)> = None;
+    for partial in partials {
+        let (stats, output) = partial?;
+        merged = Some(match merged {
+            Some((acc_stats, acc_output)) => (acc_stats.merge(stats), acc_output.merge(output)),
+            None => (stats, output),
+        });
+    }
+
+    merged.ok_or_else(|| RmcError::InvalidState("parallel run produced no chains".to_string()))
+}
+
+fn run_parallel_impl_with_callbacks<State, K, M, C>(
+    config: ParallelConfig,
+    build: &(impl Fn(ChainId) -> (State, K, M) + Sync),
+    callbacks: &(impl Fn(ChainId) -> C + Sync),
+) -> Result<(SimulationStats, M::Output)>
+where
+    State: Send,
+    K: Kernel<State, crate::random::DefaultRng> + Send,
+    M: Measurement<State> + Send,
+    M::Output: Merge + Send,
+    C: RunCallbacks<super::run::SimulationCtx> + Send,
+{
+    config.validate()?;
+
+    let partials = (0..config.chains)
+        .into_par_iter()
+        .map(|chain| {
+            let chain_id = ChainId(chain);
+            let mut rng = config.seed.rng_for(chain_id);
+            let (state, mut kernel, measurement) = build(chain_id);
+            let mut callbacks = callbacks(chain_id);
+            run_typed_with_callbacks(
+                state,
+                &mut rng,
+                &mut kernel,
+                measurement,
+                config.params,
+                &mut callbacks,
+            )
+            .map(|(_state, stats, output)| (stats, output))
         })
         .collect::<Vec<_>>();
 

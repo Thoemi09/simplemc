@@ -12,4 +12,7 @@ pub enum RmcError {
 
     #[error("invalid state: {0}")]
     InvalidState(String),
+
+    #[error("duplicate result path: {0}")]
+    DuplicateResult(String),
 }

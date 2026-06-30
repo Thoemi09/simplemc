@@ -1,4 +1,5 @@
 use rand_core::RngCore;
+use rmc_core::mc::ResultSink;
 use rmc_core::{
     mc::{
         run_typed, Measurement, MetropolisKernel, SimulationParams, SingleUpdateSet, Update,
@@ -10,7 +11,7 @@ use rmc_io::{
     from_binary_slice, from_json_str, load_binary, load_json, load_payload_binary,
     load_payload_json, save_binary, save_binary_atomic, save_json, save_json_atomic,
     save_payload_binary, save_payload_json, to_binary_vec, to_json_string, Checkpoint, IoError,
-    CHECKPOINT_VERSION,
+    MapSink, CHECKPOINT_VERSION,
 };
 use serde::{Deserialize, Serialize};
 
@@ -108,6 +109,35 @@ fn binary_load_reports_invalid_bytes() {
     let err = from_binary_slice::<Payload>(b"").unwrap_err();
 
     assert!(matches!(err, IoError::Binary(_)));
+}
+
+#[test]
+fn map_sink_rejects_duplicate_paths() {
+    let mut sink = MapSink::new();
+    sink.put("energy/moments", &vec![1_i64, 2, 3]).unwrap();
+    let err = sink.put("energy/moments", &4_i64).unwrap_err();
+
+    assert!(matches!(err, rmc_core::RmcError::DuplicateResult(path) if path == "energy/moments"));
+}
+
+#[test]
+fn map_sink_round_trips_as_checkpoint_payload() {
+    let mut sink = MapSink::new();
+    sink.put("energy/moments", &vec![1_i64, 2, 3]).unwrap();
+    sink.put("mag/mean", &0.25_f64).unwrap();
+
+    let checkpoint = sink.clone().into_checkpoint();
+    let json = to_json_string(&checkpoint).unwrap();
+    let decoded_json: Checkpoint<rmc_io::ResultMap> = from_json_str(&json).unwrap();
+    assert_eq!(MapSink::from_checkpoint(decoded_json).unwrap(), sink);
+
+    let encoded_checkpoint = sink.to_encoded_checkpoint().unwrap();
+    let binary = to_binary_vec(&encoded_checkpoint).unwrap();
+    let decoded_binary: Checkpoint<rmc_io::EncodedResultMap> = from_binary_slice(&binary).unwrap();
+    assert_eq!(
+        MapSink::from_encoded_checkpoint(decoded_binary).unwrap(),
+        sink
+    );
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

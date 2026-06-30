@@ -11,6 +11,8 @@ default = []
 
 [dependencies]
 bincode = "1"
+erased-serde.workspace = true
+rmc-core.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true

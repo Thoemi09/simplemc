@@ -1,6 +1,7 @@
 use crate::{Result, RmcError};
 
-use super::sets::DynMeasurementSet;
+use super::sets::{DynMeasurementSet, SinkMeasurementSet};
+use super::sink::ResultSink;
 use super::traits::{Kernel, Measurement, RunCallbacks};
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -169,6 +170,54 @@ where
     let stats = drive(&mut state, rng, kernel, params, callbacks, |_state| {
         measurements.measure_all()
     })?;
+    Ok((state, stats))
+}
+
+/// Run with dynamic measurements that emit named artifacts into `sink`.
+///
+/// This path is output-only: measurements do not return Rust-native structured values. Use
+/// [`run_typed`] when typed results should flow back by ownership.
+pub fn run_dyn_with_sink<State, R, K>(
+    state: State,
+    rng: &mut R,
+    kernel: &mut K,
+    measurements: &mut SinkMeasurementSet<State>,
+    sink: &mut dyn ResultSink,
+    params: SimulationParams,
+) -> Result<(State, SimulationStats)>
+where
+    K: Kernel<State, R>,
+{
+    let mut callbacks = NoopCallbacks;
+    run_dyn_with_sink_and_callbacks(
+        state,
+        rng,
+        kernel,
+        measurements,
+        sink,
+        params,
+        &mut callbacks,
+    )
+}
+
+pub fn run_dyn_with_sink_and_callbacks<State, R, K, C>(
+    mut state: State,
+    rng: &mut R,
+    kernel: &mut K,
+    measurements: &mut SinkMeasurementSet<State>,
+    sink: &mut dyn ResultSink,
+    params: SimulationParams,
+    callbacks: &mut C,
+) -> Result<(State, SimulationStats)>
+where
+    K: Kernel<State, R>,
+    C: RunCallbacks<SimulationCtx>,
+{
+    measurements.refresh_active();
+    let stats = drive(&mut state, rng, kernel, params, callbacks, |state| {
+        measurements.measure_all(state)
+    })?;
+    measurements.write_all(sink)?;
     Ok((state, stats))
 }
 
