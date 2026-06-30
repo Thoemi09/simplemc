@@ -20,9 +20,9 @@ the last external review (its High/Medium findings are resolved; see below).
 
 Roughly **Phases 0–4 mostly complete** (parallel core shipped, reproducible across thread counts,
 and scalar/vector stats implemented), **Phase 5 (grids)** substantially implemented, plus the first
-**Phase 6 (numeric)** interpolation MVP and **Phase 7 (io)** JSON checkpoint/restart MVP. `rust/` is
-now a workspace. CI exists for the Rust workspace. Opt-in serde support is implemented. Selective
-`proptest` coverage is in place.
+**Phase 6 (numeric)** interpolation/quadrature MVP and **Phase 7 (io)** JSON checkpoint/restart MVP.
+`rust/` is now a workspace. CI exists for the Rust workspace. Opt-in serde support is implemented.
+Selective `proptest` coverage is in place.
 
 Layout:
 - `crates/rmc-core/` — engine crate. `error.rs` (`RmcError` / `Result`), `merge.rs` (`Merge`),
@@ -41,9 +41,12 @@ Layout:
   `NdGrid<AxisGrid, N>`, safe point/bin queries, point/center/width/volume iterators, row-major
   flat/N-D indexing helpers, integer/grid subrange helpers, opt-in serde derives/manual serde where
   const-generic arrays need it.
-- `crates/rmc-numeric/` — first numeric slice: checked owned 1-D `LinearInterpolation<G>` and
+- `crates/rmc-numeric/` — numeric MVP slices: checked owned 1-D `LinearInterpolation<G>` and
   const-generic N-D `LinearInterpolationNd<G, N>` over `rmc-grids`, including mixed-axis
-  `LinearInterpolationMixed<N> = LinearInterpolationNd<AxisGrid, N>`, with opt-in serde derives.
+  `LinearInterpolationMixed<N> = LinearInterpolationNd<AxisGrid, N>`; global barycentric
+  `PolynomialInterpolation` from arbitrary nodes or `Grid1d`; natural/clamped
+  `CubicSplineInterpolation<G>`; composite trapezoid, composite Simpson, and adaptive Simpson
+  quadrature for finite 1-D intervals, with opt-in serde derives where state/config exists.
 - `crates/rmc-io/` — checkpoint/restart MVP: versioned `Checkpoint<T>` envelope, JSON string/bytes
   encode/decode, JSON file save/load, atomic JSON save, payload convenience helpers, and version
   rejection errors.
@@ -84,15 +87,20 @@ Layout:
   integer/grid subrange helpers mirror the C++ centering semantics.
 - **Numeric:** checked 1-D and N-D linear interpolation lives in `rmc-numeric`; constructors reject
   value/grid size mismatches, evaluation reports out-of-domain points, and affine analytical tests
-  cover nonuniform and mixed-axis grids.
+  cover nonuniform and mixed-axis grids. Polynomial interpolation uses barycentric weights, supports
+  arbitrary finite distinct nodes or `Grid1d`, and returns exact node values. Cubic splines support
+  natural and endpoint-derivative boundary conditions over any `Grid1d`, store solved second
+  derivatives, and use a checked tridiagonal solve. Quadrature includes composite trapezoid,
+  composite Simpson, and adaptive Simpson with finite interval/integrand validation and explicit
+  tolerance/depth errors.
 - **IO:** versioned JSON checkpoints live in `rmc-io`; callers choose the serializable payload, so
   state, RNG, kernels/update sets, measurements, and metadata can be checkpointed without adding IO
   bounds to core traits. Atomic JSON save is available for checkpoint files.
 - **Serde:** `serde` features exist on `rmc-core`, `rmc-stats`, `rmc-grids`, `rmc-numeric`, and the
   `rmc` façade. Round-trip tests cover `SeedSource`, `DefaultRng`, run/parallel config, update
   stats/outcomes, static update sets/kernels, scalar/vector accumulators, 1D grids, tagged axes,
-  N-D grids, and interpolation objects. `rmc-io` checkpoint tests cover JSON envelope round-trips
-  and version rejection.
+  N-D grids, linear/polynomial interpolation objects, and adaptive Simpson config. `rmc-io`
+  checkpoint tests cover JSON envelope round-trips and version rejection.
 
 ## Validation status
 
@@ -112,7 +120,15 @@ Layout:
   input errors, integer/grid subrange boundary cases, and serde round-trips.
 - Numeric: 1-D linear interpolation reproduces affine functions on nonuniform grids; bilinear and
   trilinear interpolation reproduce affine planes/hyperplanes on uniform and mixed-axis grids; size
-  mismatch and out-of-domain errors are covered; serde round-trips preserve interpolation objects.
+  mismatch and out-of-domain errors are covered. Polynomial interpolation reconstructs a quartic from
+  arbitrary nodes, can be built from grid points, returns exact node values, and rejects empty,
+  mismatched, duplicate, and non-finite inputs. Cubic spline tests cover natural endpoint conditions,
+  exact grid-point interpolation, clamped cubic-polynomial reconstruction on a nonuniform grid,
+  descending custom grids, invalid inputs, serde round-trip, and façade re-export. Trapezoid
+  integrates affine functions exactly, Simpson integrates cubic polynomials exactly, decreasing
+  intervals preserve sign, adaptive Simpson matches smooth known integrals, and invalid
+  panel/tolerance/depth/non-finite cases are covered. Serde round-trips preserve interpolation
+  objects and adaptive Simpson config.
 - IO: JSON checkpoints round-trip through strings and files; unsupported checkpoint versions are
   rejected; a split random-walk run restored from checkpoint reaches the same final state, RNG
   stream position, measurement output, and update statistics as an uninterrupted run.
@@ -129,8 +145,8 @@ Layout:
 ```text
 cd rust
 cargo fmt --all --check
-cargo test --locked # latest: 124 tests green across the workspace
-cargo test --locked --all-features # latest: 147 tests green, including serde/checkpoint round-trips
+cargo test --locked # latest: 134 tests green across the workspace
+cargo test --locked --all-features # latest: 159 tests green, including serde/checkpoint round-trips
 cargo test --locked -p rmc --no-default-features
 cargo test --locked -p rmc --features numeric
 cargo test --locked -p rmc --features io
@@ -147,8 +163,8 @@ in GitHub Actions but has not been run locally.
 
 ## Next (prioritized)
 
-1. **Continue numeric** (Phase 6): polynomial/spline interpolation or quadrature, depending on which
-   MVP user workflow is next.
+1. **Continue numeric** (Phase 6): orthogonal polynomials/lattices, depending on which MVP user
+   workflow is next.
 2. **Decide checkpoint binary format** (Phase 7 polish): add `bincode`/`postcard` only after choosing
    format compatibility expectations.
 3. **Grid polish if needed:** tighten docs/examples and adjust APIs only if numeric work exposes

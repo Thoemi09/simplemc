@@ -78,7 +78,7 @@ rmc/                       (workspace)
     rmc-stats/             # PARTIAL: scalar/vector moments+covar, autocorr, batch, jackknife
                            #   deps: rmc-core, nalgebra, num-complex
     rmc-grids/             # PARTIAL: 1-D grids + const-generic N-D grids
-    rmc-numeric/           # PARTIAL: checked linear interpolation MVP
+    rmc-numeric/           # PARTIAL: linear/polynomial interpolation + quadrature MVP
     rmc-io/                # PARTIAL: versioned JSON checkpoints/restart; hdf5 output behind feature
     rmc-mpi/               # TODO/DEFERRED: optional MPI chain-distribution + reduction backend
     rmc/                   # DONE/PARTIAL: façade re-exports + placeholder feature flags
@@ -343,9 +343,11 @@ interpolation.
 Orthogonal polynomials, interpolation, quadrature, Bravais lattices, linear map (nalgebra;
 `SymmetricEigen` where needed).
 Implemented so far: checked owned 1-D and const-generic N-D linear interpolation over `rmc-grids`,
-including mixed-axis `NdGrid<AxisGrid, N>` support, affine-function analytical tests, facade
-re-export, and serde round-trips. TODO: polynomial/spline interpolation, quadrature, orthogonal
-polynomials, lattices, and linear-map/eigensolver helpers.
+including mixed-axis `NdGrid<AxisGrid, N>` support; global barycentric polynomial interpolation from
+arbitrary nodes or `Grid1d`; composite trapezoid, composite Simpson, and adaptive Simpson quadrature
+over finite 1-D intervals; affine/polynomial/integral analytical tests; facade re-export; and serde
+round-trips for interpolation objects and adaptive Simpson config. TODO: spline interpolation,
+orthogonal polynomials, lattices, and linear-map/eigensolver helpers.
 **Est: 1.5–2 weeks.**
 
 ### DONE/PARTIAL — Phase 7 — `rmc-io`

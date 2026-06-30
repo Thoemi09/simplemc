@@ -1,7 +1,10 @@
 #![cfg(feature = "serde")]
 
 use rmc_grids::{AxisGrid, CustomGrid, LinearGrid, NdGrid, PowerGrid};
-use rmc_numeric::{LinearInterpolation, LinearInterpolationMixed, LinearInterpolationNd};
+use rmc_numeric::{
+    AdaptiveSimpson, CubicSplineInterpolation, LinearInterpolation, LinearInterpolationMixed,
+    LinearInterpolationNd, PolynomialInterpolation,
+};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
@@ -49,4 +52,35 @@ fn serde_round_trips_mixed_nd_interpolation() {
 
     assert_eq!(restored, interpolation);
     assert_eq!(restored.evaluate([0.5, 2.0, 5.0]).unwrap(), -2.5);
+}
+
+#[test]
+fn serde_round_trips_adaptive_simpson_config() {
+    let quadrature = AdaptiveSimpson::new(1.0e-9, 1.0e-8, 24).unwrap();
+    let restored: AdaptiveSimpson = round_trip(&quadrature);
+
+    assert_eq!(restored, quadrature);
+    assert_eq!(restored.abs_tolerance(), 1.0e-9);
+    assert_eq!(restored.rel_tolerance(), 1.0e-8);
+    assert_eq!(restored.max_depth(), 24);
+}
+
+#[test]
+fn serde_round_trips_polynomial_interpolation() {
+    let interpolation = PolynomialInterpolation::new([-1.0, 0.0, 2.0], [4.0, 1.0, 9.0]).unwrap();
+    let restored: PolynomialInterpolation = round_trip(&interpolation);
+
+    assert_eq!(restored, interpolation);
+    assert!((restored.evaluate(0.5).unwrap() - 1.25).abs() <= 1.0e-12);
+}
+
+#[test]
+fn serde_round_trips_cubic_spline_interpolation() {
+    let grid = LinearGrid::new(0.0, 2.0, 5).unwrap();
+    let interpolation =
+        CubicSplineInterpolation::natural(grid, [0.0, 0.25, 1.0, 2.25, 4.0]).unwrap();
+    let restored: CubicSplineInterpolation<LinearGrid> = round_trip(&interpolation);
+
+    assert_eq!(restored, interpolation);
+    assert!((restored.evaluate(0.5).unwrap() - 0.25).abs() <= 1.0e-12);
 }

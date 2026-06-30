@@ -15,8 +15,19 @@ fn facade_reexports_grids_when_feature_enabled() {
 fn facade_reexports_numeric_when_feature_enabled() {
     let grid = LinearGrid::new(0.0, 1.0, 3).unwrap();
     let interpolation = rmc::numeric::LinearInterpolation::new(grid, [0.0, 1.0, 2.0]).unwrap();
+    let integral = rmc::numeric::integrate_simpson(|x| x * x, 0.0, 3.0, 20).unwrap();
+    let polynomial =
+        rmc::numeric::PolynomialInterpolation::new([-1.0, 0.0, 1.0], [1.0, 0.0, 1.0]).unwrap();
+    let spline = rmc::numeric::CubicSplineInterpolation::natural(
+        LinearGrid::new(0.0, 1.0, 3).unwrap(),
+        [0.0, 0.25, 1.0],
+    )
+    .unwrap();
 
     assert_eq!(interpolation.evaluate(0.25).unwrap(), 0.5);
+    assert!((integral - 9.0).abs() <= 1.0e-12);
+    assert!((polynomial.evaluate(0.5).unwrap() - 0.25).abs() <= 1.0e-12);
+    assert!((spline.evaluate(0.5).unwrap() - 0.25).abs() <= 1.0e-12);
 }
 
 #[cfg(feature = "io")]
