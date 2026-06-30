@@ -18,9 +18,9 @@ the last external review (its High/Medium findings are resolved; see below).
 
 ## Current state
 
-Roughly **Phases 0–4 mostly complete** (parallel core shipped, reproducible across thread counts,
-and scalar/vector stats implemented), **Phase 5 (grids)** substantially implemented, plus the first
-**Phase 6 (numeric)** interpolation/quadrature MVP and **Phase 7 (io)** JSON checkpoint/restart MVP.
+Roughly **Phases 0–5 polished** (parallel core shipped, reproducible across thread counts,
+scalar/vector stats implemented, and grid ergonomics tightened), plus the first
+**Phase 6 (numeric)** interpolation/quadrature MVP and **Phase 7 (io)** checkpoint/restart MVP.
 `rust/` is now a workspace. CI exists for the Rust workspace. Opt-in serde support is implemented.
 Selective `proptest` coverage is in place.
 
@@ -33,23 +33,23 @@ Layout:
   sequential `run`/`run_typed` and rayon `run_parallel`/`run_parallel_in_pool`.
 - `crates/rmc-stats/` — `Accumulator`/`Mean`/`Variance` traits; `ScalarMoments` (Welford +
   Chan-Golub-LeVeque merge), `WeightedScalarMoments`, `ScalarCovariance`, and fixed-lag
-  `ScalarAutocorrelation`; `ScalarBatchMeans` and `ScalarJackknife` resampling helpers;
-  `VectorMoments` and `VectorCovariance` over `nalgebra::DVector`/`DMatrix`; all `Merge`, with
-  opt-in serde derives.
+  `ScalarAutocorrelation`; `ScalarBatchMeans`, value-preserving `ScalarBlockMeans`, and
+  `ScalarJackknife` resampling helpers; `VectorMoments` and `VectorCovariance` over
+  `nalgebra::DVector`/`DMatrix`; all `Merge`, with opt-in serde derives.
 - `crates/rmc-grids/` — grid slice: `Grid1d`, `LinearGrid`, `PowerGrid`, `SymmetricPowerGrid`,
   `CustomGrid`, `AxisGrid`, `NdGrid<G, const N: usize>` including mixed-axis
   `NdGrid<AxisGrid, N>`, safe point/bin queries, point/center/width/volume iterators, row-major
-  flat/N-D indexing helpers, integer/grid subrange helpers, opt-in serde derives/manual serde where
-  const-generic arrays need it.
+  flat/N-D indexing helpers, integer/grid subrange helpers, 1-D/N-D domain and bin-bound helpers,
+  N-D index iterators, opt-in serde derives/manual serde where const-generic arrays need it.
 - `crates/rmc-numeric/` — numeric MVP slices: checked owned 1-D `LinearInterpolation<G>` and
   const-generic N-D `LinearInterpolationNd<G, N>` over `rmc-grids`, including mixed-axis
   `LinearInterpolationMixed<N> = LinearInterpolationNd<AxisGrid, N>`; global barycentric
   `PolynomialInterpolation` from arbitrary nodes or `Grid1d`; natural/clamped
   `CubicSplineInterpolation<G>`; composite trapezoid, composite Simpson, and adaptive Simpson
   quadrature for finite 1-D intervals, with opt-in serde derives where state/config exists.
-- `crates/rmc-io/` — checkpoint/restart MVP: versioned `Checkpoint<T>` envelope, JSON string/bytes
-  encode/decode, JSON file save/load, atomic JSON save, payload convenience helpers, and version
-  rejection errors.
+- `crates/rmc-io/` — checkpoint/restart MVP: versioned `Checkpoint<T>` envelope, JSON and bincode
+  bytes/file encode/decode, atomic save helpers, payload convenience helpers, and version rejection
+  errors.
 - `crates/rmc/` — façade crate. Re-exports `rmc-core`; re-exports `rmc-stats` as `rmc::stats`
   behind the default `stats` feature; re-exports `rmc-grids` as `rmc::grids` behind the default
   `grids` feature; re-exports `rmc-numeric` as `rmc::numeric` behind the opt-in `numeric` feature;
@@ -78,12 +78,15 @@ Layout:
   reduces via `Merge` in deterministic chain order (reproducible across thread counts — verified on
   1- and 4-thread pools). MPI backend (Phase 8) must preserve this ordering.
 - **Stats:** scalar moments / weighted moments / covariance / fixed-lag autocorrelation / scalar
-  batch means / scalar jackknife / vector moments / vector covariance live in `rmc-stats`, all
-  mergeable and usable as typed `run_parallel` output.
+  batch means / scalar block means / scalar jackknife / vector moments / vector covariance live in
+  `rmc-stats`, all mergeable and usable as typed `run_parallel` output. The explicit block
+  abstraction is intentionally value-preserving, while `ScalarBatchMeans` remains the lightweight
+  moments-only estimator.
 - **Grids:** 1D linear, power, symmetric-power, custom, tagged `AxisGrid`, and const-generic N-D
   grids live in `rmc-grids`; mixed-axis product grids use `NdGrid<AxisGrid, N>`. Constructors
   validate inputs, point/bin APIs are bounds checked, endpoint binning is defined, iterators expose
-  grid points/bin centers/bin widths/volumes, row-major flat/N-D index helpers are available, and
+  grid points/bin centers/bin widths/volumes and N-D point/bin indices, row-major flat/N-D index
+  helpers are available, domain/bin-bound helpers cover increasing and decreasing grids, and
   integer/grid subrange helpers mirror the C++ centering semantics.
 - **Numeric:** checked 1-D and N-D linear interpolation lives in `rmc-numeric`; constructors reject
   value/grid size mismatches, evaluation reports out-of-domain points, and affine analytical tests
@@ -93,14 +96,14 @@ Layout:
   derivatives, and use a checked tridiagonal solve. Quadrature includes composite trapezoid,
   composite Simpson, and adaptive Simpson with finite interval/integrand validation and explicit
   tolerance/depth errors.
-- **IO:** versioned JSON checkpoints live in `rmc-io`; callers choose the serializable payload, so
-  state, RNG, kernels/update sets, measurements, and metadata can be checkpointed without adding IO
-  bounds to core traits. Atomic JSON save is available for checkpoint files.
+- **IO:** versioned JSON and bincode checkpoints live in `rmc-io`; callers choose the serializable
+  payload, so state, RNG, kernels/update sets, measurements, and metadata can be checkpointed without
+  adding IO bounds to core traits. Atomic save is available for checkpoint files.
 - **Serde:** `serde` features exist on `rmc-core`, `rmc-stats`, `rmc-grids`, `rmc-numeric`, and the
   `rmc` façade. Round-trip tests cover `SeedSource`, `DefaultRng`, run/parallel config, update
   stats/outcomes, static update sets/kernels, scalar/vector accumulators, 1D grids, tagged axes,
   N-D grids, linear/polynomial interpolation objects, and adaptive Simpson config. `rmc-io`
-  checkpoint tests cover JSON envelope round-trips and version rejection.
+  checkpoint tests cover JSON/binary envelope round-trips and version rejection.
 
 ## Validation status
 
@@ -112,12 +115,14 @@ Layout:
   and orders between high-temperature and low-temperature behavior.
 - Transform-sampler midpoint moment checks; fixed-seed `uniform_index` bucket balance.
 - Stats: closed-form scalar and vector mean/variance/covariance/correlation/autocorrelation,
-  batch-means standard error, jackknife delete-one estimates/error, merge-equals-single-pass where
-  mathematically appropriate, independent-chain autocorrelation/batch merge semantics, edge cases.
+  batch-means and block-means standard error, block-to-jackknife conversion, jackknife delete-one
+  estimates/error, merge-equals-single-pass where mathematically appropriate, independent-chain
+  autocorrelation/batch/block merge semantics, edge cases.
 - Grids: closed-form 1D linear/power/symmetric-power/custom/tagged-axis points, homogeneous and
   mixed-axis N-D shapes/points/bin centers/bin volumes, row-major flat/N-D index round-trips,
-  increasing and decreasing ranges, midpoint/end-point bin indexing, exact-size iterators, invalid
-  input errors, integer/grid subrange boundary cases, and serde round-trips.
+  N-D point/bin index iterators, increasing and decreasing ranges, domain/bin-bound helpers,
+  midpoint/end-point bin indexing, exact-size iterators, invalid input errors, integer/grid subrange
+  boundary cases, and serde round-trips.
 - Numeric: 1-D linear interpolation reproduces affine functions on nonuniform grids; bilinear and
   trilinear interpolation reproduce affine planes/hyperplanes on uniform and mixed-axis grids; size
   mismatch and out-of-domain errors are covered. Polynomial interpolation reconstructs a quartic from
@@ -129,9 +134,10 @@ Layout:
   intervals preserve sign, adaptive Simpson matches smooth known integrals, and invalid
   panel/tolerance/depth/non-finite cases are covered. Serde round-trips preserve interpolation
   objects and adaptive Simpson config.
-- IO: JSON checkpoints round-trip through strings and files; unsupported checkpoint versions are
-  rejected; a split random-walk run restored from checkpoint reaches the same final state, RNG
-  stream position, measurement output, and update statistics as an uninterrupted run.
+- IO: JSON checkpoints round-trip through strings and files; binary checkpoints round-trip through
+  bytes and files; unsupported checkpoint versions and malformed binary payloads are rejected; split
+  random-walk runs restored from JSON and binary checkpoints reach the same final state, RNG stream
+  position, measurement output, and update statistics as uninterrupted runs.
 - Property tests: exact scalar `Merge` laws; approximate merge laws and single-pass equivalence for
   scalar moments, weighted moments, and covariance; seeded parallel run equals a manual sequential
   chain reduction; `SeedSource` is reproducible and separates adjacent randomized chain IDs; derived
@@ -165,16 +171,10 @@ in GitHub Actions but has not been run locally.
 
 1. **Continue numeric** (Phase 6): orthogonal polynomials/lattices, depending on which MVP user
    workflow is next.
-2. **Decide checkpoint binary format** (Phase 7 polish): add `bincode`/`postcard` only after choosing
-   format compatibility expectations.
-3. **Grid polish if needed:** tighten docs/examples and adjust APIs only if numeric work exposes
-   friction.
-4. **Finish stats polish** (Phase 4): decide whether explicit block abstractions should sit above
-   scalar batch means, and add any missing property tests/docs before moving on.
-5. **Broaden validation:** finite-size scaling / longer Ising physics checks beyond the lightweight
+2. **Broaden validation:** finite-size scaling / longer Ising physics checks beyond the lightweight
    Binder smoke test.
-6. Then per plan: mpi (8), hdf5 (9).
-7. Decide the dyn-measurement result-sink design (review finding #4, deliberately deferred).
+3. Then per plan: mpi (8), hdf5 (9).
+4. Decide the dyn-measurement result-sink design (review finding #4, deliberately deferred).
 
 ## Notable lessons (non-obvious only)
 

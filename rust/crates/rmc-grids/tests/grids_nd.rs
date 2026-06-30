@@ -50,6 +50,9 @@ fn nd_grid_composes_linear_axes_in_row_major_order() {
     assert_eq!(grid.bin_count(), 6);
     assert_array_close(grid.first(), [0.0, 10.0]);
     assert_array_close(grid.last(), [2.0, 13.0]);
+    assert!(grid.contains([0.2, 10.7]));
+    assert!(grid.contains([2.0, 13.0]));
+    assert!(!grid.contains([2.1, 13.0]));
 
     assert_array_close(grid.point([0, 0]).unwrap(), [0.0, 10.0]);
     assert_array_close(grid.point([1, 2]).unwrap(), [1.0, 12.0]);
@@ -62,9 +65,26 @@ fn nd_grid_composes_linear_axes_in_row_major_order() {
     assert_eq!(grid.bin_index([2.1, 13.0]), None);
 
     assert_array_close(grid.bin_center([1, 2]).unwrap(), [1.5, 12.5]);
+    let (lower, upper) = grid.bin_bounds([1, 2]).unwrap();
+    assert_array_close(lower, [1.0, 12.0]);
+    assert_array_close(upper, [2.0, 13.0]);
+    assert_eq!(grid.bin_bounds([2, 0]), None);
     assert_close(grid.bin_volume([1, 2]).unwrap(), 1.0);
     assert_eq!(grid.bin_center([2, 0]), None);
     assert_eq!(grid.bin_volume([0, 3]), None);
+
+    let point_indices = grid.point_indices().collect::<Vec<_>>();
+    assert_eq!(point_indices.len(), 12);
+    assert_eq!(point_indices[0], [0, 0]);
+    assert_eq!(point_indices[1], [0, 1]);
+    assert_eq!(point_indices[4], [1, 0]);
+    assert_eq!(point_indices[11], [2, 3]);
+
+    let bin_indices = grid.bin_indices().collect::<Vec<_>>();
+    assert_eq!(
+        bin_indices,
+        vec![[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2]]
+    );
 
     let points = grid.points().collect::<Vec<_>>();
     assert_eq!(points.len(), 12);

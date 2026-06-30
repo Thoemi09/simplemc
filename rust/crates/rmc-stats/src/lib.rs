@@ -865,6 +865,180 @@ impl Merge for ScalarBatchMeans {
     }
 }
 
+/// Fixed-size scalar block-means accumulator retaining completed block estimates.
+///
+/// This sits one level above [`ScalarBatchMeans`]: raw sample moments are tracked the same way, but
+/// every completed block mean is stored so downstream resampling, especially jackknife over block
+/// means, can be computed without replaying the original samples. Merging preserves only completed
+/// block means and drops active partial blocks at the chain boundary.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, PartialEq)]
+pub struct ScalarBlockMeans {
+    block_size: usize,
+    raw_count: u64,
+    raw_sum: f64,
+    raw_sum_sq: f64,
+    completed_block_means: Vec<f64>,
+    current_block_count: usize,
+    current_block_sum: f64,
+}
+
+impl ScalarBlockMeans {
+    /// Create an empty accumulator with `block_size` samples per completed block.
+    pub fn new(block_size: usize) -> Result<Self> {
+        if block_size == 0 {
+            return Err(RmcError::InvalidArgument(
+                "block_size must be > 0".to_string(),
+            ));
+        }
+
+        Ok(Self {
+            block_size,
+            raw_count: 0,
+            raw_sum: 0.0,
+            raw_sum_sq: 0.0,
+            completed_block_means: Vec::new(),
+            current_block_count: 0,
+            current_block_sum: 0.0,
+        })
+    }
+
+    /// Build a block-means accumulator from samples.
+    pub fn from_samples(block_size: usize, samples: impl IntoIterator<Item = f64>) -> Result<Self> {
+        let mut acc = Self::new(block_size)?;
+        for sample in samples {
+            acc.accumulate(sample);
+        }
+        Ok(acc)
+    }
+
+    /// Number of samples per completed block.
+    pub fn block_size(&self) -> usize {
+        self.block_size
+    }
+
+    /// Number of completed blocks.
+    pub fn completed_block_count(&self) -> usize {
+        self.completed_block_means.len()
+    }
+
+    /// Number of samples currently waiting in the active incomplete block.
+    pub fn partial_block_len(&self) -> usize {
+        self.current_block_count
+    }
+
+    /// Borrow completed block means.
+    pub fn completed_block_means(&self) -> &[f64] {
+        &self.completed_block_means
+    }
+
+    /// Sum of all accumulated raw samples.
+    pub fn sum(&self) -> f64 {
+        self.raw_sum
+    }
+
+    /// Sum of squared raw samples.
+    pub fn sum_squares(&self) -> f64 {
+        self.raw_sum_sq
+    }
+
+    /// Mean of completed block means.
+    pub fn mean_of_completed_blocks(&self) -> Option<f64> {
+        (!self.completed_block_means.is_empty()).then(|| {
+            self.completed_block_means.iter().sum::<f64>() / self.completed_block_means.len() as f64
+        })
+    }
+
+    /// Unbiased sample variance of completed block means.
+    pub fn completed_block_sample_variance(&self) -> Option<f64> {
+        block_mean_moments(&self.completed_block_means).sample_variance()
+    }
+
+    /// Standard error of the raw-sample mean estimated from completed block means.
+    pub fn block_standard_error(&self) -> Option<f64> {
+        let block_count = self.completed_block_means.len();
+        if block_count > 1 {
+            self.completed_block_sample_variance()
+                .map(|variance| (variance / block_count as f64).sqrt())
+        } else {
+            None
+        }
+    }
+
+    /// Jackknife accumulator over completed block means.
+    pub fn jackknife(&self) -> ScalarJackknife {
+        ScalarJackknife::from_values(self.completed_block_means.iter().copied())
+    }
+}
+
+impl Accumulator<f64> for ScalarBlockMeans {
+    fn count(&self) -> u64 {
+        self.raw_count
+    }
+
+    fn accumulate(&mut self, sample: f64) {
+        self.raw_count += 1;
+        self.raw_sum += sample;
+        self.raw_sum_sq += sample * sample;
+        self.current_block_count += 1;
+        self.current_block_sum += sample;
+
+        if self.current_block_count == self.block_size {
+            self.completed_block_means
+                .push(self.current_block_sum / self.block_size as f64);
+            self.current_block_count = 0;
+            self.current_block_sum = 0.0;
+        }
+    }
+}
+
+impl MeanAccumulator<f64> for ScalarBlockMeans {
+    fn mean(&self) -> Option<f64> {
+        (self.raw_count > 0).then_some(self.raw_sum / self.raw_count as f64)
+    }
+}
+
+impl VarianceAccumulator<f64> for ScalarBlockMeans {
+    fn population_variance(&self) -> Option<f64> {
+        let mean = self.mean()?;
+        Some(self.raw_sum_sq / self.raw_count as f64 - mean * mean)
+    }
+
+    fn sample_variance(&self) -> Option<f64> {
+        if self.raw_count > 1 {
+            let mean = self.mean().expect("raw_count > 1 implies a mean");
+            let sum_squared_deviations = self.raw_sum_sq - self.raw_count as f64 * mean * mean;
+            Some(sum_squared_deviations / (self.raw_count - 1) as f64)
+        } else {
+            None
+        }
+    }
+}
+
+impl Merge for ScalarBlockMeans {
+    fn merge(mut self, other: Self) -> Self {
+        assert_eq!(
+            self.block_size, other.block_size,
+            "cannot merge block-means accumulators with different block_size values"
+        );
+        if self.raw_count == 0 {
+            return other;
+        }
+        if other.raw_count == 0 {
+            return self;
+        }
+
+        self.raw_count += other.raw_count;
+        self.raw_sum += other.raw_sum;
+        self.raw_sum_sq += other.raw_sum_sq;
+        self.completed_block_means
+            .extend(other.completed_block_means);
+        self.current_block_count = 0;
+        self.current_block_sum = 0.0;
+        self
+    }
+}
+
 /// Scalar jackknife accumulator over independent block estimates.
 ///
 /// Values are stored because delete-one jackknife estimates require access to each block estimate.
@@ -971,6 +1145,10 @@ impl Merge for ScalarJackknife {
         self.values.extend(other.values);
         self
     }
+}
+
+fn block_mean_moments(values: &[f64]) -> ScalarMoments {
+    ScalarMoments::from_samples(values.iter().copied())
 }
 
 /// Online per-component moments for vector-valued `f64` samples.

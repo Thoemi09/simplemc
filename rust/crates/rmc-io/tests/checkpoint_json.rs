@@ -7,8 +7,10 @@ use rmc_core::{
     random::{ChainId, DefaultRng, Rng, SeedSource},
 };
 use rmc_io::{
-    from_json_str, load_json, load_payload_json, save_json, save_json_atomic, save_payload_json,
-    to_json_string, Checkpoint, IoError, CHECKPOINT_VERSION,
+    from_binary_slice, from_json_str, load_binary, load_json, load_payload_binary,
+    load_payload_json, save_binary, save_binary_atomic, save_json, save_json_atomic,
+    save_payload_binary, save_payload_json, to_binary_vec, to_json_string, Checkpoint, IoError,
+    CHECKPOINT_VERSION,
 };
 use serde::{Deserialize, Serialize};
 
@@ -47,6 +49,32 @@ fn checkpoint_round_trips_through_json_string_and_file() {
 }
 
 #[test]
+fn checkpoint_round_trips_through_binary_bytes_and_file() {
+    let checkpoint = Checkpoint::new(Payload { step: 9, state: 42 });
+    let encoded = to_binary_vec(&checkpoint).unwrap();
+    let decoded: Checkpoint<Payload> = from_binary_slice(&encoded).unwrap();
+
+    assert_eq!(decoded, checkpoint);
+    assert_eq!(decoded.version, CHECKPOINT_VERSION);
+    assert_eq!(decoded.payload().state, 42);
+
+    let path =
+        std::env::temp_dir().join(format!("rmc-checkpoint-binary-{}.bin", std::process::id()));
+    save_binary(&path, &checkpoint).unwrap();
+    let loaded: Checkpoint<Payload> = load_binary(&path).unwrap();
+    assert_eq!(loaded, checkpoint);
+
+    let payload_path =
+        std::env::temp_dir().join(format!("rmc-checkpoint-payload-{}.bin", std::process::id()));
+    save_payload_binary(&payload_path, checkpoint.payload()).unwrap();
+    let payload: Payload = load_payload_binary(&payload_path).unwrap();
+    assert_eq!(payload, *checkpoint.payload());
+
+    let _ = std::fs::remove_file(path);
+    let _ = std::fs::remove_file(payload_path);
+}
+
+#[test]
 fn load_rejects_unsupported_checkpoint_version() {
     let err =
         from_json_str::<Payload>(r#"{"version":999,"payload":{"step":1,"state":2}}"#).unwrap_err();
@@ -58,6 +86,28 @@ fn load_rejects_unsupported_checkpoint_version() {
             found: 999
         }
     ));
+
+    let encoded = to_binary_vec(&Checkpoint {
+        version: 999,
+        payload: Payload { step: 1, state: 2 },
+    })
+    .unwrap();
+    let err = from_binary_slice::<Payload>(&encoded).unwrap_err();
+
+    assert!(matches!(
+        err,
+        IoError::UnsupportedVersion {
+            expected: CHECKPOINT_VERSION,
+            found: 999
+        }
+    ));
+}
+
+#[test]
+fn binary_load_reports_invalid_bytes() {
+    let err = from_binary_slice::<Payload>(b"").unwrap_err();
+
+    assert!(matches!(err, IoError::Binary(_)));
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -136,6 +186,78 @@ fn checkpointed_run_resumes_same_trajectory_as_uninterrupted_run() {
     save_json_atomic(&path, &checkpoint).unwrap();
 
     let restored: Checkpoint<RestartPayload> = load_json(&path).unwrap();
+    let RestartPayload {
+        state,
+        mut rng,
+        mut kernel,
+    } = restored.into_payload();
+    let (resumed_state, _second_stats, resumed_last) = run_typed(
+        state,
+        &mut rng,
+        &mut kernel,
+        LastStateValue::default(),
+        second_params,
+    )
+    .unwrap();
+
+    assert_eq!(resumed_state, full_state);
+    assert_eq!(resumed_last, full_last);
+    assert_eq!(rng.next_u64(), full_rng.next_u64());
+    assert_eq!(kernel.updates().stats(), full_kernel.updates().stats());
+
+    let _ = std::fs::remove_file(path);
+}
+
+#[test]
+fn binary_checkpointed_run_resumes_same_trajectory_as_uninterrupted_run() {
+    let seed = SeedSource::new(0x7eed);
+    let full_params = SimulationParams {
+        max_steps: 40,
+        steps_per_cycle: 4,
+        cycles_per_check: 1,
+    };
+    let first_params = SimulationParams {
+        max_steps: 13,
+        steps_per_cycle: 4,
+        cycles_per_check: 1,
+    };
+    let second_params = SimulationParams {
+        max_steps: 27,
+        steps_per_cycle: 4,
+        cycles_per_check: 1,
+    };
+
+    let mut full_rng = seed.rng_for(ChainId(0));
+    let mut full_kernel = MetropolisKernel::new(SingleUpdateSet::new(RandomWalkUpdate));
+    let (full_state, _full_stats, full_last) = run_typed(
+        0,
+        &mut full_rng,
+        &mut full_kernel,
+        LastStateValue::default(),
+        full_params,
+    )
+    .unwrap();
+
+    let mut split_rng = seed.rng_for(ChainId(0));
+    let mut split_kernel = MetropolisKernel::new(SingleUpdateSet::new(RandomWalkUpdate));
+    let (split_state, _first_stats, _first_last) = run_typed(
+        0,
+        &mut split_rng,
+        &mut split_kernel,
+        LastStateValue::default(),
+        first_params,
+    )
+    .unwrap();
+
+    let checkpoint = Checkpoint::new(RestartPayload {
+        state: split_state,
+        rng: split_rng,
+        kernel: split_kernel,
+    });
+    let path = std::env::temp_dir().join(format!("rmc-restart-{}.bin", std::process::id()));
+    save_binary_atomic(&path, &checkpoint).unwrap();
+
+    let restored: Checkpoint<RestartPayload> = load_binary(&path).unwrap();
     let RestartPayload {
         state,
         mut rng,

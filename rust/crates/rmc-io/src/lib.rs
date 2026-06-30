@@ -1,8 +1,8 @@
 //! Checkpoint and restart helpers.
 //!
-//! The MVP format is a versioned JSON envelope around any serde-serializable payload. Simulation
-//! code decides what belongs in the payload: typically state, RNG, kernel/update set, measurements,
-//! and any user metadata needed to resume.
+//! The formats are versioned envelopes around any serde-serializable payload. Simulation code
+//! decides what belongs in the payload: typically state, RNG, kernel/update set, measurements, and
+//! any user metadata needed to resume.
 
 use std::fs;
 use std::io::Write;
@@ -22,6 +22,8 @@ pub enum IoError {
     Io(#[from] std::io::Error),
     #[error("JSON serialization error: {0}")]
     Json(#[from] serde_json::Error),
+    #[error("binary serialization error: {0}")]
+    Binary(#[from] Box<bincode::ErrorKind>),
     #[error("unsupported checkpoint version {found}, expected {expected}")]
     UnsupportedVersion { expected: u32, found: u32 },
 }
@@ -78,6 +80,16 @@ pub fn from_json_slice<T: DeserializeOwned>(json: &[u8]) -> Result<Checkpoint<T>
     Ok(checkpoint)
 }
 
+pub fn to_binary_vec<T: Serialize>(checkpoint: &Checkpoint<T>) -> Result<Vec<u8>> {
+    Ok(bincode::serialize(checkpoint)?)
+}
+
+pub fn from_binary_slice<T: DeserializeOwned>(bytes: &[u8]) -> Result<Checkpoint<T>> {
+    let checkpoint: Checkpoint<T> = bincode::deserialize(bytes)?;
+    checkpoint.validate_version()?;
+    Ok(checkpoint)
+}
+
 pub fn save_json<T: Serialize>(path: impl AsRef<Path>, checkpoint: &Checkpoint<T>) -> Result<()> {
     fs::write(path, to_json_vec(checkpoint)?)?;
     Ok(())
@@ -85,6 +97,15 @@ pub fn save_json<T: Serialize>(path: impl AsRef<Path>, checkpoint: &Checkpoint<T
 
 pub fn load_json<T: DeserializeOwned>(path: impl AsRef<Path>) -> Result<Checkpoint<T>> {
     from_json_slice(&fs::read(path)?)
+}
+
+pub fn save_binary<T: Serialize>(path: impl AsRef<Path>, checkpoint: &Checkpoint<T>) -> Result<()> {
+    fs::write(path, to_binary_vec(checkpoint)?)?;
+    Ok(())
+}
+
+pub fn load_binary<T: DeserializeOwned>(path: impl AsRef<Path>) -> Result<Checkpoint<T>> {
+    from_binary_slice(&fs::read(path)?)
 }
 
 /// Save a checkpoint by writing a temporary sibling file and renaming it into place.
@@ -105,12 +126,38 @@ pub fn save_json_atomic<T: Serialize>(
     Ok(())
 }
 
+/// Save a binary checkpoint by writing a temporary sibling file and renaming it into place.
+pub fn save_binary_atomic<T: Serialize>(
+    path: impl AsRef<Path>,
+    checkpoint: &Checkpoint<T>,
+) -> Result<()> {
+    let path = path.as_ref();
+    let tmp_path = temporary_path(path);
+
+    {
+        let mut file = fs::File::create(&tmp_path)?;
+        file.write_all(&to_binary_vec(checkpoint)?)?;
+        file.sync_all()?;
+    }
+
+    fs::rename(&tmp_path, path)?;
+    Ok(())
+}
+
 pub fn save_payload_json<T: Serialize>(path: impl AsRef<Path>, payload: &T) -> Result<()> {
     save_json(path, &Checkpoint::new(payload))
 }
 
 pub fn load_payload_json<T: DeserializeOwned>(path: impl AsRef<Path>) -> Result<T> {
     Ok(load_json(path)?.into_payload())
+}
+
+pub fn save_payload_binary<T: Serialize>(path: impl AsRef<Path>, payload: &T) -> Result<()> {
+    save_binary(path, &Checkpoint::new(payload))
+}
+
+pub fn load_payload_binary<T: DeserializeOwned>(path: impl AsRef<Path>) -> Result<T> {
+    Ok(load_binary(path)?.into_payload())
 }
 
 fn validate_version(version: u32) -> Result<()> {

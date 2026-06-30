@@ -2,8 +2,8 @@
 
 use nalgebra::DVector;
 use rmc_stats::{
-    Accumulator, ScalarAutocorrelation, ScalarBatchMeans, ScalarCovariance, ScalarJackknife,
-    ScalarMoments, VectorCovariance, VectorMoments, WeightedScalarMoments,
+    Accumulator, ScalarAutocorrelation, ScalarBatchMeans, ScalarBlockMeans, ScalarCovariance,
+    ScalarJackknife, ScalarMoments, VectorCovariance, VectorMoments, WeightedScalarMoments,
 };
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -62,6 +62,16 @@ fn serde_round_trips_scalar_batch_means() {
     assert_eq!(restored, batches);
     assert_eq!(restored.count(), 5);
     assert_eq!(restored.completed_batch_count(), 2);
+}
+
+#[test]
+fn serde_round_trips_scalar_block_means() {
+    let blocks = ScalarBlockMeans::from_samples(2, [1.0, 3.0, 5.0, 7.0, 11.0]).unwrap();
+    let restored: ScalarBlockMeans = round_trip(&blocks);
+
+    assert_eq!(restored, blocks);
+    assert_eq!(restored.count(), 5);
+    assert_eq!(restored.completed_block_means(), &[2.0, 6.0]);
 }
 
 #[test]

@@ -41,14 +41,14 @@ Status legend used below:
    write into a caller-owned sink. Typed results are implemented; the dynamic measurement
    result-sink design is deliberately deferred.
 5. **PARTIAL — serde for checkpoints, opt-in; HDF5 only for output data.** Checkpoints are serde blobs
-   (compact binary + optional JSON). serde is an **opt-in `serde` feature**, *not* a bound on
+   (bincode + optional JSON). serde is an **opt-in `serde` feature**, *not* a bound on
    `Scalar`/state traits — keeping the default core lean and bound-free (principle #7). State and
    accumulator types carry `#[cfg_attr(feature = "serde", derive(...))]` as they are written, so
    checkpointing is not a late retrofit. HDF5 is reserved for large scientific *output datasets*,
    behind its own feature — not for framework plumbing. No bespoke navigable serializer abstraction.
    serde derives and round-trips exist for implemented config/RNG/stat/grid/numeric types, and the
-   `rmc-io` MVP now provides versioned JSON checkpoint save/restore with restart validation. A
-   compact binary checkpoint format and HDF5 output remain TODO/deferred.
+   `rmc-io` MVP now provides versioned JSON and bincode checkpoint save/restore with restart
+   validation. HDF5 output remains TODO/deferred.
 6. **PARTIAL — Reuse the ecosystem.** Use `rand` + `rand_xoshiro` for RNG (no hand-rolled engines),
    `nalgebra` for linear algebra, `rayon` for parallelism, `thiserror` for errors.
    Implemented so far: `rand`, `rand_xoshiro`, `rayon`, `thiserror`, `serde`, `criterion`,
@@ -97,7 +97,7 @@ Current features on the `rmc` façade: `default = ["stats", "grids"]`, implement
 | Parallelism | `rayon` | **DONE**: data-parallel independent chains |
 | Linear algebra | `nalgebra` (+ `num-complex`) | **PARTIAL**: `num-complex` supports scalar complex values; `nalgebra` powers vector moments/covariance in `rmc-stats`; numeric eigensolver work is TODO |
 | Errors | `thiserror` | **DONE**: `Result<_, RmcError>` |
-| Serialization | `serde` + `bincode`/`postcard` + `serde_json` | **PARTIAL**: opt-in serde derives and JSON round-trips exist for core/stats/grids/numeric; `rmc-io` implements versioned JSON checkpointing/restart; compact binary format selection is TODO |
+| Serialization | `serde` + `bincode` + `serde_json` | **PARTIAL**: opt-in serde derives and JSON round-trips exist for core/stats/grids/numeric; `rmc-io` implements versioned JSON and bincode checkpointing/restart |
 | Ordered maps | `indexmap` | **TODO**: named sets currently use local storage, no `indexmap` dependency yet |
 | Output data (opt) | `hdf5` / `hdf5-metno` | **TODO/DEFERRED**: large measurement datasets only |
 | MPI (opt) | `mpi` (rsmpi) | **TODO/DEFERRED**: cluster backend; `#[derive(Equivalence)]` |
@@ -184,10 +184,11 @@ Measurements run per cycle (cold), so a `Vec<Box<dyn Measurement>>` set is fine 
 are also offered for when results need to come back typed.
 
 ### 3.5 Accumulator hierarchy (`rmc-stats`)
-**PARTIAL:** scalar `Accumulator`, `MeanAccumulator`, and `VarianceAccumulator` traits exist, plus
-`ScalarMoments`, `WeightedScalarMoments`, `ScalarCovariance`, `ScalarAutocorrelation`,
-`ScalarBatchMeans`, `ScalarJackknife`, `VectorMoments`, and `VectorCovariance`. Remaining work is
-mostly explicit block abstractions, API polish, and broader docs/property coverage.
+**DONE/PARTIAL:** scalar `Accumulator`, `MeanAccumulator`, and `VarianceAccumulator` traits exist,
+plus `ScalarMoments`, `WeightedScalarMoments`, `ScalarCovariance`, `ScalarAutocorrelation`,
+`ScalarBatchMeans`, value-preserving `ScalarBlockMeans`, `ScalarJackknife`, `VectorMoments`, and
+`VectorCovariance`. Phase 4 polish is complete for scalar/vector stats; remaining work is future
+domain-driven expansion, such as multivalue ergonomics if needed.
 
 ```rust
 pub trait Accumulator: Merge { type Sample: SampleType; type Value: Scalar;
@@ -201,11 +202,11 @@ Online, numerically stable algorithms (Welford / batched). `Merge` lets per-chai
 reduced into a global one.
 
 ### 3.6 Grids (`rmc-grids`)
-**PARTIAL:** `Grid1d`, `LinearGrid`, `PowerGrid`, `SymmetricPowerGrid`, `CustomGrid`, `AxisGrid`,
+**DONE/PARTIAL:** `Grid1d`, `LinearGrid`, `PowerGrid`, `SymmetricPowerGrid`, `CustomGrid`, `AxisGrid`,
 and `NdGrid<G, const N: usize>` are implemented with validated constructors, safe point/bin queries,
-endpoint-aware bin indexing, point/center/width/volume iterators, row-major flat/N-D index helpers,
-integer/grid subrange helpers, and serde round-trips. Mixed-axis N-D grids are supported via
-`NdGrid<AxisGrid, N>`; remaining grid work is API polish around downstream interpolation needs.
+endpoint-aware bin indexing, point/center/width/volume iterators, N-D point/bin index iterators,
+domain/bin-bound helpers, row-major flat/N-D index helpers, integer/grid subrange helpers, and
+serde round-trips. Mixed-axis N-D grids are supported via `NdGrid<AxisGrid, N>`.
 
 `GridCommon` / `Grid1d` / `GridNd<const N: usize>` with const-generic dimension; iterator impls
 instead of bespoke iterator classes. (Same shape as the port's grid traits.)
@@ -252,11 +253,11 @@ and the thread/MPI split is a single swappable reduction step.
 ## 5. Serialization & I/O (`rmc-io`)
 
 - **PARTIAL — serde derive** on implemented simulation state. Checkpoint MVP = versioned
-  `serde_json` envelope around caller-owned payloads. No custom navigable store trait.
+  `serde_json` and `bincode` envelopes around caller-owned payloads. No custom navigable store trait.
 - **DONE — Restart MVP**: `rmc-io` deserializes state + RNG + serializable kernel/update-set payloads
   and validates that a checkpointed run continues the same trajectory as an uninterrupted run.
-- **TODO — Compact checkpoint format**: add `bincode`/`postcard` after choosing the crate and format
-  compatibility policy.
+- **DONE — Compact checkpoint format**: `bincode` is the Rust-native compact checkpoint format;
+  `Checkpoint<T>::version` remains the framework-level compatibility guard.
 - **TODO/DEFERRED — HDF5 (feature `hdf5`)**: for large scientific *output* arrays only
   (measurement time series, histograms), not framework checkpoints. Keeps the binary scientific
   format decoupled from the engine.
@@ -321,22 +322,23 @@ trait. Reproducibility property tests. **Est: 3–4 days.**
 test: parallel == sequential for matched seeds; reproducibility across thread counts. **This is the
 shippable core: a parallel MC engine.** **Est: 3–5 days.**
 
-### PARTIAL — Phase 4 — `rmc-stats`
+### DONE/PARTIAL — Phase 4 — `rmc-stats`
 Accumulator trait hierarchy (mean/var/covar/autocorr/batch/block/jackknife/multivalue), each `Merge`.
 Scalar + nalgebra-vector samples; stable online algorithms. Analytical + property validation.
 Implemented so far: scalar moments, weighted scalar moments, scalar covariance, fixed-lag scalar
-autocorrelation, scalar batch means, scalar jackknife, vector moments, vector covariance, serde
-round-trips, and analytical/property tests. TODO: decide any remaining block abstractions over
-scalar batch means and complete Phase 4 API/docs polish.
+autocorrelation, scalar batch means, scalar block means, scalar jackknife, vector moments, vector
+covariance, serde round-trips, and analytical/property tests. The explicit block abstraction is
+resolved as `ScalarBlockMeans`, which stores completed block means for jackknife/resampling while
+`ScalarBatchMeans` remains the lightweight moments-only estimator.
 **Est: 1–1.5 weeks.**
 
-### PARTIAL — Phase 5 — `rmc-grids`
+### DONE/PARTIAL — Phase 5 — `rmc-grids`
 Linear/power/symmetric-power/custom 1-D grids, N-D grids (const generics), iterator impls.
 Implemented so far: `Grid1d`, `LinearGrid`, `PowerGrid`, `SymmetricPowerGrid`, `CustomGrid`,
 `AxisGrid`, `NdGrid<G, const N: usize>` including mixed-axis `NdGrid<AxisGrid, N>`, safe point/bin
-APIs, point/center/width/volume iterators, row-major flat/N-D indexing helpers, integer/grid
-subrange helpers, facade re-export, and serde round-trips. TODO: remaining API polish driven by
-interpolation.
+APIs, point/center/width/volume iterators, N-D point/bin index iterators, domain/bin-bound helpers,
+row-major flat/N-D indexing helpers, integer/grid subrange helpers, facade re-export, and serde
+round-trips.
 **Est: ~1 week.**
 
 ### PARTIAL — Phase 6 — `rmc-numeric`
@@ -351,10 +353,10 @@ orthogonal polynomials, lattices, and linear-map/eigensolver helpers.
 **Est: 1.5–2 weeks.**
 
 ### DONE/PARTIAL — Phase 7 — `rmc-io`
-Implemented so far: `rmc-io` crate, versioned `Checkpoint<T>` envelope, JSON string/bytes/file
-save/load helpers, atomic JSON save, payload convenience helpers, unsupported-version errors, facade
-`io` feature/re-export, RNG/kernel checkpoint restart test, and facade feature smoke test. TODO:
-compact binary checkpoint format (`bincode`/`postcard`) if needed.
+Implemented so far: `rmc-io` crate, versioned `Checkpoint<T>` envelope, JSON and bincode bytes/file
+save/load helpers, atomic save helpers, payload convenience helpers, unsupported-version and
+malformed-binary errors, facade `io` feature/re-export, RNG/kernel checkpoint restart tests, and
+facade feature smoke test.
 **Est: 3–5 days.**
 
 ### TODO/DEFERRED — Phase 8 — `rmc-mpi` (optional backend)

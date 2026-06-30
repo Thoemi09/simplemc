@@ -64,17 +64,35 @@ pub trait Grid1d {
         }
     }
 
+    /// Whether points increase with index.
+    fn is_increasing(&self) -> bool {
+        self.first() < self.last()
+    }
+
+    /// Whether points decrease with index.
+    fn is_decreasing(&self) -> bool {
+        self.first() > self.last()
+    }
+
+    /// Closed domain endpoints in index order.
+    fn domain(&self) -> (f64, f64) {
+        (self.first(), self.last())
+    }
+
+    /// Left and right grid points of bin `index`, in index order.
+    fn bin_bounds(&self, index: usize) -> Option<(f64, f64)> {
+        Some((self.point(index)?, self.point(index + 1)?))
+    }
+
     /// Bin width/volume at `index`.
     fn bin_width(&self, index: usize) -> Option<f64> {
-        let left = self.point(index)?;
-        let right = self.point(index + 1)?;
+        let (left, right) = self.bin_bounds(index)?;
         Some((right - left).abs())
     }
 
     /// Bin center at `index`.
     fn bin_center(&self, index: usize) -> Option<f64> {
-        let left = self.point(index)?;
-        let right = self.point(index + 1)?;
+        let (left, right) = self.bin_bounds(index)?;
         Some(0.5 * (left + right))
     }
 
@@ -276,6 +294,10 @@ impl<G: Grid1d, const N: usize> NdGrid<G, N> {
         std::array::from_fn(|axis| self.axes[axis].last())
     }
 
+    pub fn contains(&self, value: [f64; N]) -> bool {
+        (0..N).all(|axis| self.axes[axis].contains(value[axis]))
+    }
+
     pub fn point(&self, indices: [usize; N]) -> Option<[f64; N]> {
         let mut point = [0.0; N];
         for axis in 0..N {
@@ -298,6 +320,17 @@ impl<G: Grid1d, const N: usize> NdGrid<G, N> {
             center[axis] = self.axes[axis].bin_center(indices[axis])?;
         }
         Some(center)
+    }
+
+    pub fn bin_bounds(&self, indices: [usize; N]) -> Option<([f64; N], [f64; N])> {
+        let mut lower = [0.0; N];
+        let mut upper = [0.0; N];
+        for axis in 0..N {
+            let (axis_lower, axis_upper) = self.axes[axis].bin_bounds(indices[axis])?;
+            lower[axis] = axis_lower;
+            upper[axis] = axis_upper;
+        }
+        Some((lower, upper))
     }
 
     pub fn bin_volume(&self, indices: [usize; N]) -> Option<f64> {
@@ -336,6 +369,20 @@ impl<G: Grid1d, const N: usize> NdGrid<G, N> {
         Some(indices)
     }
 
+    pub fn point_indices(&self) -> NdGridIndices<N> {
+        NdGridIndices {
+            shape: self.shape(),
+            flat_index: 0,
+        }
+    }
+
+    pub fn bin_indices(&self) -> NdGridIndices<N> {
+        NdGridIndices {
+            shape: self.bin_shape(),
+            flat_index: 0,
+        }
+    }
+
     pub fn points(&self) -> NdGridPoints<'_, G, N> {
         NdGridPoints {
             grid: self,
@@ -357,6 +404,30 @@ impl<G: Grid1d, const N: usize> NdGrid<G, N> {
         }
     }
 }
+
+#[derive(Clone, Debug)]
+pub struct NdGridIndices<const N: usize> {
+    shape: [usize; N],
+    flat_index: usize,
+}
+
+impl<const N: usize> Iterator for NdGridIndices<N> {
+    type Item = [usize; N];
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let indices = nd_index_row_major(self.flat_index, self.shape)?;
+        self.flat_index += 1;
+        Some(indices)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let size = size_from_shape(self.shape).unwrap_or(0);
+        let remaining = size.saturating_sub(self.flat_index);
+        (remaining, Some(remaining))
+    }
+}
+
+impl<const N: usize> ExactSizeIterator for NdGridIndices<N> {}
 
 #[derive(Clone, Debug)]
 pub struct NdGridPoints<'a, G, const N: usize> {

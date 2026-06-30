@@ -47,6 +47,7 @@ fn assert_grid(
     assert_eq!(grid.point(grid.len()), None);
     assert_eq!(grid.bin_center(grid.bin_count()), None);
     assert_eq!(grid.bin_width(grid.bin_count()), None);
+    assert_eq!(grid.bin_bounds(grid.bin_count()), None);
     assert_eq!(grid.bin_index(grid.last()), Some(grid.bin_count() - 1));
 }
 
@@ -92,6 +93,10 @@ fn invalid_grid_inputs_are_rejected() {
 fn linear_grid_supports_increasing_and_decreasing_ranges() {
     let increasing = LinearGrid::new(0.0, 10.0, 6).unwrap();
     assert_close(increasing.step(), 2.0);
+    assert!(increasing.is_increasing());
+    assert!(!increasing.is_decreasing());
+    assert_eq!(increasing.domain(), (0.0, 10.0));
+    assert_eq!(increasing.bin_bounds(2), Some((4.0, 6.0)));
     assert_grid(
         &increasing,
         &[0.0, 2.0, 4.0, 6.0, 8.0, 10.0],
@@ -105,6 +110,10 @@ fn linear_grid_supports_increasing_and_decreasing_ranges() {
 
     let decreasing = LinearGrid::new(10.0, 0.0, 6).unwrap();
     assert_close(decreasing.step(), -2.0);
+    assert!(!decreasing.is_increasing());
+    assert!(decreasing.is_decreasing());
+    assert_eq!(decreasing.domain(), (10.0, 0.0));
+    assert_eq!(decreasing.bin_bounds(2), Some((6.0, 4.0)));
     assert_grid(
         &decreasing,
         &[10.0, 8.0, 6.0, 4.0, 2.0, 0.0],

@@ -5,7 +5,8 @@ use rmc_core::mc::{
 use rmc_core::random::{ChainId, SeedSource};
 use rmc_core::Merge;
 use rmc_stats::{
-    Accumulator, MeanAccumulator, ScalarBatchMeans, ScalarJackknife, VarianceAccumulator,
+    Accumulator, MeanAccumulator, ScalarBatchMeans, ScalarBlockMeans, ScalarJackknife,
+    VarianceAccumulator,
 };
 
 fn assert_close(actual: f64, expected: f64) {
@@ -92,6 +93,58 @@ fn scalar_batch_means_merge_treats_empty_accumulators_as_identity() {
         batches.clone().merge(ScalarBatchMeans::new(2).unwrap()),
         batches
     );
+}
+
+#[test]
+fn scalar_block_means_retains_completed_blocks_for_jackknife() {
+    let blocks = ScalarBlockMeans::from_samples(2, [1.0, 3.0, 5.0, 7.0, 11.0]).unwrap();
+
+    assert_eq!(blocks.count(), 5);
+    assert_eq!(blocks.block_size(), 2);
+    assert_eq!(blocks.completed_block_count(), 2);
+    assert_eq!(blocks.partial_block_len(), 1);
+    assert_eq!(blocks.completed_block_means(), &[2.0, 6.0]);
+    assert_close(blocks.sum(), 27.0);
+    assert_close(blocks.sum_squares(), 205.0);
+    assert_close(blocks.mean().unwrap(), 27.0 / 5.0);
+    assert_close(blocks.mean_of_completed_blocks().unwrap(), 4.0);
+    assert_close(blocks.completed_block_sample_variance().unwrap(), 8.0);
+    assert_close(blocks.block_standard_error().unwrap(), 2.0);
+
+    let jackknife = blocks.jackknife();
+    assert_eq!(jackknife.values(), &[2.0, 6.0]);
+    assert_close(jackknife.estimate().unwrap(), 4.0);
+    assert_close(jackknife.standard_error().unwrap(), 2.0);
+}
+
+#[test]
+fn scalar_block_means_rejects_zero_block_size() {
+    let error = ScalarBlockMeans::new(0).unwrap_err();
+
+    assert_eq!(
+        error.to_string(),
+        "invalid argument: block_size must be > 0"
+    );
+}
+
+#[test]
+fn scalar_block_means_merge_keeps_partial_blocks_separate() {
+    let first = ScalarBlockMeans::from_samples(3, [1.0, 2.0, 3.0, 4.0]).unwrap();
+    let second = ScalarBlockMeans::from_samples(3, [10.0, 20.0]).unwrap();
+    let direct_concatenation =
+        ScalarBlockMeans::from_samples(3, [1.0, 2.0, 3.0, 4.0, 10.0, 20.0]).unwrap();
+
+    let merged = first.merge(second);
+
+    assert_eq!(merged.count(), 6);
+    assert_eq!(merged.completed_block_means(), &[2.0]);
+    assert_eq!(merged.partial_block_len(), 0);
+    assert_eq!(
+        direct_concatenation.completed_block_means(),
+        &[2.0, 34.0 / 3.0]
+    );
+    assert_close(merged.mean().unwrap(), 40.0 / 6.0);
+    assert_eq!(merged.block_standard_error(), None);
 }
 
 struct IncrementState;
