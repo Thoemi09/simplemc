@@ -214,6 +214,7 @@
           <tab type="user" url="@ref simplemc::json_checkpoint_writer" title="json_checkpoint_writer"/>
           <tab type="user" url="@ref simplemc::no_op_callback" title="no_op_callback"/>
           <tab type="user" url="@ref simplemc::no_op_stop_callback" title="no_op_stop_callback"/>
+          <tab type="user" url="@ref simplemc::progress_line" title="progress_line"/>
           <tab type="user" url="@ref simplemc::progress_printer" title="progress_printer"/>
           <tab type="user" url="@ref simplemc::run_callbacks" title="run_callbacks"/>
         </tab>

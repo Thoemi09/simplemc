@@ -1,43 +1,24 @@
 /**
  * @file
  * @brief Opt-in callback helpers for the simplemc::run loop.
- *
- * @details Plug-in callables that drop into simplemc::run_callbacks slots. Each is a strongly-typed
- * struct with a `operator()(const simulation_stats&)` so the compiler can inline it in place — no
- * `std::function` indirection. Bundled helpers:
- *
- * - simplemc::progress_printer — throttled status line with optional MPI rank gating, plus the
- *   convenience factories simplemc::make_step_progress_printer and
- *   simplemc::make_time_progress_printer.
- * - simplemc::json_checkpoint_writer / simplemc::load_json_checkpoint — write/read the persistent
- *   state of the run components (RNG, update_set, measurement_set, simulation_stats) plus an
- *   optional user-supplied config object, to/from a JSON file.
- * - When the library was built with `SIMPLEMC_USE_HDF5=ON`, simplemc::hdf5_checkpoint_writer /
- *   simplemc::load_hdf5_checkpoint — the same pair against the HDF5 backend.
  */
 
 #ifndef SIMPLEMC_MC_CALLBACKS_HPP
 #define SIMPLEMC_MC_CALLBACKS_HPP
 
 #include <simplemc/config.hpp>
-#include <simplemc/mc/run_callbacks.hpp>
 #include <simplemc/mc/simulation_ctx.hpp>
 #include <simplemc/mc/utils.hpp>
 #include <simplemc/serialize/json/file_io.hpp>
 #include <simplemc/serialize/json/json_serializer.hpp>
-#include <simplemc/utils/timer.hpp>
 
-#include <fmt/format.h>
 #include <nlohmann/json.hpp>
 
 #ifdef SIMPLEMC_USE_HDF5
 #include <simplemc/serialize/hdf5/hdf5_serializer.hpp>
 #endif
 
-#include <cstdint>
-#include <cstdio>
 #include <filesystem>
-#include <string>
 #include <type_traits>
 #include <utility>
 
@@ -47,116 +28,6 @@ namespace simplemc {
  * @addtogroup simplemc-mc-callbacks
  * @{
  */
-
-/**
- * @brief Throttled progress-printer callback.
- *
- * @details A small callable that prints a one-line status to a `FILE*` no more often than
- * `throttle_sec` seconds of wall clock. It reports the live step count (`ctx.steps_done`) and live
- * wall-clock (`ctx.elapsed()`). If both `max_steps` and `max_time` are zero, it prints just the
- * running counters; otherwise it adds a percentage based on whichever budget is non-zero.
- *
- * Rank gating is **caller-side**: the user passes the local MPI rank via `rank`, and the printer
- * suppresses output on ranks other than `0` when `rank_zero_only` is true. This keeps the struct
- * independent of `<simplemc/mpi.hpp>`, so it works in single-process builds and in MPI builds alike.
- *
- * Throttle state and the wall-clock timer are `mutable` so a const-qualified `run_callbacks` (as
- * held inside the run loop) can still update them.
- */
-struct progress_printer {
-    /// Destination file handle (defaults to stdout). Must outlive this callable.
-    std::FILE* out = stdout;
-
-    /// Optional label prepended to each printed line.
-    std::string prefix = "progress";
-
-    /// Minimum wall-clock seconds between two consecutive prints.
-    double throttle_sec = 1.0;
-
-    /// Target number of steps for percentage reporting; `0` disables the steps percentage.
-    std::uint64_t max_steps = 0;
-
-    /// Target wall-clock seconds for percentage reporting; `0.0` disables the time percentage.
-    double max_time = 0.0;
-
-    /// Local MPI rank (default `0`, single-process).
-    int rank = 0;
-
-    /// If `true`, only rank `0` prints. Caller must set `rank` correctly for this to gate.
-    bool rank_zero_only = false;
-
-    /// Wall-clock timer used to throttle. Reset by emit() after a print.
-    timer<> throttle_clk {};
-
-    /// Whether the first call has been observed (so the first call always prints).
-    bool started = false;
-
-    /**
-     * @brief Print one status line if rank-gated emission is enabled and the throttle has elapsed.
-     */
-    void operator()(const simulation_ctx& x) {
-        if (rank_zero_only && rank != 0) {
-            return;
-        }
-        const double now = throttle_clk.elapsed();
-        if (started && now < throttle_sec) {
-            return;
-        }
-
-        const std::uint64_t steps = x.steps_done;
-        const double runtime = x.elapsed();
-        if (max_steps > 0 && max_time > 0.0) {
-            const double pct_steps = 100.0 * static_cast<double>(steps) / static_cast<double>(max_steps);
-            const double pct_time = 100.0 * runtime / max_time;
-            fmt::print(out, "[{}] steps {}/{} ({:.2f}%), time {:.2f}/{:.2f} s ({:.2f}%)\n", prefix, steps, max_steps,
-                pct_steps, runtime, max_time, pct_time);
-        } else if (max_steps > 0) {
-            const double pct = 100.0 * static_cast<double>(steps) / static_cast<double>(max_steps);
-            fmt::print(out, "[{}] steps {}/{} ({:.2f}%), time {:.2f} s\n", prefix, steps, max_steps, pct, runtime);
-        } else if (max_time > 0.0) {
-            const double pct = 100.0 * runtime / max_time;
-            fmt::print(out, "[{}] steps {}, time {:.2f}/{:.2f} s ({:.2f}%)\n", prefix, steps, runtime, max_time, pct);
-        } else {
-            fmt::print(out, "[{}] steps {}, time {:.2f} s\n", prefix, steps, runtime);
-        }
-        std::fflush(out);
-
-        throttle_clk.reset();
-        started = true;
-    }
-};
-
-/**
- * @brief Convenience factory: steps-based progress printer with sensible defaults.
- *
- * @param max_steps Target step count for percentage display.
- * @param throttle_sec Minimum wall-clock seconds between prints. Defaults to `1.0`.
- * @param rank Local MPI rank (defaults to `0`, single-process).
- * @param rank_zero_only Whether to suppress output on non-zero ranks. Defaults to `false`.
- * @return Configured simplemc::progress_printer.
- */
-[[nodiscard]] inline progress_printer make_step_progress_printer(
-    std::uint64_t max_steps, double throttle_sec = 1.0, int rank = 0, bool rank_zero_only = false) {
-    return progress_printer {
-        .throttle_sec = throttle_sec, .max_steps = max_steps, .rank = rank, .rank_zero_only = rank_zero_only
-    };
-}
-
-/**
- * @brief Convenience factory: time-based progress printer with sensible defaults.
- *
- * @param max_time Target wall-clock seconds for percentage display.
- * @param throttle_sec Minimum wall-clock seconds between prints. Defaults to `1.0`.
- * @param rank Local MPI rank (defaults to `0`, single-process).
- * @param rank_zero_only Whether to suppress output on non-zero ranks. Defaults to `false`.
- * @return Configured simplemc::progress_printer.
- */
-[[nodiscard]] inline progress_printer make_time_progress_printer(
-    double max_time, double throttle_sec = 1.0, int rank = 0, bool rank_zero_only = false) {
-    return progress_printer {
-        .throttle_sec = throttle_sec, .max_time = max_time, .rank = rank, .rank_zero_only = rank_zero_only
-    };
-}
 
 /**
  * @brief Checkpoint-writer callback that serializes the borrowed run components to a JSON file.
