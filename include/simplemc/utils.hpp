@@ -13,5 +13,6 @@
 #include <simplemc/utils/simplemc_exception.hpp>
 #include <simplemc/utils/timer.hpp>
 #include <simplemc/utils/to_string.hpp>
+#include <simplemc/utils/traits.hpp>
 
 #endif // SIMPLEMC_UTILS_HPP

@@ -94,6 +94,12 @@
  */
 
 /**
+ * @defgroup simplemc-utils-traits General traits
+ * @ingroup simplemc-utils
+ * @brief General type traits used by other **simplemc** libraries.
+ */
+
+/**
  * @defgroup simplemc-mpi simplemc-mpi
  * @brief Highlevel C++ interface to MPI.
  *
