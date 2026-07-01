@@ -83,6 +83,106 @@ impl Merge for BatchedSum {
     }
 }
 
+/// A set of `num_bins` batched-sum series that all share ONE global sample schedule.
+///
+/// Every measured sample advances the schedule exactly once and contributes to at most one
+/// bin (the "active" bin). The per-batch sample counts are therefore *global* — a sample that
+/// lands in bin `i` still counts toward the batch denominator of every other bin. This is
+/// exactly the normalization the ratio estimators need (`Σ = exact / zeroth`), and it makes
+/// `push` `O(1)` instead of `O(num_bins)`: the previous representation kept one independent
+/// `BatchedSum` per bin and pushed `0.0` into all inactive bins on every sample, which cost
+/// `~num_bins` operations per cycle and dominated the entire run time.
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, PartialEq)]
+pub struct BinnedBatchedSums {
+    n_batches: usize,
+    num_bins: usize,
+    /// bin-major: `batch_sums[bin * n_batches + batch]`.
+    batch_sums: Vec<f64>,
+    /// shared across all bins (the global per-batch sample count).
+    batch_counts: Vec<u64>,
+    next: usize,
+}
+
+impl BinnedBatchedSums {
+    pub fn new(num_bins: usize, n_batches: usize) -> Self {
+        assert!(n_batches >= 2, "jackknife needs at least two batches");
+        Self {
+            n_batches,
+            num_bins,
+            batch_sums: vec![0.0; num_bins * n_batches],
+            batch_counts: vec![0; n_batches],
+            next: 0,
+        }
+    }
+
+    /// Record one sample that contributes `value` to `bin`, advancing the global schedule.
+    ///
+    /// A sample that should contribute to no bin (e.g. a normalization-sector sample) is still
+    /// recorded by calling this with its `value` equal to `0.0`; the batch count still advances
+    /// so the denominators stay aligned with the scalar accumulators.
+    #[inline]
+    pub fn push(&mut self, bin: usize, value: f64) {
+        let batch = self.next % self.n_batches;
+        self.batch_sums[bin * self.n_batches + batch] += value;
+        self.batch_counts[batch] += 1;
+        self.next += 1;
+    }
+
+    pub fn n_batches(&self) -> usize {
+        self.n_batches
+    }
+
+    pub fn num_bins(&self) -> usize {
+        self.num_bins
+    }
+
+    /// Total number of samples recorded across all batches (the global sample count).
+    pub fn total_count(&self) -> u64 {
+        self.batch_counts.iter().sum()
+    }
+
+    fn batch_mean(&self, bin: usize, batch: usize) -> Option<f64> {
+        let count = self.batch_counts[batch];
+        (count > 0).then_some(self.batch_sums[bin * self.n_batches + batch] / count as f64)
+    }
+
+    fn bin_mean(&self, bin: usize) -> Option<f64> {
+        let total = self.total_count();
+        if total == 0 {
+            return None;
+        }
+        let base = bin * self.n_batches;
+        let sum: f64 = self.batch_sums[base..base + self.n_batches].iter().sum();
+        Some(sum / total as f64)
+    }
+}
+
+impl Merge for BinnedBatchedSums {
+    fn merge(self, other: Self) -> Self {
+        assert_eq!(self.n_batches, other.n_batches);
+        assert_eq!(self.num_bins, other.num_bins);
+        let batch_sums = self
+            .batch_sums
+            .into_iter()
+            .zip(other.batch_sums)
+            .map(|(lhs, rhs)| lhs + rhs)
+            .collect();
+        let batch_counts = self
+            .batch_counts
+            .into_iter()
+            .zip(other.batch_counts)
+            .map(|(lhs, rhs)| lhs + rhs)
+            .collect();
+        Self {
+            n_batches: self.n_batches,
+            num_bins: self.num_bins,
+            batch_sums,
+            batch_counts,
+            next: self.next + other.next,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, serde::Serialize, serde::Deserialize, PartialEq)]
 pub struct GridSpec {
     pub first: f64,
@@ -120,8 +220,8 @@ pub struct SeriesEstimate {
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, PartialEq)]
 pub struct PolaronStats {
     pub zeroth: BatchedSum,
-    pub exact: Vec<BatchedSum>,
-    pub hist: Vec<BatchedSum>,
+    pub exact: BinnedBatchedSums,
+    pub hist: BinnedBatchedSums,
     pub energy: BatchedSum,
     pub a: BatchedSum,
     pub order: BatchedSum,
@@ -145,10 +245,25 @@ impl PolaronStats {
         let dispersion = self.dispersion();
         let n0 = norm0(self.max_tau, dispersion);
         let binsize = grid.step().abs();
-        let mut mean = Vec::with_capacity(self.exact.len());
-        let mut stderr = Vec::with_capacity(self.exact.len());
-        for exact in &self.exact {
-            let estimate = jackknife_ratio(exact, &self.zeroth, |num, den| {
+        let n_batches = self.zeroth.n_batches();
+        let mut mean = Vec::with_capacity(self.exact.num_bins());
+        let mut stderr = Vec::with_capacity(self.exact.num_bins());
+        let mut batch_num = Vec::with_capacity(n_batches);
+        let mut batch_den = Vec::with_capacity(n_batches);
+        for bin in 0..self.exact.num_bins() {
+            batch_num.clear();
+            batch_den.clear();
+            // `exact` (binned) and `zeroth` (scalar) share the same global sample schedule and
+            // per-batch counts, so a batch is non-empty for both or neither.
+            for batch in 0..n_batches {
+                if let (Some(num_mean), Some(den_mean)) =
+                    (self.exact.batch_mean(bin, batch), self.zeroth.batch_mean(batch))
+                {
+                    batch_num.push(num_mean);
+                    batch_den.push(den_mean);
+                }
+            }
+            let estimate = jackknife_from_batch_means(&batch_num, &batch_den, |num, den| {
                 if den == 0.0 {
                     f64::NAN
                 } else {
@@ -191,12 +306,10 @@ impl PolaronStats {
         let grid = self.grid.grid();
         let n0 = norm0(self.max_tau, self.dispersion());
         let zeroth = self.zeroth.mean().unwrap_or(f64::NAN);
-        self.exact
-            .iter()
-            .enumerate()
-            .map(|(idx, exact)| {
+        (0..self.exact.num_bins())
+            .map(|idx| {
                 let binsize = grid.bin_width(idx).expect("bin must exist");
-                exact.mean().unwrap_or(0.0) / binsize * n0 / zeroth
+                self.exact.bin_mean(idx).unwrap_or(0.0) / binsize * n0 / zeroth
             })
             .collect()
     }
@@ -209,22 +322,10 @@ impl PolaronStats {
 impl Merge for PolaronStats {
     fn merge(self, other: Self) -> Self {
         assert_eq!(self.grid, other.grid);
-        assert_eq!(self.exact.len(), other.exact.len());
-        assert_eq!(self.hist.len(), other.hist.len());
         Self {
             zeroth: self.zeroth.merge(other.zeroth),
-            exact: self
-                .exact
-                .into_iter()
-                .zip(other.exact)
-                .map(|(lhs, rhs)| lhs.merge(rhs))
-                .collect(),
-            hist: self
-                .hist
-                .into_iter()
-                .zip(other.hist)
-                .map(|(lhs, rhs)| lhs.merge(rhs))
-                .collect(),
+            exact: self.exact.merge(other.exact),
+            hist: self.hist.merge(other.hist),
             energy: self.energy.merge(other.energy),
             a: self.a.merge(other.a),
             order: self.order.merge(other.order),
@@ -261,13 +362,11 @@ impl PolaronMeasurement {
         template: &Diagram,
     ) -> Self {
         let grid = GridSpec::new(0.0, max_tau, num_bins + 1);
-        let exact = (0..num_bins).map(|_| BatchedSum::new(n_batches)).collect();
-        let hist = (0..num_bins).map(|_| BatchedSum::new(n_batches)).collect();
         Self {
             stats: PolaronStats {
                 zeroth: BatchedSum::new(n_batches),
-                exact,
-                hist,
+                exact: BinnedBatchedSums::new(num_bins, n_batches),
+                hist: BinnedBatchedSums::new(num_bins, n_batches),
                 energy: BatchedSum::new(n_batches),
                 a: BatchedSum::new(n_batches),
                 order: BatchedSum::new(n_batches),
@@ -341,22 +440,12 @@ impl Measurement<Diagram> for PolaronMeasurement {
             .push(if is_zeroth { 0.0 } else { d.tau() * exp_energy });
         self.stats.order.push(d.order as f64);
 
-        for bin in 0..self.stats.grid.bin_count() {
-            self.stats
-                .hist
-                .get_mut(bin)
-                .expect("hist bin must exist")
-                .push(if !is_zeroth && bin == index { 1.0 } else { 0.0 });
-            self.stats
-                .exact
-                .get_mut(bin)
-                .expect("exact bin must exist")
-                .push(if !is_zeroth && bin == index {
-                    exact_value
-                } else {
-                    0.0
-                });
-        }
+        // Only the active bin receives a contribution; the shared batch schedule handles the
+        // normalization for every other bin. At order 0 the contribution is `0.0` (the sample
+        // still advances the schedule so denominators stay aligned with `zeroth`).
+        let hist_value = if is_zeroth { 0.0 } else { 1.0 };
+        self.stats.exact.push(index, exact_value);
+        self.stats.hist.push(index, hist_value);
 
         self.stats.sample_count += 1;
         self.stats.self_consistent_count += 1;
@@ -383,7 +472,18 @@ where
             batch_den.push(den_mean);
         }
     }
+    jackknife_from_batch_means(&batch_num, &batch_den, f)
+}
 
+/// Delete-one jackknife of a ratio functional `f(num, den)` over per-batch means.
+///
+/// `batch_num[k]` / `batch_den[k]` are the numerator/denominator means of the (non-empty)
+/// batches, paired on the same batch schedule.
+fn jackknife_from_batch_means<F>(batch_num: &[f64], batch_den: &[f64], f: F) -> Estimate
+where
+    F: Fn(f64, f64) -> f64,
+{
+    debug_assert_eq!(batch_num.len(), batch_den.len());
     let n = batch_num.len();
     if n < 2 {
         return Estimate {
@@ -424,5 +524,80 @@ where
     Estimate {
         mean,
         stderr: (((n - 1) as f64 / n as f64) * variance_sum).sqrt(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The `O(1)` `BinnedBatchedSums` must be numerically identical to the old representation:
+    /// one independent `BatchedSum` per bin, with `0.0` pushed into every inactive bin on every
+    /// sample. This locks in that the optimization is a pure speedup, not a change in results.
+    #[test]
+    fn binned_matches_per_bin_batched_sum() {
+        let n_batches = 4;
+        let num_bins = 3;
+        let mut binned = BinnedBatchedSums::new(num_bins, n_batches);
+        let mut per_bin: Vec<BatchedSum> =
+            (0..num_bins).map(|_| BatchedSum::new(n_batches)).collect();
+
+        // (active bin, contributed value); includes an order-0-style sample (value 0.0).
+        let samples = [
+            (0usize, 1.5),
+            (2, 3.0),
+            (0, -0.5),
+            (1, 2.0),
+            (2, 0.0),
+            (0, 4.0),
+            (1, -1.0),
+            (2, 0.25),
+            (0, 0.0),
+            (1, 7.0),
+        ];
+        for &(active, value) in &samples {
+            binned.push(active, value);
+            for (bin, acc) in per_bin.iter_mut().enumerate() {
+                acc.push(if bin == active { value } else { 0.0 });
+            }
+        }
+
+        assert_eq!(binned.total_count(), samples.len() as u64);
+        for bin in 0..num_bins {
+            for batch in 0..n_batches {
+                assert_eq!(
+                    binned.batch_mean(bin, batch),
+                    per_bin[bin].batch_mean(batch),
+                    "batch mean mismatch at bin {bin}, batch {batch}"
+                );
+            }
+            assert_eq!(binned.bin_mean(bin), per_bin[bin].mean(), "bin mean at {bin}");
+        }
+    }
+
+    /// A constant ratio series jackknifed per bin recovers the constant with zero error, exactly
+    /// as the scalar `jackknife_ratio` does — exercising the shared numerator/denominator path.
+    #[test]
+    fn binned_selfenergy_ratio_is_constant() {
+        let n_batches = 8;
+        let num_bins = 2;
+        let mut exact = BinnedBatchedSums::new(num_bins, n_batches);
+        let mut zeroth = BatchedSum::new(n_batches);
+        // Every sample lands in bin 0 with exact=6, and zeroth=3 → ratio 2.0.
+        for _ in 0..80 {
+            exact.push(0, 6.0);
+            zeroth.push(3.0);
+        }
+        let mut batch_num = Vec::new();
+        let mut batch_den = Vec::new();
+        for batch in 0..n_batches {
+            if let (Some(nm), Some(dm)) = (exact.batch_mean(0, batch), zeroth.batch_mean(batch)) {
+                batch_num.push(nm);
+                batch_den.push(dm);
+            }
+        }
+        let estimate = jackknife_from_batch_means(&batch_num, &batch_den, |num, den| num / den);
+        assert!((estimate.mean - 2.0).abs() < 1.0e-12);
+        assert!(estimate.stderr < 1.0e-12);
     }
 }

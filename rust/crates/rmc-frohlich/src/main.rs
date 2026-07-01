@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
-use rmc_polaron::app::{run_from_config_with_progress, write_results};
-use rmc_polaron::config::RunConfig;
+use rmc_frohlich::app::{run_from_config_with_progress, write_results};
+use rmc_frohlich::config::RunConfig;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = std::env::args().skip(1);
@@ -10,9 +10,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("{}", RunConfig::default().to_json_string()?);
         }
         Some("bench") => {
-            let path = args.next().ok_or("usage: rmc-polaron bench <config.json>")?;
+            let path = args
+                .next()
+                .ok_or("usage: rmc-frohlich bench <config.json>")?;
             let cfg = RunConfig::load_json(&path)?;
-            let report = rmc_polaron::app::run_bench(&cfg)?;
+            let report = rmc_frohlich::app::run_bench(&cfg)?;
             println!("{}", serde_json::to_string_pretty(&report)?);
         }
         Some(path) => {
@@ -22,6 +24,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .next()
                 .map_or_else(|| PathBuf::from("results"), PathBuf::from);
             let manifest = write_results(&cfg, &output, &results_dir)?;
+            println!();
             println!("{}", manifest.summary.text());
             println!("results_dir: {}", results_dir.display());
         }
@@ -30,6 +33,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let output = run_from_config_with_progress(&cfg, true)?;
             let results_dir = PathBuf::from("results");
             let manifest = write_results(&cfg, &output, &results_dir)?;
+            println!();
             println!("{}", manifest.summary.text());
             println!("results_dir: {}", results_dir.display());
         }

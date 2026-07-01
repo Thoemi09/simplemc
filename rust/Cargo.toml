@@ -4,7 +4,7 @@ members = [
     "crates/rmc-grids",
     "crates/rmc-io",
     "crates/rmc-numeric",
-    "crates/rmc-polaron",
+    "crates/rmc-frohlich",
     "crates/rmc-stats",
     "crates/rmc",
 ]
@@ -40,7 +40,7 @@ thiserror = "1"
 rustfft = "6"
 
 # Fully-optimized build for benchmarking (the "tuned Rust" tier vs C++ -O3).
-# Build with: RUSTFLAGS="-C target-cpu=native" cargo build --profile release-tuned -p rmc-polaron
+# Build with: RUSTFLAGS="-C target-cpu=native" cargo build --profile release-tuned -p rmc-frohlich
 [profile.release-tuned]
 inherits = "release"
 lto = "fat"

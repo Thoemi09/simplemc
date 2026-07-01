@@ -1,8 +1,8 @@
 use nalgebra::Vector3;
 use rmc_core::mc::Measurement;
 use rmc_core::Merge;
-use rmc_polaron::measurement::{jackknife_ratio, BatchedSum, PolaronMeasurement};
-use rmc_polaron::{sanity, Diagram};
+use rmc_frohlich::measurement::{jackknife_ratio, BatchedSum, PolaronMeasurement};
+use rmc_frohlich::{sanity, Diagram};
 
 #[test]
 fn jackknife_ratio_constant_series_has_zero_error() {
@@ -66,5 +66,5 @@ fn polaron_stats_merge_adds_batch_accumulators() {
     let merged = lhs.finish().merge(rhs.finish());
     assert_eq!(merged.sample_count, 18);
     assert_eq!(merged.zeroth.total_count(), 18);
-    assert_eq!(merged.exact[0].total_count(), 18);
+    assert_eq!(merged.exact.total_count(), 18);
 }

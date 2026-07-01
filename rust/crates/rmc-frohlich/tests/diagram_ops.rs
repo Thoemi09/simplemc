@@ -1,6 +1,6 @@
 use nalgebra::Vector3;
-use rmc_polaron::sanity;
-use rmc_polaron::{Diagram, Vertex};
+use rmc_frohlich::sanity;
+use rmc_frohlich::{Diagram, Vertex};
 use slotmap::Key;
 
 fn q(x: f64, y: f64, z: f64) -> Vector3<f64> {

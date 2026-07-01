@@ -1,10 +1,10 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use rmc_polaron::app::{
+use rmc_frohlich::app::{
     checkpoint_from_output, load_checkpoint, run_from_config, save_checkpoint, write_results,
 };
-use rmc_polaron::config::RunConfig;
-use rmc_polaron::sanity;
+use rmc_frohlich::config::RunConfig;
+use rmc_frohlich::sanity;
 
 fn small_config() -> RunConfig {
     RunConfig {
@@ -95,7 +95,7 @@ fn checkpoint_payload_round_trips_json() {
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_nanos();
-    let path = std::env::temp_dir().join(format!("rmc-polaron-checkpoint-{stamp}.json"));
+    let path = std::env::temp_dir().join(format!("rmc-frohlich-checkpoint-{stamp}.json"));
 
     save_checkpoint(&path, &payload).unwrap();
     let loaded = load_checkpoint(&path).unwrap();
@@ -123,7 +123,7 @@ fn write_results_creates_summary_and_artifacts() {
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_nanos();
-    let dir = std::env::temp_dir().join(format!("rmc-polaron-results-{stamp}"));
+    let dir = std::env::temp_dir().join(format!("rmc-frohlich-results-{stamp}"));
 
     let manifest = write_results(&cfg, &output, &dir).unwrap();
     assert!(dir.join("summary.txt").exists());

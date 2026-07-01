@@ -2,7 +2,7 @@ use std::f64::consts::PI;
 
 use nalgebra::Vector3;
 use rmc_core::random::safe_exponential_sample;
-use rmc_polaron::diagram::{phi_from_cartesian, spherical_to_cartesian, theta_from_cartesian};
+use rmc_frohlich::diagram::{phi_from_cartesian, spherical_to_cartesian, theta_from_cartesian};
 
 fn cpp_draw_from_exp(begin: f64, end: f64, lambda: f64, random_0_1: f64) -> f64 {
     begin - (1.0 - random_0_1 * (1.0 - (-(lambda * (end - begin))).exp())).ln() / lambda

@@ -805,6 +805,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "rmc-frohlich"
+version = "0.1.0"
+dependencies = [
+ "indicatif",
+ "nalgebra",
+ "num-complex",
+ "proptest",
+ "rand 0.8.6",
+ "rand_distr",
+ "rayon",
+ "rmc-core",
+ "rmc-grids",
+ "rmc-io",
+ "rmc-numeric",
+ "rmc-stats",
+ "rustfft",
+ "serde",
+ "serde_json",
+ "slotmap",
+]
+
+[[package]]
 name = "rmc-grids"
 version = "0.1.0"
 dependencies = [
@@ -834,28 +856,6 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
-]
-
-[[package]]
-name = "rmc-polaron"
-version = "0.1.0"
-dependencies = [
- "indicatif",
- "nalgebra",
- "num-complex",
- "proptest",
- "rand 0.8.6",
- "rand_distr",
- "rayon",
- "rmc-core",
- "rmc-grids",
- "rmc-io",
- "rmc-numeric",
- "rmc-stats",
- "rustfft",
- "serde",
- "serde_json",
- "slotmap",
 ]
 
 [[package]]

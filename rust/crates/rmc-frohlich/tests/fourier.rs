@@ -1,8 +1,8 @@
 use std::f64::consts::PI;
 
 use rmc_grids::{Grid1d, LinearGrid};
-use rmc_polaron::diagram::Diagram;
-use rmc_polaron::fourier::{analyze_self_energy, get_omega, FourierConfig};
+use rmc_frohlich::diagram::Diagram;
+use rmc_frohlich::fourier::{analyze_self_energy, get_omega, FourierConfig};
 
 #[test]
 fn omega_index_folds_like_fft_convention() {
