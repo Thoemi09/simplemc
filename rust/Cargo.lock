@@ -849,6 +849,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "rmc-minimal"
+version = "0.1.0"
+dependencies = [
+ "rand 0.8.6",
+ "rand_distr",
+ "rmc-core",
+ "rmc-stats",
+]
+
+[[package]]
 name = "rmc-numeric"
 version = "0.1.0"
 dependencies = [

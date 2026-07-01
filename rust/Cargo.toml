@@ -5,6 +5,7 @@ members = [
     "crates/rmc-io",
     "crates/rmc-numeric",
     "crates/rmc-frohlich",
+    "crates/rmc-minimal",
     "crates/rmc-stats",
     "crates/rmc",
 ]
