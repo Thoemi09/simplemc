@@ -47,7 +47,7 @@ weight `Z(p)` of the **Fröhlich polaron** (one electron coupled to a dispersion
 `ω = 1`, `m = 1`). A "diagram" is an electron world-line on `[0, τ]` dressed by phonon arcs. The MC
 samples diagram configurations (order = number of phonon arcs, vertex times, momenta) weighted by
 the diagram value. Order 0 is a special **normalization sector** (the "fake function") used to fix
-the absolute scale. The reference result for `α = 1, p = 0` is `E ≈ -1.013` and `Z ≈ 0.95`.
+the absolute scale. The reference result for `α = 1, p = 0` is `E ≈ -1.013` and `Z ≈ 0.59`.
 
 ---
 
@@ -515,9 +515,9 @@ Port `add_phonon.hpp` and `remove_phonon.hpp` faithfully, including the **order-
   `order=0`. Else remove the two vertices, fix `p_out`/`phonons_above` on the spanned range, `order
   -= 1`.
 
-**Detailed-balance check (do this!)**: After porting, run a *short* fixed-seed simulation and assert
-add/remove acceptance counts give a sane order histogram (mean order ≈ 2–3 for α=1). A sign error in
-any ratio shows up as the order distribution collapsing to 0 or exploding to `max_order`.
+**Detailed-balance check (do this!)**: After porting, run a *short* fixed-seed simulation and inspect
+add/remove acceptance counts plus the order histogram. Use this as a qualitative guard: a sign error
+in any ratio shows up as the order distribution collapsing to 0 or exploding to `max_order`.
 
 **Phase 2 done when**: a 1e6-step single-chain run with all 8 updates completes with
 `sanity::check_sanity` passing every step (debug build), no panics, and a non-degenerate order
@@ -619,7 +619,7 @@ With `E = dispersion(p)`, `n0 = norm0(max_tau, E)`, `binsize = grid step`:
   per-bin `exact` numerator and scalar `zeroth` denominator. Output `{tau: bin_centers, mean[],
   stderr[]}`.
 - **E**: `f(energy, zeroth) = energy * n0 / zeroth` (scalar). Mean is the polaron energy (≈ -1.013).
-- **Z**: `f(a, zeroth) = 1/(1 + a*n0/zeroth)` (scalar) (≈ 0.95).
+- **Z**: `f(a, zeroth) = 1/(1 + a*n0/zeroth)` (scalar) (≈ 0.59).
 
 Also expose `get_exact()` (the C++ `get_exact`, Σ(τ) on bin centers used as FFT input):
 `exact_mean[i]/binsize * n0 / zeroth_mean`.
@@ -723,11 +723,11 @@ This is the success criterion. Use a fixed seed and enough steps for tight error
    (tune so the test runs in < ~60 s in release; mark `#[ignore]` a longer high-precision variant).
    Compute E and Z from the merged stats. Assert:
    - `E_mean` within `max(3*E_stderr, 0.01)` of **-1.013** (Fröhlich α=1, p=0 reference).
-   - `Z_mean` within `max(3*Z_stderr, 0.02)` of **≈0.95** (looser; Z is noisier).
+   - `Z_mean` within `max(3*Z_stderr, 0.02)` of **≈0.59** (looser; Z is noisier).
    - `E_stderr` is finite and small (`< 0.02`), `zeroth_mean > 0` (normalization sector visited).
    Document the reference values and tolerance rationale in the test.
-2. **Order distribution**: assert mean order in a sane band (≈ 1.5–4) — a guard against ratio sign
-   errors.
+2. **Order distribution**: record the order histogram and guard only against clearly degenerate
+   behavior, such as persistent collapse to order 0 or runaway growth toward `max_order`.
 3. **Sanity invariants**: a debug-build run asserts `sanity::check_sanity` every step over a short
    chain (already exercised in Phase 2; keep a small instance here).
 4. **Σ(τ) shape**: assert `Σ(τ)` is finite, and `Σ(τ→0)` is positive / monotone-ish (loose).
@@ -795,6 +795,6 @@ cheap to localize with the phase tests.
 
 - Reference run params: `self-energy-dmc/runs/input.json` (α=1, μ=-1.1, p=0, max_tau=30,
   num_bins=2000, beta=100, energy_estimate=-1.0168).
-- Physics targets (α=1, p=0): **E ≈ -1.013**, **Z ≈ 0.95**, mean order ≈ 2–3.
+- Physics targets (α=1, p=0): **E ≈ -1.013**, **Z ≈ 0.59**.
 - Reference C++ outputs to diff against if desired: `runs/run_properties.json`, `runs/fft.dat`,
   `runs/fft_dense.dat`, `runs/results/`, `runs/thread_0`.

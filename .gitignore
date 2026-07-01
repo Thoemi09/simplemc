@@ -27,3 +27,7 @@ compile_commands.json
 
 # build directories
 target/
+
+# generated run/benchmark output
+rust/results/
+bench/scratch/

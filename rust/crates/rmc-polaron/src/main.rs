@@ -9,6 +9,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some("def") => {
             println!("{}", RunConfig::default().to_json_string()?);
         }
+        Some("bench") => {
+            let path = args.next().ok_or("usage: rmc-polaron bench <config.json>")?;
+            let cfg = RunConfig::load_json(&path)?;
+            let report = rmc_polaron::app::run_bench(&cfg)?;
+            println!("{}", serde_json::to_string_pretty(&report)?);
+        }
         Some(path) => {
             let cfg = RunConfig::load_json(path)?;
             let output = run_from_config_with_progress(&cfg, true)?;

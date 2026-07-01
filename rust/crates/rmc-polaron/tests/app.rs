@@ -24,6 +24,15 @@ fn single_run_produces_stats_and_final_state() {
     let cfg = small_config();
     let output = run_from_config(&cfg).unwrap();
     assert_eq!(output.stats.steps_done, cfg.max_steps);
+    assert_eq!(output.update_stats.len(), 8);
+    assert_eq!(
+        output
+            .update_stats
+            .iter()
+            .map(|row| row.proposed)
+            .sum::<u64>(),
+        output.stats.steps_done
+    );
     assert_eq!(
         output.measurement.sample_count as u64,
         cfg.max_steps / cfg.steps_per_cycle
@@ -38,6 +47,15 @@ fn parallel_run_reduces_measurement_outputs() {
     cfg.chains = 2;
     let output = run_from_config(&cfg).unwrap();
     assert_eq!(output.stats.steps_done, cfg.max_steps * cfg.chains);
+    assert_eq!(output.update_stats.len(), 8);
+    assert_eq!(
+        output
+            .update_stats
+            .iter()
+            .map(|row| row.proposed)
+            .sum::<u64>(),
+        output.stats.steps_done
+    );
     assert_eq!(
         output.measurement.sample_count as u64,
         (cfg.max_steps / cfg.steps_per_cycle) * cfg.chains
@@ -52,6 +70,15 @@ fn parallel_warmup_run_reduces_measurement_outputs() {
     cfg.warmup_steps = 25;
     let output = run_from_config(&cfg).unwrap();
     assert_eq!(output.stats.steps_done, cfg.max_steps * cfg.chains);
+    assert_eq!(output.update_stats.len(), 8);
+    assert_eq!(
+        output
+            .update_stats
+            .iter()
+            .map(|row| row.proposed)
+            .sum::<u64>(),
+        output.stats.steps_done
+    );
     assert_eq!(
         output.measurement.sample_count as u64,
         (cfg.max_steps / cfg.steps_per_cycle) * cfg.chains
@@ -105,6 +132,17 @@ fn write_results_creates_summary_and_artifacts() {
     assert!(dir.join("selfenergy.json").exists());
     assert!(dir.join("manifest.json").exists());
     assert!(manifest.summary.energy.mean.is_finite() || manifest.summary.energy.mean.is_nan());
+    assert_eq!(manifest.summary.update_stats.len(), 8);
+    assert_eq!(
+        manifest
+            .summary
+            .update_stats
+            .iter()
+            .map(|row| row.proposed)
+            .sum::<u64>(),
+        manifest.summary.steps_done
+    );
+    assert!(manifest.summary.text().contains("UPDATE STATISTICS"));
     assert!(manifest.files.iter().any(|file| file == "summary.txt"));
 
     std::fs::remove_dir_all(&dir).unwrap();

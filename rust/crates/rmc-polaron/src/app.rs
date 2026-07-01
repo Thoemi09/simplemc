@@ -4,8 +4,8 @@ use std::path::{Path, PathBuf};
 use indicatif::{MultiProgress, ProgressBar};
 use rayon::prelude::*;
 use rmc_core::mc::{
-    run_parallel, run_parallel_with_callbacks, run_typed, run_typed_with_callbacks,
-    IndicatifProgress, MetropolisKernel, ParallelConfig, SimulationStats, WeightedUpdateSet,
+    run_typed, run_typed_with_callbacks, IndicatifProgress, MetropolisKernel, SimulationStats,
+    WeightedUpdateSet,
 };
 use rmc_core::random::{ChainId, DefaultRng, SeedSource};
 use rmc_core::Merge;
@@ -16,6 +16,7 @@ use crate::diagram::Diagram;
 use crate::fourier::analyze_stats;
 use crate::measurement::Estimate;
 use crate::measurement::{PolaronMeasurement, PolaronStats};
+use crate::update_stats::{self, UpdateStatEntry};
 use crate::updates::{default_update_set, PolaronUpdate};
 
 pub type PolaronKernel = MetropolisKernel<WeightedUpdateSet<PolaronUpdate>>;
@@ -34,6 +35,17 @@ pub struct RunOutput {
     pub stats: SimulationStats,
     pub measurement: PolaronStats,
     pub final_state: Option<Diagram>,
+    pub update_stats: Vec<UpdateStatEntry>,
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct BenchReport {
+    pub steps_done: u64,
+    pub warmup_steps: u64,
+    pub warmup_secs: f64,
+    pub sample_secs: f64,
+    pub steps_per_sec: f64,
+    pub summary: ValidationSummary,
 }
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
@@ -54,11 +66,12 @@ pub struct ValidationSummary {
     pub total_selfenergy_bins: usize,
     pub final_energy_estimate: f64,
     pub energy_estimate_history: Vec<f64>,
+    pub update_stats: Vec<UpdateStatEntry>,
 }
 
 impl ValidationSummary {
     pub fn text(&self) -> String {
-        format!(
+        let mut text = format!(
             concat!(
                 "steps_done: {steps}\n",
                 "cycles_done: {cycles}\n",
@@ -88,7 +101,10 @@ impl ValidationSummary {
             finite = self.finite_selfenergy_bins,
             total = self.total_selfenergy_bins,
             reweight = self.final_energy_estimate,
-        )
+        );
+        text.push('\n');
+        text.push_str(&update_stats::render(&self.update_stats));
+        text
     }
 }
 
@@ -165,25 +181,66 @@ pub fn run_single(cfg: &RunConfig) -> AppResult<RunOutput> {
         stats,
         measurement,
         final_state: Some(final_state),
-    })
-}
-
-pub fn run_parallel_chains(cfg: &RunConfig) -> AppResult<RunOutput> {
-    let parallel = ParallelConfig {
-        chains: cfg.chains,
-        seed: SeedSource::new(cfg.seed),
-        params: cfg.simulation_params(),
-    };
-    let (stats, measurement) = run_parallel(parallel, build_chain(cfg.clone()))?;
-    Ok(RunOutput {
-        stats,
-        measurement,
-        final_state: None,
+        update_stats: update_stats::collect(&kernel),
     })
 }
 
 pub fn run_from_config(cfg: &RunConfig) -> AppResult<RunOutput> {
     run_from_config_with_progress(cfg, false)
+}
+
+/// Single-chain run that times *only* the sampling loop (no progress bar, no FFT, no file I/O),
+/// for a clean engine throughput number comparable to the C++ sampling loop. Warmup is timed
+/// separately and excluded from `steps_per_sec`.
+pub fn run_bench(cfg: &RunConfig) -> AppResult<BenchReport> {
+    use std::time::Instant;
+    let mut rng = SeedSource::new(cfg.seed).rng_for(ChainId(0));
+    let mut state = build_diagram(cfg);
+
+    let mut warmup_secs = 0.0;
+    if cfg.warmup_steps > 0 {
+        let mut warmup_kernel = build_kernel()?;
+        let t = Instant::now();
+        let (warm_state, _warm_stats, _warm_output) = run_typed(
+            state,
+            &mut rng,
+            &mut warmup_kernel,
+            NoopMeasurement,
+            cfg.warmup_params(),
+        )?;
+        warmup_secs = t.elapsed().as_secs_f64();
+        state = warm_state;
+    }
+
+    let mut kernel = build_kernel()?;
+    let measurement = build_measurement(cfg, &state);
+    let t = Instant::now();
+    let (final_state, stats, measurement) = run_typed(
+        state,
+        &mut rng,
+        &mut kernel,
+        measurement,
+        cfg.simulation_params(),
+    )?;
+    let sample_secs = t.elapsed().as_secs_f64();
+    let steps_done = stats.steps_done;
+
+    let output = RunOutput {
+        stats,
+        measurement,
+        final_state: Some(final_state),
+        update_stats: update_stats::collect(&kernel),
+    };
+    let summary = summarize_output(cfg, &output);
+
+    Ok(BenchReport {
+        steps_done,
+        warmup_steps: cfg.warmup_steps,
+        warmup_secs,
+        sample_secs,
+        steps_per_sec: steps_done as f64 / sample_secs,
+        summary,
+    })
 }
 
 pub fn run_from_config_with_progress(cfg: &RunConfig, show_progress: bool) -> AppResult<RunOutput> {
@@ -192,12 +249,6 @@ pub fn run_from_config_with_progress(cfg: &RunConfig, show_progress: bool) -> Ap
             run_single_with_progress(cfg)
         } else {
             run_single(cfg)
-        }
-    } else if cfg.warmup_steps == 0 {
-        if show_progress {
-            run_parallel_chains_with_progress(cfg)
-        } else {
-            run_parallel_chains(cfg)
         }
     } else {
         let outputs = if show_progress {
@@ -257,29 +308,7 @@ pub fn run_single_with_progress(cfg: &RunConfig) -> AppResult<RunOutput> {
         stats,
         measurement,
         final_state: Some(final_state),
-    })
-}
-
-pub fn run_parallel_chains_with_progress(cfg: &RunConfig) -> AppResult<RunOutput> {
-    let multi = MultiProgress::new();
-    let parallel = ParallelConfig {
-        chains: cfg.chains,
-        seed: SeedSource::new(cfg.seed),
-        params: cfg.simulation_params(),
-    };
-    let (stats, measurement) =
-        run_parallel_with_callbacks(parallel, build_chain(cfg.clone()), |chain| {
-            progress_callback(
-                cfg.max_steps,
-                format!("chain {}", chain.0),
-                format!("chain {} done", chain.0),
-                Some(&multi),
-            )
-        })?;
-    Ok(RunOutput {
-        stats,
-        measurement,
-        final_state: None,
+        update_stats: update_stats::collect(&kernel),
     })
 }
 
@@ -312,6 +341,7 @@ fn run_single_chain_with_id(cfg: &RunConfig, chain: ChainId) -> AppResult<RunOut
         stats,
         measurement,
         final_state: None,
+        update_stats: update_stats::collect(&kernel),
     })
 }
 
@@ -362,6 +392,7 @@ fn run_single_chain_with_id_and_progress_in_multi(
         stats,
         measurement,
         final_state: None,
+        update_stats: update_stats::collect(&kernel),
     })
 }
 
@@ -388,6 +419,7 @@ fn merge_outputs(outputs: Vec<RunOutput>) -> AppResult<RunOutput> {
                 stats: acc.stats.merge(output.stats),
                 measurement: acc.measurement.merge(output.measurement),
                 final_state: None,
+                update_stats: update_stats::merge(vec![acc.update_stats, output.update_stats]),
             },
             None => RunOutput {
                 final_state: None,
@@ -447,6 +479,7 @@ pub fn summarize_output(cfg: &RunConfig, output: &RunOutput) -> ValidationSummar
         total_selfenergy_bins,
         final_energy_estimate: output.measurement.energy_estimate,
         energy_estimate_history: output.measurement.energy_estimates.clone(),
+        update_stats: output.update_stats.clone(),
     }
 }
 

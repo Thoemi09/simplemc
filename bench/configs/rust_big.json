@@ -10,15 +10,15 @@
   "num_bins": 2000,
   "n_batches": 256,
   "energy_estimate": -1.0168,
-  "initial_self_consistent_period": 1000,
-  "period_multiplier": 1.5,
+  "initial_self_consistent_period": 500,
+  "period_multiplier": 1.0,
 
   "seed": 8267165747609980501,
   "chains": 1,
   "max_steps": 5000000,
-  "warmup_steps": 1000,
+  "warmup_steps": 10000,
   "steps_per_cycle": 5,
-  "cycles_per_check": 10000,
+  "cycles_per_check": 1000000,
 
   "fft_beta": 100.0
 }

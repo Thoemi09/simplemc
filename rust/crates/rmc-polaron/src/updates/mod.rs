@@ -28,6 +28,21 @@ pub enum PolaronUpdate {
     ChangeTopology(ChangeTopology),
 }
 
+impl PolaronUpdate {
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::ChangeTau(_) => "change_tau",
+            Self::ChangeInternalTau(_) => "change_internal_tau",
+            Self::AddPhonon(_) => "add_phonon",
+            Self::RemovePhonon(_) => "remove_phonon",
+            Self::RescaleDiagram(_) => "rescale_diagram",
+            Self::ChangeQModulus(_) => "change_internal_q_modulus",
+            Self::ChangeQDirection(_) => "change_internal_q_direction",
+            Self::ChangeTopology(_) => "change_topology",
+        }
+    }
+}
+
 impl Update<Diagram> for PolaronUpdate {
     fn attempt<R: Rng + ?Sized>(&mut self, state: &mut Diagram, rng: &mut R) -> f64 {
         match self {

@@ -1,0 +1,21 @@
+{
+  "cpu": "Intel Core Ultra 7 255U, pinned core 0",
+  "engine_steps_per_sec": {
+    "cpp": 3965839,
+    "rust_release": 104297,
+    "rust_tuned": 86792
+  },
+  "cpp_sweep_seconds": {
+    "5000000": 2.59,
+    "50000000": 13.991,
+    "100000000": 26.541
+  },
+  "cpp_fixed_overhead_s": 1.329,
+  "slowdown_rust_release_vs_cpp": 38.0,
+  "e2e_wall_median_s": {
+    "cpp": 2.57,
+    "rust_release": 55.09,
+    "rust_tuned": 57.77
+  },
+  "root_cause": "measure() loops over all num_bins pushing to hist+exact every cycle (~4e9 pushes/5M steps); C++ batch_acc touches only the active bin."
+}
