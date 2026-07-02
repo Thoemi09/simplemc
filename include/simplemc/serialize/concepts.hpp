@@ -78,7 +78,7 @@ concept has_simplemc_load = requires(T& t, const S& s) { simplemc_load(s, t); };
  * @tparam Bs Serializer backend types.
  */
 template <typename T, typename... Bs>
-concept save_at_compatible = (requires(Bs& s, std::string_view key, const T& v) { s.save_at(key, v); } && ...);
+concept save_at_all = (requires(Bs& s, std::string_view key, const T& v) { s.save_at(key, v); } && ...);
 
 /**
  * @brief Check that every serializer in a pack can read a value of type `T` via `load_at`.
@@ -87,7 +87,25 @@ concept save_at_compatible = (requires(Bs& s, std::string_view key, const T& v) 
  * @tparam Bs Serializer backend types.
  */
 template <typename T, typename... Bs>
-concept load_at_compatible = (requires(const Bs& s, std::string_view key, T& v) { s.load_at(key, v); } && ...);
+concept load_at_all = (requires(const Bs& s, std::string_view key, T& v) { s.load_at(key, v); } && ...);
+
+/**
+ * @brief Check that at least one serializer in a pack can write a value of type `T` via `save_at`.
+ *
+ * @tparam T Type being serialized.
+ * @tparam Bs Serializer backend types.
+ */
+template <typename T, typename... Bs>
+concept save_at_any = (requires(Bs& s, std::string_view key, const T& v) { s.save_at(key, v); } || ...);
+
+/**
+ * @brief Check that at least one serializer in a pack can read a value of type `T` via `load_at`.
+ *
+ * @tparam T Type being deserialized into.
+ * @tparam Bs Serializer backend types.
+ */
+template <typename T, typename... Bs>
+concept load_at_any = (requires(const Bs& s, std::string_view key, T& v) { s.load_at(key, v); } || ...);
 
 /** @} */
 

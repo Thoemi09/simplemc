@@ -63,13 +63,13 @@ struct measurement_model final : measurement_interface {
 
     // Serialization and MPI (no-ops if the user type does not support the corresponding operation).
     void save_at(serializer_type& s, std::string_view key) const override {
-        if constexpr (save_at_compatible<M, serializer_type>) {
+        if constexpr (save_at_all<M, serializer_type>) {
             s.save_at(key, user_measurement);
         }
     }
 
     void load_at(const serializer_type& s, std::string_view key) override {
-        if constexpr (load_at_compatible<M, serializer_type>) {
+        if constexpr (load_at_all<M, serializer_type>) {
             s.load_at(key, user_measurement);
         }
     }

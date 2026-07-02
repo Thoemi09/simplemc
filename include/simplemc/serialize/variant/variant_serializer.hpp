@@ -7,6 +7,9 @@
 #define SIMPLEMC_SERIALIZE_VARIANT_VARIANT_SERIALIZER_HPP
 
 #include <simplemc/serialize/concepts.hpp>
+#include <simplemc/utils/simplemc_exception.hpp>
+
+#include <fmt/format.h>
 
 #include <string_view>
 #include <type_traits>
@@ -34,11 +37,12 @@ namespace simplemc {
  * to that overload (the **simplemc-mc** value types rely on this). Otherwise they delegate to the
  * active backend's same-named member.
  *
- * **Capability is the intersection of the backends.** For the backend-delegating path, because
- * `std::visit` instantiates every arm, the operations are constrained by simplemc::save_at_compatible
- * / simplemc::load_at_compatible folded over the whole backend pack: a value type must be
- * serializable by *every* backend, not just the active one. In practice the shipped backends cover
- * overlapping type sets.
+ * **Capability is the union of the backends.** For the backend-delegating path, the operations are
+ * constrained by simplemc::save_at_any / simplemc::load_at_any folded over the whole backend pack: a
+ * value type need only be serializable by *at least one* backend. A type serializable by no backend
+ * is a compile error; a type unsupported by the *currently-active* backend throws a
+ * simplemc::simplemc_exception at runtime (each `std::visit` arm is guarded so incompatible arms
+ * throw rather than fail to compile).
  *
  * The backend currently held can be inspected via backend(), e.g. with `std::get_if` or `std::visit`.
  *
@@ -80,8 +84,9 @@ public:
      * the type's serialization is written against this variant handle itself), descend into a
      * sub-handle and dispatch to it.
      *
-     * Otherwise delegate to the active backend's `save_at`, which requires every backend to handle
-     * `T` (simplemc::save_at_compatible).
+     * Otherwise delegate to the active backend's `save_at`, which requires at least one backend to
+     * handle `T` (simplemc::save_at_any). If the active backend cannot serialize `T`,it throws a
+     * simplemc::simplemc_exception.
      *
      * @tparam T Value type.
      * @param key Sub-key relative to the current location.
@@ -89,13 +94,21 @@ public:
      * @return A copy of *this.
      */
     template <typename T>
-        requires(has_simplemc_save<T, variant_serializer> || save_at_compatible<T, Bs...>)
+        requires(has_simplemc_save<T, variant_serializer> || save_at_any<T, Bs...>)
     variant_serializer save_at(std::string_view key, const T& value) {
         if constexpr (has_simplemc_save<T, variant_serializer>) {
             auto sub = (*this)[key];
             simplemc_save(sub, value);
         } else {
-            std::visit([&](auto& s) { s.save_at(key, value); }, backend_);
+            std::visit(
+                [&](auto& s) {
+                    if constexpr (save_at_all<T, std::remove_cvref_t<decltype(s)>>) {
+                        s.save_at(key, value);
+                    } else {
+                        throw simplemc_exception(fmt::format("serializer backend cannot serialize key '{}'", key));
+                    }
+                },
+                backend_);
         }
         return *this;
     }
@@ -107,8 +120,9 @@ public:
      * the type's deserialization is written against this variant handle itself), descend into a
      * sub-handle and dispatch to it.
      *
-     * Otherwise delegate to the active backend's `load_at`, which requires every backend to handle
-     * `T` (simplemc::load_at_compatible).
+     * Otherwise delegate to the active backend's `load_at`, which requires at least one backend to
+     * handle `T` (simplemc::load_at_any). If the active backend cannot deserialize `T`, it throws a
+     * simplemc::simplemc_exception.
      *
      * @tparam T Value type.
      * @param key Sub-key relative to the current location.
@@ -116,13 +130,21 @@ public:
      * @return A copy of *this.
      */
     template <typename T>
-        requires(has_simplemc_load<T, variant_serializer> || load_at_compatible<T, Bs...>)
+        requires(has_simplemc_load<T, variant_serializer> || load_at_any<T, Bs...>)
     variant_serializer load_at(std::string_view key, T& value) const {
         if constexpr (has_simplemc_load<T, variant_serializer>) {
             const auto sub = (*this)[key];
             simplemc_load(sub, value);
         } else {
-            std::visit([&](const auto& s) { s.load_at(key, value); }, backend_);
+            std::visit(
+                [&](const auto& s) {
+                    if constexpr (load_at_all<T, std::remove_cvref_t<decltype(s)>>) {
+                        s.load_at(key, value);
+                    } else {
+                        throw simplemc_exception(fmt::format("serializer backend cannot deserialize key '{}'", key));
+                    }
+                },
+                backend_);
         }
         return *this;
     }
@@ -134,8 +156,9 @@ public:
      * the type's deserialization is written against this variant handle itself), descend into a
      * sub-handle and dispatch to it.
      *
-     * Otherwise delegate to the active backend's `try_load_at`, which requires every backend to
-     * handle `T` (simplemc::load_at_compatible).
+     * Otherwise delegate to the active backend's `try_load_at`, which requires at least one backend to
+     * handle `T` (simplemc::load_at_any). If the active backend cannot deserialize `T`, it throws a
+     * simplemc::simplemc_exception.
      *
      * It leaves `value` untouched and returns false if the key is missing.
      *
@@ -145,7 +168,7 @@ public:
      * @return True if the key was present and the read occurred, false otherwise.
      */
     template <typename T>
-        requires(has_simplemc_load<T, variant_serializer> || load_at_compatible<T, Bs...>)
+        requires(has_simplemc_load<T, variant_serializer> || load_at_any<T, Bs...>)
     bool try_load_at(std::string_view key, T& value) const {
         if constexpr (has_simplemc_load<T, variant_serializer>) {
             if (!has(key)) {
@@ -155,7 +178,15 @@ public:
             simplemc_load(sub, value);
             return true;
         } else {
-            return std::visit([&](const auto& s) -> bool { return s.try_load_at(key, value); }, backend_);
+            return std::visit(
+                [&](const auto& s) -> bool {
+                    if constexpr (load_at_all<T, std::remove_cvref_t<decltype(s)>>) {
+                        return s.try_load_at(key, value);
+                    } else {
+                        throw simplemc_exception(fmt::format("serializer backend cannot deserialize key '{}'", key));
+                    }
+                },
+                backend_);
         }
     }
 

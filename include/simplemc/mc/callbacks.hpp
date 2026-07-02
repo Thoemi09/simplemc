@@ -42,10 +42,10 @@ namespace simplemc {
  *
  * @tparam RNG Random number generator type.
  * @tparam Config Optional extra user state to persist under `"config"`; `void` writes none. When
- *                non-`void` it must be writable by the JSON backend (simplemc::save_at_compatible).
+ *                non-`void` it must be writable by the JSON backend (simplemc::save_at_all).
  */
 template <typename RNG, typename Config = void>
-    requires(std::is_void_v<Config> || save_at_compatible<Config, json_serializer>)
+    requires(std::is_void_v<Config> || save_at_all<Config, json_serializer>)
 struct json_checkpoint_writer {
     /// Borrowed RNG. Must outlive this callable.
     const RNG* rng = nullptr;
@@ -166,7 +166,7 @@ void load_json_checkpoint(RNG& rng, update_set& updates, measurement_set& meas, 
  * @param opts JSON I/O options.
  */
 template <typename RNG, typename Config>
-    requires load_at_compatible<Config, json_serializer>
+    requires load_at_all<Config, json_serializer>
 void load_json_checkpoint(RNG& rng, update_set& updates, measurement_set& meas, simulation_stats& stats, Config* config,
     const std::filesystem::path& path, const json_io_options& opts = {}) {
     nlohmann::json doc;
@@ -188,10 +188,10 @@ void load_json_checkpoint(RNG& rng, update_set& updates, measurement_set& meas, 
  *
  * @tparam RNG Random number generator type.
  * @tparam Config Optional extra user state to persist under `"config"`; `void` writes none. When
- *                non-`void` it must be writable by the HDF5 backend (simplemc::save_at_compatible).
+ *                non-`void` it must be writable by the HDF5 backend (simplemc::save_at_all).
  */
 template <typename RNG, typename Config = void>
-    requires(std::is_void_v<Config> || save_at_compatible<Config, hdf5_serializer>)
+    requires(std::is_void_v<Config> || save_at_all<Config, hdf5_serializer>)
 struct hdf5_checkpoint_writer {
     /// Borrowed RNG. Must outlive this callable.
     const RNG* rng = nullptr;
@@ -275,7 +275,7 @@ void load_hdf5_checkpoint(
  * @brief Overload that also restores a borrowed user `config` object from `"config"`.
  */
 template <typename RNG, typename Config>
-    requires load_at_compatible<Config, hdf5_serializer>
+    requires load_at_all<Config, hdf5_serializer>
 void load_hdf5_checkpoint(RNG& rng, update_set& updates, measurement_set& meas, simulation_stats& stats, Config* config,
     const std::filesystem::path& path) {
     const mc_serializer ser { hdf5_serializer { path, hdf5_file_mode::read } };

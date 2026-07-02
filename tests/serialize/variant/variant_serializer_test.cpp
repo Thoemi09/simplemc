@@ -1,4 +1,5 @@
 #include <simplemc/serialize.hpp>
+#include <simplemc/utils/simplemc_exception.hpp>
 
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
@@ -52,7 +53,55 @@ private:
 
 static_assert(serializer<mock_serializer>);
 
+// A deliberately restrictive backend: it only accepts arithmetic value types (its save_at / load_at /
+// try_load_at are constrained on std::is_arithmetic_v). It lets us exercise the union-capability /
+// runtime-throw behavior of variant_serializer with a type (e.g. std::string) that one backend
+// supports and the other does not. Like mock_serializer it is a transparent pass-through over
+// json_serializer for the types it does accept.
+class restrictive_serializer {
+public:
+    explicit restrictive_serializer(nlohmann::json doc = {}) : inner_ { std::move(doc) } {}
+    explicit restrictive_serializer(json_serializer s) : inner_ { std::move(s) } {}
+
+    template <typename T>
+        requires std::is_arithmetic_v<T>
+    restrictive_serializer save_at(std::string_view key, const T& value) {
+        inner_.save_at(key, value);
+        return *this;
+    }
+
+    template <typename T>
+        requires std::is_arithmetic_v<T>
+    restrictive_serializer load_at(std::string_view key, T& value) const {
+        inner_.load_at(key, value);
+        return *this;
+    }
+
+    template <typename T>
+        requires std::is_arithmetic_v<T>
+    bool try_load_at(std::string_view key, T& value) const {
+        return inner_.try_load_at(key, value);
+    }
+
+    restrictive_serializer operator[](std::string_view key) { return restrictive_serializer { inner_[key] }; }
+    restrictive_serializer operator[](std::string_view key) const { return restrictive_serializer { inner_[key] }; }
+
+    [[nodiscard]] bool has(std::string_view key) const { return inner_.has(key); }
+
+    nlohmann::json& root() noexcept { return inner_.root(); }
+    [[nodiscard]] const nlohmann::json& root() const noexcept { return inner_.root(); }
+
+private:
+    json_serializer inner_;
+};
+
+static_assert(serializer<restrictive_serializer>);
+
 using var_serializer = variant_serializer<json_serializer, mock_serializer>;
+
+// A variant whose backends have genuinely different capabilities: json_serializer handles std::string,
+// restrictive_serializer does not.
+using restr_var_serializer = variant_serializer<json_serializer, restrictive_serializer>;
 
 // A type whose serialization is written against the variant handle itself (the pattern the
 // simplemc-mc value types use). It exercises the variant-level ADL dispatch branch of save_at /
@@ -198,4 +247,51 @@ TEST(VariantSerializer, VisitDispatchesToActiveBackend) {
     s.save_at("k", 5);
     const std::string dump = std::visit([](auto& backend) { return backend.root().dump(); }, s.backend());
     EXPECT_EQ(dump, R"({"k":5})");
+}
+
+// Capability is the union of the backends: a type only one backend supports (std::string vs the
+// arithmetic-only restrictive backend) still compiles, and round-trips when the supporting backend is
+// active.
+TEST(VariantSerializer, UnionCapabilitySupportedByActiveBackend) {
+    restr_var_serializer s { json_serializer {} };
+    s.save_at("s", std::string { "hello" });
+
+    auto* js = std::get_if<json_serializer>(&s.backend());
+    ASSERT_NE(js, nullptr);
+    EXPECT_EQ(js->root().dump(), R"({"s":"hello"})");
+
+    const restr_var_serializer d { json_serializer { std::move(js->root()) } };
+    std::string out;
+    d.load_at("s", out);
+    EXPECT_EQ(out, "hello");
+    EXPECT_TRUE(d.try_load_at("s", out));
+    EXPECT_EQ(out, "hello");
+}
+
+// When the active backend cannot serialize the requested type, save_at throws (rather than the whole
+// call being a compile error, as under the old intersection requirement).
+TEST(VariantSerializer, UnsupportedActiveBackendThrowsOnSave) {
+    restr_var_serializer s { restrictive_serializer {} };
+    EXPECT_THROW(s.save_at("s", std::string { "hi" }), simplemc_exception);
+
+    // An arithmetic value the restrictive backend does support still works.
+    s.save_at("n", 3);
+    auto* rs = std::get_if<restrictive_serializer>(&s.backend());
+    ASSERT_NE(rs, nullptr);
+    EXPECT_EQ(rs->root().dump(), R"({"n":3})");
+}
+
+// Symmetrically, load_at and try_load_at throw when the active backend cannot deserialize the type,
+// even though the key is present in the document.
+TEST(VariantSerializer, UnsupportedActiveBackendThrowsOnLoad) {
+    restr_var_serializer w { json_serializer {} };
+    w.save_at("s", std::string { "hello" });
+    auto* js = std::get_if<json_serializer>(&w.backend());
+    ASSERT_NE(js, nullptr);
+
+    const restr_var_serializer d { restrictive_serializer { json_serializer { std::move(js->root()) } } };
+    ASSERT_TRUE(d.has("s"));
+    std::string out;
+    EXPECT_THROW(d.load_at("s", out), simplemc_exception);
+    EXPECT_THROW((void)d.try_load_at("s", out), simplemc_exception);
 }
