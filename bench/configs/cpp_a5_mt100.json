@@ -1,0 +1,74 @@
+{
+    "Configuration": {
+        "alpha": 5.0,
+        "max_order": 10000,
+        "max_tau": 100.0,
+        "min_order": 0,
+        "momentum": 0.0,
+        "mu": -9.98,
+        "order": 0,
+        "start_tau": 1.0
+    },
+    "Measurements": {
+        "histogram": {
+            "energy_estimate": -9.93468202,
+            "initial_self_consistent_period": 500,
+            "is_active": true,
+            "num_bins": 2000,
+            "self_consistent_period_multiplication_factor": 1.0
+        }
+    },
+    "RNG": {
+        "seed": 8267165747609980501
+    },
+    "Simulation": {
+        "checkpoint_after_steps": 18446744073709551615,
+        "checkpoint_after_time": 1.7976931348623157e+308,
+        "checkpoint_callback": true,
+        "cycles_per_check": 1000000,
+        "load_checkpoint": false,
+        "max_steps": 50000000,
+        "max_time": 999999999,
+        "per_cycle_callback": false,
+        "per_step_callback": false,
+        "skip_impossible_updates": false,
+        "sort_updates": true,
+        "steps_per_cycle": 5,
+        "warmup_checkpoint_after_steps": 18446744073709551615,
+        "warmup_checkpoint_after_time": 1.7976931348623157e+308,
+        "warmup_checkpoint_callback": true,
+        "warmup_per_step_callback": false,
+        "warmup_steps": 10000,
+        "warmup_steps_per_cycle": 10000,
+        "warmup_time": 1.0
+    },
+    "Updates": {
+        "add_phonon": {
+            "weight": 1.0
+        },
+        "change_internal_q_direction": {
+            "weight": 1.0
+        },
+        "change_internal_q_modulus": {
+            "weight": 1.0
+        },
+        "change_internal_tau": {
+            "weight": 1.0
+        },
+        "change_tau": {
+            "weight": 1.0
+        },
+        "change_topology": {
+            "weight": 1.0
+        },
+        "remove_phonon": {
+            "weight": 1.0
+        },
+        "rescale_diagram": {
+            "weight": 1.0
+        }
+    },
+    "fft": {
+        "beta": 100.0
+    }
+}

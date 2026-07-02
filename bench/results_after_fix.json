@@ -1,0 +1,17 @@
+{
+  "note": "engine = pure sampling loop (measure included, FFT/IO excluded), core 0, 5M steps",
+  "cpp_steps_per_sec": 3965839,
+  "rust_release_before_fix": 104297,
+  "rust_release_after_fix": 7102272,
+  "fix_speedup_x": 68.1,
+  "rust_vs_cpp_after_fix_x": 1.79,
+  "physics_after_fix": {
+    "E": -1.02019,
+    "E_err": 0.00348,
+    "Z": 0.58865,
+    "Z_err": 0.00142,
+    "target_E": -1.013,
+    "target_Z": 0.59
+  },
+  "fix": "measurement.rs: replaced per-bin Vec<BatchedSum> + O(num_bins) push-loop with BinnedBatchedSums (shared global batch schedule, O(1) push to active bin). Bit-identical results (unit-tested)."
+}

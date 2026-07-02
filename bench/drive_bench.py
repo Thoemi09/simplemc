@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Benchmark harness: Rust rmc-polaron vs C++ dmc on the same Froehlich-polaron DiagMC.
+"""Benchmark harness: Rust rmc-frohlich vs C++ dmc on the same Froehlich-polaron DiagMC.
 
 Two tiers:
   Tier 1 (end-to-end): full process wall clock as shipped (warmup + sampling + FFT + I/O).
@@ -18,8 +18,8 @@ import time
 
 ROOT = "/home/samox/studies/phd/repos/rust/simplemc"
 CPP_ROOT = "/home/samox/studies/phd/repos/cpp/2022/self-energy-dmc"
-RUST_REL = f"{ROOT}/rust/target/release/rmc-polaron"
-RUST_TUNED = f"{ROOT}/rust/target/release-tuned/rmc-polaron"
+RUST_REL = f"{ROOT}/rust/target/release/rmc-frohlich"
+RUST_TUNED = f"{ROOT}/rust/target/release-tuned/rmc-frohlich"
 DMC = f"{CPP_ROOT}/build-new-simplemc/src/dmc"
 CFG = f"{ROOT}/bench/configs"
 SCRATCH = f"{ROOT}/bench/scratch"
