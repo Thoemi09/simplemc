@@ -94,7 +94,7 @@ public:
      * @return A copy of *this.
      */
     template <typename T>
-        requires(has_simplemc_save<T, variant_serializer> || save_at_any<T, Bs...>)
+        requires(save_at_any<T, Bs...> || has_simplemc_save<T, variant_serializer>)
     variant_serializer save_at(std::string_view key, const T& value) {
         if constexpr (has_simplemc_save<T, variant_serializer>) {
             auto sub = (*this)[key];
@@ -130,7 +130,7 @@ public:
      * @return A copy of *this.
      */
     template <typename T>
-        requires(has_simplemc_load<T, variant_serializer> || load_at_any<T, Bs...>)
+        requires(load_at_any<T, Bs...> || has_simplemc_load<T, variant_serializer>)
     variant_serializer load_at(std::string_view key, T& value) const {
         if constexpr (has_simplemc_load<T, variant_serializer>) {
             const auto sub = (*this)[key];
@@ -168,7 +168,7 @@ public:
      * @return True if the key was present and the read occurred, false otherwise.
      */
     template <typename T>
-        requires(has_simplemc_load<T, variant_serializer> || load_at_any<T, Bs...>)
+        requires(load_at_any<T, Bs...> || has_simplemc_load<T, variant_serializer>)
     bool try_load_at(std::string_view key, T& value) const {
         if constexpr (has_simplemc_load<T, variant_serializer>) {
             if (!has(key)) {
