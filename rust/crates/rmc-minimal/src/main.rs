@@ -11,7 +11,6 @@ use rmc_stats::ScalarJackknife;
 
 const DEFAULT_WARMUP_STEPS: u64 = 1_000_000;
 const DEFAULT_MAX_STEPS: u64 = 500_000_000;
-const DEFAULT_REPS: usize = 5;
 const STEPS_PER_CYCLE: u64 = 5;
 const SEED: u64 = 0x5eed_5eed_5eed_5eed;
 
@@ -39,7 +38,7 @@ impl Mode {
 }
 
 #[derive(Debug)]
-struct RepResult<O> {
+struct RunResult<O> {
     elapsed: Duration,
     steps_done: u64,
     output: O,
@@ -54,20 +53,19 @@ fn main() -> rmc_core::Result<()> {
         None => Mode::Full,
     };
     let max_steps = parse_or_default(args.next(), DEFAULT_MAX_STEPS, "max_steps")?;
-    let reps = parse_or_default(args.next(), DEFAULT_REPS, "reps")?;
+    let warmup_steps = parse_or_default(args.next(), DEFAULT_WARMUP_STEPS, "warmup_steps")?;
 
     println!(
-        "mode={} warmup_steps={} max_steps={} reps={} steps_per_cycle={}",
+        "mode={} warmup_steps={} max_steps={} steps_per_cycle={}",
         mode.as_str(),
-        DEFAULT_WARMUP_STEPS,
+        warmup_steps,
         max_steps,
-        reps,
         STEPS_PER_CYCLE
     );
 
     match mode {
-        Mode::Full => run_full(max_steps, reps)?,
-        Mode::Bare => run_bare(max_steps, reps)?,
+        Mode::Full => run_full(max_steps, warmup_steps)?,
+        Mode::Bare => run_bare(max_steps, warmup_steps)?,
     }
 
     Ok(())
@@ -93,38 +91,24 @@ fn params(max_steps: u64) -> SimulationParams {
     }
 }
 
-fn run_full(max_steps: u64, reps: usize) -> rmc_core::Result<()> {
-    let mut rates = Vec::with_capacity(reps);
-    let mut last_output = None;
-
-    for rep in 0..reps {
-        let result = run_full_rep(max_steps, rep as u64)?;
-        let steps_per_sec = result.steps_done as f64 / result.elapsed.as_secs_f64();
-        println!(
-            "rep={} sample_secs={:.6} steps/sec={:.3}",
-            rep,
-            result.elapsed.as_secs_f64(),
-            steps_per_sec
-        );
-        black_box(result.steps_done);
-        black_box(&result.output);
-        rates.push(steps_per_sec);
-        last_output = Some(result.output);
-    }
-
-    print_summary(&rates);
-    if let Some((x, x2)) = last_output {
-        print_observable("x", &x);
-        print_observable("x2", &x2);
-    }
+fn run_full(max_steps: u64, warmup_steps: u64) -> rmc_core::Result<()> {
+    let result = run_full_once(max_steps, warmup_steps)?;
+    let steps_per_sec = result.steps_done as f64 / result.elapsed.as_secs_f64();
+    println!("sample_secs: {:.6}", result.elapsed.as_secs_f64());
+    println!("steps/sec: {:.3}", steps_per_sec);
+    black_box(result.steps_done);
+    black_box(&result.output);
+    let (x, x2) = result.output;
+    print_observable("x", &x);
+    print_observable("x2", &x2);
     Ok(())
 }
 
-fn run_full_rep(
+fn run_full_once(
     max_steps: u64,
-    rep: u64,
-) -> rmc_core::Result<RepResult<(ScalarJackknife, ScalarJackknife)>> {
-    let mut rng = SeedSource::new(SEED ^ rep).rng_for(ChainId(0));
+    warmup_steps: u64,
+) -> rmc_core::Result<RunResult<(ScalarJackknife, ScalarJackknife)>> {
+    let mut rng = SeedSource::new(SEED).rng_for(ChainId(0));
     let mut kernel = MetropolisKernel::new(build_full()?);
     let state = MinimalState::default();
     let (state, _, _) = run_typed(
@@ -132,7 +116,7 @@ fn run_full_rep(
         &mut rng,
         &mut kernel,
         NoopMeasurement,
-        params(DEFAULT_WARMUP_STEPS),
+        params(warmup_steps),
     )?;
 
     let measurement = MinimalMeasurement::new(DEFAULT_BATCH_SIZE)?;
@@ -141,36 +125,25 @@ fn run_full_rep(
         run_typed(state, &mut rng, &mut kernel, measurement, params(max_steps))?;
     let elapsed = start.elapsed();
 
-    Ok(RepResult {
+    Ok(RunResult {
         elapsed,
         steps_done: stats.steps_done,
         output,
     })
 }
 
-fn run_bare(max_steps: u64, reps: usize) -> rmc_core::Result<()> {
-    let mut rates = Vec::with_capacity(reps);
-
-    for rep in 0..reps {
-        let result = run_bare_rep(max_steps, rep as u64)?;
-        let steps_per_sec = result.steps_done as f64 / result.elapsed.as_secs_f64();
-        println!(
-            "rep={} sample_secs={:.6} steps/sec={:.3}",
-            rep,
-            result.elapsed.as_secs_f64(),
-            steps_per_sec
-        );
-        black_box(result.steps_done);
-        black_box(&result.output);
-        rates.push(steps_per_sec);
-    }
-
-    print_summary(&rates);
+fn run_bare(max_steps: u64, warmup_steps: u64) -> rmc_core::Result<()> {
+    let result = run_bare_once(max_steps, warmup_steps)?;
+    let steps_per_sec = result.steps_done as f64 / result.elapsed.as_secs_f64();
+    println!("sample_secs: {:.6}", result.elapsed.as_secs_f64());
+    println!("steps/sec: {:.3}", steps_per_sec);
+    black_box(result.steps_done);
+    black_box(&result.output);
     Ok(())
 }
 
-fn run_bare_rep(max_steps: u64, rep: u64) -> rmc_core::Result<RepResult<()>> {
-    let mut rng = SeedSource::new(SEED ^ rep).rng_for(ChainId(0));
+fn run_bare_once(max_steps: u64, warmup_steps: u64) -> rmc_core::Result<RunResult<()>> {
+    let mut rng = SeedSource::new(SEED).rng_for(ChainId(0));
     let mut kernel = MetropolisKernel::new(build_bare()?);
     let state = MinimalState::default();
     let (state, _, _) = run_typed(
@@ -178,7 +151,7 @@ fn run_bare_rep(max_steps: u64, rep: u64) -> rmc_core::Result<RepResult<()>> {
         &mut rng,
         &mut kernel,
         NoopMeasurement,
-        params(DEFAULT_WARMUP_STEPS),
+        params(warmup_steps),
     )?;
 
     let start = Instant::now();
@@ -191,23 +164,11 @@ fn run_bare_rep(max_steps: u64, rep: u64) -> rmc_core::Result<RepResult<()>> {
     )?;
     let elapsed = start.elapsed();
 
-    Ok(RepResult {
+    Ok(RunResult {
         elapsed,
         steps_done: stats.steps_done,
         output,
     })
-}
-
-fn print_summary(rates: &[f64]) {
-    let mut sorted = rates.to_vec();
-    sorted.sort_by(f64::total_cmp);
-    let median = if sorted.is_empty() {
-        f64::NAN
-    } else {
-        sorted[sorted.len() / 2]
-    };
-    let min = sorted.first().copied().unwrap_or(f64::NAN);
-    println!("median_steps/sec={median:.3} min_steps/sec={min:.3}");
 }
 
 fn print_observable(name: &str, value: &ScalarJackknife) {

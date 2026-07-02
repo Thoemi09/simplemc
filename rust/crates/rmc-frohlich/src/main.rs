@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use rmc_frohlich::app::{run_from_config_with_progress, write_results};
 use rmc_frohlich::config::RunConfig;
@@ -10,12 +10,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("{}", RunConfig::default().to_json_string()?);
         }
         Some("bench") => {
-            let path = args
-                .next()
-                .ok_or("usage: rmc-frohlich bench <config.json>")?;
-            let cfg = RunConfig::load_json(&path)?;
+            let cfg = match args.next() {
+                Some(path) => RunConfig::load_json(path)?,
+                None if Path::new("input.json").exists() => RunConfig::load_json("input.json")?,
+                None => RunConfig::default(),
+            };
             let report = rmc_frohlich::app::run_bench(&cfg)?;
             println!("{}", serde_json::to_string_pretty(&report)?);
+            println!("steps/sec: {:.3}", report.steps_per_sec);
         }
         Some(path) => {
             let cfg = RunConfig::load_json(path)?;
