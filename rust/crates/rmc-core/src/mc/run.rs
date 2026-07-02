@@ -1,6 +1,6 @@
 use crate::{Result, RmcError};
 
-use super::sets::{DynMeasurementSet, SinkMeasurementSet};
+use super::sets::SinkMeasurementSet;
 use super::sink::ResultSink;
 use super::traits::{Kernel, Measurement, RunCallbacks};
 
@@ -83,10 +83,8 @@ impl RunCallbacks<SimulationCtx> for NoopCallbacks {}
 
 /// The single MC run loop shared by every entry point.
 ///
-/// It steps the `kernel` against `state`, invokes `measure_cycle(state)` once per cycle (this is
-/// where typed/dyn measurement paths plug in), fires callbacks, and honours `stop_when`. Collapsing
-/// the previously triplicated loops into this core is what lets stateless (`State = ()`) and
-/// stateful runs share one implementation.
+/// It steps the `kernel` against `state`, invokes `measure_cycle(state)` once per cycle, fires
+/// callbacks, and honours `stop_when`.
 fn drive<State, R, K, C>(
     state: &mut State,
     rng: &mut R,
@@ -138,46 +136,11 @@ where
     Ok(stats)
 }
 
-/// Run with a boxed (runtime-flexible) measurement set. The dyn measurement path is side-effecting
-/// and returns no typed output (see [`DynMeasurementSet`]); use [`run_typed`] for results by value.
-pub fn run<State, R, K>(
-    state: State,
-    rng: &mut R,
-    kernel: &mut K,
-    measurements: &mut DynMeasurementSet,
-    params: SimulationParams,
-) -> Result<(State, SimulationStats)>
-where
-    K: Kernel<State, R>,
-{
-    let mut callbacks = NoopCallbacks;
-    run_with_callbacks(state, rng, kernel, measurements, params, &mut callbacks)
-}
-
-pub fn run_with_callbacks<State, R, K, C>(
-    mut state: State,
-    rng: &mut R,
-    kernel: &mut K,
-    measurements: &mut DynMeasurementSet,
-    params: SimulationParams,
-    callbacks: &mut C,
-) -> Result<(State, SimulationStats)>
-where
-    K: Kernel<State, R>,
-    C: RunCallbacks<SimulationCtx>,
-{
-    measurements.refresh_active();
-    let stats = drive(&mut state, rng, kernel, params, callbacks, |_state| {
-        measurements.measure_all()
-    })?;
-    Ok((state, stats))
-}
-
-/// Run with dynamic measurements that emit named artifacts into `sink`.
+/// Run with sink measurements that emit named artifacts into `sink`.
 ///
 /// This path is output-only: measurements do not return Rust-native structured values. Use
 /// [`run_typed`] when typed results should flow back by ownership.
-pub fn run_dyn_with_sink<State, R, K>(
+pub fn run_with_sink<State, R, K>(
     state: State,
     rng: &mut R,
     kernel: &mut K,
@@ -189,7 +152,7 @@ where
     K: Kernel<State, R>,
 {
     let mut callbacks = NoopCallbacks;
-    run_dyn_with_sink_and_callbacks(
+    run_with_sink_and_callbacks(
         state,
         rng,
         kernel,
@@ -200,7 +163,7 @@ where
     )
 }
 
-pub fn run_dyn_with_sink_and_callbacks<State, R, K, C>(
+pub fn run_with_sink_and_callbacks<State, R, K, C>(
     mut state: State,
     rng: &mut R,
     kernel: &mut K,

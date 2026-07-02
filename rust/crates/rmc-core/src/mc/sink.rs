@@ -2,8 +2,8 @@ use crate::Result;
 
 /// Object-safe named-result sink.
 ///
-/// Values are serialized through `erased_serde`, which keeps dynamic measurements output-only
-/// without requiring `Any` or downcast.
+/// Values are serialized through `erased_serde`, which keeps sink measurements output-only without
+/// requiring `Any` or downcast.
 pub trait ResultSink {
     /// Write `value` under `path`.
     ///
@@ -11,7 +11,7 @@ pub trait ResultSink {
     fn put(&mut self, path: &str, value: &dyn erased_serde::Serialize) -> Result<()>;
 }
 
-/// A dynamic measurement that emits named results into a [`ResultSink`].
+/// A measurement that emits named results into a [`ResultSink`].
 ///
 /// This is generic over the concrete simulation state, but object-safe for
 /// `dyn SinkMeasurement<State>`.

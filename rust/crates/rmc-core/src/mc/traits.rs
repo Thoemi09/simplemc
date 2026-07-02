@@ -9,12 +9,8 @@ use crate::Result;
 /// Owning the mutated data in `State` (threaded by the run loop) is preferred over reaching for
 /// `Arc`/`Rc` shared cells, because each parallel chain then owns an independent `State`.
 ///
-/// `attempt` is generic over the concrete RNG (`R: Rng + ?Sized`) so that, on the static
-/// (monomorphized) update-set path, every `rng.next_u64()` / `rng.gen()` call inside an update
-/// inlines instead of going through a vtable. This makes `Update` object-unsafe; the runtime
-/// (boxed) [`DynUpdateSet`](crate::mc::DynUpdateSet) path therefore type-erases `Update<()>` through
-/// a separate object-safe bridge that instantiates `attempt` with `R = dyn RngCore` (`dyn RngCore`
-/// implements `Rng` via `rand`'s blanket impl).
+/// `attempt` is generic over the concrete RNG (`R: Rng + ?Sized`) so every `rng.next_u64()` /
+/// `rng.gen()` call inside an update can inline instead of going through a vtable.
 pub trait Update<State> {
     /// Propose a move and return its acceptance probability.
     ///
@@ -66,8 +62,8 @@ pub trait UpdateSet {
 /// An update set that can be driven for one MC step against a chain's `State`.
 ///
 /// The static implementors ([`SingleUpdateSet`](crate::mc::SingleUpdateSet),
-/// [`TwoUpdateSet`](crate::mc::TwoUpdateSet)) are monomorphized over `R`, so RNG draws inline. The
-/// boxed [`DynUpdateSet`](crate::mc::DynUpdateSet) implements this only for `State = ()`.
+/// [`TwoUpdateSet`](crate::mc::TwoUpdateSet), [`WeightedUpdateSet`](crate::mc::WeightedUpdateSet))
+/// are monomorphized over `R`, so RNG draws inline.
 pub trait SteppingUpdateSet<State, R>: UpdateSet {
     fn prepare(&mut self, state: &mut State) -> Result<()>;
     fn select_and_step(&mut self, state: &mut State, rng: &mut R) -> Result<StepOutcome>;

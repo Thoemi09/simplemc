@@ -2,10 +2,9 @@ use std::cell::Cell;
 use std::rc::Rc;
 
 use rmc_core::mc::{
-    run, run_typed, run_with_callbacks, DynMeasurementSet, DynMetropolisKernel, DynUpdateSet,
-    Measurement, MeasurementEntry, MetropolisKernel, RunCallbacks, SimulationCtx, SimulationParams,
-    SingleUpdateSet, SteppingUpdateSet, TwoUpdateSet, Update, UpdateEntry, UpdateSet,
-    WeightedUpdate, WeightedUpdateSet,
+    run_typed, run_typed_with_callbacks, Measurement, MetropolisKernel, RunCallbacks,
+    SimulationCtx, SimulationParams, SingleUpdateSet, SteppingUpdateSet, TwoUpdateSet, Update,
+    UpdateSet, WeightedUpdate, WeightedUpdateSet,
 };
 use rmc_core::random::{ChainId, SeedSource};
 
@@ -69,44 +68,21 @@ impl Measurement<i64> for TypedCounterMeasurement {
 }
 
 #[test]
-fn run_executes_dynamic_metropolis_prototype() {
+fn run_typed_executes_metropolis_kernel() {
     let value = Rc::new(Cell::new(0));
     let measurement_count = Rc::new(Cell::new(0));
-
-    let mut updates = DynUpdateSet::new();
-    updates
-        .add(
-            UpdateEntry::new(
-                IncrementUpdate {
-                    value: Rc::clone(&value),
-                },
-                "inc",
-                1.0,
-            )
-            .unwrap(),
-        )
-        .unwrap();
-
-    let mut measurements = DynMeasurementSet::new();
-    measurements
-        .add(
-            MeasurementEntry::new(
-                CounterMeasurement {
-                    count: Rc::clone(&measurement_count),
-                },
-                "counter",
-            )
-            .unwrap(),
-        )
-        .unwrap();
-
-    let mut kernel = DynMetropolisKernel::new(updates);
+    let updates = SingleUpdateSet::new(IncrementUpdate {
+        value: Rc::clone(&value),
+    });
+    let mut kernel = MetropolisKernel::new(updates);
     let mut rng = SeedSource::new(123).rng_for(ChainId(0));
-    let (_state, stats) = run(
+    let (_state, stats, ()) = run_typed(
         (),
         &mut rng,
         &mut kernel,
-        &mut measurements,
+        CounterMeasurement {
+            count: Rc::clone(&measurement_count),
+        },
         SimulationParams {
             max_steps: 10,
             steps_per_cycle: 2,
@@ -120,10 +96,9 @@ fn run_executes_dynamic_metropolis_prototype() {
     assert_eq!(stats.steps_done, 10);
     assert_eq!(stats.cycles_done, 5);
 
-    let updates = kernel.into_updates();
-    assert_eq!(updates[0].nprops, 10);
-    assert_eq!(updates[0].naccs, 10);
-    assert_eq!(updates[0].nimps, 0);
+    assert_eq!(kernel.updates().stats()[0].nprops, 10);
+    assert_eq!(kernel.updates().stats()[0].naccs, 10);
+    assert_eq!(kernel.updates().stats()[0].nimps, 0);
 }
 
 #[derive(Default)]
@@ -138,30 +113,20 @@ impl RunCallbacks<SimulationCtx> for StopAfterTwoCycles {
 #[test]
 fn run_callbacks_can_stop_the_loop() {
     let value = Rc::new(Cell::new(0));
-    let mut updates = DynUpdateSet::new();
-    updates
-        .add(
-            UpdateEntry::new(
-                IncrementUpdate {
-                    value: Rc::clone(&value),
-                },
-                "inc",
-                1.0,
-            )
-            .unwrap(),
-        )
-        .unwrap();
-
-    let mut measurements = DynMeasurementSet::new();
-    let mut kernel = DynMetropolisKernel::new(updates);
+    let updates = SingleUpdateSet::new(IncrementUpdate {
+        value: Rc::clone(&value),
+    });
+    let mut kernel = MetropolisKernel::new(updates);
     let mut rng = SeedSource::new(123).rng_for(ChainId(0));
     let mut callbacks = StopAfterTwoCycles;
 
-    let (_state, stats) = run_with_callbacks(
+    let (_state, stats, ()) = run_typed_with_callbacks(
         (),
         &mut rng,
         &mut kernel,
-        &mut measurements,
+        CounterMeasurement {
+            count: Rc::new(Cell::new(0)),
+        },
         SimulationParams {
             max_steps: 100,
             steps_per_cycle: 3,
@@ -179,21 +144,10 @@ fn run_callbacks_can_stop_the_loop() {
 #[test]
 fn run_typed_returns_measurement_output_by_ownership() {
     let value = Rc::new(Cell::new(0));
-    let mut updates = DynUpdateSet::new();
-    updates
-        .add(
-            UpdateEntry::new(
-                IncrementUpdate {
-                    value: Rc::clone(&value),
-                },
-                "inc",
-                1.0,
-            )
-            .unwrap(),
-        )
-        .unwrap();
-
-    let mut kernel = DynMetropolisKernel::new(updates);
+    let updates = SingleUpdateSet::new(IncrementUpdate {
+        value: Rc::clone(&value),
+    });
+    let mut kernel = MetropolisKernel::new(updates);
     let mut rng = SeedSource::new(123).rng_for(ChainId(0));
 
     let (_state, stats, measurement_count) = run_typed(
@@ -217,29 +171,17 @@ fn run_typed_returns_measurement_output_by_ownership() {
 
 #[test]
 fn run_rejects_zero_steps_per_cycle() {
-    let mut updates = DynUpdateSet::new();
-    updates
-        .add(
-            UpdateEntry::new(
-                IncrementUpdate {
-                    value: Rc::new(Cell::new(0)),
-                },
-                "inc",
-                1.0,
-            )
-            .unwrap(),
-        )
-        .unwrap();
-
-    let mut measurements = DynMeasurementSet::new();
-    let mut kernel = DynMetropolisKernel::new(updates);
+    let updates = SingleUpdateSet::new(IncrementUpdate {
+        value: Rc::new(Cell::new(0)),
+    });
+    let mut kernel = MetropolisKernel::new(updates);
     let mut rng = SeedSource::new(123).rng_for(ChainId(0));
 
-    let err = run(
+    let err = run_typed(
         (),
         &mut rng,
         &mut kernel,
-        &mut measurements,
+        TypedCounterMeasurement { count: 0 },
         SimulationParams {
             max_steps: 10,
             steps_per_cycle: 0,

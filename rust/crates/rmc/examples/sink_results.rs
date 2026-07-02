@@ -1,11 +1,11 @@
-//! Dynamic result-sink measurement example.
+//! Result-sink measurement example.
 //!
-//! The measurement path is runtime-configured and output-only: results are written as named
-//! artifacts into a sink instead of returned as Rust-native typed values.
+//! The measurement path is output-only: results are written as named artifacts into a sink instead
+//! of returned as Rust-native typed values.
 
 use rmc::io::MapSink;
 use rmc::mc::{
-    run_dyn_with_sink, MetropolisKernel, ResultSink, SimulationParams, SingleUpdateSet,
+    run_with_sink, MetropolisKernel, ResultSink, SimulationParams, SingleUpdateSet,
     SinkMeasurement, SinkMeasurementSet, Update,
 };
 use rmc::random::{ChainId, Rng, SeedSource};
@@ -61,7 +61,7 @@ fn main() -> rmc::Result<()> {
     measurements.add(WalkSinkMeasurement::default())?;
 
     let mut sink = MapSink::new();
-    let (_state, stats) = run_dyn_with_sink(
+    let (_state, stats) = run_with_sink(
         0_i64,
         &mut rng,
         &mut kernel,

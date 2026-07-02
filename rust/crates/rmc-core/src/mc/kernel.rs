@@ -2,7 +2,6 @@ use rand::Rng;
 
 use crate::Result;
 
-use super::sets::DynUpdateSet;
 use super::traits::{Kernel, StepOutcome, SteppingUpdateSet};
 
 /// Metropolis kernel over a monomorphized (static) update set.
@@ -13,11 +12,6 @@ use super::traits::{Kernel, StepOutcome, SteppingUpdateSet};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct MetropolisKernel<S> {
     updates: S,
-}
-
-/// Metropolis kernel over the runtime-flexible boxed update set (`State = ()`).
-pub struct DynMetropolisKernel {
-    updates: DynUpdateSet,
 }
 
 impl<S> MetropolisKernel<S> {
@@ -53,40 +47,5 @@ where
 
     fn step(&mut self, state: &mut State, rng: &mut R) -> Result<StepOutcome> {
         self.updates.select_and_step(state, rng)
-    }
-}
-
-impl DynMetropolisKernel {
-    /// Create a dynamic boxed-update Metropolis kernel.
-    pub fn new(updates: DynUpdateSet) -> Self {
-        Self { updates }
-    }
-
-    /// Borrow the contained dynamic update set.
-    pub fn updates(&self) -> &DynUpdateSet {
-        &self.updates
-    }
-
-    /// Mutably borrow the contained dynamic update set.
-    pub fn updates_mut(&mut self) -> &mut DynUpdateSet {
-        &mut self.updates
-    }
-
-    /// Consume the kernel and return its dynamic update set.
-    pub fn into_updates(self) -> DynUpdateSet {
-        self.updates
-    }
-}
-
-impl<R> Kernel<(), R> for DynMetropolisKernel
-where
-    R: Rng,
-{
-    fn prepare(&mut self, _state: &mut ()) -> Result<()> {
-        self.updates.rebuild_distribution()
-    }
-
-    fn step(&mut self, _state: &mut (), rng: &mut R) -> Result<StepOutcome> {
-        self.updates.select_and_step(rng)
     }
 }

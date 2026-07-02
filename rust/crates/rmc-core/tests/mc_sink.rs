@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use rmc_core::mc::{
-    run_dyn_with_sink, MetropolisKernel, ResultSink, SimulationParams, SingleUpdateSet,
+    run_with_sink, MetropolisKernel, ResultSink, SimulationParams, SingleUpdateSet,
     SinkMeasurement, SinkMeasurementSet, Update,
 };
 use rmc_core::random::{ChainId, SeedSource};
@@ -152,14 +152,14 @@ impl SinkMeasurement<i64> for LastState {
 }
 
 #[test]
-fn run_dyn_with_sink_writes_results_after_run() {
+fn run_with_sink_writes_results_after_run() {
     let mut rng = SeedSource::new(7).rng_for(ChainId(0));
     let mut kernel = MetropolisKernel::new(SingleUpdateSet::new(Increment));
     let mut measurements = SinkMeasurementSet::new();
     measurements.add(LastState::default()).unwrap();
     let mut sink = TestSink::default();
 
-    let (state, stats) = run_dyn_with_sink(
+    let (state, stats) = run_with_sink(
         0_i64,
         &mut rng,
         &mut kernel,

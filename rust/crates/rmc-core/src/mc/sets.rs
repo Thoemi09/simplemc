@@ -1,118 +1,13 @@
-use std::ops::{Index, IndexMut};
-
 use rand::distributions::{Distribution, WeightedIndex};
 use rand::Rng;
 
 use crate::{Result, RmcError};
 
-use super::entries::{MeasurementEntry, UpdateEntry};
-use super::named_set::NamedSet;
 use super::sink::{ResultSink, ScopedResultSink, SinkMeasurement};
 use super::traits::{StepOutcome, SteppingUpdateSet, Update, UpdateSet, UpdateStats};
 
-#[derive(Clone, Default)]
-pub struct DynMeasurementSet {
-    entries: NamedSet<MeasurementEntry>,
-    active: Vec<usize>,
-}
-
-impl DynMeasurementSet {
-    /// Create an empty dynamic measurement set.
-    pub fn new() -> Self {
-        Self {
-            entries: NamedSet::new(),
-            active: Vec::new(),
-        }
-    }
-
-    /// Add a named measurement entry.
-    pub fn add(&mut self, measurement: MeasurementEntry) -> Result<()> {
-        self.entries.add(measurement, "measurement")
-    }
-
-    pub fn set_active(&mut self, name: &str, is_active: bool) -> Result<()> {
-        let measurement = self.get_by_name_mut(name).ok_or_else(|| {
-            RmcError::InvalidArgument(format!("measurement '{name}' is not registered"))
-        })?;
-        measurement.is_active = is_active;
-        Ok(())
-    }
-
-    pub fn refresh_active(&mut self) {
-        self.active.clear();
-        self.active.reserve(self.entries.len());
-        for (idx, measurement) in self.entries.entries().iter().enumerate() {
-            if measurement.is_active {
-                self.active.push(idx);
-            }
-        }
-    }
-
-    pub fn clear_active(&mut self) {
-        self.active.clear();
-    }
-
-    pub fn active_indices(&self) -> &[usize] {
-        &self.active
-    }
-
-    pub fn measure_all(&mut self) {
-        for idx in &self.active {
-            self.entries[*idx].measure();
-        }
-    }
-
-    pub fn find(&self, name: &str) -> Option<usize> {
-        self.entries.find(name)
-    }
-
-    pub fn get_by_name(&self, name: &str) -> Option<&MeasurementEntry> {
-        self.entries.get_by_name(name)
-    }
-
-    pub fn get_by_name_mut(&mut self, name: &str) -> Option<&mut MeasurementEntry> {
-        self.entries.get_by_name_mut(name)
-    }
-
-    pub fn len(&self) -> usize {
-        self.entries.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.entries.is_empty()
-    }
-
-    pub fn entries(&self) -> &[MeasurementEntry] {
-        self.entries.entries()
-    }
-
-    pub fn entries_mut(&mut self) -> &mut [MeasurementEntry] {
-        self.entries.entries_mut()
-    }
-}
-
-impl Index<usize> for DynMeasurementSet {
-    type Output = MeasurementEntry;
-
-    fn index(&self, index: usize) -> &Self::Output {
-        &self.entries[index]
-    }
-}
-
-impl IndexMut<usize> for DynMeasurementSet {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        &mut self.entries[index]
-    }
-}
-
-impl<State> super::named_set::NamedEntry for Box<dyn SinkMeasurement<State>> {
-    fn name(&self) -> &str {
-        SinkMeasurement::name(self.as_ref())
-    }
-}
-
 pub struct SinkMeasurementSet<State> {
-    entries: NamedSet<Box<dyn SinkMeasurement<State>>>,
+    entries: Vec<Box<dyn SinkMeasurement<State>>>,
     active: Vec<usize>,
 }
 
@@ -126,7 +21,7 @@ impl<State> SinkMeasurementSet<State> {
     /// Create an empty dynamic result-sink measurement set.
     pub fn new() -> Self {
         Self {
-            entries: NamedSet::new(),
+            entries: Vec::new(),
             active: Vec::new(),
         }
     }
@@ -141,7 +36,14 @@ impl<State> SinkMeasurementSet<State> {
                 "measurement name must be non-empty".to_string(),
             ));
         }
-        self.entries.add(Box::new(measurement), "measurement")
+        if self.find(measurement.name()).is_some() {
+            return Err(RmcError::InvalidArgument(format!(
+                "measurement '{}' is already registered",
+                measurement.name()
+            )));
+        }
+        self.entries.push(Box::new(measurement));
+        Ok(())
     }
 
     pub fn refresh_active(&mut self) {
@@ -174,23 +76,21 @@ impl<State> SinkMeasurementSet<State> {
     }
 
     pub fn find(&self, name: &str) -> Option<usize> {
-        self.entries.find(name)
+        self.entries
+            .iter()
+            .position(|measurement| measurement.name() == name)
     }
 
     pub fn get_by_name(&self, name: &str) -> Option<&(dyn SinkMeasurement<State> + '_)> {
-        self.entries
-            .get_by_name(name)
-            .map(|measurement| measurement.as_ref())
+        self.find(name).map(|idx| self.entries[idx].as_ref())
     }
 
     pub fn get_by_name_mut(
         &mut self,
         name: &str,
     ) -> Option<&mut (dyn SinkMeasurement<State> + '_)> {
-        match self.entries.get_by_name_mut(name) {
-            Some(measurement) => Some(measurement.as_mut()),
-            None => None,
-        }
+        let idx = self.find(name)?;
+        Some(self.entries[idx].as_mut())
     }
 
     pub fn len(&self) -> usize {
@@ -202,260 +102,7 @@ impl<State> SinkMeasurementSet<State> {
     }
 
     pub fn entries(&self) -> impl Iterator<Item = &dyn SinkMeasurement<State>> {
-        self.entries
-            .entries()
-            .iter()
-            .map(|measurement| measurement.as_ref())
-    }
-}
-
-#[derive(Clone, Default)]
-pub struct DynUpdateSet {
-    entries: NamedSet<UpdateEntry>,
-    stats: Vec<UpdateStats>,
-    selection: Option<WeightedIndex<f64>>,
-}
-
-impl DynUpdateSet {
-    /// Create an empty dynamic update set.
-    pub fn new() -> Self {
-        Self {
-            entries: NamedSet::new(),
-            stats: Vec::new(),
-            selection: None,
-        }
-    }
-
-    /// Add a named weighted update entry.
-    pub fn add(&mut self, update: UpdateEntry) -> Result<()> {
-        self.entries.add(update, "update")?;
-        self.refresh_stats();
-        Ok(())
-    }
-
-    pub fn add_pair(&mut self, mut first: UpdateEntry, mut second: UpdateEntry) -> Result<()> {
-        if (first.weight == 0.0) != (second.weight == 0.0) {
-            return Err(RmcError::InvalidArgument(format!(
-                "inverse pair must have both weights zero or both non-zero (got {} on '{}' and {} on '{}')",
-                first.weight, first.name, second.weight, second.name
-            )));
-        }
-        if first.name == second.name {
-            return Err(RmcError::InvalidArgument(format!(
-                "paired updates must have distinct names (both are '{}')",
-                first.name
-            )));
-        }
-        if self.find(&first.name).is_some() {
-            return Err(RmcError::InvalidArgument(format!(
-                "update '{}' is already registered",
-                first.name
-            )));
-        }
-        if self.find(&second.name).is_some() {
-            return Err(RmcError::InvalidArgument(format!(
-                "update '{}' is already registered",
-                second.name
-            )));
-        }
-
-        first.inv_name = second.name.clone();
-        second.inv_name = first.name.clone();
-
-        self.add(first)?;
-        self.add(second)
-    }
-
-    pub fn set_weight(&mut self, name: &str, weight: f64) -> Result<()> {
-        if weight < 0.0 {
-            return Err(RmcError::InvalidArgument(format!(
-                "update weight must be >= 0 (got {weight} on '{name}')"
-            )));
-        }
-        let update = self.get_by_name_mut(name).ok_or_else(|| {
-            RmcError::InvalidArgument(format!("update '{name}' is not registered"))
-        })?;
-        update.weight = weight;
-        self.selection = None;
-        Ok(())
-    }
-
-    pub fn rebuild_distribution(&mut self) -> Result<()> {
-        for idx in 0..self.entries.len() {
-            if self.entries[idx].inv_name == self.entries[idx].name {
-                self.entries[idx].ratio = 1.0;
-                continue;
-            }
-
-            let name = self.entries[idx].name.clone();
-            let inv_name = self.entries[idx].inv_name.clone();
-            let inv_idx = self.find(&inv_name).ok_or_else(|| {
-                RmcError::InvalidState(format!(
-                    "inverse update '{inv_name}' of '{name}' is not registered"
-                ))
-            })?;
-            let weight = self.entries[idx].weight;
-            let inv_weight = self.entries[inv_idx].weight;
-
-            if (weight == 0.0) != (inv_weight == 0.0) {
-                return Err(RmcError::InvalidArgument(format!(
-                    "inverse pair must have both weights zero or both non-zero (got {weight} on '{name}' and {inv_weight} on '{inv_name}')"
-                )));
-            }
-
-            self.entries[idx].ratio = if weight != 0.0 {
-                inv_weight / weight
-            } else {
-                1.0
-            };
-        }
-
-        let weights = self
-            .entries
-            .entries()
-            .iter()
-            .map(|update| update.weight)
-            .collect::<Vec<_>>();
-
-        if !weights.iter().any(|weight| *weight > 0.0) {
-            return Err(RmcError::InvalidState(
-                "at least one update weight must be > 0".to_string(),
-            ));
-        }
-
-        self.selection =
-            Some(WeightedIndex::new(weights).map_err(|err| {
-                RmcError::InvalidArgument(format!("invalid update weights: {err}"))
-            })?);
-
-        Ok(())
-    }
-
-    pub fn select_and_step<R>(&mut self, rng: &mut R) -> Result<StepOutcome>
-    where
-        R: Rng,
-    {
-        let selection = self.selection.as_ref().ok_or_else(|| {
-            RmcError::InvalidState(
-                "update distribution has not been rebuilt; call prepare() first".to_string(),
-            )
-        })?;
-        let idx = selection.sample(rng);
-        let update = &mut self.entries[idx];
-        update.nprops += 1;
-
-        let probability = update.attempt(rng) * update.ratio;
-        // Greenfield semantics intentionally short-circuit `probability >= 1.0` without drawing
-        // the acceptance uniform. That keeps accepted-certain moves cheap, but means RNG
-        // consumption depends on the acceptance branch.
-        let (accepted, impossible) = if probability < 0.0 {
-            update.nimps += 1;
-            update.reject();
-            (false, true)
-        } else if probability >= 1.0 || rng.gen::<f64>() < probability {
-            update.accept();
-            update.naccs += 1;
-            (true, false)
-        } else {
-            update.reject();
-            (false, false)
-        };
-
-        // Sync only the stepped update's stats in place. Rebuilding the whole `stats` vec here
-        // (the old `refresh_stats()` call) allocated and re-iterated every entry on every MC step;
-        // the per-entry counters already live on `UpdateEntry`, so a single indexed write suffices.
-        let (nprops, naccs, nimps) = {
-            let entry = &self.entries[idx];
-            (entry.nprops, entry.naccs, entry.nimps)
-        };
-        self.stats[idx] = UpdateStats {
-            nprops,
-            naccs,
-            nimps,
-        };
-
-        Ok(StepOutcome {
-            update_index: idx,
-            probability,
-            accepted,
-            impossible,
-        })
-    }
-
-    pub fn reset_run_counters(&mut self) {
-        for update in self.entries.entries_mut() {
-            update.reset_run_counters();
-        }
-        self.refresh_stats();
-    }
-
-    pub fn accumulate_counters(&mut self) {
-        for update in self.entries.entries_mut() {
-            update.accumulate_counters();
-        }
-        self.refresh_stats();
-    }
-
-    pub fn find(&self, name: &str) -> Option<usize> {
-        self.entries.find(name)
-    }
-
-    pub fn get_by_name(&self, name: &str) -> Option<&UpdateEntry> {
-        self.entries.get_by_name(name)
-    }
-
-    pub fn get_by_name_mut(&mut self, name: &str) -> Option<&mut UpdateEntry> {
-        self.entries.get_by_name_mut(name)
-    }
-
-    pub fn len(&self) -> usize {
-        self.entries.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.entries.is_empty()
-    }
-
-    pub fn entries(&self) -> &[UpdateEntry] {
-        self.entries.entries()
-    }
-
-    pub fn entries_mut(&mut self) -> &mut [UpdateEntry] {
-        self.entries.entries_mut()
-    }
-
-    pub fn refresh_stats(&mut self) {
-        self.stats = self
-            .entries
-            .entries()
-            .iter()
-            .map(|update| UpdateStats {
-                nprops: update.nprops,
-                naccs: update.naccs,
-                nimps: update.nimps,
-            })
-            .collect();
-    }
-}
-
-impl UpdateSet for DynUpdateSet {
-    fn stats(&self) -> &[UpdateStats] {
-        &self.stats
-    }
-}
-
-// The boxed update set is the runtime-flexible path and is specialized to `State = ()`; the
-// monomorphized static sets ([`SingleUpdateSet`], [`TwoUpdateSet`]) are the ones generic over state.
-impl<R> SteppingUpdateSet<(), R> for DynUpdateSet
-where
-    R: Rng,
-{
-    fn prepare(&mut self, _state: &mut ()) -> Result<()> {
-        self.rebuild_distribution()
-    }
-
-    fn select_and_step(&mut self, _state: &mut (), rng: &mut R) -> Result<StepOutcome> {
-        DynUpdateSet::select_and_step(self, rng)
+        self.entries.iter().map(|measurement| measurement.as_ref())
     }
 }
 
@@ -866,7 +513,7 @@ where
 {
     stats.nprops += 1;
     let probability = update.attempt(state, rng) * ratio;
-    // See the dynamic path above: accepted-certain moves do not consume an acceptance draw.
+    // Accepted-certain moves do not consume an acceptance draw.
     let (accepted, impossible) = if probability < 0.0 {
         stats.nimps += 1;
         update.reject(state);
@@ -886,18 +533,4 @@ where
         accepted,
         impossible,
     })
-}
-
-impl Index<usize> for DynUpdateSet {
-    type Output = UpdateEntry;
-
-    fn index(&self, index: usize) -> &Self::Output {
-        &self.entries[index]
-    }
-}
-
-impl IndexMut<usize> for DynUpdateSet {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        &mut self.entries[index]
-    }
 }
