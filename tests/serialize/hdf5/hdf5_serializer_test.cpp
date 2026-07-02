@@ -9,11 +9,29 @@
 #include <Eigen/Dense>
 #include <fmt/format.h>
 
+#include <array>
 #include <complex>
 #include <filesystem>
+#include <string>
 #include <vector>
 
 namespace {
+
+// Check hdf5_savable concept.
+static_assert(simplemc::hdf5_savable<double> && simplemc::hdf5_savable<bool>);
+static_assert(simplemc::hdf5_savable<std::string> && simplemc::hdf5_savable<std::complex<double>>);
+static_assert(simplemc::hdf5_savable<std::vector<double>> && simplemc::hdf5_savable<std::array<int, 3>>);
+static_assert(simplemc::hdf5_savable<Eigen::MatrixXd> && simplemc::hdf5_savable<Eigen::ArrayXd>);
+static_assert(simplemc::hdf5_savable<std::vector<std::complex<double>>>);
+static_assert(simplemc::hdf5_loadable<Eigen::Vector3d> && simplemc::hdf5_loadable<std::vector<double>>);
+
+// A plain aggregate with no ADL simplemc_save must NOT be considered HDF5-native.
+struct plain_aggregate {
+    int x = 0;
+};
+static_assert(!simplemc::hdf5_native<plain_aggregate>);
+static_assert(!simplemc::hdf5_savable<plain_aggregate>);
+static_assert(!simplemc::hdf5_loadable<plain_aggregate>);
 
 // Build a unique temp filename based on the current GoogleTest test name so that parallel runs do
 // not collide.

@@ -8,15 +8,20 @@
 
 #include <simplemc/serialize/concepts.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
+#include <simplemc/utils/traits.hpp>
 
 #include <fmt/format.h>
 #include <fmt/std.h>
+#include <highfive/eigen.hpp>
 #include <highfive/highfive.hpp>
 
+#include <concepts>
+#include <cstddef>
 #include <filesystem>
 #include <memory>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 
 namespace simplemc {
@@ -30,22 +35,48 @@ namespace simplemc {
 class hdf5_serializer;
 
 /**
+ * @brief Concept describing scalar types HighFive can represent as a datatype.
+ *
+ * @details HighFive supports arithmetic types, `std::complex`, `std::string`, `std::byte`, and
+ * `bool`.
+ *
+ * @tparam T Type to check.
+ */
+template <typename T>
+concept hdf5_atomic_base = std::is_arithmetic_v<T> || is_std_complex_v<T> || std::same_as<T, std::string> ||
+    std::same_as<T, std::byte> || std::same_as<T, HighFive::Reference> || std::same_as<T, HighFive::details::Boolean>;
+
+/**
+ * @brief Concept describing value types HighFive can serialize directly.
+ *
+ * @details HighFive's inspector defines `base_type` recursively for every container it supports
+ * (`std::vector`, `std::array`, C-arrays, pointers, and `Eigen::Matrix` / `Eigen::Array` / `
+ * Eigen::Map`).
+ *
+ * @note This couples to HighFive internals via `HighFive::details::inspector` and
+ * `details::Boolean`).
+ *
+ * @tparam T Type to check.
+ */
+template <typename T>
+concept hdf5_native = requires { typename HighFive::details::inspector<std::remove_cvref_t<T>>::base_type; } &&
+    hdf5_atomic_base<typename HighFive::details::inspector<std::remove_cvref_t<T>>::base_type>;
+
+/**
  * @brief Concept describing value types that can be written with simplemc::hdf5_serializer::save_at.
  *
  * @details This is satisfied when either
  *
  * - (a) type `T` opts into ADL serialization (simplemc::has_simplemc_save with a
- * simplemc::hdf5_serializer, or
- * - (b) type `T` is supported by HighFive's `createDataSet`.
+ * simplemc::hdf5_serializer), or
+ * - (b) type `T` is natively supported by HighFive (simplemc::hdf5_native).
  *
- * The second clause inherits HighFive's own SFINAE constraints, so this concept tracks exactly what
- * hdf5_serializer::save_at accepts at instantiation.
+ * Composite user types serialize through clause (a), HighFive-native type and containers through (b).
  *
  * @tparam T Value type.
  */
 template <typename T>
-concept hdf5_savable = requires(HighFive::File& f, const T& v) { f.createDataSet(std::string {}, v); } ||
-    has_simplemc_save<T, hdf5_serializer>;
+concept hdf5_savable = hdf5_native<T> || has_simplemc_save<T, hdf5_serializer>;
 
 /**
  * @brief Concept describing value types that can be read with simplemc::hdf5_serializer::load_at.
@@ -53,16 +84,16 @@ concept hdf5_savable = requires(HighFive::File& f, const T& v) { f.createDataSet
  * @details This is satisfied when either
  *
  * - (a) type `T` opts into ADL serialization (simplemc::has_simplemc_load with a
- * simplemc::hdf5_serializer, or
- * - (b) type `T` is supported by HighFive's `HighFive::DataSet::read`.
+ * simplemc::hdf5_serializer), or
+ * - (b) type `T` is natively supported by HighFive (simplemc::hdf5_native).
  *
- * The second clause inherits HighFive's own SFINAE constraints, so this concept tracks exactly what
- * hdf5_serializer::save_at accepts at instantiation.
+ * Composite user types deserialize through clause (a), HighFive-native types and containers through
+ * (b).
  *
  * @tparam T Value type.
  */
 template <typename T>
-concept hdf5_loadable = requires(HighFive::DataSet& ds, T& v) { ds.read(v); } || has_simplemc_load<T, hdf5_serializer>;
+concept hdf5_loadable = hdf5_native<T> || has_simplemc_load<T, hdf5_serializer>;
 
 /**
  * @brief File open mode for simplemc::hdf5_serializer.
