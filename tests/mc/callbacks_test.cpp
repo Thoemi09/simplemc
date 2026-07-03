@@ -1,5 +1,5 @@
 #include <simplemc/mc.hpp>
-#include <simplemc/mc/callbacks.hpp>
+#include <simplemc/mc/checkpoint.hpp>
 #include <simplemc/mc/progress_printer.hpp>
 #include <simplemc/random/xoshiro256.hpp>
 
@@ -63,6 +63,17 @@ struct run_config {
         s.load_at("seed", c.seed);
         s.load_at("beta", c.beta);
     }
+};
+
+// Config whose save throws mid-checkpoint, used to verify that a failed write never corrupts an
+// existing checkpoint file (atomic temp-file + rename semantics).
+struct throwing_config {
+    template <serializer S>
+    friend void simplemc_save(S&, const throwing_config&) {
+        throw simplemc_exception("intentional save failure");
+    }
+    template <serializer S>
+    friend void simplemc_load(const S&, throwing_config&) {}
 };
 
 // Read all of `fp` (rewinding first) into a std::string for diagnostic assertions.
@@ -239,11 +250,11 @@ TEST(MCCallbacks, ProgressPrinterInplaceCompletionCommitsWithNewline) {
     EXPECT_EQ(std::count(text.begin(), text.end(), '\n'), 1);
 }
 
-TEST(MCCallbacks, JsonCheckpointWriterRoundTripsComponents) {
+TEST(MCCallbacks, CheckpointRoundTripsComponents) {
     const auto path = std::filesystem::temp_directory_path() / "simplemc_test_ckpt.json";
     std::filesystem::remove(path);
 
-    // Assemble the components, populate cumulative stats, then write.
+    // Assemble the components, populate cumulative stats, then write (backend deduced from ".json").
     xoshiro256ss rng;
     update_set updates;
     measurement_set meas;
@@ -253,7 +264,7 @@ TEST(MCCallbacks, JsonCheckpointWriterRoundTripsComponents) {
     stats.cumulative_steps = 1234;
     stats.cumulative_time = 5.5;
 
-    const auto writer = make_json_checkpoint_writer(rng, updates, meas, stats, path);
+    const auto writer = make_checkpoint_writer(rng, updates, meas, stats, path);
     writer(simulation_ctx {});
     ASSERT_TRUE(std::filesystem::exists(path));
 
@@ -264,14 +275,73 @@ TEST(MCCallbacks, JsonCheckpointWriterRoundTripsComponents) {
     simulation_stats dst_stats;
     dst_updates.add({ trivial_update {}, "u", 1.0 });
     dst_meas.add({ trivial_meas {}, "m" });
-    load_json_checkpoint(dst_rng, dst_updates, dst_meas, dst_stats, path);
+    load_checkpoint(path, dst_rng, dst_updates, dst_meas, dst_stats);
     EXPECT_EQ(dst_stats.cumulative_steps, 1234u);
     EXPECT_DOUBLE_EQ(dst_stats.cumulative_time, 5.5);
 
     std::filesystem::remove(path);
 }
 
-TEST(MCCallbacks, JsonCheckpointWriterRespectsModeOptionAndConfig) {
+TEST(MCCallbacks, CheckpointDeducesOptionsFromExtension) {
+    const auto json_mode = [](const char* name) {
+        const auto opts = deduce_checkpoint_options(name);
+        return std::get<json_io_options>(opts).mode;
+    };
+    EXPECT_EQ(json_mode("ck.json"), json_file_mode::text);
+    EXPECT_EQ(json_mode("ck.bson"), json_file_mode::bson);
+    EXPECT_EQ(json_mode("ck.cbor"), json_file_mode::cbor);
+    EXPECT_EQ(json_mode("ck.msgpack"), json_file_mode::msgpack);
+    EXPECT_EQ(json_mode("ck.mp"), json_file_mode::msgpack);
+    EXPECT_EQ(json_mode("ck.ubjson"), json_file_mode::ubjson);
+    EXPECT_EQ(json_mode("ck.ubj"), json_file_mode::ubjson);
+    EXPECT_EQ(json_mode("ck.JSON"), json_file_mode::text); // case-insensitive
+#ifdef SIMPLEMC_USE_HDF5
+    EXPECT_TRUE(std::holds_alternative<hdf5_io_options>(deduce_checkpoint_options("ck.h5")));
+    EXPECT_TRUE(std::holds_alternative<hdf5_io_options>(deduce_checkpoint_options("ck.hdf5")));
+#endif
+}
+
+TEST(MCCallbacks, CheckpointUnknownExtensionThrows) {
+    EXPECT_THROW((void)deduce_checkpoint_options("ck.dat"), simplemc_exception);
+    EXPECT_THROW((void)deduce_checkpoint_options("ck"), simplemc_exception);
+
+    // The factory resolves the options eagerly, so a bad path fails at setup time, not mid-run.
+    const xoshiro256ss rng;
+    const update_set updates;
+    const measurement_set meas;
+    const simulation_stats stats;
+    EXPECT_THROW((void)make_checkpoint_writer(rng, updates, meas, stats, "ck.dat"), simplemc_exception);
+}
+
+TEST(MCCallbacks, CheckpointExplicitOptionsOverrideExtension) {
+    // ".ckpt" is not deducible; the explicit options select the JSON backend in MessagePack mode.
+    const auto path = std::filesystem::temp_directory_path() / "simplemc_test_ckpt.ckpt";
+    std::filesystem::remove(path);
+    const checkpoint_options opts { json_io_options { .mode = json_file_mode::msgpack } };
+
+    xoshiro256ss rng;
+    update_set updates;
+    measurement_set meas;
+    simulation_stats stats;
+    updates.add({ trivial_update {}, "u", 1.0 });
+    stats.cumulative_steps = 42;
+
+    save_checkpoint(path, rng, updates, meas, stats, opts);
+    ASSERT_TRUE(std::filesystem::exists(path));
+
+    xoshiro256ss dst_rng;
+    update_set dst_updates;
+    measurement_set dst_meas;
+    simulation_stats dst_stats;
+    dst_updates.add({ trivial_update {}, "u", 1.0 });
+    load_checkpoint(path, dst_rng, dst_updates, dst_meas, dst_stats, opts);
+    EXPECT_EQ(dst_stats.cumulative_steps, 42u);
+
+    std::filesystem::remove(path);
+}
+
+TEST(MCCallbacks, CheckpointRoundTripsConfig) {
+    // Deduced binary JSON mode (".cbor") plus the config channel of the save/load overloads.
     const auto path = std::filesystem::temp_directory_path() / "simplemc_test_ckpt.cbor";
     std::filesystem::remove(path);
 
@@ -281,11 +351,9 @@ TEST(MCCallbacks, JsonCheckpointWriterRespectsModeOptionAndConfig) {
     simulation_stats stats;
     updates.add({ trivial_update {}, "u", 1.0 });
     stats.cumulative_steps = 7;
-    run_config cfg { .seed = 5, .beta = 2.5 };
+    const run_config cfg { .seed = 5, .beta = 2.5 };
 
-    json_io_options opts { .mode = json_file_mode::cbor };
-    auto writer = make_json_checkpoint_writer(rng, updates, meas, stats, &cfg, path, opts);
-    writer(simulation_ctx {});
+    save_checkpoint(path, rng, updates, meas, stats, cfg);
     ASSERT_TRUE(std::filesystem::exists(path));
 
     xoshiro256ss dst_rng;
@@ -294,7 +362,7 @@ TEST(MCCallbacks, JsonCheckpointWriterRespectsModeOptionAndConfig) {
     simulation_stats dst_stats;
     run_config dst_cfg;
     dst_updates.add({ trivial_update {}, "u", 1.0 });
-    load_json_checkpoint(dst_rng, dst_updates, dst_meas, dst_stats, &dst_cfg, path, opts);
+    load_checkpoint(path, dst_rng, dst_updates, dst_meas, dst_stats, dst_cfg);
     EXPECT_EQ(dst_stats.cumulative_steps, 7u);
     EXPECT_EQ(dst_cfg.seed, 5);
     EXPECT_DOUBLE_EQ(dst_cfg.beta, 2.5);
@@ -302,9 +370,40 @@ TEST(MCCallbacks, JsonCheckpointWriterRespectsModeOptionAndConfig) {
     std::filesystem::remove(path);
 }
 
+TEST(MCCallbacks, CheckpointWriteIsAtomic) {
+    const auto path = std::filesystem::temp_directory_path() / "simplemc_test_ckpt_atomic.json";
+    const auto tmp = std::filesystem::path { path.string() + ".tmp" };
+    std::filesystem::remove(path);
+    std::filesystem::remove(tmp);
+
+    xoshiro256ss rng;
+    update_set updates;
+    measurement_set meas;
+    simulation_stats stats;
+    updates.add({ trivial_update {}, "u", 1.0 });
+    stats.cumulative_steps = 111;
+    save_checkpoint(path, rng, updates, meas, stats);
+    ASSERT_TRUE(std::filesystem::exists(path));
+
+    // A failing save must leave the previous checkpoint intact and clean up its temp file.
+    stats.cumulative_steps = 222;
+    EXPECT_THROW(save_checkpoint(path, rng, updates, meas, stats, throwing_config {}), simplemc_exception);
+    EXPECT_FALSE(std::filesystem::exists(tmp));
+
+    xoshiro256ss dst_rng;
+    update_set dst_updates;
+    measurement_set dst_meas;
+    simulation_stats dst_stats;
+    dst_updates.add({ trivial_update {}, "u", 1.0 });
+    load_checkpoint(path, dst_rng, dst_updates, dst_meas, dst_stats);
+    EXPECT_EQ(dst_stats.cumulative_steps, 111u);
+
+    std::filesystem::remove(path);
+}
+
 #ifdef SIMPLEMC_USE_HDF5
 
-TEST(MCCallbacks, Hdf5CheckpointWriterRoundTripsComponentsAndConfig) {
+TEST(MCCallbacks, Hdf5CheckpointRoundTripsComponentsAndConfig) {
     const auto path = std::filesystem::temp_directory_path() / "simplemc_test_ckpt.h5";
     std::filesystem::remove(path);
 
@@ -318,7 +417,8 @@ TEST(MCCallbacks, Hdf5CheckpointWriterRoundTripsComponentsAndConfig) {
     stats.cumulative_time = 12.25;
     run_config cfg { .seed = 3, .beta = 1.5 };
 
-    auto writer = make_hdf5_checkpoint_writer(rng, updates, meas, stats, &cfg, path);
+    // Backend deduced from ".h5"; the writer carries the resolved options.
+    auto writer = make_checkpoint_writer(rng, updates, meas, stats, &cfg, path);
     writer(simulation_ctx {});
     ASSERT_TRUE(std::filesystem::exists(path));
 
@@ -329,13 +429,55 @@ TEST(MCCallbacks, Hdf5CheckpointWriterRoundTripsComponentsAndConfig) {
     run_config dst_cfg;
     dst_updates.add({ trivial_update {}, "u", 1.0 });
     dst_meas.add({ trivial_meas {}, "m" });
-    load_hdf5_checkpoint(dst_rng, dst_updates, dst_meas, dst_stats, &dst_cfg, path);
+    load_checkpoint(path, dst_rng, dst_updates, dst_meas, dst_stats, dst_cfg);
     EXPECT_EQ(dst_stats.cumulative_steps, 9999u);
     EXPECT_DOUBLE_EQ(dst_stats.cumulative_time, 12.25);
     EXPECT_EQ(dst_cfg.seed, 3);
     EXPECT_DOUBLE_EQ(dst_cfg.beta, 1.5);
 
     std::filesystem::remove(path);
+}
+
+TEST(MCCallbacks, Hdf5CheckpointWriteIsAtomic) {
+    // Genuinely exercises the temp-file + rename path: HDF5 opens its file mid-save.
+    const auto path = std::filesystem::temp_directory_path() / "simplemc_test_ckpt_atomic.h5";
+    const auto tmp = std::filesystem::path { path.string() + ".tmp" };
+    std::filesystem::remove(path);
+    std::filesystem::remove(tmp);
+
+    xoshiro256ss rng;
+    update_set updates;
+    measurement_set meas;
+    simulation_stats stats;
+    updates.add({ trivial_update {}, "u", 1.0 });
+    stats.cumulative_steps = 111;
+    save_checkpoint(path, rng, updates, meas, stats);
+    ASSERT_TRUE(std::filesystem::exists(path));
+
+    stats.cumulative_steps = 222;
+    EXPECT_THROW(save_checkpoint(path, rng, updates, meas, stats, throwing_config {}), simplemc_exception);
+    EXPECT_FALSE(std::filesystem::exists(tmp));
+
+    xoshiro256ss dst_rng;
+    update_set dst_updates;
+    measurement_set dst_meas;
+    simulation_stats dst_stats;
+    dst_updates.add({ trivial_update {}, "u", 1.0 });
+    load_checkpoint(path, dst_rng, dst_updates, dst_meas, dst_stats);
+    EXPECT_EQ(dst_stats.cumulative_steps, 111u);
+
+    std::filesystem::remove(path);
+}
+
+#else // SIMPLEMC_USE_HDF5
+
+TEST(MCCallbacks, CheckpointH5ExtensionThrowsWithoutHdf5) {
+    const xoshiro256ss rng;
+    const update_set updates;
+    const measurement_set meas;
+    const simulation_stats stats;
+    EXPECT_THROW(save_checkpoint("ck.h5", rng, updates, meas, stats), simplemc_exception);
+    EXPECT_THROW((void)deduce_checkpoint_options("ck.hdf5"), simplemc_exception);
 }
 
 #endif // SIMPLEMC_USE_HDF5

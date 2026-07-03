@@ -13,7 +13,7 @@
 # mc-checkpoint-test: Test the free save/load helpers over the run components.
 # mc-input-config-test: Test input-config serialization of params + run components.
 # mc-mixed-backend-test: Test that the checkpoint and input-config channels stay independent.
-# mc-callbacks-test: Test progress_printer and JSON/HDF5 checkpoint helpers.
+# mc-callbacks-test: Test progress_printer and the unified checkpoint API (writer + save/load + deduction).
 # mc-mpi-test: Test MPI reduction helpers on simplemc-mc types (mpirun -n 4).
 
 # create executables

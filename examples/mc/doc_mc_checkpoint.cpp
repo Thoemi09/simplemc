@@ -1,5 +1,6 @@
 // MC integration of cos(x) over [0, 2], checkpointed and restored via the component-borrowing
-// json_checkpoint_writer with an attached user-state object.
+// checkpoint_writer with an attached user-state object; the backend is deduced from the file
+// extension (".json" here — swap in ".h5" for HDF5, no other change needed).
 
 #include <fmt/format.h>
 #include <simplemc/accs/mean_acc.hpp>
@@ -90,7 +91,7 @@ int main() {
 
     // Fold the run into the cumulative counters, then snapshot the components plus the user state.
     accumulate_simulation_stats(stats, ctx);
-    const auto writer = simplemc::make_json_checkpoint_writer(rng, updates, meas, stats, &state, path);
+    const auto writer = simplemc::make_checkpoint_writer(rng, updates, meas, stats, &state, path);
     writer(simplemc::simulation_ctx {});
     fmt::print("wrote checkpoint to {}\n", path.string());
 
@@ -105,7 +106,7 @@ int main() {
     simplemc::measurement_set meas2;
     meas2.add({ integral_observer { .s = &restored }, "integral" });
 
-    simplemc::load_json_checkpoint(rng2, updates2, meas2, stats2, &restored, path);
+    simplemc::load_checkpoint(path, rng2, updates2, meas2, stats2, restored);
 
     const auto* m = meas2.get<integral_observer>("integral");
     const double result = m->acc.mean() * (restored.b - restored.a);

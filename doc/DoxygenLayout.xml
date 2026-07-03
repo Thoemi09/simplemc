@@ -213,7 +213,8 @@
       <tab type="usergroup" url="@ref simplemc-mc" title="simplemc-mc">
         <tab type="usergroup" url="@ref simplemc-mc-callbacks" title="Callbacks">
           <tab type="user" url="@ref simplemc::mc_run_callbacks" title="mc_run_callbacks"/>
-          <tab type="user" url="@ref simplemc::json_checkpoint_writer" title="json_checkpoint_writer"/>
+          <tab type="user" url="@ref simplemc::checkpoint_options" title="checkpoint_options"/>
+          <tab type="user" url="@ref simplemc::checkpoint_writer" title="checkpoint_writer"/>
           <tab type="user" url="@ref simplemc::no_op_callback" title="no_op_callback"/>
           <tab type="user" url="@ref simplemc::no_op_stop_callback" title="no_op_stop_callback"/>
           <tab type="user" url="@ref simplemc::progress_line" title="progress_line"/>

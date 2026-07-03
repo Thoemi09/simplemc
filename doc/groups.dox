@@ -1511,8 +1511,9 @@
  * simplemc::run_callbacks satifies the concept and uses no-op hooks as defaults. Users can use this
  * type to set individual hooks.
  *
- * Ready-made callback helpers — e.g. a progress printer and checkpoint writers — are provided for
- * common needs.
+ * Ready-made callback helpers — e.g. a progress printer and a backend-agnostic checkpoint writer
+ * (backend deduced from the file extension, with matching free simplemc::save_checkpoint /
+ * simplemc::load_checkpoint helpers) — are provided for common needs.
  */
 
 /**
