@@ -6,18 +6,20 @@
 #ifndef SIMPLEMC_MC_UPDATE_SET_HPP
 #define SIMPLEMC_MC_UPDATE_SET_HPP
 
-#include <simplemc/mc/named_set.hpp>
-#include <simplemc/mc/serializer.hpp>
+#include <simplemc/mc/tuple_set.hpp>
 #include <simplemc/mc/update.hpp>
 #include <simplemc/mpi/communicator.hpp>
+#include <simplemc/serialize/concepts.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
 #include <fmt/format.h>
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <random>
 #include <ranges>
+#include <string>
 #include <string_view>
 #include <utility>
 
@@ -31,84 +33,70 @@ namespace simplemc {
 /**
  * @brief Set of MC updates.
  *
- * @details The set holds registered simplemc::update objects and a `std::discrete_distribution` built
- * from their update::weight values. The distribution is initialized by calling 
- * rebuild_distribution(), which also checks that the weights are valid and recomputes the 
- * detailed-balance update::ratio for every update.
+ * @details The set stores its simplemc::update entries in a `std::tuple` (via simplemc::tuple_set), so
+ * the update *types* are fixed at construction. It holds a `std::discrete_distribution` built from the
+ * update::weight values; the distribution is (re)built by rebuild_distribution(), which validates the
+ * weights and recomputes the detailed-balance update::ratio for every update.
  *
- * Monte Carlo kernels usually perform the following actions (see e.g. simplemc::metropolis_kernel):
+ * Monte Carlo kernels usually:
  *
  * - call select() to sample an update index according to the cached distribution,
- * - get the corresponding update using named_set::operator[](),
- * - call basic_update::attempt() to propose a new MC configuration and get the acceptance ratio, and
- * - call basic_update::accept() or basic_update::reject() to commit or roll back the proposal.
+ * - reach the corresponding update through tuple_set::visit_at(), and
+ * - call `attempt()` and then `accept()`/`reject()` on it.
  *
- * Registration, lookup and typed access are provided by the base class simplemc::named_set. The same
- * API is shared with simplemc::measurement_set.
+ * Registration is construction-time (build the whole set in one initializer, deducing the types via
+ * CTAD); names/weights and inverse-pairing stay mutable at runtime via set_weight() / link_pair().
+ * Lookup and typed access are provided by the base simplemc::tuple_set.
+ *
+ * @tparam Us User update types (each satisfying simplemc::mc_update).
  */
-class update_set : public named_set<update> {
+template <mc_update... Us>
+class update_set : public tuple_set<update<Us>...> {
 public:
     /**
-     * @brief Serializer type used for both checkpoint and input-config serialization.
+     * @brief Construct the set from its updates.
+     *
+     * @param us Updates to store, in order.
      */
-    using serializer_type = mc_serializer;
+    explicit update_set(update<Us>... us) : tuple_set<update<Us>...> { std::move(us)... } {}
 
     /**
-     * @brief Register a self-inverse simplemc::update in the set.
+     * @brief Link two registered updates as a detailed-balance inverse pair.
      *
-     * @details It calls named_set::add_checked(). A simplemc::simplemc_exception is thrown if the
-     * name is already registered.
+     * @details It cross-links update::inv_name of the two named updates. The detailed-balance
+     * update::ratio is not computed here — rebuild_distribution() derives it from the current weights
+     * before every run.
      *
-     * @param u Update to register.
+     * It throws a simplemc::simplemc_exception if the two names are equal or if either is not
+     * registered.
+     *
+     * @param name_a First update name.
+     * @param name_b Second update name.
      */
-    void add(update u) { this->add_checked(std::move(u), "update"); }
-
-    /**
-     * @brief Register an inverse pair of simplemc::update objects in the set.
-     *
-     * @details It cross-links update::inv_name and calls named_set::add_checked() for both updates.
-     *
-     * It validates that the two names are distinct and not yet registered, and that the weights are
-     * either both zero or both non-zero. Otherwise, it throws a simplemc::simplemc_exception.
-     *
-     * The detailed-balance update::ratio is not computed here — rebuild_distribution() derives it
-     * from the current weights before every run.
-     *
-     * @param u1 First update to register.
-     * @param u2 Second update to register.
-     */
-    void add_pair(update u1, update u2) {
-        if ((u1.weight == 0.0) != (u2.weight == 0.0)) {
-            throw simplemc_exception(fmt::format("inverse pair must have both weights zero or both non-zero "
-                                                 "(got {} on '{}' and {} on '{}')",
-                u1.weight, u1.name, u2.weight, u2.name));
+    void link_pair(std::string_view name_a, std::string_view name_b) {
+        if (name_a == name_b) {
+            throw simplemc_exception(fmt::format("paired updates must have distinct names (both are '{}')", name_a));
         }
-        if (u1.name == u2.name) {
-            throw simplemc_exception(fmt::format("paired updates must have distinct names (both are '{}')", u1.name));
+        const auto ia = this->find(name_a);
+        const auto ib = this->find(name_b);
+        if (!ia) {
+            throw simplemc_exception(fmt::format("update '{}' is not registered", name_a));
         }
-        if (this->find(u1.name)) {
-            throw simplemc_exception(fmt::format("update '{}' is already registered", u1.name));
+        if (!ib) {
+            throw simplemc_exception(fmt::format("update '{}' is not registered", name_b));
         }
-        if (this->find(u2.name)) {
-            throw simplemc_exception(fmt::format("update '{}' is already registered", u2.name));
-        }
-
-        u1.inv_name = u2.name;
-        u2.inv_name = u1.name;
-
-        this->add_checked(std::move(u1), "update");
-        this->add_checked(std::move(u2), "update");
+        this->visit_at(*ia, [&](auto& u) { u.inv_name = std::string { name_b }; });
+        this->visit_at(*ib, [&](auto& u) { u.inv_name = std::string { name_a }; });
     }
 
     /**
      * @brief Change the selection weight of a registered update.
      *
-     * @details It validates \f$ w >= 0 \f$, looks up the update by name, and writes the new weight. A
-     * simplemc::simplemc_exception is thrown if the name is not registered or if the weight is
-     * negative.
+     * @details It validates \f$ w \geq 0 \f$, looks up the update by name, and writes the new weight.
+     * A simplemc::simplemc_exception is thrown if the name is not registered or the weight is negative.
      *
      * @param name Name of the update whose weight to change.
-     * @param w New selection weight (must be \f$ >= 0 \f$).
+     * @param w New selection weight (must be \f$ \geq 0 \f$).
      */
     void set_weight(std::string_view name, double w) {
         if (w < 0.0) {
@@ -118,53 +106,48 @@ public:
         if (!idx) {
             throw simplemc_exception(fmt::format("update '{}' is not registered", name));
         }
-        this->entries_[*idx].weight = w;
+        this->visit_at(*idx, [&](auto& u) { u.weight = w; });
     }
 
     /**
      * @brief Build the selection distribution from the update::weight values and recompute the
      * detailed-balance update::ratio for every update.
      *
-     * @details It first recomputes every update::ratio and then initializes the discrete
-     * distribution. The ratio is set to \f$ 1.0 \f$ for self-inverse updates and to
-     * \f$ w_{\text{inv}} / w \f$ otherwise.
+     * @details It first recomputes every update::ratio (\f$ 1 \f$ for self-inverse updates, else
+     * \f$ w_{\text{inv}} / w \f$) and then initializes the discrete distribution.
      *
-     * It throws a simplemc::simplemc_exception if an update::inv_name is not registered, if exactly
-     * one weight of an inverse-pair is zero, or if all weights are zero.
+     * It throws a simplemc::simplemc_exception if an update::inv_name is not registered, if exactly one
+     * weight of an inverse pair is zero, or if all weights are zero.
      */
     void rebuild_distribution() {
         // recompute detailed-balance ratios and validate inverse pairs
-        for (auto& u : this->entries_) {
-            // self-inverse
+        this->for_each([&](auto& u) {
             if (u.inv_name == u.name) {
                 u.ratio = 1.0;
-                continue;
+                return;
             }
-
-            // find inverse
             const auto idx = this->find(u.inv_name);
             if (!idx) {
                 throw simplemc_exception(
                     fmt::format("inverse update '{}' of '{}' is not registered", u.inv_name, u.name));
             }
-            const auto& inv = this->entries_[*idx];
-
-            // validate weights and compute ratio
-            if ((u.weight == 0.0) != (inv.weight == 0.0)) {
+            double w_inv = 0.0;
+            this->visit_at(*idx, [&](const auto& inv) { w_inv = inv.weight; });
+            if ((u.weight == 0.0) != (w_inv == 0.0)) {
                 throw simplemc_exception(fmt::format("inverse pair must have both weights zero or both non-zero "
                                                      "(got {} on '{}' and {} on '{}')",
-                    u.weight, u.name, inv.weight, inv.name));
+                    u.weight, u.name, w_inv, u.inv_name));
             }
-            u.ratio = u.weight != 0.0 ? inv.weight / u.weight : 1.0;
-        }
+            u.ratio = u.weight != 0.0 ? w_inv / u.weight : 1.0;
+        });
 
-        // view on the update weights (at least one must be > 0)
-        auto weights = this->entries_ | std::views::transform(&update::weight);
+        // gather weights (at least one must be > 0) and rebuild the distribution
+        std::array<double, sizeof...(Us)> weights {};
+        std::size_t k = 0;
+        this->for_each([&](const auto& u) { weights[k++] = u.weight; });
         if (!std::ranges::any_of(weights, [](double w) { return w > 0.0; })) {
             throw simplemc_exception("at least one update weight must be > 0");
         }
-
-        // rebuild the distribution
         dist_ = std::discrete_distribution<std::size_t> { weights.begin(), weights.end() };
     }
 
@@ -181,77 +164,57 @@ public:
     }
 
     /**
-     * @brief Zero the current-run counters by calling update::reset_run_counters() for all registered
-     * updates.
+     * @brief Zero the current-run counters of every update via update::reset_run_counters().
      */
     void reset_run_counters() noexcept {
-        for (auto& u : this->entries_) {
-            u.reset_run_counters();
-        }
+        this->for_each([](auto& u) { u.reset_run_counters(); });
     }
 
     /**
-     * @brief Accumulate the current-run counters by calling update::accumulate_counters() for all
-     * registered updates.
+     * @brief Accumulate the current-run counters of every update via update::accumulate_counters().
      */
     void accumulate_counters() noexcept {
-        for (auto& u : this->entries_) {
-            u.accumulate_counters();
-        }
+        this->for_each([](auto& u) { u.accumulate_counters(); });
     }
 
     /**
-     * @brief Serialize a simplemc::update_set.
-     *
-     * @details It serializes all registered updates by calling named_set::save_entries().
-     *
-     * @param s Serializer handle.
-     * @param us Update set to serialize.
+     * @brief Serialize a simplemc::update_set: every update, keyed by name.
      */
-    friend void simplemc_save(serializer_type& s, const update_set& us) { us.save_entries(s); }
+    template <serializer S>
+    friend void simplemc_save(S& s, const update_set& us) {
+        us.save_entries(s);
+    }
 
     /**
-     * @brief Deserialize a simplemc::update_set.
-     *
-     * @details It deserializes all registered updates by calling named_set::load_entries().
-     *
-     * @param s Serializer handle.
-     * @param us Update set to deserialize into.
+     * @brief Deserialize a simplemc::update_set: every update, keyed by name.
      */
-    friend void simplemc_load(const serializer_type& s, update_set& us) { us.load_entries(s, "update"); }
+    template <serializer S>
+    friend void simplemc_load(const S& s, update_set& us) {
+        us.load_entries(s, "update");
+    }
 
     /**
      * @brief Serialize the user-input config of a simplemc::update_set.
-     *
-     * @details It serializes all registered updates by calling
-     * named_set::save_input_config_entries().
-     *
-     * @param s Serializer handle.
-     * @param us Update set to serialize.
      */
-    friend void simplemc_save_input_config(serializer_type& s, const update_set& us) {
+    template <serializer S>
+    friend void simplemc_save_input_config(S& s, const update_set& us) {
         us.save_input_config_entries(s);
     }
 
     /**
      * @brief Deserialize the user-input config of a simplemc::update_set.
-     *
-     * @details It deserializes all registered updates by calling
-     * named_set::load_input_config_entries().
-     *
-     * @param s Serializer handle.
-     * @param us Update set to deserialize into.
      */
-    friend void simplemc_load_input_config(const serializer_type& s, update_set& us) {
+    template <serializer S>
+    friend void simplemc_load_input_config(const S& s, update_set& us) {
         us.load_input_config_entries(s, "update");
     }
 
     /**
-     * @brief Collect simplemc::update_set objects from different MPI processes.
+     * @brief Collect a simplemc::update_set from different MPI processes.
      *
-     * @details It simply calls named_set::mpi_collect_entries(). Weights, names, the discrete
-     * selection distribution, and detailed-balance ratios are local registration data assumed
-     * identical across ranks and are not touched.
+     * @details It reduces every update's counters (and payload, if supported). Weights, names, the
+     * discrete selection distribution, and detailed-balance ratios are local data assumed identical
+     * across ranks and are not touched.
      *
      * @param comm simplemc::mpi::communicator object.
      * @param us Update set to reduce in place.
@@ -261,6 +224,10 @@ public:
 private:
     std::discrete_distribution<std::size_t> dist_;
 };
+
+/// Deduction guide: deduce the update types from the constructor arguments.
+template <mc_update... Us>
+update_set(update<Us>...) -> update_set<Us...>;
 
 /** @} */
 

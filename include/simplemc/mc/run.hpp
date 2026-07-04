@@ -64,6 +64,7 @@ namespace simplemc {
  *
  * @tparam RNG Random number generator type.
  * @tparam Kernel simplemc::mc_kernel type.
+ * @tparam Ms User measurement types held by the measurement set (deduced).
  * @tparam Cbs simplemc::mc_run_callbacks bundle type.
  * @param rng Random number generator.
  * @param kernel Kernel that implements the desired MC algorithm.
@@ -73,10 +74,10 @@ namespace simplemc {
  * @return The final simplemc::simulation_ctx of the run containing the total MC steps done and the
  * total runtime.
  */
-template <typename RNG, typename Kernel, typename Cbs = run_callbacks<>>
+template <typename RNG, typename Kernel, mc_measurement... Ms, typename Cbs = run_callbacks<>>
     requires mc_kernel<std::remove_cvref_t<Kernel>, RNG> && mc_run_callbacks<std::remove_cvref_t<Cbs>>
 simulation_ctx run(
-    RNG& rng, Kernel&& kernel, measurement_set& meas, const simulation_params& p, Cbs&& cbs = {}) { // NOLINT
+    RNG& rng, Kernel&& kernel, measurement_set<Ms...>& meas, const simulation_params& p, Cbs&& cbs = {}) { // NOLINT
     // validate parameters
     validate_simulation_params(p);
 

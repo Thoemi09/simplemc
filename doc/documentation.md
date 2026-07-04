@@ -144,6 +144,6 @@ Metropolis-Hastings).
 - @ref simplemc-mc-sim, including the free simplemc::run function that performs a simulation.
 - @ref simplemc-mc-entities, containing the user-extensible @ref simplemc-mc-entities-updates and
 @ref simplemc-mc-entities-measurements that propose moves and sample observables, together with the
-value-semantic type-erasure machinery and named collections that manage them.
-- @ref simplemc-mc-utils, defining the library-wide simplemc::mc_serializer and various other helpers 
-to support serialization and MPI communication. 
+value-semantic wrappers and tuple-backed collections that manage them.
+- @ref simplemc-mc-utils, defining the serializer-generic save/load helpers and various other helpers
+to support serialization and MPI communication.

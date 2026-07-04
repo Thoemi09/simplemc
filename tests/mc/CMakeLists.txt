@@ -3,10 +3,10 @@
 # The following targets are defined:
 # ---------------------------------
 # mc-stats-and-params-test: Test simulation_params and simulation_stats.
-# mc-measurement-test: Test basic_measurement wrapper + measurement struct + mc_measurement concept.
-# mc-measurement-set-test: Test measurement_set (add, active cache, measure_all, serialization).
-# mc-update-test: Test basic_update wrapper + update struct + mc_update concept.
-# mc-update-set-test: Test update_set (add, add_pair, weight, select, serialization).
+# mc-measurement-test: Test measurement<M> wrapper + mc_measurement concept.
+# mc-measurement-set-test: Test measurement_set (construction, active cache, measure_all, serialization).
+# mc-update-test: Test update<U> wrapper + mc_update concept.
+# mc-update-set-test: Test update_set (construction, link_pair, weight, select, serialization).
 # mc-kernel-test: Test the mc_kernel concept.
 # mc-metropolis-kernel-test: Test the default Metropolis step kernel.
 # mc-run-test: Test the free run() driver + run_callbacks + custom kernels.

@@ -14,7 +14,8 @@ using namespace simplemc;
 namespace {
 
 // User measurement carrying no MPI-collectible state — used to verify the silent no-op path
-// through basic_measurement::mpi_collect for types without an ADL `simplemc_mpi_collect` overload.
+// through the `measurement` wrapper's MPI hook for types without an ADL `simplemc_mpi_collect`
+// overload.
 struct counter_meas {
     std::shared_ptr<int> count = std::make_shared<int>(0);
     void measure() { ++*count; }
@@ -87,26 +88,23 @@ TEST_F(SimplemcMCMPI, UpdateAllReducesCountersAndDelegatesToWrapper) {
 }
 
 TEST_F(SimplemcMCMPI, UpdateSetReducesEveryEntry) {
-    update_set us;
-    us.add({ null_update {}, "a", 1.0 });
-    us.add({ null_update {}, "b", 2.0 });
-    us[0].nprops = static_cast<std::uint64_t>(rank + 1);
-    us[1].nprops = static_cast<std::uint64_t>(2 * (rank + 1));
+    update_set us { update { null_update {}, "a", 1.0 }, update { null_update {}, "b", 2.0 } };
+    us.at<0>().nprops = static_cast<std::uint64_t>(rank + 1);
+    us.at<1>().nprops = static_cast<std::uint64_t>(2 * (rank + 1));
 
     simplemc_mpi_collect(comm, us);
 
     const std::uint64_t s = static_cast<std::uint64_t>(size * (size + 1) / 2);
-    EXPECT_EQ(us[0].nprops, s);
-    EXPECT_EQ(us[1].nprops, 2u * s);
+    EXPECT_EQ(us.at<0>().nprops, s);
+    EXPECT_EQ(us.at<1>().nprops, 2u * s);
 }
 
 TEST_F(SimplemcMCMPI, MeasurementSetForwardsToWrapperHook) {
     // Two measurements: one with an ADL simplemc_mpi_collect (mean_meas) and one without (counter_meas).
-    measurement_set ms;
     mean_meas mm;
     mm.acc << static_cast<double>(rank + 1);
-    ms.add({ mm, "mean", true });
-    ms.add({ counter_meas {}, "counter", true });
+    measurement_set ms { measurement { mm, "mean", true },
+        measurement { counter_meas {}, "counter", true } };
 
     simplemc_mpi_collect(comm, ms);
 
@@ -125,25 +123,23 @@ TEST_F(SimplemcMCMPI, MeasurementSetForwardsToWrapperHook) {
 }
 
 TEST_F(SimplemcMCMPI, CompositeReducesAllComponents) {
-    update_set updates;
-    updates.add({ null_update {}, "u", 1.0 });
+    update_set updates { update { null_update {}, "u", 1.0 } };
 
-    measurement_set meas;
     mean_meas mm;
     mm.acc << static_cast<double>(rank + 1);
-    meas.add({ mm, "mean", true });
+    measurement_set meas { measurement { mm, "mean", true } };
 
     simulation_stats stats;
 
     // Seed per-update and per-stats counters with rank-distinct values without running the kernel,
     // so the verification is independent of RNG behavior.
-    updates[0].nprops = static_cast<std::uint64_t>(rank + 1);
+    updates.at<0>().nprops = static_cast<std::uint64_t>(rank + 1);
     stats.cumulative_steps = static_cast<std::uint64_t>(rank + 1);
 
     simplemc_mpi_collect(comm, updates, meas, stats);
 
     const std::uint64_t s = static_cast<std::uint64_t>(size * (size + 1) / 2);
-    EXPECT_EQ(updates[0].nprops, s);
+    EXPECT_EQ(updates.at<0>().nprops, s);
     EXPECT_EQ(stats.cumulative_steps, s);
 
     const auto* reduced = meas.get<mean_meas>("mean");

@@ -46,9 +46,8 @@ static_assert(!mc_run_callbacks<no_op_callback>);
 } // namespace
 
 TEST(MCRun, MaxStepsBounds) {
-    update_set us;
-    us.add({ always_accept {}, "u", 1.0 });
-    measurement_set ms;
+    update_set us { update { always_accept {}, "u", 1.0 } };
+    measurement_set<> ms;
     metropolis_kernel kernel { us };
     xoshiro256ss rng { 1 };
 
@@ -62,9 +61,8 @@ TEST(MCRun, MaxStepsBounds) {
 }
 
 TEST(MCRun, MaxTimeBounds) {
-    update_set us;
-    us.add({ always_accept {}, "u", 1.0 });
-    measurement_set ms;
+    update_set us { update { always_accept {}, "u", 1.0 } };
+    measurement_set<> ms;
     metropolis_kernel kernel { us };
     xoshiro256ss rng { 2 };
 
@@ -81,9 +79,8 @@ TEST(MCRun, MaxTimeBounds) {
 }
 
 TEST(MCRun, OnStepFiresEverySingleStep) {
-    update_set us;
-    us.add({ always_accept {}, "u", 1.0 });
-    measurement_set ms;
+    update_set us { update { always_accept {}, "u", 1.0 } };
+    measurement_set<> ms;
     metropolis_kernel kernel { us };
     xoshiro256ss rng { 3 };
 
@@ -97,9 +94,8 @@ TEST(MCRun, OnStepFiresEverySingleStep) {
 }
 
 TEST(MCRun, OnCycleFiresEveryCycle) {
-    update_set us;
-    us.add({ always_accept {}, "u", 1.0 });
-    measurement_set ms;
+    update_set us { update { always_accept {}, "u", 1.0 } };
+    measurement_set<> ms;
     metropolis_kernel kernel { us };
     xoshiro256ss rng { 4 };
 
@@ -114,9 +110,8 @@ TEST(MCRun, OnCycleFiresEveryCycle) {
 }
 
 TEST(MCRun, StopWhenEndsEarly) {
-    update_set us;
-    us.add({ always_accept {}, "u", 1.0 });
-    measurement_set ms;
+    update_set us { update { always_accept {}, "u", 1.0 } };
+    measurement_set<> ms;
     metropolis_kernel kernel { us };
     xoshiro256ss rng { 5 };
 
@@ -136,9 +131,8 @@ TEST(MCRun, StopWhenEndsEarly) {
 }
 
 TEST(MCRun, OnCheckpointFiresWhenStepThresholdCrossed) {
-    update_set us;
-    us.add({ always_accept {}, "u", 1.0 });
-    measurement_set ms;
+    update_set us { update { always_accept {}, "u", 1.0 } };
+    measurement_set<> ms;
     metropolis_kernel kernel { us };
     xoshiro256ss rng { 6 };
 
@@ -164,9 +158,8 @@ TEST(MCRun, OnCheckpointFiresWhenStepThresholdCrossed) {
 }
 
 TEST(MCRun, NoCheckpointWhenNoThreshold) {
-    update_set us;
-    us.add({ always_accept {}, "u", 1.0 });
-    measurement_set ms;
+    update_set us { update { always_accept {}, "u", 1.0 } };
+    measurement_set<> ms;
     metropolis_kernel kernel { us };
     xoshiro256ss rng { 7 };
 
@@ -182,12 +175,10 @@ TEST(MCRun, NoCheckpointWhenNoThreshold) {
 }
 
 TEST(MCRun, SkipMeasurementsLeavesCounterUntouched) {
-    update_set us;
-    us.add({ always_accept {}, "u", 1.0 });
-    measurement_set ms;
+    update_set us { update { always_accept {}, "u", 1.0 } };
     counter_meas src;
     auto count = src.count;
-    ms.add({ src, "m", true });
+    measurement_set ms { measurement { src, "m", true } };
     metropolis_kernel kernel { us };
     xoshiro256ss rng { 8 };
 
@@ -203,12 +194,10 @@ TEST(MCRun, SkipMeasurementsLeavesCounterUntouched) {
 }
 
 TEST(MCRun, MeasureAllFiresWhenActive) {
-    update_set us;
-    us.add({ always_accept {}, "u", 1.0 });
-    measurement_set ms;
+    update_set us { update { always_accept {}, "u", 1.0 } };
     counter_meas src;
     auto count = src.count;
-    ms.add({ src, "m", true });
+    measurement_set ms { measurement { src, "m", true } };
     metropolis_kernel kernel { us };
     xoshiro256ss rng { 9 };
 
@@ -219,9 +208,8 @@ TEST(MCRun, MeasureAllFiresWhenActive) {
 }
 
 TEST(MCRun, AcceptsUserDefinedCallbacksBundle) {
-    update_set us;
-    us.add({ always_accept {}, "u", 1.0 });
-    measurement_set ms;
+    update_set us { update { always_accept {}, "u", 1.0 } };
+    measurement_set<> ms;
     metropolis_kernel kernel { us };
     xoshiro256ss rng { 11 };
 
@@ -243,7 +231,7 @@ TEST(MCRun, AcceptsUserDefinedCallbacksBundle) {
 TEST(MCRun, AcceptsCustomKernelWithoutUpdateSet) {
     // Custom kernel doesn't touch an update_set; just satisfies the mc_kernel concept.
     counting_kernel kernel;
-    measurement_set ms;
+    measurement_set<> ms;
     xoshiro256ss rng { 10 };
 
     simulation_params p { .max_steps = 200, .max_time = 1e6, .steps_per_cycle = 5, .cycles_per_check = 4 };

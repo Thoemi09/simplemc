@@ -1,16 +1,15 @@
 /**
  * @file
- * @brief Type-erased MC update together with some metadata.
+ * @brief MC update payload together with some metadata.
  */
 
 #ifndef SIMPLEMC_MC_UPDATE_HPP
 #define SIMPLEMC_MC_UPDATE_HPP
 
-#include <simplemc/mc/basic_update.hpp>
 #include <simplemc/mc/concepts.hpp>
-#include <simplemc/mc/serializer.hpp>
 #include <simplemc/mpi/all_reduce.hpp>
 #include <simplemc/mpi/communicator.hpp>
+#include <simplemc/serialize/concepts.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
 #include <fmt/format.h>
@@ -18,7 +17,6 @@
 #include <concepts>
 #include <cstdint>
 #include <string>
-#include <type_traits>
 #include <utility>
 
 namespace simplemc {
@@ -29,9 +27,10 @@ namespace simplemc {
  */
 
 /**
- * @brief Type-erased MC update together with some metadata.
+ * @brief MC update payload together with some metadata.
  *
- * @details simplemc::update owns a simplemc::basic_update together with its metadata:
+ * @details simplemc::update owns a user update value of type `U` (satisfying simplemc::mc_update)
+ * together with its metadata:
  *
  * - a unique name that identifies the update,
  * - the name of the inverse update,
@@ -40,18 +39,23 @@ namespace simplemc {
  * - counters tracking the number of proposals, acceptances, and impossible signals over the current
  * run and across multiple runs.
  *
- * All fields are public so kernels and reporting code can read and write them directly.
+ * All fields are public so kernels and reporting code can read and write them directly. The wrapped
+ * type is stored by value; there is no type erasure, so the concrete type is available at compile
+ * time (recover it via get() or the nested alias @ref payload_type).
+ *
+ * @tparam U User update type satisfying simplemc::mc_update.
  */
+template <mc_update U>
 struct update {
     /**
-     * @brief Serializer type used for both checkpoint and input-config serialization.
+     * @brief The concrete wrapped user type.
      */
-    using serializer_type = mc_serializer;
+    using payload_type = U;
 
     /**
      * @brief The wrapped user update.
      */
-    basic_update wrapped;
+    U payload;
 
     /**
      * @brief Identifier used in lookups and printed reports.
@@ -106,40 +110,21 @@ struct update {
     std::uint64_t cumulative_nimps = 0;
 
     /**
-     * @brief Constructor wraps a user-defined update value.
+     * @brief Constructor stores a user-defined update value.
      *
-     * @details It forwards the given update into an internally-constructed simplemc::basic_update
-     * and validates that the name is not empty and that the weight is non-negative. Otherwise, it
-     * throws a simplemc::simplemc_exception.
+     * @details It validates that the name is not empty and that the weight is non-negative, throwing a
+     * simplemc::simplemc_exception otherwise. It sets `inv_name = name` and `ratio = 1.0`; the counters
+     * default to zero.
      *
-     * The forwarded type must satisfy simplemc::mc_update and `std::copy_constructible`.
+     * The first parameter is the class template parameter by value, so the implicitly-generated
+     * deduction guide lets `update{ my_update {}, "name", 1.0 }` deduce `update<my_update>`.
      *
-     * @tparam U User update type.
-     * @param u User update to wrap.
+     * @param payload User update value to store.
      * @param name Identifier.
      * @param weight Unnormalized selection weight.
      */
-    template <typename U>
-        requires(!std::same_as<std::remove_cvref_t<U>, update>) &&
-        (!std::same_as<std::remove_cvref_t<U>, basic_update>) && mc_update<std::remove_cvref_t<U>> &&
-        std::copy_constructible<std::remove_cvref_t<U>>
-    update(U&& u, std::string name, double weight) :
-        update { basic_update { std::forward<U>(u) }, std::move(name), weight } {}
-
-    /**
-     * @brief Construct an update from a pre-built simplemc::basic_update wrapper.
-     *
-     * @details It validates that the name is not empty and that the weight is non-negative.
-     * Otherwise, it throws a simplemc::simplemc_exception.
-     *
-     * It sets `inv_name = name` and `ratio = 1.0`. The counters default to zero.
-     *
-     * @param w Pre-built simplemc::basic_update wrapper.
-     * @param name Identifier.
-     * @param weight Unnormalized selection weight.
-     */
-    update(basic_update w, std::string name, double weight) :
-        wrapped { std::move(w) },
+    update(U payload, std::string name, double weight) :
+        payload { std::move(payload) },
         name { std::move(name) },
         inv_name { this->name },
         weight { weight } {
@@ -149,6 +134,30 @@ struct update {
         if (this->weight < 0.0) {
             throw simplemc_exception(
                 fmt::format("update weight must be >= 0 (got {} on '{}')", this->weight, this->name));
+        }
+    }
+
+    /**
+     * @brief Propose a change to the simulation state.
+     *
+     * @return Acceptance probability of the proposed change.
+     */
+    double attempt() { return payload.attempt(); }
+
+    /**
+     * @brief Commit the proposed change.
+     */
+    void accept() { payload.accept(); }
+
+    /**
+     * @brief Roll back any speculative state set up by attempt().
+     *
+     * @details If the wrapped user type defines a `%reject()` member it is invoked. Otherwise this is a
+     * no-op.
+     */
+    void reject() {
+        if constexpr (requires { payload.reject(); }) {
+            payload.reject();
         }
     }
 
@@ -174,14 +183,16 @@ struct update {
     /**
      * @brief Recover a pointer to the wrapped user update.
      *
-     * @details It simply calls basic_update::get<T>().
-     *
      * @tparam T Expected type of the wrapped user update.
-     * @return Pointer to the wrapped update, or `nullptr` on type mismatch.
+     * @return Pointer to the wrapped update, or `nullptr` if `T` is not the wrapped type.
      */
     template <typename T>
     [[nodiscard]] T* get() noexcept {
-        return wrapped.template get<T>();
+        if constexpr (std::same_as<T, U>) {
+            return &payload;
+        } else {
+            return nullptr;
+        }
     }
 
     /**
@@ -189,89 +200,128 @@ struct update {
      */
     template <typename T>
     [[nodiscard]] const T* get() const noexcept {
-        return wrapped.template get<T>();
-    }
-
-    /**
-     * @brief Serialize a simplemc::update.
-     *
-     * @details It serializes all metadata except `name` and calls basic_update::save_at().
-     *
-     * @param s Serializer handle.
-     * @param u Update to serialize.
-     */
-    friend void simplemc_save(serializer_type& s, const update& u) {
-        s.save_at("inv_name", u.inv_name);
-        s.save_at("weight", u.weight);
-        s.save_at("ratio", u.ratio);
-        s.save_at("cumulative_nprops", u.cumulative_nprops);
-        s.save_at("cumulative_naccs", u.cumulative_naccs);
-        s.save_at("cumulative_nimps", u.cumulative_nimps);
-        u.wrapped.save_at(s, "user");
-    }
-
-    /**
-     * @brief Deserialize a simplemc::update.
-     *
-     * @details It deserializes all metadata except `name` and calls basic_update::load_at().
-     *
-     * @param s Serializer handle.
-     * @param u Update to deserialize into.
-     */
-    friend void simplemc_load(const serializer_type& s, update& u) {
-        s.load_at("inv_name", u.inv_name);
-        s.load_at("weight", u.weight);
-        s.load_at("ratio", u.ratio);
-        s.load_at("cumulative_nprops", u.cumulative_nprops);
-        s.load_at("cumulative_naccs", u.cumulative_naccs);
-        s.load_at("cumulative_nimps", u.cumulative_nimps);
-        u.wrapped.load_at(s, "user");
-    }
-
-    /**
-     * @brief Serialize the user-input config of a simplemc::update.
-     *
-     * @details It serializes `weight` and calls basic_update::save_input_config_at().
-     *
-     * @param s Serializer handle.
-     * @param u Update to serialize.
-     */
-    friend void simplemc_save_input_config(serializer_type& s, const update& u) {
-        s.save_at("weight", u.weight);
-        u.wrapped.save_input_config_at(s, "user");
-    }
-
-    /**
-     * @brief Deserialize the user-input config of a simplemc::update.
-     *
-     * @details It deserializes `weight` and calls basic_update::load_input_config_at().
-     *
-     * @param s Serializer handle.
-     * @param u Update to deserialize into.
-     */
-    friend void simplemc_load_input_config(const serializer_type& s, update& u) {
-        s.try_load_at("weight", u.weight);
-        u.wrapped.load_input_config_at(s, "user");
-    }
-
-    /**
-     * @brief Collect simplemc::update objects from different MPI processes.
-     *
-     * @details It all-reduces the six counter fields and calls basic_update::mpi_collect().
-     *
-     * @param comm simplemc::mpi::communicator object.
-     * @param u Update to reduce in place.
-     */
-    friend void simplemc_mpi_collect(const mpi::communicator& comm, update& u) {
-        mpi::all_reduce_in_place(u.nprops, MPI_SUM, comm);
-        mpi::all_reduce_in_place(u.naccs, MPI_SUM, comm);
-        mpi::all_reduce_in_place(u.nimps, MPI_SUM, comm);
-        mpi::all_reduce_in_place(u.cumulative_nprops, MPI_SUM, comm);
-        mpi::all_reduce_in_place(u.cumulative_naccs, MPI_SUM, comm);
-        mpi::all_reduce_in_place(u.cumulative_nimps, MPI_SUM, comm);
-        u.wrapped.mpi_collect(comm);
+        if constexpr (std::same_as<T, U>) {
+            return &payload;
+        } else {
+            return nullptr;
+        }
     }
 };
+
+/**
+ * @relates simplemc::update
+ * @brief Serialize a simplemc::update.
+ *
+ * @details It serializes all metadata except `name` and the transient current-run counters, then the
+ * wrapped payload under `"user"` if the payload is serializable by `S` (otherwise the payload is
+ * skipped).
+ *
+ * @tparam S Serializer type.
+ * @tparam U User update type.
+ * @param s Serializer handle.
+ * @param u Update to serialize.
+ */
+template <serializer S, mc_update U>
+void simplemc_save(S& s, const update<U>& u) {
+    s.save_at("inv_name", u.inv_name);
+    s.save_at("weight", u.weight);
+    s.save_at("ratio", u.ratio);
+    s.save_at("cumulative_nprops", u.cumulative_nprops);
+    s.save_at("cumulative_naccs", u.cumulative_naccs);
+    s.save_at("cumulative_nimps", u.cumulative_nimps);
+    if constexpr (save_at_all<U, S>) {
+        s.save_at("user", u.payload);
+    }
+}
+
+/**
+ * @relates simplemc::update
+ * @brief Deserialize a simplemc::update.
+ *
+ * @details Symmetric to simplemc_save(S&, const update<U>&).
+ *
+ * @tparam S Serializer type.
+ * @tparam U User update type.
+ * @param s Serializer handle.
+ * @param u Update to deserialize into.
+ */
+template <serializer S, mc_update U>
+void simplemc_load(const S& s, update<U>& u) {
+    s.load_at("inv_name", u.inv_name);
+    s.load_at("weight", u.weight);
+    s.load_at("ratio", u.ratio);
+    s.load_at("cumulative_nprops", u.cumulative_nprops);
+    s.load_at("cumulative_naccs", u.cumulative_naccs);
+    s.load_at("cumulative_nimps", u.cumulative_nimps);
+    if constexpr (load_at_all<U, S>) {
+        s.load_at("user", u.payload);
+    }
+}
+
+/**
+ * @relates simplemc::update
+ * @brief Serialize the user-input config of a simplemc::update.
+ *
+ * @details It serializes `weight` and, if the payload has an input-config serialization, the payload
+ * under `"user"`.
+ *
+ * @tparam S Serializer type.
+ * @tparam U User update type.
+ * @param s Serializer handle.
+ * @param u Update to serialize.
+ */
+template <serializer S, mc_update U>
+void simplemc_save_input_config(S& s, const update<U>& u) {
+    s.save_at("weight", u.weight);
+    if constexpr (has_simplemc_save_input_config<U, S>) {
+        auto sub = s["user"];
+        simplemc_save_input_config(sub, u.payload);
+    }
+}
+
+/**
+ * @relates simplemc::update
+ * @brief Deserialize the user-input config of a simplemc::update.
+ *
+ * @details Symmetric to simplemc_save_input_config(S&, const update<U>&). The `weight` is optional.
+ *
+ * @tparam S Serializer type.
+ * @tparam U User update type.
+ * @param s Serializer handle.
+ * @param u Update to deserialize into.
+ */
+template <serializer S, mc_update U>
+void simplemc_load_input_config(const S& s, update<U>& u) {
+    s.try_load_at("weight", u.weight);
+    if constexpr (has_simplemc_load_input_config<U, S>) {
+        const auto sub = s["user"];
+        simplemc_load_input_config(sub, u.payload);
+    }
+}
+
+/**
+ * @relates simplemc::update
+ * @brief Collect a simplemc::update from different MPI processes.
+ *
+ * @details It all-reduces the six counter fields and, if the payload supports it, reduces the payload
+ * via its own `%simplemc_mpi_collect`.
+ *
+ * @tparam U User update type.
+ * @param comm simplemc::mpi::communicator object.
+ * @param u Update to reduce in place.
+ */
+template <mc_update U>
+void simplemc_mpi_collect(const mpi::communicator& comm, update<U>& u) {
+    mpi::all_reduce_in_place(u.nprops, MPI_SUM, comm);
+    mpi::all_reduce_in_place(u.naccs, MPI_SUM, comm);
+    mpi::all_reduce_in_place(u.nimps, MPI_SUM, comm);
+    mpi::all_reduce_in_place(u.cumulative_nprops, MPI_SUM, comm);
+    mpi::all_reduce_in_place(u.cumulative_naccs, MPI_SUM, comm);
+    mpi::all_reduce_in_place(u.cumulative_nimps, MPI_SUM, comm);
+    if constexpr (has_simplemc_mpi_collect<U>) {
+        u.payload = simplemc_mpi_collect(comm, u.payload);
+    }
+}
 
 /** @} */
 

@@ -46,12 +46,11 @@ int main() {
     my_state state;
     simplemc::xoshiro256ss rng { 0xc0ffee };
 
-    // Assemble the pieces by hand instead of using the simulation aggregate.
-    simplemc::update_set updates;
-    updates.add({ uniform_update { .s = &state, .rng = &rng }, "uniform", 1.0 });
+    // Assemble the pieces by hand instead of using the simulation aggregate. The update and
+    // measurement types are fixed at construction (deduced via CTAD).
+    simplemc::update_set updates { simplemc::update { uniform_update { .s = &state, .rng = &rng }, "uniform", 1.0 } };
 
-    simplemc::measurement_set meas;
-    meas.add({ integral_observer { .s = &state }, "integral" });
+    simplemc::measurement_set meas { simplemc::measurement { integral_observer { .s = &state }, "integral" } };
 
     simplemc::metropolis_kernel kernel { updates };
 

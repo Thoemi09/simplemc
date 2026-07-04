@@ -1478,8 +1478,8 @@
  * continue a previous run, and to read and write input configurations). It runs through two
  * independent channels: the `simplemc_save` / `simplemc_load` *checkpoint* channel captures the
  * persistent run state, while the `simplemc_save_input_config` / `simplemc_load_input_config`
- * *input-config* channel captures the user-facing knobs. Every overload dispatches through the single
- * library-wide simplemc::mc_serializer.
+ * *input-config* channel captures the user-facing knobs. Every overload is generic over the
+ * @ref simplemc::serializer, so the backend (JSON, HDF5, ...) is a plain call-site choice.
  *
  * **MPI support** enables users to gather results from multiple parallel simulations across MPI
  * ranks. It runs through the `simplemc_mpi_collect` ADL customization points.
@@ -1548,43 +1548,40 @@
  * problem-specific. Instead, it defines the interface that user types must satisfy to be recognized
  * as such. The interfaces are povided as simplemc::mc_update and simplemc::mc_measurement concepts.
  *
- * A user simply implements his/her own updates and measurements and registers them with the library.
- * Under the hood, the library uses type erasure to handle the various user types in a uniform way
- * (see simplemc::basic_update and simplemc::basic_measurement). Every type erased object is wrapped
- * together with some metadata (name, counters, statistics, flags, etc.) in a simplemc::update or
- * simplemc::measurement.
+ * A user simply implements his/her own updates and measurements and provides them to the library.
+ * Each user value is stored by value, together with some metadata (name, counters, statistics, flags,
+ * etc.), in a simplemc::update or simplemc::measurement (templated on the concrete user type).
  *
- * All user registered updates and measurements are then bundled together in an simplemc::update_set
- * and an simplemc::measurement_set, respectively. They share some common functionality which is
- * inherited from simplemc::named_set.
+ * All updates and measurements are then bundled together in an simplemc::update_set and an
+ * simplemc::measurement_set, respectively. These hold their entries in a `std::tuple` — so their types
+ * are fixed at construction — and share common traversal, lookup and typed-access functionality
+ * inherited from simplemc::tuple_set.
  */
 
 /**
  * @defgroup simplemc-mc-entities-measurements Measurements
  * @ingroup simplemc-mc-entities
- * @brief Type erased MC measurements and a set of measurements.
+ * @brief MC measurements and a set of measurements.
  *
  * @details A **measurement** is any user type satisfying simplemc::mc_measurement by providing a
- * `measure()` member. The library takes the user type and wraps it in a value-semantic, type-erased
- * simplemc::basic_measurement.
+ * `measure()` member.
  *
- * simplemc::measurement stores the type-erased measurement together with some metadata.
+ * simplemc::measurement stores the user measurement by value together with some metadata.
  *
- * Multiple simplemc::measurement objects are then added to an simplemc::measurement_set.
+ * Multiple simplemc::measurement objects are then held in an simplemc::measurement_set.
  */
 
 /**
  * @defgroup simplemc-mc-entities-updates Updates
  * @ingroup simplemc-mc-entities
- * @brief Type erased MC update and a set of updates.
+ * @brief MC updates and a set of updates.
  *
  * @details An **update** is any user type satisfying simplemc::mc_update by providing an `attempt()`
- * and an `accept()` method. An optional `reject()` method can be provided as well. The library takes
- * the user update and wraps it in a value-semantic, type-erased simplemc::basic_update.
+ * and an `accept()` method. An optional `reject()` method can be provided as well.
  *
- * simplemc::update stores the type-erased update together with some metadata.
+ * simplemc::update stores the user update by value together with some metadata.
  *
- * Multiple simplemc::update objects are then added to an simplemc::update_set.
+ * Multiple simplemc::update objects are then held in an simplemc::update_set.
  */
 
 /**

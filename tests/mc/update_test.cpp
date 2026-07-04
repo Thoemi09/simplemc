@@ -1,10 +1,10 @@
 #include <simplemc/mc.hpp>
+#include <simplemc/serialize/json/json_serializer.hpp>
 
 #include <gtest/gtest.h>
 
 #include <memory>
-#include <type_traits>
-#include <vector>
+#include <utility>
 
 using namespace simplemc;
 
@@ -28,7 +28,7 @@ struct minimal_update {
     void accept() { ++*accepted; }
 };
 
-// A second distinct conforming type for heterogeneous-storage tests.
+// A second distinct conforming type.
 struct doubling_update {
     std::shared_ptr<int> committed = std::make_shared<int>(1);
     double attempt() { return 0.25; }
@@ -55,21 +55,19 @@ static_assert(!mc_update<missing_accept>);
 static_assert(!mc_update<nothing>);
 static_assert(!mc_update<int>);
 
-// The wrapper itself satisfies the concept — it forwards attempt() and accept().
-static_assert(mc_update<basic_update>);
+// The update<U> wrapper forwards attempt()/accept() so it is itself an mc_update.
+static_assert(mc_update<update<toy_update>>);
 
-// A non-conforming type cannot construct an `update`.
-static_assert(!std::is_constructible_v<basic_update, int>);
-static_assert(!std::is_constructible_v<basic_update, nothing>);
-static_assert(!std::is_constructible_v<basic_update, missing_attempt>);
-static_assert(!std::is_constructible_v<basic_update, missing_accept>);
+// =====================================================================================
+// update<U> forwarding, value semantics and typed access.
+// =====================================================================================
 
-TEST(MCBasicUpdate, WrapsAndForwardsAttemptAccept) {
+TEST(MCUpdateForwarding, WrapsAndForwardsAttemptAccept) {
     toy_update src;
     src.prob = 0.75;
     auto accepted = src.accepted;
 
-    basic_update u { src };
+    update u { src, "u", 1.0 };
 
     EXPECT_DOUBLE_EQ(u.attempt(), 0.75);
 
@@ -77,11 +75,11 @@ TEST(MCBasicUpdate, WrapsAndForwardsAttemptAccept) {
     EXPECT_EQ(*accepted, 1);
 }
 
-TEST(MCBasicUpdate, RejectIsNoOpWhenUserTypeOmitsIt) {
+TEST(MCUpdateForwarding, RejectIsNoOpWhenUserTypeOmitsIt) {
     minimal_update src;
     auto accepted = src.accepted;
 
-    basic_update u { src };
+    update u { src, "u", 1.0 };
     EXPECT_DOUBLE_EQ(u.attempt(), 1.0);
 
     // should be a no-op: minimal_update has no reject(); the wrapper's reject() must not crash
@@ -91,80 +89,44 @@ TEST(MCBasicUpdate, RejectIsNoOpWhenUserTypeOmitsIt) {
     EXPECT_EQ(*accepted, 0);
 }
 
-TEST(MCBasicUpdate, RejectForwardsWhenUserTypeProvidesIt) {
+TEST(MCUpdateForwarding, RejectForwardsWhenUserTypeProvidesIt) {
     toy_update src;
     auto rejected = src.rejected;
 
-    basic_update u { src };
+    update u { src, "u", 1.0 };
     u.reject();
 
     EXPECT_EQ(*rejected, 1);
 }
 
-TEST(MCBasicUpdate, CopyProducesIndependentValueSharingCapturedState) {
+TEST(MCUpdateForwarding, CopyProducesIndependentValueSharingCapturedState) {
     toy_update src;
     auto accepted = src.accepted;
 
-    basic_update a { src };
-    basic_update b { a }; // deep copy via clone()
+    update a { src, "u", 1.0 };
+    update b { a }; // copy: b holds its own toy_update, still sharing the shared_ptr<int>
 
     a.accept();
     b.accept();
 
-    // both wrappers' models hold their own copy of toy_update, but each copy retains the same
-    // shared_ptr<int>, so the deep copy is visible while the counter is shared
     EXPECT_EQ(*accepted, 2);
 }
 
-TEST(MCBasicUpdate, MoveTransfersOwnership) {
+TEST(MCUpdateForwarding, MoveTransfersOwnership) {
     toy_update src;
     auto accepted = src.accepted;
 
-    basic_update a { src };
-    basic_update b { std::move(a) };
+    update a { src, "u", 1.0 };
+    update b { std::move(a) };
 
     b.accept();
     EXPECT_EQ(*accepted, 1);
 }
 
-TEST(MCBasicUpdate, CopyAssignReplacesPreviousValue) {
-    toy_update first;
-    doubling_update second;
-    auto first_accepted = first.accepted;
-    auto second_committed = second.committed;
-
-    basic_update u { first };
-    u = basic_update { second }; // assign a wrapper holding a different concrete type
-
-    u.accept();
-
-    EXPECT_EQ(*first_accepted, 0); // never reached
-    EXPECT_EQ(*second_committed, 2); // doubling_update: 1 -> 2
-}
-
-TEST(MCBasicUpdate, HeterogeneousStorageInVector) {
-    toy_update a;
-    doubling_update b;
-    auto a_accepted = a.accepted;
-    auto b_committed = b.committed;
-
-    std::vector<basic_update> v;
-    v.emplace_back(a);
-    v.emplace_back(b);
-
-    for (auto& u : v) {
-        (void)u.attempt();
-        u.accept();
-    }
-
-    EXPECT_EQ(*a_accepted, 1); // toy_update: 0 -> 1
-    EXPECT_EQ(*b_committed, 2); // doubling_update: 1 -> 2
-}
-
-TEST(MCBasicUpdate, GetReturnsWrappedValueWhenTypeMatches) {
+TEST(MCUpdateForwarding, GetReturnsWrappedValueWhenTypeMatches) {
     toy_update src;
     src.prob = 0.42;
-    basic_update u { src };
+    update u { src, "u", 1.0 };
 
     auto* p = u.get<toy_update>();
     ASSERT_NE(p, nullptr);
@@ -175,24 +137,22 @@ TEST(MCBasicUpdate, GetReturnsWrappedValueWhenTypeMatches) {
     EXPECT_DOUBLE_EQ(u.attempt(), 0.99);
 }
 
-TEST(MCBasicUpdate, GetReturnsNullOnTypeMismatch) {
-    basic_update u { toy_update{} };
+TEST(MCUpdateForwarding, GetReturnsNullOnTypeMismatch) {
+    update u { toy_update {}, "u", 1.0 };
     EXPECT_EQ(u.get<doubling_update>(), nullptr);
     EXPECT_EQ(u.get<int>(), nullptr);
 }
 
-TEST(MCBasicUpdate, GetConstOverloadReturnsConstPointer) {
-    const basic_update u { toy_update { .prob = 0.5 } };
+TEST(MCUpdateForwarding, GetConstOverloadReturnsConstPointer) {
+    const update u { toy_update { .prob = 0.5 }, "u", 1.0 };
     const toy_update* p = u.get<toy_update>();
     ASSERT_NE(p, nullptr);
     EXPECT_DOUBLE_EQ(p->prob, 0.5);
 }
 
 // =====================================================================================
-// Tests for the new per-update struct (basic_update wrapper + name + weight + counters).
+// update<U> metadata: construction, validation, counters, serialization.
 // =====================================================================================
-
-#include <simplemc/serialize/json/json_serializer.hpp>
 
 TEST(MCUpdate, ConstructFromUserValue) {
     update u { toy_update {}, "u1", 2.5 };
@@ -204,19 +164,12 @@ TEST(MCUpdate, ConstructFromUserValue) {
     EXPECT_EQ(u.cumulative_naccs, 0u);
 }
 
-TEST(MCUpdate, ConstructFromPreBuiltWrapper) {
-    basic_update bw { toy_update {} };
-    update u { std::move(bw), "u2", 1.5 };
-    EXPECT_EQ(u.name, "u2");
-    EXPECT_DOUBLE_EQ(u.weight, 1.5);
-}
-
 TEST(MCUpdate, ConstructorRejectsNegativeWeight) {
-    EXPECT_THROW(update(toy_update {}, "u", -0.5), simplemc_exception);
+    EXPECT_THROW((update { toy_update {}, "u", -0.5 }), simplemc_exception);
 }
 
 TEST(MCUpdate, ConstructorRejectsEmptyName) {
-    EXPECT_THROW(update(toy_update {}, "", 1.0), simplemc_exception);
+    EXPECT_THROW((update { toy_update {}, "", 1.0 }), simplemc_exception);
 }
 
 TEST(MCUpdate, CountersResetAndAccumulate) {
@@ -239,7 +192,7 @@ TEST(MCUpdate, CountersResetAndAccumulate) {
     EXPECT_EQ(u.cumulative_nprops, 7u); // cumulative untouched by reset
 }
 
-TEST(MCUpdate, GetForwardsToWrapper) {
+TEST(MCUpdate, GetForwardsToPayload) {
     toy_update src;
     src.prob = 0.33;
     update u { src, "u", 1.0 };
@@ -259,12 +212,12 @@ TEST(MCUpdate, SerializationRoundTrip) {
     u.cumulative_naccs = 7;
     u.cumulative_nimps = 1;
 
-    mc_serializer s { json_serializer {} };
+    json_serializer s;
     auto entry = s["entry"];
     simplemc_save(entry, u);
 
     update v { toy_update {}, "tmp", 1.0 };
-    const auto rentry = mc_serializer { s }["entry"];
+    const auto rentry = s["entry"];
     simplemc_load(rentry, v);
 
     EXPECT_EQ(v.inv_name, "u_inv");
@@ -280,7 +233,7 @@ TEST(MCUpdate, InputConfigRoundTripOnlyTouchesWeight) {
     u.ratio = 0.5;
     u.cumulative_nprops = 42;
 
-    mc_serializer s { json_serializer {} };
+    json_serializer s;
     auto entry = s["entry"];
     simplemc_save_input_config(entry, u);
 
@@ -288,10 +241,10 @@ TEST(MCUpdate, InputConfigRoundTripOnlyTouchesWeight) {
     update v { toy_update {}, "u", 1.0 };
     v.ratio = 9.0;
     v.cumulative_nprops = 0;
-    const auto rentry = mc_serializer { s }["entry"];
+    const auto rentry = s["entry"];
     simplemc_load_input_config(rentry, v);
 
     EXPECT_DOUBLE_EQ(v.weight, 4.0);
-    EXPECT_DOUBLE_EQ(v.ratio, 9.0);          // untouched
-    EXPECT_EQ(v.cumulative_nprops, 0u);      // untouched
+    EXPECT_DOUBLE_EQ(v.ratio, 9.0);     // untouched
+    EXPECT_EQ(v.cumulative_nprops, 0u); // untouched
 }

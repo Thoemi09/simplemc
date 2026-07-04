@@ -10,9 +10,9 @@
 #include <simplemc/mc/measurement_set.hpp>
 #include <simplemc/mc/simulation_params.hpp>
 #include <simplemc/mc/simulation_stats.hpp>
-#include <simplemc/mc/serializer.hpp>
 #include <simplemc/mc/update_set.hpp>
 #include <simplemc/mpi/communicator.hpp>
+#include <simplemc/serialize/concepts.hpp>
 
 namespace simplemc {
 
@@ -27,15 +27,18 @@ namespace simplemc {
  * @details Convenience function that serializes the random number generator, update set, measurement
  * set and simulation statistics in a single call.
  *
+ * @tparam S Serializer type.
  * @tparam RNG Random number generator type.
- * @param s Checkpoint serializer handle.
+ * @tparam Us User update types.
+ * @tparam Ms User measurement types.
+ * @param s Serializer handle.
  * @param rng Random number generator to serialize.
  * @param updates Update set to serialize.
  * @param meas Measurement set to serialize.
  * @param stats Simulation statistics to serialize.
  */
-template <typename RNG>
-void simplemc_save(mc_serializer& s, const RNG& rng, const update_set& updates, const measurement_set& meas,
+template <serializer S, typename RNG, mc_update... Us, mc_measurement... Ms>
+void simplemc_save(S& s, const RNG& rng, const update_set<Us...>& updates, const measurement_set<Ms...>& meas,
     const simulation_stats& stats) {
     s.save_at("rng", rng);
     s.save_at("stats", stats);
@@ -46,21 +49,24 @@ void simplemc_save(mc_serializer& s, const RNG& rng, const update_set& updates, 
 /**
  * @brief Deserialize the persistent run state of a MC simulation.
  *
- * @details Convenience function that deserializes the random number generator, update set,
- * measurement set and simulation statistics in a single call.
+ * @details Convenience function that deserializes the random number generator, update set, measurement
+ * set and simulation statistics in a single call.
  *
  * Update and measurement sets are only deserialized if the destination set is non-empty.
  *
+ * @tparam S Serializer type.
  * @tparam RNG Random number generator type.
- * @param s Checkpoint serializer handle.
+ * @tparam Us User update types.
+ * @tparam Ms User measurement types.
+ * @param s Serializer handle.
  * @param rng Random number generator to deserialize into.
  * @param updates Update set to deserialize into.
  * @param meas Measurement set to deserialize into.
  * @param stats Simulation statistics to deserialize into.
  */
-template <typename RNG>
+template <serializer S, typename RNG, mc_update... Us, mc_measurement... Ms>
 void simplemc_load(
-    const mc_serializer& s, RNG& rng, update_set& updates, measurement_set& meas, simulation_stats& stats) {
+    const S& s, RNG& rng, update_set<Us...>& updates, measurement_set<Ms...>& meas, simulation_stats& stats) {
     s.load_at("rng", rng);
     s.load_at("stats", stats);
     if (!updates.empty()) {
@@ -77,13 +83,17 @@ void simplemc_load(
  * @details Convenience function that serializes the user-facing input config of the simulation
  * parameters, update set and measurement set in a single call.
  *
- * @param s Input-config serializer handle.
+ * @tparam S Serializer type.
+ * @tparam Us User update types.
+ * @tparam Ms User measurement types.
+ * @param s Serializer handle.
  * @param p Simulation parameters to serialize.
  * @param updates Update set to serialize.
  * @param meas Measurement set to serialize.
  */
-inline void simplemc_save_input_config(
-    mc_serializer& s, const simulation_params& p, const update_set& updates, const measurement_set& meas) {
+template <serializer S, mc_update... Us, mc_measurement... Ms>
+void simplemc_save_input_config(
+    S& s, const simulation_params& p, const update_set<Us...>& updates, const measurement_set<Ms...>& meas) {
     auto params = s["params"];
     simplemc_save_input_config(params, p);
 
@@ -100,13 +110,17 @@ inline void simplemc_save_input_config(
  * @details Convenience function that deserializes the user-facing input config of the simulation
  * parameters, update set and measurement set in a single call.
  *
- * @param s Input-config serializer handle.
+ * @tparam S Serializer type.
+ * @tparam Us User update types.
+ * @tparam Ms User measurement types.
+ * @param s Serializer handle.
  * @param p Simulation parameters to deserialize into.
  * @param updates Update set to deserialize into.
  * @param meas Measurement set to deserialize into.
  */
-inline void simplemc_load_input_config(
-    const mc_serializer& s, simulation_params& p, update_set& updates, measurement_set& meas) {
+template <serializer S, mc_update... Us, mc_measurement... Ms>
+void simplemc_load_input_config(
+    const S& s, simulation_params& p, update_set<Us...>& updates, measurement_set<Ms...>& meas) {
     if (s.has("params")) {
         const auto params = s["params"];
         simplemc_load_input_config(params, p);
@@ -129,17 +143,22 @@ inline void simplemc_load_input_config(
  * @details Convenience function that collects the update set, measurement set and simulation
  * statistics from different MPI processes in a single call.
  *
+ * @tparam Us User update types.
+ * @tparam Ms User measurement types.
  * @param comm MPI communicator over which to reduce.
  * @param updates Update set to reduce in place.
  * @param meas Measurement set to reduce in place.
  * @param stats Simulation statistics to reduce in place.
  */
-inline void simplemc_mpi_collect(
-    const mpi::communicator& comm, update_set& updates, measurement_set& meas, simulation_stats& stats) {
+template <mc_update... Us, mc_measurement... Ms>
+void simplemc_mpi_collect(
+    const mpi::communicator& comm, update_set<Us...>& updates, measurement_set<Ms...>& meas, simulation_stats& stats) {
     simplemc_mpi_collect(comm, stats);
     simplemc_mpi_collect(comm, updates);
     simplemc_mpi_collect(comm, meas);
 }
+
+/** @} */
 
 } // namespace simplemc
 

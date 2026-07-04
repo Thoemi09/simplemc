@@ -141,8 +141,8 @@ concept has_simplemc_load_input_config = requires(T& t, const S& s) { simplemc_l
  *
  * @details The overload must take `(const mpi::communicator&, const T&)` and return a `T`.
  *
- * This is the shape required by the simplemc::basic_measurement / simplemc::basic_update wrapper hook
- * to forward MPI reduction through to the wrapped user value.
+ * This is the shape the simplemc::update / simplemc::measurement wrapper hook uses to forward MPI
+ * reduction through to the wrapped user value.
  *
  * @tparam T Type to check.
  */
