@@ -30,9 +30,9 @@ namespace simplemc {
 /**
  * @brief Statically-typed, ordered collection of named entries.
  *
- * @details It defines the storage, traversal, lookup and typed-access API common to 
- * simplemc::update_set and simplemc::measurement_set. The entries are stored in a `std::tuple`, so 
- * the set of entry *types* is fixed at construction. Their metadata (name, weight, active flag, ...) 
+ * @details It defines the storage, traversal, lookup and typed-access API common to
+ * simplemc::update_set and simplemc::measurement_set. The entries are stored in a `std::tuple`, so
+ * the set of entry *types* is fixed at construction. Their metadata (name, weight, active flag, ...)
  * stays mutable at runtime.
  *
  * Each entry `e` is required to expose a unique name via `e.name`, the wrapped user value via
@@ -46,19 +46,15 @@ namespace simplemc {
  *
  * Both accept a generic callable (e.g. `[](auto& e){ ... }`) since every entry is a different type.
  *
- * @tparam Entries Entry types (simplemc::update or simplemc::measurement instantiations).
+ * @tparam Entries Entry types.
  */
 template <typename... Entries>
 class tuple_set {
 public:
     /**
-     * @brief Construct the set from its entries.
-     *
-     * @details The entries are moved into the underlying tuple. With no arguments the set is empty.
-     *
-     * @param es Entries to store, in order.
+     * @brief Tuple type holding the stored entries, in order.
      */
-    explicit tuple_set(Entries... es) : entries_ { std::move(es)... } {}
+    using tuple_type = std::tuple<Entries...>;
 
     /**
      * @brief Number of entries in the set.
@@ -72,7 +68,16 @@ public:
      *
      * @return True if the set is empty.
      */
-    [[nodiscard]] static constexpr bool empty() noexcept { return sizeof...(Entries) == 0; }
+    [[nodiscard]] static constexpr bool empty() noexcept { return size() == 0; }
+
+    /**
+     * @brief Construct the set from its entries.
+     *
+     * @details The entries are moved into the underlying tuple. With no arguments the set is empty.
+     *
+     * @param es Entries to store, in order.
+     */
+    explicit tuple_set(Entries... es) : entries_ { std::move(es)... } {}
 
     /**
      * @brief Access the entry at a compile-time index.
@@ -86,7 +91,10 @@ public:
     }
 
     /**
-     * @brief Const overload of at().
+     * @brief Access the entry at a compile-time index.
+     *
+     * @tparam I Entry index.
+     * @return Const reference to the i-th entry (a concrete entry type).
      */
     template <std::size_t I>
     [[nodiscard]] constexpr const auto& at() const noexcept {
@@ -96,8 +104,8 @@ public:
     /**
      * @brief Apply a callable to every entry, in order.
      *
-     * @tparam F Callable type invocable as `f(entry&)` for every entry type.
-     * @param f Callable to apply.
+     * @tparam F Callable type.
+     * @param f Callable to apply (invocable as `f(entry&)` for every entry type).
      */
     template <typename F>
     constexpr void for_each(F&& f) { // NOLINT (callable invoked in place, not forwarded)
@@ -105,7 +113,10 @@ public:
     }
 
     /**
-     * @brief Const overload of for_each().
+     * @brief Apply a callable to every entry, in order.
+     *
+     * @tparam F Callable type.
+     * @param f Callable to apply (invocable as `f(const entry&)` for every entry type).
      */
     template <typename F>
     constexpr void for_each(F&& f) const { // NOLINT (callable invoked in place, not forwarded)
@@ -115,12 +126,12 @@ public:
     /**
      * @brief Apply a callable to the single entry at a runtime index.
      *
-     * @details Only the matching entry is invoked; the dispatch is O(1) through a per-instantiation
+     * @details Only the matching entry is invoked. The dispatch is O(1) through a per-instantiation
      * function-pointer table. Out-of-range indices invoke nothing. The callable must return `void`.
      *
-     * @tparam F Callable type invocable as `f(entry&)` for every entry type.
+     * @tparam F Callable type.
      * @param i Entry index.
-     * @param f Callable to apply to the i-th entry.
+     * @param f Callable to apply to the i-th entry (invocable as `f(entry&)` for every entry type).
      */
     template <typename F>
     constexpr void visit_at(std::size_t i, F&& f) { // NOLINT (callable invoked in place, not forwarded)
@@ -136,7 +147,14 @@ public:
     }
 
     /**
-     * @brief Const overload of visit_at().
+     * @brief Apply a callable to the single entry at a runtime index.
+     *
+     * @details See the non-const visit_at() overload for details.
+     *
+     * @tparam F Callable type.
+     * @param i Entry index.
+     * @param f Callable to apply to the i-th entry (invocable as `f(const entry&)` for every entry
+     * type).
      */
     template <typename F>
     constexpr void visit_at(std::size_t i, F&& f) const { // NOLINT (callable invoked in place, not forwarded)
@@ -175,7 +193,7 @@ public:
      */
     template <typename T>
     [[nodiscard]] T* get() noexcept {
-        static_assert(count_value<T>() == 1, "get<T>() requires exactly one entry with value type T");
+        static_assert(count_value_type<T>() == 1, "get<T>() requires exactly one entry with value type T");
         T* out = nullptr;
         for_each([&](auto& e) {
             if constexpr (std::same_as<typename std::remove_cvref_t<decltype(e)>::value_type, T>) {
@@ -186,11 +204,16 @@ public:
     }
 
     /**
-     * @brief Const overload of get().
+     * @brief Recover a typed pointer to the single entry whose value has type `T`.
+     *
+     * @details A compile-time error is raised unless exactly one entry has value type `T`.
+     *
+     * @tparam T Concrete user type.
+     * @return Const pointer to the wrapped user value.
      */
     template <typename T>
     [[nodiscard]] const T* get() const noexcept {
-        static_assert(count_value<T>() == 1, "get<T>() requires exactly one entry with value type T");
+        static_assert(count_value_type<T>() == 1, "get<T>() requires exactly one entry with value type T");
         const T* out = nullptr;
         for_each([&](const auto& e) {
             if constexpr (std::same_as<typename std::remove_cvref_t<decltype(e)>::value_type, T>) {
@@ -222,7 +245,12 @@ public:
     }
 
     /**
-     * @brief Const overload of get(std::string_view).
+     * @brief Recover a typed pointer to a named entry's wrapped user value.
+     *
+     * @tparam T Concrete user type.
+     * @param name Entry name.
+     * @return Const pointer to the wrapped user value, or `nullptr` if the name is unknown or the
+     * type does not match.
      */
     template <typename T>
     [[nodiscard]] const T* get(std::string_view name) const noexcept {
@@ -238,13 +266,6 @@ public:
     }
 
 protected:
-    /// Number of entries whose value has type `T`.
-    template <typename T>
-    static constexpr std::size_t count_value() noexcept {
-        return ((std::same_as<typename Entries::value_type, T> ? std::size_t { 1 } : std::size_t { 0 }) + ...
-            + std::size_t { 0 });
-    }
-
     /**
      * @brief Serialize all entries, keyed by name, via the ADL hook `%simplemc_save`.
      *
@@ -316,7 +337,8 @@ protected:
     }
 
     /**
-     * @brief Collect all entries from different MPI processes via the ADL hook `%simplemc_mpi_collect`.
+     * @brief Collect all entries from different MPI processes via the ADL hook
+     * `%simplemc_mpi_collect`.
      *
      * @param comm simplemc::mpi::communicator object.
      */
@@ -324,9 +346,17 @@ protected:
         for_each([&](auto& e) { simplemc_mpi_collect(comm, e); });
     }
 
+private:
+    // Number of entries whose value has type `T`.
+    template <typename T>
+    static constexpr std::size_t count_value_type() noexcept {
+        return ((std::same_as<typename Entries::value_type, T> ? std::size_t { 1 } : std::size_t { 0 }) + ... +
+            std::size_t { 0 });
+    }
+
 protected:
     /// Tuple holding the stored entries, in order.
-    std::tuple<Entries...> entries_;
+    tuple_type entries_;
 };
 
 /** @} */

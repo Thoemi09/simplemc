@@ -18,7 +18,7 @@
 # mc-mpi-test: Test MPI reduction helpers on simplemc-mc types (mpirun -n 4).
 
 # create executables
-add_executable(mc-tuple-set-test tuple_set_test.cpp)
+add_executable(mc-tuple-set-test mc_tuple_set_test.cpp)
 target_link_libraries(mc-tuple-set-test PRIVATE simplemc-test)
 
 add_executable(mc-stats-and-params-test stats_and_params_test.cpp)
