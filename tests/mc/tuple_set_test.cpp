@@ -12,14 +12,14 @@ using namespace simplemc;
 namespace {
 
 struct int_entry {
-    using payload_type = int;
-    int payload = 0;
+    using value_type = int;
+    int value = 0;
     std::string name;
 };
 
 struct string_entry {
-    using payload_type = std::string;
-    std::string payload;
+    using value_type = std::string;
+    std::string value;
     std::string name;
 };
 
@@ -37,12 +37,12 @@ TEST(MCTupleSet, SizeAndEmpty) {
 
 TEST(MCTupleSet, AtCompileTimeIndex) {
     tuple_set set { int_entry { 7, "a" }, string_entry { "hi", "b" } };
-    EXPECT_EQ(set.at<0>().payload, 7);
-    EXPECT_EQ(set.at<1>().payload, "hi");
+    EXPECT_EQ(set.at<0>().value, 7);
+    EXPECT_EQ(set.at<1>().value, "hi");
 
-    set.at<0>().payload = 9;
+    set.at<0>().value = 9;
     const auto& cset = set;
-    EXPECT_EQ(cset.at<0>().payload, 9);
+    EXPECT_EQ(cset.at<0>().value, 9);
 }
 
 TEST(MCTupleSet, ForEachVisitsAllInOrder) {
@@ -54,9 +54,9 @@ TEST(MCTupleSet, ForEachVisitsAllInOrder) {
 
 TEST(MCTupleSet, ForEachMutates) {
     tuple_set set { int_entry { 1, "a" }, int_entry { 2, "b" } };
-    set.for_each([](auto& e) { e.payload += 10; });
-    EXPECT_EQ(set.at<0>().payload, 11);
-    EXPECT_EQ(set.at<1>().payload, 12);
+    set.for_each([](auto& e) { e.value += 10; });
+    EXPECT_EQ(set.at<0>().value, 11);
+    EXPECT_EQ(set.at<1>().value, 12);
 }
 
 TEST(MCTupleSet, VisitAtDispatchesToSingleEntry) {
@@ -77,9 +77,9 @@ TEST(MCTupleSet, VisitAtDispatchesToSingleEntry) {
 
 TEST(MCTupleSet, VisitAtMutatesThroughReference) {
     tuple_set set { int_entry { 1, "a" }, int_entry { 2, "b" } };
-    set.visit_at(1, [](auto& e) { e.payload = 42; });
-    EXPECT_EQ(set.at<0>().payload, 1);
-    EXPECT_EQ(set.at<1>().payload, 42);
+    set.visit_at(1, [](auto& e) { e.value = 42; });
+    EXPECT_EQ(set.at<0>().value, 1);
+    EXPECT_EQ(set.at<1>().value, 42);
 }
 
 TEST(MCTupleSet, VisitAtOutOfRangeInvokesNothing) {
@@ -113,7 +113,7 @@ TEST(MCTupleSet, GetByTypeReturnsPayloadPointer) {
     ASSERT_NE(p, nullptr);
     EXPECT_EQ(*p, 5);
     *p = 6;
-    EXPECT_EQ(set.at<0>().payload, 6);
+    EXPECT_EQ(set.at<0>().value, 6);
 
     const auto& cset = set;
     const std::string* q = cset.get<std::string>();

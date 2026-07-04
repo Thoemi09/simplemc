@@ -18,7 +18,7 @@ namespace {
 // checkpoint and input-config channels stay independent because they are driven by different free
 // functions (simplemc_save / simplemc_load vs simplemc_save_input_config / simplemc_load_input_config)
 // writing into different serializer instances. These tests pin down that disjointness and the
-// per-payload opt-in, plus that the same components round-trip through more than one backend chosen at
+// per-user-type opt-in, plus that the same components round-trip through more than one backend chosen at
 // runtime.
 
 // User update opting into BOTH channels via generic-over-serializer ADL hooks.
@@ -155,7 +155,7 @@ TEST(MCMixedBackend, OneSidedOptInSilentlySkipsOtherChannel) {
     json_serializer input_w;
     const simulation_params params;
     EXPECT_NO_THROW(simplemc_save_input_config(input_w, params, updates, meas));
-    // Per-entry "weight" is still written (it's on the update entry, not the user payload), but the
+    // Per-entry "weight" is still written (it's on the update entry, not the user value), but the
     // user slot is empty because state_only_update doesn't opt into input-config.
     const auto& ticker = input_w.root()["updates"]["ticker"];
     EXPECT_TRUE(ticker.contains("weight"));

@@ -29,7 +29,7 @@ struct not_a_meas {
 };
 
 // A move-only mc_measurement. Type erasure used to reject these (it required copyability); the
-// tuple-based design stores the payload by value, so move-only measurements now work.
+// tuple-based design stores the user type by value, so move-only measurements now work.
 struct move_only_meas {
     std::unique_ptr<int> count = std::make_unique<int>(0);
     void measure() { ++*count; }

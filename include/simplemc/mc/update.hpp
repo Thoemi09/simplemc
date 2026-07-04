@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief MC update payload together with some metadata.
+ * @brief MC update value together with some metadata.
  */
 
 #ifndef SIMPLEMC_MC_UPDATE_HPP
@@ -27,7 +27,7 @@ namespace simplemc {
  */
 
 /**
- * @brief MC update payload together with some metadata.
+ * @brief MC update value together with some metadata.
  *
  * @details simplemc::update owns a user update value of type `U` (satisfying simplemc::mc_update)
  * together with its metadata:
@@ -41,7 +41,7 @@ namespace simplemc {
  *
  * All fields are public so kernels and reporting code can read and write them directly. The wrapped
  * type is stored by value; there is no type erasure, so the concrete type is available at compile
- * time (recover it via get() or the nested alias @ref payload_type).
+ * time (recover it via get() or the nested alias @ref value_type).
  *
  * @tparam U User update type satisfying simplemc::mc_update.
  */
@@ -50,12 +50,12 @@ struct update {
     /**
      * @brief The concrete wrapped user type.
      */
-    using payload_type = U;
+    using value_type = U;
 
     /**
      * @brief The wrapped user update.
      */
-    U payload;
+    U value;
 
     /**
      * @brief Identifier used in lookups and printed reports.
@@ -119,12 +119,12 @@ struct update {
      * The first parameter is the class template parameter by value, so the implicitly-generated
      * deduction guide lets `update{ my_update {}, "name", 1.0 }` deduce `update<my_update>`.
      *
-     * @param payload User update value to store.
+     * @param value User update value to store.
      * @param name Identifier.
      * @param weight Unnormalized selection weight.
      */
-    update(U payload, std::string name, double weight) :
-        payload { std::move(payload) },
+    update(U value, std::string name, double weight) :
+        value { std::move(value) },
         name { std::move(name) },
         inv_name { this->name },
         weight { weight } {
@@ -142,12 +142,12 @@ struct update {
      *
      * @return Acceptance probability of the proposed change.
      */
-    double attempt() { return payload.attempt(); }
+    double attempt() { return value.attempt(); }
 
     /**
      * @brief Commit the proposed change.
      */
-    void accept() { payload.accept(); }
+    void accept() { value.accept(); }
 
     /**
      * @brief Roll back any speculative state set up by attempt().
@@ -156,8 +156,8 @@ struct update {
      * no-op.
      */
     void reject() {
-        if constexpr (requires { payload.reject(); }) {
-            payload.reject();
+        if constexpr (requires { value.reject(); }) {
+            value.reject();
         }
     }
 
@@ -189,7 +189,7 @@ struct update {
     template <typename T>
     [[nodiscard]] T* get() noexcept {
         if constexpr (std::same_as<T, U>) {
-            return &payload;
+            return &value;
         } else {
             return nullptr;
         }
@@ -201,7 +201,7 @@ struct update {
     template <typename T>
     [[nodiscard]] const T* get() const noexcept {
         if constexpr (std::same_as<T, U>) {
-            return &payload;
+            return &value;
         } else {
             return nullptr;
         }
@@ -213,11 +213,11 @@ struct update {
  * @brief Serialize a simplemc::update.
  *
  * @details It serializes all metadata except `name` and the transient current-run counters, then the
- * wrapped payload under `"user"` if the payload is serializable by `S` (otherwise the payload is
+ * wrapped value under `"user"` if the value is serializable by `S` (otherwise the value is
  * skipped).
  *
- * @note The payload skip is silent: a missing (or misspelled) ADL `%simplemc_save` overload on the
- * payload type does not produce a diagnostic — the `"user"` key is simply absent from the output.
+ * @note The value skip is silent: a missing (or misspelled) ADL `%simplemc_save` overload on the
+ * user type does not produce a diagnostic — the `"user"` key is simply absent from the output.
  *
  * @tparam S Serializer type.
  * @tparam U User update type.
@@ -233,7 +233,7 @@ void simplemc_save(S& s, const update<U>& u) {
     s.save_at("cumulative_naccs", u.cumulative_naccs);
     s.save_at("cumulative_nimps", u.cumulative_nimps);
     if constexpr (save_at_all<U, S>) {
-        s.save_at("user", u.payload);
+        s.save_at("user", u.value);
     }
 }
 
@@ -243,7 +243,7 @@ void simplemc_save(S& s, const update<U>& u) {
  *
  * @details Symmetric to simplemc_save(S&, const update<U>&).
  *
- * @note If the payload is not deserializable by `S` it is silently skipped and keeps its current
+ * @note If the value is not deserializable by `S` it is silently skipped and keeps its current
  * value; a missing (or misspelled) ADL `%simplemc_load` overload does not produce a diagnostic.
  *
  * @tparam S Serializer type.
@@ -260,7 +260,7 @@ void simplemc_load(const S& s, update<U>& u) {
     s.load_at("cumulative_naccs", u.cumulative_naccs);
     s.load_at("cumulative_nimps", u.cumulative_nimps);
     if constexpr (load_at_all<U, S>) {
-        s.load_at("user", u.payload);
+        s.load_at("user", u.value);
     }
 }
 
@@ -268,7 +268,7 @@ void simplemc_load(const S& s, update<U>& u) {
  * @relates simplemc::update
  * @brief Serialize the user-input config of a simplemc::update.
  *
- * @details It serializes `weight` and, if the payload has an input-config serialization, the payload
+ * @details It serializes `weight` and, if the value has an input-config serialization, the value
  * under `"user"`.
  *
  * @tparam S Serializer type.
@@ -281,7 +281,7 @@ void simplemc_save_input_config(S& s, const update<U>& u) {
     s.save_at("weight", u.weight);
     if constexpr (has_simplemc_save_input_config<U, S>) {
         auto sub = s["user"];
-        simplemc_save_input_config(sub, u.payload);
+        simplemc_save_input_config(sub, u.value);
     }
 }
 
@@ -301,7 +301,7 @@ void simplemc_load_input_config(const S& s, update<U>& u) {
     s.try_load_at("weight", u.weight);
     if constexpr (has_simplemc_load_input_config<U, S>) {
         const auto sub = s["user"];
-        simplemc_load_input_config(sub, u.payload);
+        simplemc_load_input_config(sub, u.value);
     }
 }
 
@@ -309,7 +309,7 @@ void simplemc_load_input_config(const S& s, update<U>& u) {
  * @relates simplemc::update
  * @brief Collect a simplemc::update from different MPI processes.
  *
- * @details It all-reduces the six counter fields and, if the payload supports it, reduces the payload
+ * @details It all-reduces the six counter fields and, if the value supports it, reduces the value
  * via its own `%simplemc_mpi_collect`.
  *
  * @note This reduction is **not idempotent**: both the current-run and the cumulative counters are
@@ -329,7 +329,7 @@ void simplemc_mpi_collect(const mpi::communicator& comm, update<U>& u) {
     mpi::all_reduce_in_place(u.cumulative_naccs, MPI_SUM, comm);
     mpi::all_reduce_in_place(u.cumulative_nimps, MPI_SUM, comm);
     if constexpr (has_simplemc_mpi_collect<U>) {
-        u.payload = simplemc_mpi_collect(comm, u.payload);
+        u.value = simplemc_mpi_collect(comm, u.value);
     }
 }
 

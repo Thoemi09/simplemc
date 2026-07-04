@@ -229,7 +229,7 @@ public:
     /**
      * @brief Collect a simplemc::update_set from different MPI processes.
      *
-     * @details It reduces every update's counters (and payload, if supported). Weights, names, the
+     * @details It reduces every update's counters (and value, if supported). Weights, names, the
      * discrete selection distribution, and detailed-balance ratios are local data assumed identical
      * across ranks and are not touched.
      *

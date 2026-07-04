@@ -211,7 +211,7 @@ TEST(MCCheckpoint, JsonRoundTripWorksWithStatelessUserTypes) {
 
 TEST(MCCheckpoint, JsonRoundTripWorksWithNlohmannToJsonUserTypes) {
     // User type with only nlohmann to_json / from_json (no simplemc_save). Serializing through
-    // json_serializer engages nlohmann's native machinery for the payload.
+    // json_serializer engages nlohmann's native machinery for the value.
     xoshiro256ss rng { 1 };
     simulation_stats stats;
     update_set updates { update { nlohmann_only_update {}, "nlh", 1.0 } };

@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief MC measurement payload together with some metadata.
+ * @brief MC measurement value together with some metadata.
  */
 
 #ifndef SIMPLEMC_MC_MEASUREMENT_HPP
@@ -23,7 +23,7 @@ namespace simplemc {
  */
 
 /**
- * @brief MC measurement payload together with some metadata.
+ * @brief MC measurement value together with some metadata.
  *
  * @details simplemc::measurement owns a user measurement value of type `M` (satisfying
  * simplemc::mc_measurement) together with its metadata:
@@ -32,7 +32,7 @@ namespace simplemc {
  * - a boolean flag indicating whether the measurement is active during an MC simulation.
  *
  * All fields are public so the driver and reporting code can read and write them directly. The wrapped
- * type is stored by value; recover it via get() or the nested alias @ref payload_type.
+ * type is stored by value; recover it via get() or the nested alias @ref value_type.
  *
  * @tparam M User measurement type satisfying simplemc::mc_measurement.
  */
@@ -41,12 +41,12 @@ struct measurement {
     /**
      * @brief The concrete wrapped user type.
      */
-    using payload_type = M;
+    using value_type = M;
 
     /**
      * @brief The wrapped user measurement.
      */
-    M payload;
+    M value;
 
     /**
      * @brief Identifier used in lookups and printed reports.
@@ -66,12 +66,12 @@ struct measurement {
      * implicitly-generated deduction guide lets `measurement{ my_obs {}, "name" }` deduce
      * `measurement<my_obs>`.
      *
-     * @param payload User measurement value to store.
+     * @param value User measurement value to store.
      * @param name Identifier.
      * @param is_active Initial activation state.
      */
-    measurement(M payload, std::string name, bool is_active = true) :
-        payload { std::move(payload) },
+    measurement(M value, std::string name, bool is_active = true) :
+        value { std::move(value) },
         name { std::move(name) },
         is_active { is_active } {
         if (this->name.empty()) {
@@ -82,7 +82,7 @@ struct measurement {
     /**
      * @brief Perform the measurement by calling the `%measure()` member of the wrapped user type.
      */
-    void measure() { payload.measure(); }
+    void measure() { value.measure(); }
 
     /**
      * @brief Recover a pointer to the wrapped user measurement.
@@ -93,7 +93,7 @@ struct measurement {
     template <typename T>
     [[nodiscard]] T* get() noexcept {
         if constexpr (std::same_as<T, M>) {
-            return &payload;
+            return &value;
         } else {
             return nullptr;
         }
@@ -105,7 +105,7 @@ struct measurement {
     template <typename T>
     [[nodiscard]] const T* get() const noexcept {
         if constexpr (std::same_as<T, M>) {
-            return &payload;
+            return &value;
         } else {
             return nullptr;
         }
@@ -116,11 +116,11 @@ struct measurement {
  * @relates simplemc::measurement
  * @brief Serialize a simplemc::measurement.
  *
- * @details It serializes `is_active`, then the wrapped payload under `"user"` if the payload is
- * serializable by `S` (otherwise the payload is skipped).
+ * @details It serializes `is_active`, then the wrapped value under `"user"` if the value is
+ * serializable by `S` (otherwise the value is skipped).
  *
- * @note The payload skip is silent: a missing (or misspelled) ADL `%simplemc_save` overload on the
- * payload type does not produce a diagnostic — the `"user"` key is simply absent from the output.
+ * @note The value skip is silent: a missing (or misspelled) ADL `%simplemc_save` overload on the
+ * user type does not produce a diagnostic — the `"user"` key is simply absent from the output.
  *
  * @tparam S Serializer type.
  * @tparam M User measurement type.
@@ -131,7 +131,7 @@ template <serializer S, mc_measurement M>
 void simplemc_save(S& s, const measurement<M>& m) {
     s.save_at("is_active", m.is_active);
     if constexpr (save_at_all<M, S>) {
-        s.save_at("user", m.payload);
+        s.save_at("user", m.value);
     }
 }
 
@@ -141,7 +141,7 @@ void simplemc_save(S& s, const measurement<M>& m) {
  *
  * @details Symmetric to simplemc_save(S&, const measurement<M>&).
  *
- * @note If the payload is not deserializable by `S` it is silently skipped and keeps its current
+ * @note If the value is not deserializable by `S` it is silently skipped and keeps its current
  * value; a missing (or misspelled) ADL `%simplemc_load` overload does not produce a diagnostic.
  *
  * @tparam S Serializer type.
@@ -153,7 +153,7 @@ template <serializer S, mc_measurement M>
 void simplemc_load(const S& s, measurement<M>& m) {
     s.load_at("is_active", m.is_active);
     if constexpr (load_at_all<M, S>) {
-        s.load_at("user", m.payload);
+        s.load_at("user", m.value);
     }
 }
 
@@ -161,8 +161,8 @@ void simplemc_load(const S& s, measurement<M>& m) {
  * @relates simplemc::measurement
  * @brief Serialize the user-input config of a simplemc::measurement.
  *
- * @details It serializes `is_active` and, if the payload has an input-config serialization, the
- * payload under `"user"`.
+ * @details It serializes `is_active` and, if the value has an input-config serialization, the
+ * value under `"user"`.
  *
  * @tparam S Serializer type.
  * @tparam M User measurement type.
@@ -174,7 +174,7 @@ void simplemc_save_input_config(S& s, const measurement<M>& m) {
     s.save_at("is_active", m.is_active);
     if constexpr (has_simplemc_save_input_config<M, S>) {
         auto sub = s["user"];
-        simplemc_save_input_config(sub, m.payload);
+        simplemc_save_input_config(sub, m.value);
     }
 }
 
@@ -195,7 +195,7 @@ void simplemc_load_input_config(const S& s, measurement<M>& m) {
     s.try_load_at("is_active", m.is_active);
     if constexpr (has_simplemc_load_input_config<M, S>) {
         const auto sub = s["user"];
-        simplemc_load_input_config(sub, m.payload);
+        simplemc_load_input_config(sub, m.value);
     }
 }
 
@@ -203,7 +203,7 @@ void simplemc_load_input_config(const S& s, measurement<M>& m) {
  * @relates simplemc::measurement
  * @brief Collect a simplemc::measurement from different MPI processes.
  *
- * @details If the payload supports it, reduces the payload via its own `%simplemc_mpi_collect`.
+ * @details If the value supports it, reduces the value via its own `%simplemc_mpi_collect`.
  *
  * @tparam M User measurement type.
  * @param comm simplemc::mpi::communicator object.
@@ -212,7 +212,7 @@ void simplemc_load_input_config(const S& s, measurement<M>& m) {
 template <mc_measurement M>
 void simplemc_mpi_collect(const mpi::communicator& comm, measurement<M>& m) {
     if constexpr (has_simplemc_mpi_collect<M>) {
-        m.payload = simplemc_mpi_collect(comm, m.payload);
+        m.value = simplemc_mpi_collect(comm, m.value);
     }
 }
 

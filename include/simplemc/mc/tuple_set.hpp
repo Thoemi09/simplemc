@@ -36,7 +36,7 @@ namespace simplemc {
  * stays mutable at runtime.
  *
  * Each entry `e` is required to expose a unique name via `e.name`, the wrapped user value via
- * `e.payload`, and its type via the nested alias `e::payload_type`. The name is used as the key for
+ * `e.value`, and its type via the nested alias `e::value_type`. The name is used as the key for
  * lookup and serialization.
  *
  * Two traversal primitives carry the whole design:
@@ -166,20 +166,20 @@ public:
     }
 
     /**
-     * @brief Recover a typed pointer to the single entry whose payload has type `T`.
+     * @brief Recover a typed pointer to the single entry whose value has type `T`.
      *
-     * @details A compile-time error is raised unless exactly one entry has payload type `T`.
+     * @details A compile-time error is raised unless exactly one entry has value type `T`.
      *
      * @tparam T Concrete user type.
      * @return Pointer to the wrapped user value.
      */
     template <typename T>
     [[nodiscard]] T* get() noexcept {
-        static_assert(count_payload<T>() == 1, "get<T>() requires exactly one entry with payload type T");
+        static_assert(count_value<T>() == 1, "get<T>() requires exactly one entry with value type T");
         T* out = nullptr;
         for_each([&](auto& e) {
-            if constexpr (std::same_as<typename std::remove_cvref_t<decltype(e)>::payload_type, T>) {
-                out = &e.payload;
+            if constexpr (std::same_as<typename std::remove_cvref_t<decltype(e)>::value_type, T>) {
+                out = &e.value;
             }
         });
         return out;
@@ -190,11 +190,11 @@ public:
      */
     template <typename T>
     [[nodiscard]] const T* get() const noexcept {
-        static_assert(count_payload<T>() == 1, "get<T>() requires exactly one entry with payload type T");
+        static_assert(count_value<T>() == 1, "get<T>() requires exactly one entry with value type T");
         const T* out = nullptr;
         for_each([&](const auto& e) {
-            if constexpr (std::same_as<typename std::remove_cvref_t<decltype(e)>::payload_type, T>) {
-                out = &e.payload;
+            if constexpr (std::same_as<typename std::remove_cvref_t<decltype(e)>::value_type, T>) {
+                out = &e.value;
             }
         });
         return out;
@@ -213,8 +213,8 @@ public:
         T* out = nullptr;
         if (const auto idx = find(name)) {
             visit_at(*idx, [&](auto& e) {
-                if constexpr (std::same_as<typename std::remove_cvref_t<decltype(e)>::payload_type, T>) {
-                    out = &e.payload;
+                if constexpr (std::same_as<typename std::remove_cvref_t<decltype(e)>::value_type, T>) {
+                    out = &e.value;
                 }
             });
         }
@@ -229,8 +229,8 @@ public:
         const T* out = nullptr;
         if (const auto idx = find(name)) {
             visit_at(*idx, [&](const auto& e) {
-                if constexpr (std::same_as<typename std::remove_cvref_t<decltype(e)>::payload_type, T>) {
-                    out = &e.payload;
+                if constexpr (std::same_as<typename std::remove_cvref_t<decltype(e)>::value_type, T>) {
+                    out = &e.value;
                 }
             });
         }
@@ -238,10 +238,10 @@ public:
     }
 
 protected:
-    /// Number of entries whose payload has type `T`.
+    /// Number of entries whose value has type `T`.
     template <typename T>
-    static constexpr std::size_t count_payload() noexcept {
-        return ((std::same_as<typename Entries::payload_type, T> ? std::size_t { 1 } : std::size_t { 0 }) + ...
+    static constexpr std::size_t count_value() noexcept {
+        return ((std::same_as<typename Entries::value_type, T> ? std::size_t { 1 } : std::size_t { 0 }) + ...
             + std::size_t { 0 });
     }
 
