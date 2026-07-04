@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief MC measurement value together with some metadata.
+ * @brief MC measurement wrapper.
  */
 
 #ifndef SIMPLEMC_MC_MEASUREMENT_HPP
@@ -11,7 +11,6 @@
 #include <simplemc/serialize/concepts.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
-#include <concepts>
 #include <string>
 #include <utility>
 
@@ -23,16 +22,16 @@ namespace simplemc {
  */
 
 /**
- * @brief MC measurement value together with some metadata.
+ * @brief MC measurement wrapper for a user-defined measurement type.
  *
- * @details simplemc::measurement owns a user measurement value of type `M` (satisfying
+ * @details It owns a user-defined measurement @ref value of type @ref value_type (satisfying
  * simplemc::mc_measurement) together with its metadata:
  *
- * - a unique name that identifies the measurement, and
- * - a boolean flag indicating whether the measurement is active during an MC simulation.
+ * - a unique @ref name that identifies the measurement, and
+ * - a boolean flag indicating whether the measurement @ref is_active during an MC simulation.
  *
- * All fields are public so the driver and reporting code can read and write them directly. The wrapped
- * type is stored by value; recover it via get() or the nested alias @ref value_type.
+ * All fields are public so the driver and reporting code can read and write them directly. The
+ * wrapped type is stored by value and accessed via the public @ref value member.
  *
  * @tparam M User measurement type satisfying simplemc::mc_measurement.
  */
@@ -54,7 +53,7 @@ struct measurement {
     std::string name;
 
     /**
-     * @brief Whether the driver invokes `measure()` during each cycle.
+     * @brief Whether the driver invokes measure() during each cycle (see simplemc::run).
      */
     bool is_active;
 
@@ -62,9 +61,7 @@ struct measurement {
      * @brief Constructor stores a user-defined measurement value.
      *
      * @details It validates that the name is not empty, throwing a simplemc::simplemc_exception
-     * otherwise. The first parameter is the class template parameter by value, so the
-     * implicitly-generated deduction guide lets `measurement{ my_obs {}, "name" }` deduce
-     * `measurement<my_obs>`.
+     * otherwise.
      *
      * @param value User measurement value to store.
      * @param name Identifier.
@@ -83,33 +80,6 @@ struct measurement {
      * @brief Perform the measurement by calling the `%measure()` member of the wrapped user type.
      */
     void measure() { value.measure(); }
-
-    /**
-     * @brief Recover a pointer to the wrapped user measurement.
-     *
-     * @tparam T Expected type of the wrapped user measurement.
-     * @return Pointer to the wrapped measurement, or `nullptr` if `T` is not the wrapped type.
-     */
-    template <typename T>
-    [[nodiscard]] T* get() noexcept {
-        if constexpr (std::same_as<T, M>) {
-            return &value;
-        } else {
-            return nullptr;
-        }
-    }
-
-    /**
-     * @brief Const overload of get().
-     */
-    template <typename T>
-    [[nodiscard]] const T* get() const noexcept {
-        if constexpr (std::same_as<T, M>) {
-            return &value;
-        } else {
-            return nullptr;
-        }
-    }
 };
 
 /**

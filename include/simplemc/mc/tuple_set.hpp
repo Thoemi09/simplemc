@@ -80,28 +80,6 @@ public:
     explicit tuple_set(Entries... es) : entries_ { std::move(es)... } {}
 
     /**
-     * @brief Access the entry at a compile-time index.
-     *
-     * @tparam I Entry index.
-     * @return Reference to the i-th entry (a concrete entry type).
-     */
-    template <std::size_t I>
-    [[nodiscard]] constexpr auto& get() noexcept {
-        return std::get<I>(entries_);
-    }
-
-    /**
-     * @brief Access the entry at a compile-time index.
-     *
-     * @tparam I Entry index.
-     * @return Const reference to the i-th entry (a concrete entry type).
-     */
-    template <std::size_t I>
-    [[nodiscard]] constexpr const auto& get() const noexcept {
-        return std::get<I>(entries_);
-    }
-
-    /**
      * @brief Apply a callable to every entry, in order.
      *
      * @tparam F Callable type.
@@ -184,43 +162,25 @@ public:
     }
 
     /**
-     * @brief Recover a typed pointer to the single entry whose value has type `T`.
+     * @brief Access the entry at a compile-time index.
      *
-     * @details A compile-time error is raised unless exactly one entry has value type `T`.
-     *
-     * @tparam T Concrete user type.
-     * @return Pointer to the wrapped user value.
+     * @tparam I Entry index.
+     * @return Reference to the i-th entry (a concrete entry type).
      */
-    template <typename T>
-    [[nodiscard]] T* get() noexcept {
-        static_assert(count_value_type<T>() == 1, "get<T>() requires exactly one entry with value type T");
-        T* out = nullptr;
-        for_each([&](auto& e) {
-            if constexpr (std::same_as<typename std::remove_cvref_t<decltype(e)>::value_type, T>) {
-                out = &e.value;
-            }
-        });
-        return out;
+    template <std::size_t I>
+    [[nodiscard]] constexpr auto& get() noexcept {
+        return std::get<I>(entries_);
     }
 
     /**
-     * @brief Recover a typed pointer to the single entry whose value has type `T`.
+     * @brief Access the entry at a compile-time index.
      *
-     * @details A compile-time error is raised unless exactly one entry has value type `T`.
-     *
-     * @tparam T Concrete user type.
-     * @return Const pointer to the wrapped user value.
+     * @tparam I Entry index.
+     * @return Const reference to the i-th entry (a concrete entry type).
      */
-    template <typename T>
-    [[nodiscard]] const T* get() const noexcept {
-        static_assert(count_value_type<T>() == 1, "get<T>() requires exactly one entry with value type T");
-        const T* out = nullptr;
-        for_each([&](const auto& e) {
-            if constexpr (std::same_as<typename std::remove_cvref_t<decltype(e)>::value_type, T>) {
-                out = &e.value;
-            }
-        });
-        return out;
+    template <std::size_t I>
+    [[nodiscard]] constexpr const auto& get() const noexcept {
+        return std::get<I>(entries_);
     }
 
     /**
@@ -344,14 +304,6 @@ protected:
      */
     void mpi_collect_entries(const mpi::communicator& comm) {
         for_each([&](auto& e) { simplemc_mpi_collect(comm, e); });
-    }
-
-private:
-    // Number of entries whose value has type `T`.
-    template <typename T>
-    static constexpr std::size_t count_value_type() noexcept {
-        return ((std::same_as<typename Entries::value_type, T> ? std::size_t { 1 } : std::size_t { 0 }) + ... +
-            std::size_t { 0 });
     }
 
 protected:

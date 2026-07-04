@@ -14,7 +14,6 @@
 
 #include <fmt/format.h>
 
-#include <concepts>
 #include <cstdint>
 #include <string>
 #include <utility>
@@ -41,7 +40,7 @@ namespace simplemc {
  *
  * All fields are public so kernels and reporting code can read and write them directly. The wrapped
  * type is stored by value; there is no type erasure, so the concrete type is available at compile
- * time (recover it via get() or the nested alias @ref value_type).
+ * time (via the public @ref value member and the nested alias @ref value_type).
  *
  * @tparam U User update type satisfying simplemc::mc_update.
  */
@@ -178,33 +177,6 @@ struct update {
         cumulative_naccs += naccs;
         cumulative_nimps += nimps;
         reset_run_counters();
-    }
-
-    /**
-     * @brief Recover a pointer to the wrapped user update.
-     *
-     * @tparam T Expected type of the wrapped user update.
-     * @return Pointer to the wrapped update, or `nullptr` if `T` is not the wrapped type.
-     */
-    template <typename T>
-    [[nodiscard]] T* get() noexcept {
-        if constexpr (std::same_as<T, U>) {
-            return &value;
-        } else {
-            return nullptr;
-        }
-    }
-
-    /**
-     * @brief Const overload of get().
-     */
-    template <typename T>
-    [[nodiscard]] const T* get() const noexcept {
-        if constexpr (std::same_as<T, U>) {
-            return &value;
-        } else {
-            return nullptr;
-        }
     }
 };
 

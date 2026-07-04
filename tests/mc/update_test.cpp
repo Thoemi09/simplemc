@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include <memory>
+#include <type_traits>
 #include <utility>
 
 using namespace simplemc;
@@ -123,31 +124,17 @@ TEST(MCUpdateForwarding, MoveTransfersOwnership) {
     EXPECT_EQ(*accepted, 1);
 }
 
-TEST(MCUpdateForwarding, GetReturnsWrappedValueWhenTypeMatches) {
+TEST(MCUpdateForwarding, ValueMemberExposesPayload) {
     toy_update src;
     src.prob = 0.42;
     update u { src, "u", 1.0 };
 
-    auto* p = u.get<toy_update>();
-    ASSERT_NE(p, nullptr);
-    EXPECT_DOUBLE_EQ(p->prob, 0.42);
+    static_assert(std::is_same_v<decltype(u)::value_type, toy_update>);
+    EXPECT_DOUBLE_EQ(u.value.prob, 0.42);
 
-    // mutate through the recovered pointer and observe via the wrapper
-    p->prob = 0.99;
+    // mutate through the public member and observe via the wrapper
+    u.value.prob = 0.99;
     EXPECT_DOUBLE_EQ(u.attempt(), 0.99);
-}
-
-TEST(MCUpdateForwarding, GetReturnsNullOnTypeMismatch) {
-    update u { toy_update {}, "u", 1.0 };
-    EXPECT_EQ(u.get<doubling_update>(), nullptr);
-    EXPECT_EQ(u.get<int>(), nullptr);
-}
-
-TEST(MCUpdateForwarding, GetConstOverloadReturnsConstPointer) {
-    const update u { toy_update { .prob = 0.5 }, "u", 1.0 };
-    const toy_update* p = u.get<toy_update>();
-    ASSERT_NE(p, nullptr);
-    EXPECT_DOUBLE_EQ(p->prob, 0.5);
 }
 
 // =====================================================================================
@@ -190,18 +177,6 @@ TEST(MCUpdate, CountersResetAndAccumulate) {
     u.reset_run_counters();
     EXPECT_EQ(u.nprops, 0u);
     EXPECT_EQ(u.cumulative_nprops, 7u); // cumulative untouched by reset
-}
-
-TEST(MCUpdate, GetForwardsToPayload) {
-    toy_update src;
-    src.prob = 0.33;
-    update u { src, "u", 1.0 };
-
-    auto* p = u.get<toy_update>();
-    ASSERT_NE(p, nullptr);
-    EXPECT_DOUBLE_EQ(p->prob, 0.33);
-
-    EXPECT_EQ(u.get<doubling_update>(), nullptr);
 }
 
 TEST(MCUpdate, SerializationRoundTrip) {

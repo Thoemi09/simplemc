@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include <memory>
+#include <type_traits>
 #include <utility>
 
 using namespace simplemc;
@@ -88,34 +89,20 @@ TEST(MCMeasurementForwarding, MoveTransfersOwnership) {
 TEST(MCMeasurementForwarding, MoveOnlyPayloadIsSupported) {
     measurement m { move_only_meas {}, "m" };
     m.measure();
-    EXPECT_EQ(*m.get<move_only_meas>()->count, 1);
+    EXPECT_EQ(*m.value.count, 1);
 }
 
-TEST(MCMeasurementForwarding, GetReturnsWrappedValueWhenTypeMatches) {
+TEST(MCMeasurementForwarding, ValueMemberExposesPayload) {
     counter_meas src;
     auto count = src.count;
     measurement m { src, "m" };
 
-    auto* p = m.get<counter_meas>();
-    ASSERT_NE(p, nullptr);
-    EXPECT_EQ(p->count.get(), count.get());
+    static_assert(std::is_same_v<decltype(m)::value_type, counter_meas>);
+    EXPECT_EQ(m.value.count.get(), count.get());
 
-    // measuring through the wrapper bumps the same counter the recovered pointer sees
+    // measuring through the wrapper bumps the same counter the public member sees
     m.measure();
-    EXPECT_EQ(*p->count, 1);
-}
-
-TEST(MCMeasurementForwarding, GetReturnsNullOnTypeMismatch) {
-    measurement m { counter_meas {}, "m" };
-    EXPECT_EQ(m.get<doubling_meas>(), nullptr);
-    EXPECT_EQ(m.get<int>(), nullptr);
-}
-
-TEST(MCMeasurementForwarding, GetConstOverloadReturnsConstPointer) {
-    const measurement m { counter_meas {}, "m" };
-    const counter_meas* p = m.get<counter_meas>();
-    ASSERT_NE(p, nullptr);
-    EXPECT_EQ(*p->count, 0);
+    EXPECT_EQ(*m.value.count, 1);
 }
 
 // =====================================================================================
@@ -143,18 +130,6 @@ TEST(MCMeasurement, MeasureForwardsToPayload) {
     measurement m { src, "m", true };
     m.measure();
     EXPECT_EQ(*count, 1);
-}
-
-TEST(MCMeasurement, GetForwardsToPayload) {
-    counter_meas src;
-    auto count = src.count;
-    measurement m { src, "m", true };
-
-    auto* p = m.get<counter_meas>();
-    ASSERT_NE(p, nullptr);
-    EXPECT_EQ(p->count.get(), count.get());
-
-    EXPECT_EQ(m.get<doubling_meas>(), nullptr);
 }
 
 TEST(MCMeasurement, SerializationRoundTrip) {

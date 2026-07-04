@@ -113,22 +113,6 @@ TEST(MCTupleSet, FindReturnsFirstMatchOrNullopt) {
     EXPECT_FALSE(set.find("missing").has_value());
 }
 
-// Test accessing entries by type via get().
-TEST(MCTupleSet, GetByTypeReturnsPayloadPointer) {
-    tuple_set set { int_entry { .value = 5, .name = "a" }, string_entry { .value = "x", .name = "b" } };
-
-    int* p = set.get<int>();
-    ASSERT_NE(p, nullptr);
-    EXPECT_EQ(*p, 5);
-    *p = 6;
-    EXPECT_EQ(set.get<0>().value, 6);
-
-    const auto& cset = set;
-    const auto* q = cset.get<std::string>();
-    ASSERT_NE(q, nullptr);
-    EXPECT_EQ(*q, "x");
-}
-
 TEST(MCTupleSet, GetByNameChecksNameAndType) {
     tuple_set set { int_entry { .value = 5, .name = "a" }, string_entry { .value = "x", .name = "b" } };
 
