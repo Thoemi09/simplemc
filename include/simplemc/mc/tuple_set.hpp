@@ -11,6 +11,7 @@
 
 #include <fmt/format.h>
 
+#include <array>
 #include <concepts>
 #include <cstddef>
 #include <optional>
@@ -29,10 +30,10 @@ namespace simplemc {
 /**
  * @brief Statically-typed, ordered collection of named entries.
  *
- * @details It defines the registration-free storage, traversal, lookup and typed-access API common to
- * simplemc::update_set and simplemc::measurement_set. The entries are stored in a `std::tuple`, so the
- * set of entry *types* is fixed at construction; their metadata (name, weight, active flag, ...) stays
- * mutable at runtime.
+ * @details It defines the storage, traversal, lookup and typed-access API common to 
+ * simplemc::update_set and simplemc::measurement_set. The entries are stored in a `std::tuple`, so 
+ * the set of entry *types* is fixed at construction. Their metadata (name, weight, active flag, ...) 
+ * stays mutable at runtime.
  *
  * Each entry `e` is required to expose a unique name via `e.name`, the wrapped user value via
  * `e.payload`, and its type via the nested alias `e::payload_type`. The name is used as the key for
@@ -114,8 +115,8 @@ public:
     /**
      * @brief Apply a callable to the single entry at a runtime index.
      *
-     * @details Only the matching entry is invoked; the index is compared against every position in a
-     * fold expression. Out-of-range indices invoke nothing. The callable must return `void`.
+     * @details Only the matching entry is invoked; the dispatch is O(1) through a per-instantiation
+     * function-pointer table. Out-of-range indices invoke nothing. The callable must return `void`.
      *
      * @tparam F Callable type invocable as `f(entry&)` for every entry type.
      * @param i Entry index.
@@ -123,9 +124,15 @@ public:
      */
     template <typename F>
     constexpr void visit_at(std::size_t i, F&& f) { // NOLINT (callable invoked in place, not forwarded)
-        [&]<std::size_t... I>(std::index_sequence<I...>) {
-            ((I == i ? void(f(std::get<I>(entries_))) : void()), ...);
+        using fn_t = void (*)(std::tuple<Entries...>&, F&);
+        static constexpr auto table = []<std::size_t... I>(std::index_sequence<I...>) {
+            return std::array<fn_t, sizeof...(Entries)> { [](std::tuple<Entries...>& es, F& g) {
+                g(std::get<I>(es));
+            }... };
         }(std::index_sequence_for<Entries...> {});
+        if (i < size()) {
+            table[i](entries_, f);
+        }
     }
 
     /**
@@ -133,9 +140,15 @@ public:
      */
     template <typename F>
     constexpr void visit_at(std::size_t i, F&& f) const { // NOLINT (callable invoked in place, not forwarded)
-        [&]<std::size_t... I>(std::index_sequence<I...>) {
-            ((I == i ? void(f(std::get<I>(entries_))) : void()), ...);
+        using fn_t = void (*)(const std::tuple<Entries...>&, F&);
+        static constexpr auto table = []<std::size_t... I>(std::index_sequence<I...>) {
+            return std::array<fn_t, sizeof...(Entries)> { [](const std::tuple<Entries...>& es, F& g) {
+                g(std::get<I>(es));
+            }... };
         }(std::index_sequence_for<Entries...> {});
+        if (i < size()) {
+            table[i](entries_, f);
+        }
     }
 
     /**
@@ -311,7 +324,8 @@ protected:
         for_each([&](auto& e) { simplemc_mpi_collect(comm, e); });
     }
 
-    /// The stored entries, in order.
+protected:
+    /// Tuple holding the stored entries, in order.
     std::tuple<Entries...> entries_;
 };
 

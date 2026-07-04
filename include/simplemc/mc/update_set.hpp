@@ -116,12 +116,20 @@ public:
      * @details It first recomputes every update::ratio (\f$ 1 \f$ for self-inverse updates, else
      * \f$ w_{\text{inv}} / w \f$) and then initializes the discrete distribution.
      *
-     * It throws a simplemc::simplemc_exception if an update::inv_name is not registered, if exactly one
-     * weight of an inverse pair is zero, or if all weights are zero.
+     * Because update::weight and update::inv_name are public fields, the invariants enforced by the
+     * constructor, set_weight() and link_pair() can be bypassed by direct writes; they are re-validated
+     * here (the choke point called before every run, e.g. by simplemc::metropolis_kernel::prepare()).
+     *
+     * It throws a simplemc::simplemc_exception if a weight is negative, if an update::inv_name is not
+     * registered, if the inverse pairing is asymmetric, if exactly one weight of an inverse pair is
+     * zero, or if all weights are zero.
      */
     void rebuild_distribution() {
-        // recompute detailed-balance ratios and validate inverse pairs
+        // recompute detailed-balance ratios and validate weights and inverse pairs
         this->for_each([&](auto& u) {
+            if (u.weight < 0.0) {
+                throw simplemc_exception(fmt::format("update weight must be >= 0 (got {} on '{}')", u.weight, u.name));
+            }
             if (u.inv_name == u.name) {
                 u.ratio = 1.0;
                 return;
@@ -132,7 +140,16 @@ public:
                     fmt::format("inverse update '{}' of '{}' is not registered", u.inv_name, u.name));
             }
             double w_inv = 0.0;
-            this->visit_at(*idx, [&](const auto& inv) { w_inv = inv.weight; });
+            std::string_view inv_inv;
+            this->visit_at(*idx, [&](const auto& inv) {
+                w_inv = inv.weight;
+                inv_inv = inv.inv_name;
+            });
+            if (inv_inv != u.name) {
+                throw simplemc_exception(fmt::format("inverse pairing is asymmetric: '{}' names '{}' as its "
+                                                     "inverse, but '{}' names '{}'",
+                    u.name, u.inv_name, u.inv_name, inv_inv));
+            }
             if ((u.weight == 0.0) != (w_inv == 0.0)) {
                 throw simplemc_exception(fmt::format("inverse pair must have both weights zero or both non-zero "
                                                      "(got {} on '{}' and {} on '{}')",

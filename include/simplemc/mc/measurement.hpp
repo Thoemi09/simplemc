@@ -119,6 +119,9 @@ struct measurement {
  * @details It serializes `is_active`, then the wrapped payload under `"user"` if the payload is
  * serializable by `S` (otherwise the payload is skipped).
  *
+ * @note The payload skip is silent: a missing (or misspelled) ADL `%simplemc_save` overload on the
+ * payload type does not produce a diagnostic — the `"user"` key is simply absent from the output.
+ *
  * @tparam S Serializer type.
  * @tparam M User measurement type.
  * @param s Serializer handle.
@@ -137,6 +140,9 @@ void simplemc_save(S& s, const measurement<M>& m) {
  * @brief Deserialize a simplemc::measurement.
  *
  * @details Symmetric to simplemc_save(S&, const measurement<M>&).
+ *
+ * @note If the payload is not deserializable by `S` it is silently skipped and keeps its current
+ * value; a missing (or misspelled) ADL `%simplemc_load` overload does not produce a diagnostic.
  *
  * @tparam S Serializer type.
  * @tparam M User measurement type.

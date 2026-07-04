@@ -7,6 +7,7 @@
 #include <nlohmann/json.hpp>
 
 #include <filesystem>
+#include <fstream>
 #include <memory>
 
 using namespace simplemc;
@@ -268,3 +269,45 @@ TEST(MCCheckpoint, FileRoundTripViaSaveCheckpoint) {
 
     std::filesystem::remove(path);
 }
+
+TEST(MCCheckpoint, LoadThrowsOnCorruptFile) {
+    xoshiro256ss rng { 1 };
+    simulation_stats stats;
+    update_set updates { update { always_accept {}, "a", 1.0 } };
+    measurement_set<> meas;
+
+    // Truncated JSON document.
+    const auto truncated = std::filesystem::temp_directory_path() / "mc_checkpoint_truncated.json";
+    {
+        std::ofstream ofs { truncated };
+        ofs << R"({ "rng": [1, 2)";
+    }
+    EXPECT_ANY_THROW(load_checkpoint(truncated, rng, updates, meas, stats));
+    std::filesystem::remove(truncated);
+
+    // Well-formed JSON with none of the expected keys.
+    const auto empty_doc = std::filesystem::temp_directory_path() / "mc_checkpoint_empty_doc.json";
+    {
+        std::ofstream ofs { empty_doc };
+        ofs << "{}";
+    }
+    EXPECT_ANY_THROW(load_checkpoint(empty_doc, rng, updates, meas, stats));
+    std::filesystem::remove(empty_doc);
+}
+
+#ifndef SIMPLEMC_USE_HDF5
+TEST(MCCheckpoint, ExplicitHdf5BackendThrowsWithoutHdf5) {
+    // Extension deduction already throws on .h5 paths; explicit options must not slip through as a
+    // silent no-op either.
+    xoshiro256ss rng { 1 };
+    simulation_stats stats;
+    update_set updates { update { always_accept {}, "a", 1.0 } };
+    measurement_set<> meas;
+
+    const auto path = std::filesystem::temp_directory_path() / "mc_checkpoint_explicit_hdf5.json";
+    const checkpoint_options opts { .backend = checkpoint_backend::hdf5 };
+    EXPECT_THROW(save_checkpoint(path, rng, updates, meas, stats, opts), simplemc_exception);
+    EXPECT_THROW(load_checkpoint(path, rng, updates, meas, stats, opts), simplemc_exception);
+    EXPECT_FALSE(std::filesystem::exists(path));
+}
+#endif // SIMPLEMC_USE_HDF5

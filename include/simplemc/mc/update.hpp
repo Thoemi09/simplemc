@@ -216,6 +216,9 @@ struct update {
  * wrapped payload under `"user"` if the payload is serializable by `S` (otherwise the payload is
  * skipped).
  *
+ * @note The payload skip is silent: a missing (or misspelled) ADL `%simplemc_save` overload on the
+ * payload type does not produce a diagnostic — the `"user"` key is simply absent from the output.
+ *
  * @tparam S Serializer type.
  * @tparam U User update type.
  * @param s Serializer handle.
@@ -239,6 +242,9 @@ void simplemc_save(S& s, const update<U>& u) {
  * @brief Deserialize a simplemc::update.
  *
  * @details Symmetric to simplemc_save(S&, const update<U>&).
+ *
+ * @note If the payload is not deserializable by `S` it is silently skipped and keeps its current
+ * value; a missing (or misspelled) ADL `%simplemc_load` overload does not produce a diagnostic.
  *
  * @tparam S Serializer type.
  * @tparam U User update type.
@@ -305,6 +311,10 @@ void simplemc_load_input_config(const S& s, update<U>& u) {
  *
  * @details It all-reduces the six counter fields and, if the payload supports it, reduces the payload
  * via its own `%simplemc_mpi_collect`.
+ *
+ * @note This reduction is **not idempotent**: both the current-run and the cumulative counters are
+ * summed, so call it exactly once per run, at a fixed point relative to update::accumulate_counters()
+ * (a second call double-counts).
  *
  * @tparam U User update type.
  * @param comm simplemc::mpi::communicator object.

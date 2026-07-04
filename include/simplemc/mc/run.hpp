@@ -76,7 +76,7 @@ namespace simplemc {
  */
 template <typename RNG, typename Kernel, mc_measurement... Ms, typename Cbs = run_callbacks<>>
     requires mc_kernel<std::remove_cvref_t<Kernel>, RNG> && mc_run_callbacks<std::remove_cvref_t<Cbs>>
-simulation_ctx run(
+[[nodiscard]] simulation_ctx run(
     RNG& rng, Kernel&& kernel, measurement_set<Ms...>& meas, const simulation_params& p, Cbs&& cbs = {}) { // NOLINT
     // validate parameters
     validate_simulation_params(p);

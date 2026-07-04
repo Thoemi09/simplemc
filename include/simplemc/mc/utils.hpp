@@ -54,6 +54,10 @@ void simplemc_save(S& s, const RNG& rng, const update_set<Us...>& updates, const
  *
  * Update and measurement sets are only deserialized if the destination set is non-empty.
  *
+ * @note Persistent-state loads are strict by design: every expected key must be present or a
+ * simplemc::simplemc_exception is thrown. This is the opposite of the input-config channel
+ * (simplemc_load_input_config), which tolerates missing keys via `try_load_at`.
+ *
  * @tparam S Serializer type.
  * @tparam RNG Random number generator type.
  * @tparam Us User update types.
@@ -110,6 +114,10 @@ void simplemc_save_input_config(
  * @details Convenience function that deserializes the user-facing input config of the simulation
  * parameters, update set and measurement set in a single call.
  *
+ * @note Input-config loads are tolerant by design: missing keys leave the destination untouched
+ * (`try_load_at`), so a partial config document is valid input. This is the opposite of the
+ * persistent-state channel (simplemc_load), which is strict.
+ *
  * @tparam S Serializer type.
  * @tparam Us User update types.
  * @tparam Ms User measurement types.
@@ -142,6 +150,10 @@ void simplemc_load_input_config(
  *
  * @details Convenience function that collects the update set, measurement set and simulation
  * statistics from different MPI processes in a single call.
+ *
+ * @note The reduction is **not idempotent**: current-run and cumulative counters are both summed, so
+ * call it exactly once per run, at a fixed point relative to update_set::accumulate_counters() and
+ * simplemc::accumulate_simulation_stats (a second call double-counts).
  *
  * @tparam Us User update types.
  * @tparam Ms User measurement types.

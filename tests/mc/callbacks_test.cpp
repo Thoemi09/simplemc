@@ -76,6 +76,20 @@ struct throwing_config {
     friend void simplemc_load(const S&, throwing_config&) {}
 };
 
+// Remove and count leftover checkpoint temp files ("<filename>.tmp*", the suffix carries a PID)
+// next to `path`. Used to verify that a failed save cleans up after itself.
+int remove_tmp_siblings(const std::filesystem::path& path) {
+    const auto prefix = path.filename().string() + ".tmp";
+    int n = 0;
+    for (const auto& e : std::filesystem::directory_iterator { path.parent_path() }) {
+        if (e.path().filename().string().starts_with(prefix)) {
+            std::filesystem::remove(e.path());
+            ++n;
+        }
+    }
+    return n;
+}
+
 // Read all of `fp` (rewinding first) into a std::string for diagnostic assertions.
 std::string read_tmpfile(std::FILE* fp) {
     std::fflush(fp);
@@ -365,9 +379,8 @@ TEST(MCCallbacks, CheckpointRoundTripsConfig) {
 
 TEST(MCCallbacks, CheckpointWriteIsAtomic) {
     const auto path = std::filesystem::temp_directory_path() / "simplemc_test_ckpt_atomic.json";
-    const auto tmp = std::filesystem::path { path.string() + ".tmp" };
     std::filesystem::remove(path);
-    std::filesystem::remove(tmp);
+    remove_tmp_siblings(path);
 
     xoshiro256ss rng;
     update_set updates { update { trivial_update {}, "u", 1.0 } };
@@ -380,7 +393,7 @@ TEST(MCCallbacks, CheckpointWriteIsAtomic) {
     // A failing save must leave the previous checkpoint intact and clean up its temp file.
     stats.cumulative_steps = 222;
     EXPECT_THROW(save_checkpoint(path, rng, updates, meas, stats, throwing_config {}), simplemc_exception);
-    EXPECT_FALSE(std::filesystem::exists(tmp));
+    EXPECT_EQ(remove_tmp_siblings(path), 0);
 
     xoshiro256ss dst_rng;
     update_set dst_updates { update { trivial_update {}, "u", 1.0 } };
@@ -428,9 +441,8 @@ TEST(MCCallbacks, Hdf5CheckpointRoundTripsComponentsAndConfig) {
 TEST(MCCallbacks, Hdf5CheckpointWriteIsAtomic) {
     // Genuinely exercises the temp-file + rename path: HDF5 opens its file mid-save.
     const auto path = std::filesystem::temp_directory_path() / "simplemc_test_ckpt_atomic.h5";
-    const auto tmp = std::filesystem::path { path.string() + ".tmp" };
     std::filesystem::remove(path);
-    std::filesystem::remove(tmp);
+    remove_tmp_siblings(path);
 
     xoshiro256ss rng;
     update_set updates { update { trivial_update {}, "u", 1.0 } };
@@ -442,7 +454,7 @@ TEST(MCCallbacks, Hdf5CheckpointWriteIsAtomic) {
 
     stats.cumulative_steps = 222;
     EXPECT_THROW(save_checkpoint(path, rng, updates, meas, stats, throwing_config {}), simplemc_exception);
-    EXPECT_FALSE(std::filesystem::exists(tmp));
+    EXPECT_EQ(remove_tmp_siblings(path), 0);
 
     xoshiro256ss dst_rng;
     update_set dst_updates { update { trivial_update {}, "u", 1.0 } };

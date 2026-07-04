@@ -92,7 +92,7 @@ concept mc_kernel = requires(K& k, RNG& rng) { k.step(rng); };
  * - `c.on_checkpoint(ctx)` is a valid expression (called when a checkpoint threshold is crossed (see
  * simplemc::simulation_params)), and
  * - `c.stop_when(ctx) -> bool` returns a boolean flag indicating whether to stop the simulation
- * (`false`) or to keep going (`true`). It is polled in the outer loop condition.
+ * (`true`) or to keep going (`false`). It is polled in the outer loop condition.
  *
  * All four callbacks must be invocable from a non-const bundle (so callbacks may mutate their own
  * state).

@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <memory>
 #include <random>
 
@@ -142,6 +143,40 @@ TEST(MCUpdateSet, SelectReturnsValidIndex) {
         const std::size_t idx = us.select(rng);
         EXPECT_LT(idx, 2u);
     }
+}
+
+TEST(MCUpdateSet, SelectFrequenciesTrackWeights) {
+    update_set us { update { toy_update {}, "a", 1.0 }, update { toy_update {}, "b", 2.0 },
+        update { toy_update {}, "c", 4.0 } };
+    us.rebuild_distribution();
+
+    std::mt19937_64 rng { 42 };
+    constexpr int n = 100'000;
+    std::array<int, 3> counts {};
+    for (int i = 0; i < n; ++i) {
+        ++counts[us.select(rng)];
+    }
+
+    // Standard error per bin is ~0.002 at n = 100'000; a 0.02 tolerance is > 10 sigma.
+    const std::array<double, 3> expected { 1.0 / 7.0, 2.0 / 7.0, 4.0 / 7.0 };
+    for (std::size_t k = 0; k < 3; ++k) {
+        EXPECT_NEAR(static_cast<double>(counts[k]) / n, expected[k], 0.02);
+    }
+}
+
+TEST(MCUpdateSet, RebuildThrowsOnDirectNegativeWeight) {
+    update_set us { update { toy_update {}, "a", 1.0 } };
+    us.at<0>().weight = -1.0; // public field: bypasses the constructor / set_weight validation
+    EXPECT_THROW(us.rebuild_distribution(), simplemc_exception);
+}
+
+TEST(MCUpdateSet, RebuildThrowsOnAsymmetricInversePairing) {
+    update_set us { update { toy_update {}, "a", 1.0 }, update { toy_update {}, "f", 2.0 },
+        update { toy_update {}, "b", 3.0 } };
+    us.link_pair("f", "b");
+
+    us.at<2>().inv_name = "b"; // public field: hand-break the symmetry ('f' still names 'b')
+    EXPECT_THROW(us.rebuild_distribution(), simplemc_exception);
 }
 
 TEST(MCUpdateSet, ResetAndAccumulateCounters) {

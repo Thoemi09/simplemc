@@ -4,7 +4,10 @@
 #include <gtest/gtest.h>
 
 #include <cstdint>
+#include <cstdio>
+#include <filesystem>
 #include <memory>
+#include <tuple>
 
 using namespace simplemc;
 
@@ -27,6 +30,26 @@ struct counting_kernel {
     std::uint64_t calls = 0;
     void step(xoshiro256ss&) { ++calls; }
 };
+
+// Stateful update with an ADL simplemc_save / simplemc_load, for the in-run checkpoint round-trip.
+struct stateful_update {
+    std::shared_ptr<int> counter = std::make_shared<int>(0);
+    double attempt() {
+        ++*counter;
+        return 1.0;
+    }
+    void accept() {}
+};
+
+template <serializer S>
+void simplemc_save(S& s, const stateful_update& u) {
+    s.save_at("counter", *u.counter);
+}
+
+template <serializer S>
+void simplemc_load(const S& s, stateful_update& u) {
+    s.load_at("counter", *u.counter);
+}
 
 // User-defined callbacks bundle (not run_callbacks) satisfying mc_run_callbacks.
 struct counting_callbacks {
@@ -150,7 +173,7 @@ TEST(MCRun, OnCheckpointFiresWhenStepThresholdCrossed) {
         .skip_measurements = false,
         .checkpoint_after_steps = 50,
     };
-    run(rng, kernel, ms, p, cbs);
+    std::ignore = run(rng, kernel, ms, p, cbs);
 
     // 200 steps / 50 per checkpoint = 4 (loop exits on max_steps before another fires).
     EXPECT_GE(checkpoint_calls, 1);
@@ -169,7 +192,7 @@ TEST(MCRun, NoCheckpointWhenNoThreshold) {
     };
 
     simulation_params p { .max_steps = 100, .max_time = 1e6, .steps_per_cycle = 5, .cycles_per_check = 4 };
-    run(rng, kernel, ms, p, cbs);
+    std::ignore = run(rng, kernel, ms, p, cbs);
 
     EXPECT_EQ(checkpoint_calls, 0);
 }
@@ -189,7 +212,7 @@ TEST(MCRun, SkipMeasurementsLeavesCounterUntouched) {
         .cycles_per_check = 4,
         .skip_measurements = true,
     };
-    run(rng, kernel, ms, p);
+    std::ignore = run(rng, kernel, ms, p);
     EXPECT_EQ(*count, 0);
 }
 
@@ -239,4 +262,63 @@ TEST(MCRun, AcceptsCustomKernelWithoutUpdateSet) {
 
     EXPECT_GE(ctx.steps_done, 200u);
     EXPECT_EQ(kernel.calls, ctx.steps_done);
+}
+
+TEST(MCRun, CheckpointWriterInsideRunRoundTrips) {
+    // End-to-end: run() drives a make_checkpoint_writer callback, and the written file restores
+    // into fresh components.
+    stateful_update src;
+    auto src_counter = src.counter;
+    update_set us { update { src, "u", 1.0 } };
+    measurement_set<> ms;
+    metropolis_kernel kernel { us };
+    xoshiro256ss rng { 21 };
+    simulation_stats stats;
+
+    const auto path = std::filesystem::temp_directory_path() / "mc_run_writer_roundtrip.json";
+    std::filesystem::remove(path);
+    auto cbs = run_callbacks { .on_checkpoint = make_checkpoint_writer(rng, us, ms, stats, path) };
+
+    // Blocks of 25 steps with checkpoint_after_steps = 25: the writer fires on every outer block.
+    simulation_params p {
+        .max_steps = 100,
+        .max_time = 1e6,
+        .steps_per_cycle = 5,
+        .cycles_per_check = 5,
+        .checkpoint_after_steps = 25,
+    };
+    std::ignore = run(rng, kernel, ms, p, cbs);
+    ASSERT_TRUE(std::filesystem::exists(path));
+
+    xoshiro256ss dst_rng { 999 };
+    stateful_update dst;
+    auto dst_counter = dst.counter;
+    update_set dst_us { update { dst, "u", 2.0 } };
+    measurement_set<> dst_ms;
+    simulation_stats dst_stats;
+    load_checkpoint(path, dst_rng, dst_us, dst_ms, dst_stats);
+
+    EXPECT_DOUBLE_EQ(dst_us.at<0>().weight, 1.0);           // weight restored from the file
+    EXPECT_GT(*dst_counter, 0);                             // user state from a mid-run snapshot
+    EXPECT_LE(*dst_counter, *src_counter);                  // ... no newer than the final state
+    std::filesystem::remove(path);
+}
+
+TEST(MCRun, ProgressPrinterRunsAsCallback) {
+    update_set us { update { always_accept {}, "u", 1.0 } };
+    measurement_set<> ms;
+    metropolis_kernel kernel { us };
+    xoshiro256ss rng { 22 };
+
+    std::FILE* out = std::tmpfile();
+    ASSERT_NE(out, nullptr);
+    auto cbs = run_callbacks { .on_cycle = progress_printer { 100, 1e6, false, true, 0.0, out } };
+
+    simulation_params p { .max_steps = 100, .max_time = 1e6, .steps_per_cycle = 5, .cycles_per_check = 4 };
+    const auto ctx = run(rng, kernel, ms, p, cbs);
+    EXPECT_GE(ctx.steps_done, 100u);
+
+    std::fseek(out, 0, SEEK_END);
+    EXPECT_GT(std::ftell(out), 0L); // the printer wrote progress lines
+    std::fclose(out);
 }

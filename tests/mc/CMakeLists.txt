@@ -2,6 +2,7 @@
 #
 # The following targets are defined:
 # ---------------------------------
+# mc-tuple-set-test: Test the tuple_set base (traversal, lookup, typed access).
 # mc-stats-and-params-test: Test simulation_params and simulation_stats.
 # mc-measurement-test: Test measurement<M> wrapper + mc_measurement concept.
 # mc-measurement-set-test: Test measurement_set (construction, active cache, measure_all, serialization).
@@ -17,6 +18,9 @@
 # mc-mpi-test: Test MPI reduction helpers on simplemc-mc types (mpirun -n 4).
 
 # create executables
+add_executable(mc-tuple-set-test tuple_set_test.cpp)
+target_link_libraries(mc-tuple-set-test PRIVATE simplemc-test)
+
 add_executable(mc-stats-and-params-test stats_and_params_test.cpp)
 target_link_libraries(mc-stats-and-params-test PRIVATE simplemc-test)
 
@@ -57,6 +61,7 @@ add_executable(mc-mpi-test mc_mpi_test.cpp)
 target_link_libraries(mc-mpi-test PRIVATE simplemc-test)
 
 # add tests
+add_test(NAME mc-tuple-set-test COMMAND mc-tuple-set-test)
 add_test(NAME mc-stats-and-params-test COMMAND mc-stats-and-params-test)
 add_test(NAME mc-measurement-test COMMAND mc-measurement-test)
 add_test(NAME mc-measurement-set-test COMMAND mc-measurement-set-test)

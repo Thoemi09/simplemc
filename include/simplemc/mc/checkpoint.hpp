@@ -25,8 +25,10 @@
 #include <cctype>
 #include <filesystem>
 #include <optional>
+#include <string_view>
 #include <system_error>
 #include <type_traits>
+#include <unistd.h>
 #include <utility>
 
 #ifdef SIMPLEMC_USE_HDF5
@@ -141,11 +143,42 @@ concept not_checkpoint_mode = !std::same_as<std::remove_cvref_t<T>, json_file_mo
 #endif
     ;
 
-// Sibling temp file (same directory, hence same filesystem) so the final rename is atomic.
+// Sibling temp file (same directory, hence same filesystem) so the final rename is atomic. The PID
+// suffix keeps concurrent writers (e.g. several MPI ranks checkpointing to the same path) from
+// clobbering each other's temp file.
 inline std::filesystem::path checkpoint_tmp_path(const std::filesystem::path& path) {
     auto tmp = path;
-    tmp += ".tmp";
+    tmp += fmt::format(".tmp.{}", ::getpid());
     return tmp;
+}
+
+// Shared config channel of the save impls: persist the optional user config under "config". A void
+// `Config` (or a null `config`) skips the channel; a config the backend cannot serialize throws.
+template <typename Config, serializer S>
+void save_config_at(S& s, const Config* config, std::string_view backend) {
+    if constexpr (!std::is_void_v<Config>) {
+        if (config != nullptr) {
+            if constexpr (save_at_all<Config, S>) {
+                s.save_at("config", *config);
+            } else {
+                throw simplemc_exception(fmt::format("config type is not serializable by the {} backend", backend));
+            }
+        }
+    }
+}
+
+// Shared config channel of the load impls: mirror of save_config_at.
+template <typename Config, serializer S>
+void load_config_at(const S& s, Config* config, std::string_view backend) {
+    if constexpr (!std::is_void_v<Config>) {
+        if (config != nullptr) {
+            if constexpr (load_at_all<Config, S>) {
+                s.load_at("config", *config);
+            } else {
+                throw simplemc_exception(fmt::format("config type is not deserializable by the {} backend", backend));
+            }
+        }
+    }
 }
 
 // JSON save: serialize into a sibling temp file, then atomically rename over `path`. `Config = void`
@@ -157,15 +190,7 @@ void save_json_impl(const std::filesystem::path& path, const RNG& rng, const upd
     try {
         json_serializer s;
         simplemc_save(s, rng, updates, meas, stats);
-        if constexpr (!std::is_void_v<Config>) {
-            if (config != nullptr) {
-                if constexpr (save_at_all<Config, json_serializer>) {
-                    s.save_at("config", *config);
-                } else {
-                    throw simplemc_exception("config type is not serializable by the JSON backend");
-                }
-            }
-        }
+        save_config_at(s, config, "JSON");
         write_json_file(s.root(), tmp, json_io_options { .mode = mode });
         std::filesystem::rename(tmp, path);
     } catch (...) {
@@ -183,15 +208,7 @@ void load_json_impl(const std::filesystem::path& path, RNG& rng, update_set<Us..
     read_json_file(doc, path, json_io_options { .mode = mode });
     const json_serializer s { std::move(doc) };
     simplemc_load(s, rng, updates, meas, stats);
-    if constexpr (!std::is_void_v<Config>) {
-        if (config != nullptr) {
-            if constexpr (load_at_all<Config, json_serializer>) {
-                s.load_at("config", *config);
-            } else {
-                throw simplemc_exception("config type is not deserializable by the JSON backend");
-            }
-        }
-    }
+    load_config_at(s, config, "JSON");
 }
 
 #ifdef SIMPLEMC_USE_HDF5
@@ -211,15 +228,7 @@ void save_hdf5_impl(const std::filesystem::path& path, const RNG& rng, const upd
         {
             hdf5_serializer s { tmp, mode };
             simplemc_save(s, rng, updates, meas, stats);
-            if constexpr (!std::is_void_v<Config>) {
-                if (config != nullptr) {
-                    if constexpr (save_at_all<Config, hdf5_serializer>) {
-                        s.save_at("config", *config);
-                    } else {
-                        throw simplemc_exception("config type is not serializable by the HDF5 backend");
-                    }
-                }
-            }
+            save_config_at(s, config, "HDF5");
         } // drop the file handle so the HDF5 file is closed before the rename
         std::filesystem::rename(tmp, path);
     } catch (...) {
@@ -235,15 +244,7 @@ void load_hdf5_impl(const std::filesystem::path& path, RNG& rng, update_set<Us..
     measurement_set<Ms...>& meas, simulation_stats& stats, Config* config) {
     const hdf5_serializer s { path, hdf5_file_mode::read };
     simplemc_load(s, rng, updates, meas, stats);
-    if constexpr (!std::is_void_v<Config>) {
-        if (config != nullptr) {
-            if constexpr (load_at_all<Config, hdf5_serializer>) {
-                s.load_at("config", *config);
-            } else {
-                throw simplemc_exception("config type is not deserializable by the HDF5 backend");
-            }
-        }
-    }
+    load_config_at(s, config, "HDF5");
 }
 
 #endif // SIMPLEMC_USE_HDF5
@@ -365,6 +366,11 @@ void save_checkpoint(const std::filesystem::path& path, const RNG& rng, const up
     else {
         detail::save_hdf5_impl<void>(path, rng, updates, meas, stats, nullptr, o.hdf5_mode);
     }
+#else
+    else {
+        throw simplemc_exception("The HDF5 checkpoint backend was requested, but the library was built without "
+                                 "HDF5 support; rebuild with SIMPLEMC_USE_HDF5=ON");
+    }
 #endif
 }
 
@@ -387,6 +393,11 @@ void save_checkpoint(const std::filesystem::path& path, const RNG& rng, const up
     else {
         detail::save_hdf5_impl<Config>(path, rng, updates, meas, stats, &config, o.hdf5_mode);
     }
+#else
+    else {
+        throw simplemc_exception("The HDF5 checkpoint backend was requested, but the library was built without "
+                                 "HDF5 support; rebuild with SIMPLEMC_USE_HDF5=ON");
+    }
 #endif
 }
 
@@ -408,6 +419,11 @@ void load_checkpoint(const std::filesystem::path& path, RNG& rng, update_set<Us.
     else {
         detail::load_hdf5_impl<void>(path, rng, updates, meas, stats, nullptr);
     }
+#else
+    else {
+        throw simplemc_exception("The HDF5 checkpoint backend was requested, but the library was built without "
+                                 "HDF5 support; rebuild with SIMPLEMC_USE_HDF5=ON");
+    }
 #endif
 }
 
@@ -426,6 +442,11 @@ void load_checkpoint(const std::filesystem::path& path, RNG& rng, update_set<Us.
 #ifdef SIMPLEMC_USE_HDF5
     else {
         detail::load_hdf5_impl<Config>(path, rng, updates, meas, stats, &config);
+    }
+#else
+    else {
+        throw simplemc_exception("The HDF5 checkpoint backend was requested, but the library was built without "
+                                 "HDF5 support; rebuild with SIMPLEMC_USE_HDF5=ON");
     }
 #endif
 }
