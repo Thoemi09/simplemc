@@ -101,10 +101,10 @@ TEST(MCInputConfig, RoundTripPersistsParamsWeightActiveAndUserConfig) {
     EXPECT_TRUE(dst_params.skip_measurements);
 
     // Weight and is_active from input config:
-    EXPECT_DOUBLE_EQ(dst_updates.at<0>().weight, 2.5);
-    EXPECT_DOUBLE_EQ(dst_updates.at<1>().weight, 1.0);
-    EXPECT_FALSE(dst_meas.at<0>().is_active);
-    EXPECT_TRUE(dst_meas.at<1>().is_active);
+    EXPECT_DOUBLE_EQ(dst_updates.get<0>().weight, 2.5);
+    EXPECT_DOUBLE_EQ(dst_updates.get<1>().weight, 1.0);
+    EXPECT_FALSE(dst_meas.get<0>().is_active);
+    EXPECT_TRUE(dst_meas.get<1>().is_active);
 
     // User-state round-trip on opt-in types:
     EXPECT_DOUBLE_EQ(*dst_threshold, 0.75);

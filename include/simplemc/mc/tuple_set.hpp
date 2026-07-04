@@ -86,7 +86,7 @@ public:
      * @return Reference to the i-th entry (a concrete entry type).
      */
     template <std::size_t I>
-    [[nodiscard]] constexpr auto& at() noexcept {
+    [[nodiscard]] constexpr auto& get() noexcept {
         return std::get<I>(entries_);
     }
 
@@ -97,7 +97,7 @@ public:
      * @return Const reference to the i-th entry (a concrete entry type).
      */
     template <std::size_t I>
-    [[nodiscard]] constexpr const auto& at() const noexcept {
+    [[nodiscard]] constexpr const auto& get() const noexcept {
         return std::get<I>(entries_);
     }
 

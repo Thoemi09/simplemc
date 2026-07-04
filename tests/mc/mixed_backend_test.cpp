@@ -76,7 +76,7 @@ void run_and_accumulate(
 
 TEST(MCMixedBackend, InstantiationCompiles) {
     update_set updates { update { dual_update {}, "tunable", 2.5 } };
-    EXPECT_DOUBLE_EQ(updates.at<0>().weight, 2.5);
+    EXPECT_DOUBLE_EQ(updates.get<0>().weight, 2.5);
 }
 
 TEST(MCMixedBackend, StateAndInputConfigDispatchIndependently) {
@@ -134,7 +134,7 @@ TEST(MCMixedBackend, StateAndInputConfigDispatchIndependently) {
     EXPECT_EQ(*dst_state_counter, 42);
 
     // Input-config round-trip:
-    EXPECT_DOUBLE_EQ(dst_updates.at<0>().weight, 3.0);
+    EXPECT_DOUBLE_EQ(dst_updates.get<0>().weight, 3.0);
     EXPECT_DOUBLE_EQ(*dst_config_threshold, 1.25);
 }
 

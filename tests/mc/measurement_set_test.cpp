@@ -24,8 +24,8 @@ struct other_meas {
 TEST(MCMeasurementSet, AddRegistersEntries) {
     measurement_set ms { measurement { counter_meas {}, "a" }, measurement { counter_meas {}, "b", false } };
     EXPECT_EQ(ms.size(), 2u);
-    EXPECT_TRUE(ms.at<0>().is_active);
-    EXPECT_FALSE(ms.at<1>().is_active);
+    EXPECT_TRUE(ms.get<0>().is_active);
+    EXPECT_FALSE(ms.get<1>().is_active);
 }
 
 // duplicate-name detection removed: roster is now a compile-time tuple
@@ -33,7 +33,7 @@ TEST(MCMeasurementSet, AddRegistersEntries) {
 TEST(MCMeasurementSet, SetActive) {
     measurement_set ms { measurement { counter_meas {}, "a", true } };
     ms.set_active("a", false);
-    EXPECT_FALSE(ms.at<0>().is_active);
+    EXPECT_FALSE(ms.get<0>().is_active);
 
     EXPECT_THROW(ms.set_active("missing", false), simplemc_exception);
 }
@@ -118,8 +118,8 @@ TEST(MCMeasurementSet, SerializationRoundTrip) {
     const auto rentry = s["measurements"];
     simplemc_load(rentry, v);
 
-    EXPECT_TRUE(v.at<0>().is_active);
-    EXPECT_FALSE(v.at<1>().is_active);
+    EXPECT_TRUE(v.get<0>().is_active);
+    EXPECT_FALSE(v.get<1>().is_active);
 }
 
 TEST(MCMeasurementSet, InputConfigRoundTrip) {
@@ -133,7 +133,7 @@ TEST(MCMeasurementSet, InputConfigRoundTrip) {
     const auto rentry = s["measurements"];
     simplemc_load_input_config(rentry, v);
 
-    EXPECT_FALSE(v.at<0>().is_active);
+    EXPECT_FALSE(v.get<0>().is_active);
 }
 
 TEST(MCMeasurementSet, LoadThrowsOnMissingEntry) {

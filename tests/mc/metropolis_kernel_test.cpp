@@ -44,9 +44,9 @@ TEST(MCMetropolisKernel, StepAccepts) {
     for (int i = 0; i < 100; ++i) {
         k.step(rng);
     }
-    EXPECT_EQ(us.at<0>().nprops, 100u);
-    EXPECT_EQ(us.at<0>().naccs, 100u);
-    EXPECT_EQ(us.at<0>().nimps, 0u);
+    EXPECT_EQ(us.get<0>().nprops, 100u);
+    EXPECT_EQ(us.get<0>().naccs, 100u);
+    EXPECT_EQ(us.get<0>().nimps, 0u);
     EXPECT_EQ(*accepts, 100);
 }
 
@@ -62,9 +62,9 @@ TEST(MCMetropolisKernel, StepImpossible) {
     for (int i = 0; i < 50; ++i) {
         k.step(rng);
     }
-    EXPECT_EQ(us.at<0>().nprops, 50u);
-    EXPECT_EQ(us.at<0>().naccs, 0u);
-    EXPECT_EQ(us.at<0>().nimps, 50u);
+    EXPECT_EQ(us.get<0>().nprops, 50u);
+    EXPECT_EQ(us.get<0>().naccs, 0u);
+    EXPECT_EQ(us.get<0>().nimps, 50u);
     EXPECT_EQ(*rejects, 50);
 }
 
@@ -80,11 +80,11 @@ TEST(MCMetropolisKernel, StepRejects) {
     for (int i = 0; i < 200; ++i) {
         k.step(rng);
     }
-    EXPECT_EQ(us.at<0>().nprops, 200u);
+    EXPECT_EQ(us.get<0>().nprops, 200u);
     // 0.0001 acceptance prob — overwhelmingly likely all 200 reject
-    EXPECT_EQ(us.at<0>().nimps, 0u);
-    EXPECT_GE(us.at<0>().naccs + *rejects, 200);  // sanity
-    EXPECT_LT(us.at<0>().naccs, 5u);              // very few should accept
+    EXPECT_EQ(us.get<0>().nimps, 0u);
+    EXPECT_GE(us.get<0>().naccs + *rejects, 200);  // sanity
+    EXPECT_LT(us.get<0>().naccs, 5u);              // very few should accept
 }
 
 TEST(MCMetropolisKernel, AppliesRatioFromInversePair) {
@@ -96,14 +96,14 @@ TEST(MCMetropolisKernel, AppliesRatioFromInversePair) {
 
     metropolis_kernel k { us };
     k.prepare(); // derives the detailed-balance ratios from the current weights
-    EXPECT_DOUBLE_EQ(us.at<0>().ratio, 2.0);
-    EXPECT_DOUBLE_EQ(us.at<1>().ratio, 0.5);
+    EXPECT_DOUBLE_EQ(us.get<0>().ratio, 2.0);
+    EXPECT_DOUBLE_EQ(us.get<1>().ratio, 0.5);
 
     xoshiro256ss rng { 42 };
     for (int i = 0; i < 500; ++i) {
         k.step(rng);
     }
-    EXPECT_EQ(us.at<0>().nprops + us.at<1>().nprops, 500u);
+    EXPECT_EQ(us.get<0>().nprops + us.get<1>().nprops, 500u);
 }
 
 TEST(MCMetropolisKernel, SatisfiesKernelConcept) {

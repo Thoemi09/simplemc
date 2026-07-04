@@ -128,15 +128,15 @@ TEST(MCCheckpoint, JsonRoundTripPersistsCumulativeAndUserState) {
     // Persistent fields propagated.
     EXPECT_EQ(dst_stats.cumulative_steps, stats.cumulative_steps);
     EXPECT_DOUBLE_EQ(dst_stats.cumulative_time, stats.cumulative_time);
-    EXPECT_DOUBLE_EQ(dst_updates.at<0>().weight, 2.5);
-    EXPECT_DOUBLE_EQ(dst_updates.at<1>().weight, 1.0);
-    EXPECT_EQ(dst_updates.at<0>().cumulative_nprops, updates.at<0>().cumulative_nprops);
-    EXPECT_EQ(dst_updates.at<0>().inv_name, updates.at<0>().inv_name);
-    EXPECT_DOUBLE_EQ(dst_updates.at<0>().ratio, updates.at<0>().ratio);
-    EXPECT_EQ(dst_meas.at<0>().is_active, meas.at<0>().is_active);
+    EXPECT_DOUBLE_EQ(dst_updates.get<0>().weight, 2.5);
+    EXPECT_DOUBLE_EQ(dst_updates.get<1>().weight, 1.0);
+    EXPECT_EQ(dst_updates.get<0>().cumulative_nprops, updates.get<0>().cumulative_nprops);
+    EXPECT_EQ(dst_updates.get<0>().inv_name, updates.get<0>().inv_name);
+    EXPECT_DOUBLE_EQ(dst_updates.get<0>().ratio, updates.get<0>().ratio);
+    EXPECT_EQ(dst_meas.get<0>().is_active, meas.get<0>().is_active);
 
     // Per-run update counters are zero on dst.
-    EXPECT_EQ(dst_updates.at<0>().nprops, 0u);
+    EXPECT_EQ(dst_updates.get<0>().nprops, 0u);
 
     // User-state round-trip via simplemc_save / simplemc_load.
     EXPECT_EQ(*dst_stateful_counter, src_counter);

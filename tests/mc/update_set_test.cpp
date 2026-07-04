@@ -32,12 +32,12 @@ TEST(MCUpdateSet, AddRegistersEntries) {
 
     EXPECT_EQ(us.size(), 2u);
     EXPECT_FALSE(us.empty());
-    EXPECT_EQ(us.at<0>().name, "a");
-    EXPECT_EQ(us.at<1>().name, "b");
-    EXPECT_DOUBLE_EQ(us.at<0>().weight, 1.0);
-    EXPECT_DOUBLE_EQ(us.at<1>().weight, 2.0);
-    EXPECT_EQ(us.at<0>().inv_name, "a"); // self-inverse default
-    EXPECT_DOUBLE_EQ(us.at<0>().ratio, 1.0);
+    EXPECT_EQ(us.get<0>().name, "a");
+    EXPECT_EQ(us.get<1>().name, "b");
+    EXPECT_DOUBLE_EQ(us.get<0>().weight, 1.0);
+    EXPECT_DOUBLE_EQ(us.get<1>().weight, 2.0);
+    EXPECT_EQ(us.get<0>().inv_name, "a"); // self-inverse default
+    EXPECT_DOUBLE_EQ(us.get<0>().ratio, 1.0);
 }
 
 // duplicate-name detection removed: roster is now a compile-time tuple
@@ -47,28 +47,28 @@ TEST(MCUpdateSet, AddPairCrossLinksAndRebuildComputesRatios) {
     us.link_pair("f", "b");
 
     EXPECT_EQ(us.size(), 2u);
-    EXPECT_EQ(us.at<0>().name, "f");
-    EXPECT_EQ(us.at<0>().inv_name, "b");
-    EXPECT_EQ(us.at<1>().name, "b");
-    EXPECT_EQ(us.at<1>().inv_name, "f");
+    EXPECT_EQ(us.get<0>().name, "f");
+    EXPECT_EQ(us.get<0>().inv_name, "b");
+    EXPECT_EQ(us.get<1>().name, "b");
+    EXPECT_EQ(us.get<1>().inv_name, "f");
 
     us.rebuild_distribution(); // derives the detailed-balance ratios from the current weights
-    EXPECT_DOUBLE_EQ(us.at<0>().ratio, 3.0 / 2.0);
-    EXPECT_DOUBLE_EQ(us.at<1>().ratio, 2.0 / 3.0);
+    EXPECT_DOUBLE_EQ(us.get<0>().ratio, 3.0 / 2.0);
+    EXPECT_DOUBLE_EQ(us.get<1>().ratio, 2.0 / 3.0);
 }
 
 TEST(MCUpdateSet, SetWeightThenRebuildRecomputesRatios) {
     update_set us { update { toy_update {}, "f", 2.0 }, update { toy_update {}, "b", 4.0 } };
     us.link_pair("f", "b");
     us.rebuild_distribution();
-    EXPECT_DOUBLE_EQ(us.at<0>().ratio, 2.0);
-    EXPECT_DOUBLE_EQ(us.at<1>().ratio, 0.5);
+    EXPECT_DOUBLE_EQ(us.get<0>().ratio, 2.0);
+    EXPECT_DOUBLE_EQ(us.get<1>().ratio, 0.5);
 
     // A later weight change must not leave the ratios stale.
     us.set_weight("f", 1.0);
     us.rebuild_distribution();
-    EXPECT_DOUBLE_EQ(us.at<0>().ratio, 4.0);
-    EXPECT_DOUBLE_EQ(us.at<1>().ratio, 0.25);
+    EXPECT_DOUBLE_EQ(us.get<0>().ratio, 4.0);
+    EXPECT_DOUBLE_EQ(us.get<1>().ratio, 0.25);
 }
 
 TEST(MCUpdateSet, RebuildThrowsOnAsymmetricZeroPair) {
@@ -86,15 +86,15 @@ TEST(MCUpdateSet, RebuildKeepsUnitRatioOnBothZeroPair) {
     us.link_pair("f", "b");
 
     us.rebuild_distribution();
-    EXPECT_DOUBLE_EQ(us.at<1>().ratio, 1.0);
-    EXPECT_DOUBLE_EQ(us.at<2>().ratio, 1.0);
+    EXPECT_DOUBLE_EQ(us.get<1>().ratio, 1.0);
+    EXPECT_DOUBLE_EQ(us.get<2>().ratio, 1.0);
 }
 
 TEST(MCUpdateSet, PairBothZeroAllowed) {
     update_set us { update { toy_update {}, "f", 0.0 }, update { toy_update {}, "b", 0.0 } };
     us.link_pair("f", "b");
-    EXPECT_DOUBLE_EQ(us.at<0>().ratio, 1.0);
-    EXPECT_DOUBLE_EQ(us.at<1>().ratio, 1.0);
+    EXPECT_DOUBLE_EQ(us.get<0>().ratio, 1.0);
+    EXPECT_DOUBLE_EQ(us.get<1>().ratio, 1.0);
 }
 
 TEST(MCUpdateSet, RebuildThrowsOnPairOneZero) {
@@ -116,7 +116,7 @@ TEST(MCUpdateSet, LinkPairUnknownNameThrows) {
 TEST(MCUpdateSet, SetWeight) {
     update_set us { update { toy_update {}, "a", 1.0 } };
     us.set_weight("a", 5.5);
-    EXPECT_DOUBLE_EQ(us.at<0>().weight, 5.5);
+    EXPECT_DOUBLE_EQ(us.get<0>().weight, 5.5);
 
     EXPECT_THROW(us.set_weight("a", -1.0), simplemc_exception);
     EXPECT_THROW(us.set_weight("missing", 1.0), simplemc_exception);
@@ -166,7 +166,7 @@ TEST(MCUpdateSet, SelectFrequenciesTrackWeights) {
 
 TEST(MCUpdateSet, RebuildThrowsOnDirectNegativeWeight) {
     update_set us { update { toy_update {}, "a", 1.0 } };
-    us.at<0>().weight = -1.0; // public field: bypasses the constructor / set_weight validation
+    us.get<0>().weight = -1.0; // public field: bypasses the constructor / set_weight validation
     EXPECT_THROW(us.rebuild_distribution(), simplemc_exception);
 }
 
@@ -175,27 +175,27 @@ TEST(MCUpdateSet, RebuildThrowsOnAsymmetricInversePairing) {
         update { toy_update {}, "b", 3.0 } };
     us.link_pair("f", "b");
 
-    us.at<2>().inv_name = "b"; // public field: hand-break the symmetry ('f' still names 'b')
+    us.get<2>().inv_name = "b"; // public field: hand-break the symmetry ('f' still names 'b')
     EXPECT_THROW(us.rebuild_distribution(), simplemc_exception);
 }
 
 TEST(MCUpdateSet, ResetAndAccumulateCounters) {
     update_set us { update { toy_update {}, "a", 1.0 }, update { toy_update {}, "b", 1.0 } };
-    us.at<0>().nprops = 10;
-    us.at<0>().naccs = 6;
-    us.at<1>().nprops = 4;
+    us.get<0>().nprops = 10;
+    us.get<0>().naccs = 6;
+    us.get<1>().nprops = 4;
 
     us.accumulate_counters();
-    EXPECT_EQ(us.at<0>().cumulative_nprops, 10u);
-    EXPECT_EQ(us.at<0>().cumulative_naccs, 6u);
-    EXPECT_EQ(us.at<1>().cumulative_nprops, 4u);
-    EXPECT_EQ(us.at<0>().nprops, 0u);
-    EXPECT_EQ(us.at<1>().nprops, 0u);
+    EXPECT_EQ(us.get<0>().cumulative_nprops, 10u);
+    EXPECT_EQ(us.get<0>().cumulative_naccs, 6u);
+    EXPECT_EQ(us.get<1>().cumulative_nprops, 4u);
+    EXPECT_EQ(us.get<0>().nprops, 0u);
+    EXPECT_EQ(us.get<1>().nprops, 0u);
 
-    us.at<0>().nprops = 2;
+    us.get<0>().nprops = 2;
     us.reset_run_counters();
-    EXPECT_EQ(us.at<0>().nprops, 0u);
-    EXPECT_EQ(us.at<0>().cumulative_nprops, 10u); // untouched
+    EXPECT_EQ(us.get<0>().nprops, 0u);
+    EXPECT_EQ(us.get<0>().cumulative_nprops, 10u); // untouched
 }
 
 TEST(MCUpdateSet, GetReturnsTypedPointer) {
@@ -215,8 +215,8 @@ TEST(MCUpdateSet, SerializationRoundTrip) {
     update_set us { update { toy_update {}, "a", 2.0 }, update { toy_update {}, "f", 3.0 },
         update { toy_update {}, "b", 4.0 } };
     us.link_pair("f", "b");
-    us.at<0>().cumulative_nprops = 100;
-    us.at<1>().cumulative_naccs = 50;
+    us.get<0>().cumulative_nprops = 100;
+    us.get<1>().cumulative_naccs = 50;
 
     json_serializer s;
     auto entry = s["updates"];
@@ -229,12 +229,12 @@ TEST(MCUpdateSet, SerializationRoundTrip) {
     const auto rentry = s["updates"];
     simplemc_load(rentry, v);
 
-    EXPECT_DOUBLE_EQ(v.at<0>().weight, 2.0);
-    EXPECT_DOUBLE_EQ(v.at<1>().weight, 3.0);
-    EXPECT_DOUBLE_EQ(v.at<2>().weight, 4.0);
-    EXPECT_EQ(v.at<1>().inv_name, "b");
-    EXPECT_EQ(v.at<0>().cumulative_nprops, 100u);
-    EXPECT_EQ(v.at<1>().cumulative_naccs, 50u);
+    EXPECT_DOUBLE_EQ(v.get<0>().weight, 2.0);
+    EXPECT_DOUBLE_EQ(v.get<1>().weight, 3.0);
+    EXPECT_DOUBLE_EQ(v.get<2>().weight, 4.0);
+    EXPECT_EQ(v.get<1>().inv_name, "b");
+    EXPECT_EQ(v.get<0>().cumulative_nprops, 100u);
+    EXPECT_EQ(v.get<1>().cumulative_naccs, 50u);
 }
 
 TEST(MCUpdateSet, InputConfigRoundTrip) {
@@ -248,7 +248,7 @@ TEST(MCUpdateSet, InputConfigRoundTrip) {
     const auto rentry = s["updates"];
     simplemc_load_input_config(rentry, v);
 
-    EXPECT_DOUBLE_EQ(v.at<0>().weight, 2.5);
+    EXPECT_DOUBLE_EQ(v.get<0>().weight, 2.5);
 }
 
 TEST(MCUpdateSet, LoadThrowsOnMissingEntry) {

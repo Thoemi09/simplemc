@@ -298,7 +298,7 @@ TEST(MCRun, CheckpointWriterInsideRunRoundTrips) {
     simulation_stats dst_stats;
     load_checkpoint(path, dst_rng, dst_us, dst_ms, dst_stats);
 
-    EXPECT_DOUBLE_EQ(dst_us.at<0>().weight, 1.0);           // weight restored from the file
+    EXPECT_DOUBLE_EQ(dst_us.get<0>().weight, 1.0);           // weight restored from the file
     EXPECT_GT(*dst_counter, 0);                             // user state from a mid-run snapshot
     EXPECT_LE(*dst_counter, *src_counter);                  // ... no newer than the final state
     std::filesystem::remove(path);

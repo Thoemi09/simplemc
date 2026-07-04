@@ -39,14 +39,14 @@ TEST(MCTupleSet, SizeAndEmpty) {
 }
 
 // Test access to entries by compile-time index.
-TEST(MCTupleSet, AtCompileTimeIndex) {
+TEST(MCTupleSet, GetCompileTimeIndex) {
     tuple_set set { int_entry { .value = 7, .name = "a" }, string_entry { .value = "hi", .name = "b" } };
-    EXPECT_EQ(set.at<0>().value, 7);
-    EXPECT_EQ(set.at<1>().value, "hi");
+    EXPECT_EQ(set.get<0>().value, 7);
+    EXPECT_EQ(set.get<1>().value, "hi");
 
-    set.at<0>().value = 9;
+    set.get<0>().value = 9;
     const auto& cset = set;
-    EXPECT_EQ(cset.at<0>().value, 9);
+    EXPECT_EQ(cset.get<0>().value, 9);
 }
 
 // Test for_each() functionalities.
@@ -60,8 +60,8 @@ TEST(MCTupleSet, ForEachVisitsAllInOrder) {
 TEST(MCTupleSet, ForEachMutates) {
     tuple_set set { int_entry { .value = 1, .name = "a" }, int_entry { .value = 2, .name = "b" } };
     set.for_each([](auto& e) { e.value += 10; });
-    EXPECT_EQ(set.at<0>().value, 11);
-    EXPECT_EQ(set.at<1>().value, 12);
+    EXPECT_EQ(set.get<0>().value, 11);
+    EXPECT_EQ(set.get<1>().value, 12);
 }
 
 // Test visit_at() functionalities.
@@ -84,8 +84,8 @@ TEST(MCTupleSet, VisitAtDispatchesToSingleEntry) {
 TEST(MCTupleSet, VisitAtMutatesThroughReference) {
     tuple_set set { int_entry { .value = 1, .name = "a" }, int_entry { .value = 2, .name = "b" } };
     set.visit_at(1, [](auto& e) { e.value = 42; });
-    EXPECT_EQ(set.at<0>().value, 1);
-    EXPECT_EQ(set.at<1>().value, 42);
+    EXPECT_EQ(set.get<0>().value, 1);
+    EXPECT_EQ(set.get<1>().value, 42);
 }
 
 TEST(MCTupleSet, VisitAtOutOfRangeInvokesNothing) {
@@ -121,7 +121,7 @@ TEST(MCTupleSet, GetByTypeReturnsPayloadPointer) {
     ASSERT_NE(p, nullptr);
     EXPECT_EQ(*p, 5);
     *p = 6;
-    EXPECT_EQ(set.at<0>().value, 6);
+    EXPECT_EQ(set.get<0>().value, 6);
 
     const auto& cset = set;
     const auto* q = cset.get<std::string>();
