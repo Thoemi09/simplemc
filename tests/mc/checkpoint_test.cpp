@@ -8,7 +8,6 @@
 
 #include <filesystem>
 #include <fstream>
-#include <memory>
 
 using namespace simplemc;
 
@@ -20,15 +19,15 @@ struct always_accept {
 };
 
 struct counting_measurement {
-    std::shared_ptr<int> count = std::make_shared<int>(0);
-    void measure() { ++*count; }
+    int count = 0;
+    void measure() { ++count; }
 };
 
 // Stateful update with an ADL simplemc_save / simplemc_load that round-trips an internal counter.
 struct stateful_update {
-    std::shared_ptr<int> counter = std::make_shared<int>(0);
+    int counter = 0;
     double attempt() {
-        ++*counter;
+        ++counter;
         return 1.0;
     }
     void accept() {}
@@ -36,28 +35,28 @@ struct stateful_update {
 
 template <serializer S>
 void simplemc_save(S& s, const stateful_update& u) {
-    s.save_at("counter", *u.counter);
+    s.save_at("counter", u.counter);
 }
 
 template <serializer S>
 void simplemc_load(const S& s, stateful_update& u) {
-    s.load_at("counter", *u.counter);
+    s.load_at("counter", u.counter);
 }
 
 // Stateful measurement with ADL save/load.
 struct stateful_measurement {
-    std::shared_ptr<int> tally = std::make_shared<int>(0);
-    void measure() { ++*tally; }
+    int tally = 0;
+    void measure() { ++tally; }
 };
 
 template <serializer S>
 void simplemc_save(S& s, const stateful_measurement& m) {
-    s.save_at("tally", *m.tally);
+    s.save_at("tally", m.tally);
 }
 
 template <serializer S>
 void simplemc_load(const S& s, stateful_measurement& m) {
-    s.load_at("tally", *m.tally);
+    s.load_at("tally", m.tally);
 }
 
 // User update with only nlohmann to_json / from_json (no simplemc_save). Because the mc types now
@@ -92,17 +91,15 @@ TEST(MCCheckpoint, JsonRoundTripPersistsCumulativeAndUserState) {
     xoshiro256ss rng { 42 };
     simulation_stats stats;
 
-    stateful_update stateful;
-    auto stateful_counter = stateful.counter;
-    stateful_measurement m;
-    auto m_tally = m.tally;
-    update_set updates { update { stateful, "stateful", 2.5 }, update { always_accept {}, "stateless", 1.0 } };
-    measurement_set meas { measurement { m, "obs" }, measurement { counting_measurement {}, "stateless_meas" } };
+    update_set updates { update { stateful_update {}, "stateful", 2.5 },
+        update { always_accept {}, "stateless", 1.0 } };
+    measurement_set meas { measurement { stateful_measurement {}, "obs" },
+        measurement { counting_measurement {}, "stateless_meas" } };
 
     run_and_accumulate(updates, meas, stats, rng,
         { .max_steps = 50, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = 10 });
-    const int src_counter = *stateful_counter;
-    const int src_tally = *m_tally;
+    const int src_counter = updates.get<0>().value.counter;
+    const int src_tally = meas.get<0>().value.tally;
     ASSERT_GT(stats.cumulative_steps, 0u);
     ASSERT_GT(src_counter, 0);
     ASSERT_GT(src_tally, 0);
@@ -113,13 +110,9 @@ TEST(MCCheckpoint, JsonRoundTripPersistsCumulativeAndUserState) {
     // Destination: same structure, different RNG seed.
     xoshiro256ss dst_rng { 999 };
     simulation_stats dst_stats;
-    stateful_update dst_stateful;
-    auto dst_stateful_counter = dst_stateful.counter;
-    stateful_measurement dst_m;
-    auto dst_m_tally = dst_m.tally;
-    update_set dst_updates { update { dst_stateful, "stateful", 2.5 },
+    update_set dst_updates { update { stateful_update {}, "stateful", 2.5 },
         update { always_accept {}, "stateless", 1.0 } };
-    measurement_set dst_meas { measurement { dst_m, "obs" },
+    measurement_set dst_meas { measurement { stateful_measurement {}, "obs" },
         measurement { counting_measurement {}, "stateless_meas" } };
 
     const json_serializer reader { writer.root() };
@@ -139,8 +132,8 @@ TEST(MCCheckpoint, JsonRoundTripPersistsCumulativeAndUserState) {
     EXPECT_EQ(dst_updates.get<0>().nprops, 0u);
 
     // User-state round-trip via simplemc_save / simplemc_load.
-    EXPECT_EQ(*dst_stateful_counter, src_counter);
-    EXPECT_EQ(*dst_m_tally, src_tally);
+    EXPECT_EQ(dst_updates.get<0>().value.counter, src_counter);
+    EXPECT_EQ(dst_meas.get<0>().value.tally, src_tally);
 
     // RNG continuation: a draw from dst matches a draw from src.
     EXPECT_EQ(dst_rng(), rng());
@@ -244,27 +237,23 @@ TEST(MCCheckpoint, FileRoundTripViaSaveCheckpoint) {
     // Exercise the file-based dispatcher (backend deduced from the .json extension) plus atomic write.
     xoshiro256ss rng { 7 };
     simulation_stats stats;
-    stateful_update stateful;
-    auto stateful_counter = stateful.counter;
-    update_set updates { update { stateful, "stateful", 1.0 } };
+    update_set updates { update { stateful_update {}, "stateful", 1.0 } };
     measurement_set<> meas;
     run_and_accumulate(updates, meas, stats, rng,
         { .max_steps = 20, .max_time = 1000.0, .steps_per_cycle = 1, .cycles_per_check = 5 });
-    const int src_counter = *stateful_counter;
+    const int src_counter = updates.get<0>().value.counter;
 
     const auto path = std::filesystem::temp_directory_path() / "mc_checkpoint_file_roundtrip.json";
     save_checkpoint(path, rng, updates, meas, stats);
 
     xoshiro256ss dst_rng { 123 };
     simulation_stats dst_stats;
-    stateful_update dst_stateful;
-    auto dst_counter = dst_stateful.counter;
-    update_set dst_updates { update { dst_stateful, "stateful", 1.0 } };
+    update_set dst_updates { update { stateful_update {}, "stateful", 1.0 } };
     measurement_set<> dst_meas;
     load_checkpoint(path, dst_rng, dst_updates, dst_meas, dst_stats);
 
     EXPECT_EQ(dst_stats.cumulative_steps, stats.cumulative_steps);
-    EXPECT_EQ(*dst_counter, src_counter);
+    EXPECT_EQ(dst_updates.get<0>().value.counter, src_counter);
     EXPECT_EQ(dst_rng(), rng()); // RNG continuation
 
     std::filesystem::remove(path);

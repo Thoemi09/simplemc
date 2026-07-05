@@ -5,7 +5,6 @@
 #include <gtest/gtest.h>
 
 #include <array>
-#include <memory>
 #include <random>
 
 using namespace simplemc;
@@ -13,10 +12,10 @@ using namespace simplemc;
 namespace {
 
 struct toy_update {
-    std::shared_ptr<int> accepts = std::make_shared<int>(0);
+    int accepts = 0;
     double prob = 0.5;
     double attempt() { return prob; }
-    void accept() { ++*accepts; }
+    void accept() { ++accepts; }
     void reject() {}
 };
 

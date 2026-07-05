@@ -6,8 +6,6 @@
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
 
-#include <memory>
-
 using namespace simplemc;
 
 namespace {
@@ -23,38 +21,38 @@ struct counting_measurement {
 
 // User update that exposes only input-config hooks (no state simplemc_save).
 struct configurable_update {
-    std::shared_ptr<double> threshold = std::make_shared<double>(0.0);
+    double threshold = 0.0;
     double attempt() { return 1.0; }
     void accept() {}
 };
 
 template <serializer S>
 void simplemc_save_input_config(S& s, const configurable_update& u) {
-    s.save_at("threshold", *u.threshold);
+    s.save_at("threshold", u.threshold);
 }
 
 template <serializer S>
 void simplemc_load_input_config(const S& s, configurable_update& u) {
     if (s.has("threshold")) {
-        s.load_at("threshold", *u.threshold);
+        s.load_at("threshold", u.threshold);
     }
 }
 
 // User measurement with input-config hooks.
 struct configurable_measurement {
-    std::shared_ptr<int> bins = std::make_shared<int>(1);
+    int bins = 1;
     void measure() {}
 };
 
 template <serializer S>
 void simplemc_save_input_config(S& s, const configurable_measurement& m) {
-    s.save_at("bins", *m.bins);
+    s.save_at("bins", m.bins);
 }
 
 template <serializer S>
 void simplemc_load_input_config(const S& s, configurable_measurement& m) {
     if (s.has("bins")) {
-        s.load_at("bins", *m.bins);
+        s.load_at("bins", m.bins);
     }
 }
 
@@ -68,11 +66,11 @@ TEST(MCInputConfig, RoundTripPersistsParamsWeightActiveAndUserConfig) {
         .skip_measurements = true };
 
     configurable_update src_up;
-    *src_up.threshold = 0.75;
+    src_up.threshold = 0.75;
     update_set updates { update { src_up, "tunable", 2.5 }, update { always_accept {}, "stateless", 1.0 } };
 
     configurable_measurement src_meas;
-    *src_meas.bins = 64;
+    src_meas.bins = 64;
     measurement_set meas { measurement { src_meas, "histogram", /*is_active=*/false },
         measurement { counting_measurement {}, "stateless_meas" } };
 
@@ -81,13 +79,10 @@ TEST(MCInputConfig, RoundTripPersistsParamsWeightActiveAndUserConfig) {
 
     // Destination: same registration, different initial values.
     simulation_params dst_params;
-    configurable_update dst_up;
-    auto dst_threshold = dst_up.threshold;
-    update_set dst_updates { update { dst_up, "tunable", 1.0 }, update { always_accept {}, "stateless", 1.0 } };
+    update_set dst_updates { update { configurable_update {}, "tunable", 1.0 },
+        update { always_accept {}, "stateless", 1.0 } };
 
-    configurable_measurement dst_meas_obj;
-    auto dst_bins = dst_meas_obj.bins;
-    measurement_set dst_meas { measurement { dst_meas_obj, "histogram", /*is_active=*/true },
+    measurement_set dst_meas { measurement { configurable_measurement {}, "histogram", /*is_active=*/true },
         measurement { counting_measurement {}, "stateless_meas" } };
 
     const json_serializer r { w.root() };
@@ -107,8 +102,8 @@ TEST(MCInputConfig, RoundTripPersistsParamsWeightActiveAndUserConfig) {
     EXPECT_TRUE(dst_meas.get<1>().is_active);
 
     // User-state round-trip on opt-in types:
-    EXPECT_DOUBLE_EQ(*dst_threshold, 0.75);
-    EXPECT_EQ(*dst_bins, 64);
+    EXPECT_DOUBLE_EQ(dst_updates.get<0>().value.threshold, 0.75);
+    EXPECT_EQ(dst_meas.get<0>().value.bins, 64);
 }
 
 TEST(MCInputConfig, OmitsStateOnlyFields) {

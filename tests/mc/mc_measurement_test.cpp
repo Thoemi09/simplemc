@@ -11,16 +11,17 @@ using namespace simplemc;
 
 namespace {
 
-// A toy measurement that increments a shared counter so we can observe `measure()` calls.
+// A toy measurement that increments a counter so we can observe `measure()` calls through the
+// wrapper's public `value` member.
 struct counter_meas {
-    std::shared_ptr<int> count = std::make_shared<int>(0);
-    void measure() { ++*count; }
+    int count = 0;
+    void measure() { ++count; }
 };
 
 // A second, distinct conforming measurement.
 struct doubling_meas {
-    std::shared_ptr<int> count = std::make_shared<int>(1);
-    void measure() { *count *= 2; }
+    int count = 1;
+    void measure() { count *= 2; }
 };
 
 // Negative case for the concept: missing `measure()`.
@@ -48,37 +49,28 @@ static_assert(mc_measurement<measurement<counter_meas>>);
 
 // Test basic behavior of the measurement wrapper and the wrapped type.
 TEST(MCMeasurement, WrapsAndForwardsMeasure) {
-    counter_meas src;
-    auto count = src.count;
-
-    measurement m { src, "m" };
+    measurement m { counter_meas {}, "m" };
     m.measure();
-
-    EXPECT_EQ(*count, 1);
+    EXPECT_EQ(m.value.count, 1);
 }
 
-TEST(MCMeasurement, CopyProducesIndependentValueSharingCapturedState) {
-    counter_meas src;
-    auto count = src.count;
-
-    measurement a { src, "m" };
-    measurement b { a }; // copy: b holds its own counter_meas, still sharing the shared_ptr<int>
+TEST(MCMeasurement, CopyProducesIndependentValue) {
+    measurement a { counter_meas {}, "m" };
+    measurement b { a }; // copy: b holds its own counter_meas with its own counter
 
     a.measure();
-    b.measure();
-
-    EXPECT_EQ(*count, 2);
+    EXPECT_EQ(a.value.count, 1);
+    EXPECT_EQ(b.value.count, 0);
 }
 
 TEST(MCMeasurement, MoveTransfersOwnership) {
-    counter_meas src;
-    auto count = src.count;
+    measurement a { counter_meas {}, "m" };
+    a.measure();
 
-    measurement a { src, "m" };
     measurement b { std::move(a) };
-
     b.measure();
-    EXPECT_EQ(*count, 1);
+
+    EXPECT_EQ(b.value.count, 2);
 }
 
 TEST(MCMeasurement, MoveOnlyMeasurementIsSupported) {
@@ -89,14 +81,14 @@ TEST(MCMeasurement, MoveOnlyMeasurementIsSupported) {
 
 TEST(MCMeasurement, ValueMemberExposesUserMeasurement) {
     counter_meas src;
-    auto count = src.count;
+    src.count = 5;
     measurement m { src, "m" };
 
     static_assert(std::is_same_v<decltype(m)::value_type, counter_meas>);
-    EXPECT_EQ(m.value.count.get(), count.get());
+    EXPECT_EQ(m.value.count, 5);
 
     m.measure();
-    EXPECT_EQ(*m.value.count, 1);
+    EXPECT_EQ(m.value.count, 6);
 }
 
 // Test constructors and access of metadata.

@@ -4,15 +4,13 @@
 
 #include <gtest/gtest.h>
 
-#include <memory>
-
 using namespace simplemc;
 
 namespace {
 
 struct counter_meas {
-    std::shared_ptr<int> count = std::make_shared<int>(0);
-    void measure() { ++*count; }
+    int count = 0;
+    void measure() { ++count; }
 };
 
 struct other_meas {
@@ -75,33 +73,26 @@ TEST(MCMeasurementSet, ClearActiveEmptiesCache) {
 }
 
 TEST(MCMeasurementSet, MeasureAllInvokesActiveOnly) {
-    counter_meas a;
-    counter_meas b;
-    counter_meas c;
-    auto ca = a.count;
-    auto cb = b.count;
-    auto cc = c.count;
-
-    measurement_set ms { measurement { a, "a", true }, measurement { b, "b", false },
-        measurement { c, "c", true } };
+    measurement_set ms { measurement { counter_meas {}, "a", true }, measurement { counter_meas {}, "b", false },
+        measurement { counter_meas {}, "c", true } };
     ms.refresh_active();
 
     ms.measure_all();
     ms.measure_all();
 
-    EXPECT_EQ(*ca, 2);
-    EXPECT_EQ(*cb, 0);
-    EXPECT_EQ(*cc, 2);
+    EXPECT_EQ(ms.get<0>().value.count, 2);
+    EXPECT_EQ(ms.get<1>().value.count, 0);
+    EXPECT_EQ(ms.get<2>().value.count, 2);
 }
 
 TEST(MCMeasurementSet, GetReturnsTypedPointer) {
     counter_meas src;
-    auto count = src.count;
+    src.count = 7;
     measurement_set ms { measurement { src, "a", true } };
 
     auto* p = ms.get<counter_meas>("a");
     ASSERT_NE(p, nullptr);
-    EXPECT_EQ(p->count.get(), count.get());
+    EXPECT_EQ(p->count, 7);
 
     EXPECT_EQ(ms.get<other_meas>("a"), nullptr);
     EXPECT_EQ(ms.get<counter_meas>("missing"), nullptr);

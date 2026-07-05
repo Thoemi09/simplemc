@@ -6,7 +6,6 @@
 #include <cstdint>
 #include <cstdio>
 #include <filesystem>
-#include <memory>
 #include <tuple>
 
 using namespace simplemc;
@@ -20,8 +19,8 @@ struct always_accept {
 };
 
 struct counter_meas {
-    std::shared_ptr<int> count = std::make_shared<int>(0);
-    void measure() { ++*count; }
+    int count = 0;
+    void measure() { ++count; }
 };
 
 // Custom kernel: simple counting kernel that never touches an update_set.
@@ -33,9 +32,9 @@ struct counting_kernel {
 
 // Stateful update with an ADL simplemc_save / simplemc_load, for the in-run checkpoint round-trip.
 struct stateful_update {
-    std::shared_ptr<int> counter = std::make_shared<int>(0);
+    int counter = 0;
     double attempt() {
-        ++*counter;
+        ++counter;
         return 1.0;
     }
     void accept() {}
@@ -43,19 +42,20 @@ struct stateful_update {
 
 template <serializer S>
 void simplemc_save(S& s, const stateful_update& u) {
-    s.save_at("counter", *u.counter);
+    s.save_at("counter", u.counter);
 }
 
 template <serializer S>
 void simplemc_load(const S& s, stateful_update& u) {
-    s.load_at("counter", *u.counter);
+    s.load_at("counter", u.counter);
 }
 
-// User-defined callbacks bundle (not run_callbacks) satisfying mc_run_callbacks.
+// User-defined callbacks bundle (not run_callbacks) satisfying mc_run_callbacks. The concept only
+// requires callability on a non-const bundle, so on_step can mutate a plain member.
 struct counting_callbacks {
-    std::shared_ptr<std::uint64_t> steps = std::make_shared<std::uint64_t>(0);
+    std::uint64_t steps = 0;
     std::uint64_t stop_after = 0;
-    void on_step(const simulation_ctx&) const { ++*steps; }
+    void on_step(const simulation_ctx&) { ++steps; }
     void on_cycle(const simulation_ctx&) const {}
     void on_checkpoint(const simulation_ctx&) const {}
     bool stop_when(const simulation_ctx& x) const { return x.steps_done >= stop_after; }
@@ -199,9 +199,7 @@ TEST(MCRun, NoCheckpointWhenNoThreshold) {
 
 TEST(MCRun, SkipMeasurementsLeavesCounterUntouched) {
     update_set us { update { always_accept {}, "u", 1.0 } };
-    counter_meas src;
-    auto count = src.count;
-    measurement_set ms { measurement { src, "m", true } };
+    measurement_set ms { measurement { counter_meas {}, "m", true } };
     metropolis_kernel kernel { us };
     xoshiro256ss rng { 8 };
 
@@ -213,21 +211,19 @@ TEST(MCRun, SkipMeasurementsLeavesCounterUntouched) {
         .skip_measurements = true,
     };
     std::ignore = run(rng, kernel, ms, p);
-    EXPECT_EQ(*count, 0);
+    EXPECT_EQ(ms.get<0>().value.count, 0);
 }
 
 TEST(MCRun, MeasureAllFiresWhenActive) {
     update_set us { update { always_accept {}, "u", 1.0 } };
-    counter_meas src;
-    auto count = src.count;
-    measurement_set ms { measurement { src, "m", true } };
+    measurement_set ms { measurement { counter_meas {}, "m", true } };
     metropolis_kernel kernel { us };
     xoshiro256ss rng { 9 };
 
     simulation_params p { .max_steps = 100, .max_time = 1e6, .steps_per_cycle = 5, .cycles_per_check = 4 };
     const auto ctx = run(rng, kernel, ms, p);
 
-    EXPECT_EQ(static_cast<std::uint64_t>(*count), ctx.steps_done / p.steps_per_cycle);
+    EXPECT_EQ(static_cast<std::uint64_t>(ms.get<0>().value.count), ctx.steps_done / p.steps_per_cycle);
 }
 
 TEST(MCRun, AcceptsUserDefinedCallbacksBundle) {
@@ -246,7 +242,7 @@ TEST(MCRun, AcceptsUserDefinedCallbacksBundle) {
     };
     const auto ctx = run(rng, kernel, ms, p, cbs);
 
-    EXPECT_EQ(*cbs.steps, ctx.steps_done);
+    EXPECT_EQ(cbs.steps, ctx.steps_done);
     EXPECT_GE(ctx.steps_done, 50u);
     EXPECT_LT(ctx.steps_done, 200u); // stop_when ended the run early
 }
@@ -267,9 +263,7 @@ TEST(MCRun, AcceptsCustomKernelWithoutUpdateSet) {
 TEST(MCRun, CheckpointWriterInsideRunRoundTrips) {
     // End-to-end: run() drives a make_checkpoint_writer callback, and the written file restores
     // into fresh components.
-    stateful_update src;
-    auto src_counter = src.counter;
-    update_set us { update { src, "u", 1.0 } };
+    update_set us { update { stateful_update {}, "u", 1.0 } };
     measurement_set<> ms;
     metropolis_kernel kernel { us };
     xoshiro256ss rng { 21 };
@@ -291,16 +285,15 @@ TEST(MCRun, CheckpointWriterInsideRunRoundTrips) {
     ASSERT_TRUE(std::filesystem::exists(path));
 
     xoshiro256ss dst_rng { 999 };
-    stateful_update dst;
-    auto dst_counter = dst.counter;
-    update_set dst_us { update { dst, "u", 2.0 } };
+    update_set dst_us { update { stateful_update {}, "u", 2.0 } };
     measurement_set<> dst_ms;
     simulation_stats dst_stats;
     load_checkpoint(path, dst_rng, dst_us, dst_ms, dst_stats);
 
-    EXPECT_DOUBLE_EQ(dst_us.get<0>().weight, 1.0);           // weight restored from the file
-    EXPECT_GT(*dst_counter, 0);                             // user state from a mid-run snapshot
-    EXPECT_LE(*dst_counter, *src_counter);                  // ... no newer than the final state
+    const int dst_counter = dst_us.get<0>().value.counter;
+    EXPECT_DOUBLE_EQ(dst_us.get<0>().weight, 1.0);        // weight restored from the file
+    EXPECT_GT(dst_counter, 0);                            // user state from a mid-run snapshot
+    EXPECT_LE(dst_counter, us.get<0>().value.counter);    // ... no newer than the final state
     std::filesystem::remove(path);
 }
 

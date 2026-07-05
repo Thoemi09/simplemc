@@ -7,7 +7,6 @@
 #include <nlohmann/json.hpp>
 
 #include <filesystem>
-#include <memory>
 
 using namespace simplemc;
 
@@ -23,43 +22,43 @@ namespace {
 
 // User update opting into BOTH channels via generic-over-serializer ADL hooks.
 struct dual_update {
-    std::shared_ptr<int> state_counter = std::make_shared<int>(0);
-    std::shared_ptr<double> config_threshold = std::make_shared<double>(0.0);
+    int state_counter = 0;
+    double config_threshold = 0.0;
     double attempt() { return 1.0; }
     void accept() {}
 };
 
 template <serializer S>
 void simplemc_save(S& s, const dual_update& u) {
-    s.save_at("state_counter", *u.state_counter);
+    s.save_at("state_counter", u.state_counter);
 }
 template <serializer S>
 void simplemc_load(const S& s, dual_update& u) {
-    s.load_at("state_counter", *u.state_counter);
+    s.load_at("state_counter", u.state_counter);
 }
 template <serializer S>
 void simplemc_save_input_config(S& s, const dual_update& u) {
-    s.save_at("config_threshold", *u.config_threshold);
+    s.save_at("config_threshold", u.config_threshold);
 }
 template <serializer S>
 void simplemc_load_input_config(const S& s, dual_update& u) {
-    s.try_load_at("config_threshold", *u.config_threshold);
+    s.try_load_at("config_threshold", u.config_threshold);
 }
 
 // User update with ONLY the checkpoint hook — the input-config channel must silently skip it.
 struct state_only_update {
-    std::shared_ptr<int> ticks = std::make_shared<int>(0);
+    int ticks = 0;
     double attempt() { return 1.0; }
     void accept() {}
 };
 
 template <serializer S>
 void simplemc_save(S& s, const state_only_update& u) {
-    s.save_at("ticks", *u.ticks);
+    s.save_at("ticks", u.ticks);
 }
 template <serializer S>
 void simplemc_load(const S& s, state_only_update& u) {
-    s.load_at("ticks", *u.ticks);
+    s.load_at("ticks", u.ticks);
 }
 
 // Drive a short run, then fold counters into the cumulative state.
@@ -83,8 +82,8 @@ TEST(MCMixedBackend, StateAndInputConfigDispatchIndependently) {
     xoshiro256ss rng { 7 };
     simulation_stats stats;
     dual_update src_u;
-    *src_u.state_counter = 42;
-    *src_u.config_threshold = 1.25;
+    src_u.state_counter = 42;
+    src_u.config_threshold = 1.25;
     update_set updates { update { src_u, "tunable", 3.0 } };
     measurement_set<> meas;
 
@@ -117,10 +116,7 @@ TEST(MCMixedBackend, StateAndInputConfigDispatchIndependently) {
     xoshiro256ss dst_rng;
     simulation_stats dst_stats;
     simulation_params dst_params;
-    dual_update dst_u;
-    auto dst_state_counter = dst_u.state_counter;
-    auto dst_config_threshold = dst_u.config_threshold;
-    update_set dst_updates { update { dst_u, "tunable", 1.0 } };
+    update_set dst_updates { update { dual_update {}, "tunable", 1.0 } };
     measurement_set<> dst_meas;
 
     const json_serializer state_r { state_w.root() };
@@ -131,11 +127,11 @@ TEST(MCMixedBackend, StateAndInputConfigDispatchIndependently) {
 
     // State round-trip:
     EXPECT_EQ(dst_stats.cumulative_steps, stats.cumulative_steps);
-    EXPECT_EQ(*dst_state_counter, 42);
+    EXPECT_EQ(dst_updates.get<0>().value.state_counter, 42);
 
     // Input-config round-trip:
     EXPECT_DOUBLE_EQ(dst_updates.get<0>().weight, 3.0);
-    EXPECT_DOUBLE_EQ(*dst_config_threshold, 1.25);
+    EXPECT_DOUBLE_EQ(dst_updates.get<0>().value.config_threshold, 1.25);
 }
 
 TEST(MCMixedBackend, OneSidedOptInSilentlySkipsOtherChannel) {
@@ -144,7 +140,7 @@ TEST(MCMixedBackend, OneSidedOptInSilentlySkipsOtherChannel) {
     xoshiro256ss rng;
     simulation_stats stats;
     state_only_update u;
-    *u.ticks = 99;
+    u.ticks = 99;
     update_set updates { update { u, "ticker", 1.0 } };
     measurement_set<> meas;
 
@@ -169,7 +165,7 @@ TEST(MCMixedBackend, SameComponentsRoundTripThroughRuntimeChosenBackend) {
     xoshiro256ss rng { 5 };
     simulation_stats stats;
     state_only_update u;
-    *u.ticks = 7;
+    u.ticks = 7;
     update_set updates { update { u, "ticker", 1.0 } };
     measurement_set<> meas;
     run_and_accumulate(
@@ -181,14 +177,12 @@ TEST(MCMixedBackend, SameComponentsRoundTripThroughRuntimeChosenBackend) {
 
         xoshiro256ss dst_rng { 1 };
         simulation_stats dst_stats;
-        state_only_update dst_u;
-        auto dst_ticks = dst_u.ticks;
-        update_set dst_updates { update { dst_u, "ticker", 1.0 } };
+        update_set dst_updates { update { state_only_update {}, "ticker", 1.0 } };
         measurement_set<> dst_meas;
         load_checkpoint(path, dst_rng, dst_updates, dst_meas, dst_stats);
 
         EXPECT_EQ(dst_stats.cumulative_steps, stats.cumulative_steps);
-        EXPECT_EQ(*dst_ticks, 7);
+        EXPECT_EQ(dst_updates.get<0>().value.ticks, 7);
         std::filesystem::remove(path);
     };
 

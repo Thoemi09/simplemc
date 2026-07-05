@@ -7,7 +7,6 @@
 #include <gtest/gtest.h>
 
 #include <cstdint>
-#include <memory>
 
 using namespace simplemc;
 
@@ -17,8 +16,8 @@ namespace {
 // through the `measurement` wrapper's MPI hook for types without an ADL `simplemc_mpi_collect`
 // overload.
 struct counter_meas {
-    std::shared_ptr<int> count = std::make_shared<int>(0);
-    void measure() { ++*count; }
+    int count = 0;
+    void measure() { ++count; }
 };
 
 // User measurement wrapping a library accumulator. Provides an ADL `simplemc_mpi_collect`
@@ -118,8 +117,10 @@ TEST_F(SimplemcMCMPI, MeasurementSetForwardsToWrapperHook) {
     ASSERT_EQ(reduced->acc.count(), ref.count());
     EXPECT_NEAR(reduced->acc.mean(), ref.mean(), 1e-12);
 
-    // counter_meas has no ADL `simplemc_mpi_collect` — silent no-op. The local pointer should be unchanged.
-    EXPECT_NE(ms.get<counter_meas>("counter"), nullptr);
+    // counter_meas has no ADL `simplemc_mpi_collect` — silent no-op. Its local state is unchanged.
+    const auto* counter = ms.get<counter_meas>("counter");
+    ASSERT_NE(counter, nullptr);
+    EXPECT_EQ(counter->count, 0);
 }
 
 TEST_F(SimplemcMCMPI, CompositeReducesAllComponents) {

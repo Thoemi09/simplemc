@@ -3,39 +3,37 @@
 
 #include <gtest/gtest.h>
 
-#include <memory>
+#include <cstdint>
 
 using namespace simplemc;
 
 namespace {
 
 struct always_accept {
-    std::shared_ptr<int> accepts = std::make_shared<int>(0);
+    int accepts = 0;
     double attempt() { return 1.0; }
-    void accept() { ++*accepts; }
+    void accept() { ++accepts; }
     void reject() {}
 };
 
 struct always_reject {
-    std::shared_ptr<int> rejects = std::make_shared<int>(0);
+    int rejects = 0;
     double attempt() { return 0.0; }
     void accept() {}
-    void reject() { ++*rejects; }
+    void reject() { ++rejects; }
 };
 
 struct always_impossible {
-    std::shared_ptr<int> rejects = std::make_shared<int>(0);
+    int rejects = 0;
     double attempt() { return -1.0; }
     void accept() {}
-    void reject() { ++*rejects; }
+    void reject() { ++rejects; }
 };
 
 } // namespace
 
 TEST(MCMetropolisKernel, StepAccepts) {
-    always_accept src;
-    auto accepts = src.accepts;
-    update_set us { update { src, "u", 1.0 } };
+    update_set us { update { always_accept {}, "u", 1.0 } };
 
     metropolis_kernel k { us };
     k.prepare();
@@ -47,13 +45,11 @@ TEST(MCMetropolisKernel, StepAccepts) {
     EXPECT_EQ(us.get<0>().nprops, 100u);
     EXPECT_EQ(us.get<0>().naccs, 100u);
     EXPECT_EQ(us.get<0>().nimps, 0u);
-    EXPECT_EQ(*accepts, 100);
+    EXPECT_EQ(us.get<0>().value.accepts, 100);
 }
 
 TEST(MCMetropolisKernel, StepImpossible) {
-    always_impossible src;
-    auto rejects = src.rejects;
-    update_set us { update { src, "u", 1.0 } };
+    update_set us { update { always_impossible {}, "u", 1.0 } };
 
     metropolis_kernel k { us };
     k.prepare();
@@ -65,13 +61,11 @@ TEST(MCMetropolisKernel, StepImpossible) {
     EXPECT_EQ(us.get<0>().nprops, 50u);
     EXPECT_EQ(us.get<0>().naccs, 0u);
     EXPECT_EQ(us.get<0>().nimps, 50u);
-    EXPECT_EQ(*rejects, 50);
+    EXPECT_EQ(us.get<0>().value.rejects, 50);
 }
 
 TEST(MCMetropolisKernel, StepRejects) {
-    always_reject src;
-    auto rejects = src.rejects;
-    update_set us { update { src, "u", 1.0 } };
+    update_set us { update { always_reject {}, "u", 1.0 } };
 
     metropolis_kernel k { us };
     k.prepare();
@@ -83,8 +77,9 @@ TEST(MCMetropolisKernel, StepRejects) {
     EXPECT_EQ(us.get<0>().nprops, 200u);
     // 0.0001 acceptance prob — overwhelmingly likely all 200 reject
     EXPECT_EQ(us.get<0>().nimps, 0u);
-    EXPECT_GE(us.get<0>().naccs + *rejects, 200);  // sanity
-    EXPECT_LT(us.get<0>().naccs, 5u);              // very few should accept
+    const auto rejects = static_cast<std::uint64_t>(us.get<0>().value.rejects);
+    EXPECT_GE(us.get<0>().naccs + rejects, 200u); // sanity
+    EXPECT_LT(us.get<0>().naccs, 5u);             // very few should accept
 }
 
 TEST(MCMetropolisKernel, AppliesRatioFromInversePair) {
