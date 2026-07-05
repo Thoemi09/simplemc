@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief MC update value together with some metadata.
+ * @brief MC update wrapper class.
  */
 
 #ifndef SIMPLEMC_MC_UPDATE_HPP
@@ -26,21 +26,20 @@ namespace simplemc {
  */
 
 /**
- * @brief MC update value together with some metadata.
+ * @brief MC update wrapper class for a user-defined update type.
  *
- * @details simplemc::update owns a user update value of type `U` (satisfying simplemc::mc_update)
- * together with its metadata:
+ * @details It owns a user-defined update @ref value of type @ref value_type (satisfying
+ * simplemc::mc_update) together with its metadata:
  *
- * - a unique name that identifies the update,
- * - the name of the inverse update,
- * - an unnormalized selection weight,
- * - a detailed-balance correction ratio, and
+ * - a unique @ref name that identifies the update,
+ * - the name of the inverse update (see @ref inv_name),
+ * - an unnormalized selection @ref weight,
+ * - a detailed-balance correction @ref ratio, and
  * - counters tracking the number of proposals, acceptances, and impossible signals over the current
  * run and across multiple runs.
  *
  * All fields are public so kernels and reporting code can read and write them directly. The wrapped
- * type is stored by value; there is no type erasure, so the concrete type is available at compile
- * time (via the public @ref value member and the nested alias @ref value_type).
+ * type is stored by value and accessed via the public @ref value member.
  *
  * @tparam U User update type satisfying simplemc::mc_update.
  */
@@ -62,7 +61,7 @@ struct update {
     std::string name;
 
     /**
-     * @brief Identifier of the inverse update. Equal to `name` for self-inverse updates.
+     * @brief Identifier of the inverse update. Equal to @ref name for self-inverse updates.
      */
     std::string inv_name;
 
@@ -72,9 +71,9 @@ struct update {
     double weight;
 
     /**
-     * @brief Detailed-balance correction multiplier applied by the kernel to `attempt()`.
+     * @brief Detailed-balance correction multiplier applied by the simplemc::metropolis_kernel.
      *
-     * @details \f$ 1 \f$ for a self-inverse update; \f$ w_{\text{inv}} / w \f$ for a paired update.
+     * @details \f$ 1.0 \f$ for a self-inverse update; \f$ w_{\text{inv}} / w \f$ for a paired update.
      */
     double ratio = 1.0;
 
@@ -111,12 +110,11 @@ struct update {
     /**
      * @brief Constructor stores a user-defined update value.
      *
-     * @details It validates that the name is not empty and that the weight is non-negative, throwing a
-     * simplemc::simplemc_exception otherwise. It sets `inv_name = name` and `ratio = 1.0`; the counters
-     * default to zero.
+     * @details It validates that the name is not empty and that the weight is non-negative, throwing
+     * a simplemc::simplemc_exception otherwise.
      *
-     * The first parameter is the class template parameter by value, so the implicitly-generated
-     * deduction guide lets `update{ my_update {}, "name", 1.0 }` deduce `update<my_update>`.
+     * By default, updates are self-inverse, i.e. @ref inv_name is set to @ref name and @ref ratio is
+     * set to \f$ 1.0 \f$. To define a paired update, see update_set::link_pair().
      *
      * @param value User update value to store.
      * @param name Identifier.
@@ -139,20 +137,24 @@ struct update {
     /**
      * @brief Propose a change to the simulation state.
      *
+     * @details It simply calls the `%attempt()` member of the wrapped user type.
+     *
      * @return Acceptance probability of the proposed change.
      */
     double attempt() { return value.attempt(); }
 
     /**
      * @brief Commit the proposed change.
+     *
+     * @details It simply calls the `%accept()` member of the wrapped user type.
      */
     void accept() { value.accept(); }
 
     /**
      * @brief Roll back any speculative state set up by attempt().
      *
-     * @details If the wrapped user type defines a `%reject()` member it is invoked. Otherwise this is a
-     * no-op.
+     * @details If the wrapped user type defines a `%reject()` member it is invoked. Otherwise this is
+     * a no-op.
      */
     void reject() {
         if constexpr (requires { value.reject(); }) {
@@ -184,12 +186,8 @@ struct update {
  * @relates simplemc::update
  * @brief Serialize a simplemc::update.
  *
- * @details It serializes all metadata except `name` and the transient current-run counters, then the
- * wrapped value under `"user"` if the value is serializable by `S` (otherwise the value is
- * skipped).
- *
- * @note The value skip is silent: a missing (or misspelled) ADL `%simplemc_save` overload on the
- * user type does not produce a diagnostic — the `"user"` key is simply absent from the output.
+ * @details It serializes all metadata except update::name and the transient current-run counters. If
+ * the wrapped user update is serializable by `S`, update::value is also serialized.
  *
  * @tparam S Serializer type.
  * @tparam U User update type.
@@ -213,10 +211,8 @@ void simplemc_save(S& s, const update<U>& u) {
  * @relates simplemc::update
  * @brief Deserialize a simplemc::update.
  *
- * @details Symmetric to simplemc_save(S&, const update<U>&).
- *
- * @note If the value is not deserializable by `S` it is silently skipped and keeps its current
- * value; a missing (or misspelled) ADL `%simplemc_load` overload does not produce a diagnostic.
+ * @details It deserializes all metadata except update::name and the transient current-run counters.
+ * If the wrapped user update is deserializable by `S`, update::value is also deserialized.
  *
  * @tparam S Serializer type.
  * @tparam U User update type.
@@ -240,8 +236,8 @@ void simplemc_load(const S& s, update<U>& u) {
  * @relates simplemc::update
  * @brief Serialize the user-input config of a simplemc::update.
  *
- * @details It serializes `weight` and, if the value has an input-config serialization, the value
- * under `"user"`.
+ * @details It serializes update::weight and, if the wrapped user update has an input-config
+ * serialization, update::value.
  *
  * @tparam S Serializer type.
  * @tparam U User update type.
@@ -261,7 +257,8 @@ void simplemc_save_input_config(S& s, const update<U>& u) {
  * @relates simplemc::update
  * @brief Deserialize the user-input config of a simplemc::update.
  *
- * @details Symmetric to simplemc_save_input_config(S&, const update<U>&). The `weight` is optional.
+ * @details It deserializes update::weight and, if the wrapped user update has an input-config
+ * deserialization, update::value.
  *
  * @tparam S Serializer type.
  * @tparam U User update type.
@@ -281,8 +278,8 @@ void simplemc_load_input_config(const S& s, update<U>& u) {
  * @relates simplemc::update
  * @brief Collect a simplemc::update from different MPI processes.
  *
- * @details It all-reduces the six counter fields and, if the value supports it, reduces the value
- * via its own `%simplemc_mpi_collect`.
+ * @details It all-reduces the six counter fields and, if the user update satisfies
+ * simplemc::has_simplemc_mpi_collect, it reduces the value via the ADL hook `%simplemc_mpi_collect`.
  *
  * @note This reduction is **not idempotent**: both the current-run and the cumulative counters are
  * summed, so call it exactly once per run, at a fixed point relative to update::accumulate_counters()

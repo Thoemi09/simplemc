@@ -11,8 +11,7 @@ using namespace simplemc;
 
 namespace {
 
-// A toy update with attempt(), accept(), and reject() — observable side effects via shared
-// counters so we can see what got called.
+// A toy update with attempt(), accept(), and reject() — observable side effects via shared counters.
 struct toy_update {
     std::shared_ptr<int> accepted = std::make_shared<int>(0);
     std::shared_ptr<int> rejected = std::make_shared<int>(0);
@@ -29,7 +28,7 @@ struct minimal_update {
     void accept() { ++*accepted; }
 };
 
-// A second distinct conforming type.
+// A second distinct conforming update.
 struct doubling_update {
     std::shared_ptr<int> committed = std::make_shared<int>(1);
     double attempt() { return 0.25; }
@@ -40,9 +39,11 @@ struct doubling_update {
 struct missing_attempt {
     void accept() {}
 };
+
 struct missing_accept {
     double attempt() { return 0.0; }
 };
+
 struct nothing {};
 
 } // namespace
@@ -59,11 +60,8 @@ static_assert(!mc_update<int>);
 // The update<U> wrapper forwards attempt()/accept() so it is itself an mc_update.
 static_assert(mc_update<update<toy_update>>);
 
-// =====================================================================================
-// update<U> forwarding, value semantics and typed access.
-// =====================================================================================
-
-TEST(MCUpdateForwarding, WrapsAndForwardsAttemptAccept) {
+// Test basic behavior of the measurement wrapper and the wrapped type.
+TEST(MCUpdate, WrapsAndForwardsAttemptAccept) {
     toy_update src;
     src.prob = 0.75;
     auto accepted = src.accepted;
@@ -76,7 +74,7 @@ TEST(MCUpdateForwarding, WrapsAndForwardsAttemptAccept) {
     EXPECT_EQ(*accepted, 1);
 }
 
-TEST(MCUpdateForwarding, RejectIsNoOpWhenUserTypeOmitsIt) {
+TEST(MCUpdate, RejectIsNoOpWhenUserTypeOmitsIt) {
     minimal_update src;
     auto accepted = src.accepted;
 
@@ -90,7 +88,7 @@ TEST(MCUpdateForwarding, RejectIsNoOpWhenUserTypeOmitsIt) {
     EXPECT_EQ(*accepted, 0);
 }
 
-TEST(MCUpdateForwarding, RejectForwardsWhenUserTypeProvidesIt) {
+TEST(MCUpdate, RejectForwardsWhenUserTypeProvidesIt) {
     toy_update src;
     auto rejected = src.rejected;
 
@@ -100,7 +98,7 @@ TEST(MCUpdateForwarding, RejectForwardsWhenUserTypeProvidesIt) {
     EXPECT_EQ(*rejected, 1);
 }
 
-TEST(MCUpdateForwarding, CopyProducesIndependentValueSharingCapturedState) {
+TEST(MCUpdate, CopyProducesIndependentValueSharingCapturedState) {
     toy_update src;
     auto accepted = src.accepted;
 
@@ -113,7 +111,7 @@ TEST(MCUpdateForwarding, CopyProducesIndependentValueSharingCapturedState) {
     EXPECT_EQ(*accepted, 2);
 }
 
-TEST(MCUpdateForwarding, MoveTransfersOwnership) {
+TEST(MCUpdate, MoveTransfersOwnership) {
     toy_update src;
     auto accepted = src.accepted;
 
@@ -124,7 +122,7 @@ TEST(MCUpdateForwarding, MoveTransfersOwnership) {
     EXPECT_EQ(*accepted, 1);
 }
 
-TEST(MCUpdateForwarding, ValueMemberExposesPayload) {
+TEST(MCUpdate, ValueMemberExposesUserUpdate) {
     toy_update src;
     src.prob = 0.42;
     update u { src, "u", 1.0 };
@@ -137,10 +135,7 @@ TEST(MCUpdateForwarding, ValueMemberExposesPayload) {
     EXPECT_DOUBLE_EQ(u.attempt(), 0.99);
 }
 
-// =====================================================================================
-// update<U> metadata: construction, validation, counters, serialization.
-// =====================================================================================
-
+// Test constructors and access of metadata.
 TEST(MCUpdate, ConstructFromUserValue) {
     update u { toy_update {}, "u1", 2.5 };
     EXPECT_EQ(u.name, "u1");
@@ -179,6 +174,7 @@ TEST(MCUpdate, CountersResetAndAccumulate) {
     EXPECT_EQ(u.cumulative_nprops, 7u); // cumulative untouched by reset
 }
 
+// Test serialization and deserialization of the wrapper and its metadata.
 TEST(MCUpdate, SerializationRoundTrip) {
     update u { toy_update {}, "u", 2.0 };
     u.inv_name = "u_inv";
@@ -212,7 +208,7 @@ TEST(MCUpdate, InputConfigRoundTripOnlyTouchesWeight) {
     auto entry = s["entry"];
     simplemc_save_input_config(entry, u);
 
-    // Loader picks up only "weight"; ratio and cumulative_* are untouched.
+    // loader picks up only "weight"; ratio and cumulative_* are untouched
     update v { toy_update {}, "u", 1.0 };
     v.ratio = 9.0;
     v.cumulative_nprops = 0;
@@ -220,6 +216,6 @@ TEST(MCUpdate, InputConfigRoundTripOnlyTouchesWeight) {
     simplemc_load_input_config(rentry, v);
 
     EXPECT_DOUBLE_EQ(v.weight, 4.0);
-    EXPECT_DOUBLE_EQ(v.ratio, 9.0);     // untouched
+    EXPECT_DOUBLE_EQ(v.ratio, 9.0); // untouched
     EXPECT_EQ(v.cumulative_nprops, 0u); // untouched
 }
