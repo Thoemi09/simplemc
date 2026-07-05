@@ -4,6 +4,9 @@
 
 #include <gtest/gtest.h>
 
+#include <cstddef>
+#include <optional>
+
 using namespace simplemc;
 
 namespace {
@@ -19,6 +22,7 @@ struct other_meas {
 
 } // namespace
 
+// Test constructor.
 TEST(MCMeasurementSet, AddRegistersEntries) {
     measurement_set ms { measurement { counter_meas {}, "a" }, measurement { counter_meas {}, "b", false } };
     EXPECT_EQ(ms.size(), 2u);
@@ -26,22 +30,25 @@ TEST(MCMeasurementSet, AddRegistersEntries) {
     EXPECT_FALSE(ms.get<1>().is_active);
 }
 
-// duplicate-name detection removed: roster is now a compile-time tuple
-
+// Test changing the active state of a registered measurement.
 TEST(MCMeasurementSet, SetActive) {
     measurement_set ms { measurement { counter_meas {}, "a", true } };
+    EXPECT_TRUE(ms.get<0>().is_active);
     ms.set_active("a", false);
     EXPECT_FALSE(ms.get<0>().is_active);
 
+    // throw on missing name
     EXPECT_THROW(ms.set_active("missing", false), simplemc_exception);
 }
 
+// Test finding a (non-)registered measurement by name.
 TEST(MCMeasurementSet, FindReturnsIndexOrNullopt) {
     measurement_set ms { measurement { counter_meas {}, "a" } };
     EXPECT_EQ(ms.find("a"), std::optional<std::size_t> { 0 });
     EXPECT_FALSE(ms.find("missing").has_value());
 }
 
+// Test rebuilding and clearing the active set cache.
 TEST(MCMeasurementSet, RefreshActiveBuildsCache) {
     measurement_set ms { measurement { counter_meas {}, "a", true }, measurement { counter_meas {}, "b", false },
         measurement { counter_meas {}, "c", true } };
@@ -72,6 +79,7 @@ TEST(MCMeasurementSet, ClearActiveEmptiesCache) {
     EXPECT_EQ(ms.active_indices().size(), 0u);
 }
 
+// Test that measure_all() invokes measure() on every active entry.
 TEST(MCMeasurementSet, MeasureAllInvokesActiveOnly) {
     measurement_set ms { measurement { counter_meas {}, "a", true }, measurement { counter_meas {}, "b", false },
         measurement { counter_meas {}, "c", true } };
@@ -85,6 +93,8 @@ TEST(MCMeasurementSet, MeasureAllInvokesActiveOnly) {
     EXPECT_EQ(ms.get<2>().value.count, 2);
 }
 
+// Test that get<T>(name) returns a typed pointer to the user measurement, or nullptr if the name is
+// not registered or the type does not match.
 TEST(MCMeasurementSet, GetReturnsTypedPointer) {
     counter_meas src;
     src.count = 7;
@@ -98,6 +108,7 @@ TEST(MCMeasurementSet, GetReturnsTypedPointer) {
     EXPECT_EQ(ms.get<counter_meas>("missing"), nullptr);
 }
 
+// Test serialization and deserialization of the measurement_set and its metadata.
 TEST(MCMeasurementSet, SerializationRoundTrip) {
     measurement_set ms { measurement { counter_meas {}, "a", true }, measurement { counter_meas {}, "b", false } };
 

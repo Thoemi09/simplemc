@@ -27,7 +27,7 @@ target_link_libraries(mc-stats-and-params-test PRIVATE simplemc-test)
 add_executable(mc-measurement-test mc_measurement_test.cpp)
 target_link_libraries(mc-measurement-test PRIVATE simplemc-test)
 
-add_executable(mc-measurement-set-test measurement_set_test.cpp)
+add_executable(mc-measurement-set-test mc_measurement_set_test.cpp)
 target_link_libraries(mc-measurement-set-test PRIVATE simplemc-test)
 
 add_executable(mc-update-test mc_update_test.cpp)

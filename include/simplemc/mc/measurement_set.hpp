@@ -30,14 +30,25 @@ namespace simplemc {
 /**
  * @brief Set of MC measurements.
  *
- * @details The set stores its simplemc::measurement entries in a `std::tuple` (via
- * simplemc::tuple_set), so the measurement *types* are fixed at construction. It also holds a cache of
- * indices for those currently flagged active, rebuilt from the measurement::is_active flags by
- * refresh_active(). Simulation drivers call measure_all() to invoke `measure()` on every active entry.
+ * @details The set inherits from simplemc::tuple_set to store simplemc::measurement entries in a
+ * `std::tuple`, so the measurement *types* are fixed at construction. It also holds a cache of
+ * indices for those currently flagged active which is rebuilt from the measurement::is_active flags
+ * by refresh_active().
  *
- * Registration is construction-time (build the whole set in one initializer, deducing the types via
- * CTAD); the active flags stay mutable at runtime via set_active(). Lookup and typed access are
- * provided by the base simplemc::tuple_set.
+ * Simulation drivers call measure_all() which invokes `measure()` on every active entry to perform
+ * measurements.
+ *
+ * Measurements are registered at construction-time, e.g.
+ *
+ * @code{.cpp}
+ * simplemc::measurement_set {
+ *     simplemc::measurement { foo { }, "foo" },
+ *     simplemc::measurement { bar { }, "bar", false }
+ * };
+ * @endcode
+ *
+ * The measurement::is_active flags stay mutable at runtime via set_active(). Lookup and typed access
+ * are provided by the base class simplemc::tuple_set.
  *
  * @tparam Ms User measurement types (each satisfying simplemc::mc_measurement).
  */
@@ -45,7 +56,7 @@ template <mc_measurement... Ms>
 class measurement_set : public tuple_set<measurement<Ms>...> {
 public:
     /**
-     * @brief Construct the set from its measurements.
+     * @brief Construct the set from the given measurements.
      *
      * @param ms Measurements to store, in order.
      */
@@ -104,7 +115,13 @@ public:
     }
 
     /**
-     * @brief Serialize a simplemc::measurement_set: every measurement, keyed by name.
+     * @brief Serialize a simplemc::measurement_set.
+     *
+     * @details It dispatches to tuple_set::save_entries which serializes all measurements in the set.
+     *
+     * @tparam S Serializer type.
+     * @param s Serializer handle.
+     * @param ms Measurement set to serialize.
      */
     template <serializer S>
     friend void simplemc_save(S& s, const measurement_set& ms) {
@@ -112,7 +129,14 @@ public:
     }
 
     /**
-     * @brief Deserialize a simplemc::measurement_set: every measurement, keyed by name.
+     * @brief Deserialize a simplemc::measurement_set.
+     *
+     * @details It dispatches to tuple_set::load_entries which deserializes all measurements in the
+     * set.
+     *
+     * @tparam S Serializer type.
+     * @param s Serializer handle.
+     * @param ms Measurement set to deserialize.
      */
     template <serializer S>
     friend void simplemc_load(const S& s, measurement_set& ms) {
@@ -121,6 +145,13 @@ public:
 
     /**
      * @brief Serialize the user-input config of a simplemc::measurement_set.
+     *
+     * @details It dispatches to tuple_set::save_input_config_entries which serializes the
+     * input-config of all measurements in the set.
+     *
+     * @tparam S Serializer type.
+     * @param s Serializer handle.
+     * @param ms Measurement set to serialize.
      */
     template <serializer S>
     friend void simplemc_save_input_config(S& s, const measurement_set& ms) {
@@ -129,6 +160,13 @@ public:
 
     /**
      * @brief Deserialize the user-input config of a simplemc::measurement_set.
+     *
+     * @details It dispatches to tuple_set::load_input_config_entries which deserializes the
+     * input-config of all measurements in the set.
+     *
+     * @tparam S Serializer type.
+     * @param s Serializer handle.
+     * @param ms Measurement set to deserialize.
      */
     template <serializer S>
     friend void simplemc_load_input_config(const S& s, measurement_set& ms) {
@@ -138,6 +176,8 @@ public:
     /**
      * @brief Collect a simplemc::measurement_set from different MPI processes.
      *
+     * @details It dispatches to tuple_set::mpi_collect_entries.
+     *
      * @param comm simplemc::mpi::communicator object.
      * @param ms Measurement set to reduce in place.
      */
@@ -146,7 +186,6 @@ public:
     }
 
 private:
-    /// Cached indices of currently-active measurements.
     std::vector<std::size_t> active_;
 };
 
