@@ -2,7 +2,7 @@
 #
 # The following targets are defined:
 # ---------------------------------
-# mc-tuple-set-test: Test the tuple_set base (traversal, lookup, typed access).
+# mc-tuple-set-test: Test the tuple_set base class (traversal, lookup, typed access).
 # mc-stats-and-params-test: Test simulation_params and simulation_stats.
 # mc-measurement-test: Test measurement<M> wrapper + mc_measurement concept.
 # mc-measurement-set-test: Test measurement_set (construction, active cache, measure_all, serialization).
@@ -24,7 +24,7 @@ target_link_libraries(mc-tuple-set-test PRIVATE simplemc-test)
 add_executable(mc-stats-and-params-test stats_and_params_test.cpp)
 target_link_libraries(mc-stats-and-params-test PRIVATE simplemc-test)
 
-add_executable(mc-measurement-test measurement_test.cpp)
+add_executable(mc-measurement-test mc_measurement_test.cpp)
 target_link_libraries(mc-measurement-test PRIVATE simplemc-test)
 
 add_executable(mc-measurement-set-test measurement_set_test.cpp)

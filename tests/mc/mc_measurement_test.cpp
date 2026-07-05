@@ -11,14 +11,13 @@ using namespace simplemc;
 
 namespace {
 
-// A toy measurement that increments a shared counter so we can observe `measure()` calls
-// across copies.
+// A toy measurement that increments a shared counter so we can observe `measure()` calls.
 struct counter_meas {
     std::shared_ptr<int> count = std::make_shared<int>(0);
     void measure() { ++*count; }
 };
 
-// A second, distinct conforming type.
+// A second, distinct conforming measurement.
 struct doubling_meas {
     std::shared_ptr<int> count = std::make_shared<int>(1);
     void measure() { *count *= 2; }
@@ -29,8 +28,7 @@ struct not_a_meas {
     int x = 0;
 };
 
-// A move-only mc_measurement. Type erasure used to reject these (it required copyability); the
-// tuple-based design stores the user type by value, so move-only measurements now work.
+// A move-only measurement.
 struct move_only_meas {
     std::unique_ptr<int> count = std::make_unique<int>(0);
     void measure() { ++*count; }
@@ -48,11 +46,8 @@ static_assert(mc_measurement<move_only_meas>);
 // The measurement<M> wrapper forwards measure() so it is itself an mc_measurement.
 static_assert(mc_measurement<measurement<counter_meas>>);
 
-// =====================================================================================
-// measurement<M> forwarding, value semantics and typed access.
-// =====================================================================================
-
-TEST(MCMeasurementForwarding, WrapsAndForwardsMeasure) {
+// Test basic behavior of the measurement wrapper and the wrapped type.
+TEST(MCMeasurement, WrapsAndForwardsMeasure) {
     counter_meas src;
     auto count = src.count;
 
@@ -62,7 +57,7 @@ TEST(MCMeasurementForwarding, WrapsAndForwardsMeasure) {
     EXPECT_EQ(*count, 1);
 }
 
-TEST(MCMeasurementForwarding, CopyProducesIndependentValueSharingCapturedState) {
+TEST(MCMeasurement, CopyProducesIndependentValueSharingCapturedState) {
     counter_meas src;
     auto count = src.count;
 
@@ -75,7 +70,7 @@ TEST(MCMeasurementForwarding, CopyProducesIndependentValueSharingCapturedState) 
     EXPECT_EQ(*count, 2);
 }
 
-TEST(MCMeasurementForwarding, MoveTransfersOwnership) {
+TEST(MCMeasurement, MoveTransfersOwnership) {
     counter_meas src;
     auto count = src.count;
 
@@ -86,13 +81,13 @@ TEST(MCMeasurementForwarding, MoveTransfersOwnership) {
     EXPECT_EQ(*count, 1);
 }
 
-TEST(MCMeasurementForwarding, MoveOnlyPayloadIsSupported) {
+TEST(MCMeasurement, MoveOnlyMeasurementIsSupported) {
     measurement m { move_only_meas {}, "m" };
     m.measure();
     EXPECT_EQ(*m.value.count, 1);
 }
 
-TEST(MCMeasurementForwarding, ValueMemberExposesPayload) {
+TEST(MCMeasurement, ValueMemberExposesUserMeasurement) {
     counter_meas src;
     auto count = src.count;
     measurement m { src, "m" };
@@ -100,22 +95,18 @@ TEST(MCMeasurementForwarding, ValueMemberExposesPayload) {
     static_assert(std::is_same_v<decltype(m)::value_type, counter_meas>);
     EXPECT_EQ(m.value.count.get(), count.get());
 
-    // measuring through the wrapper bumps the same counter the public member sees
     m.measure();
     EXPECT_EQ(*m.value.count, 1);
 }
 
-// =====================================================================================
-// measurement<M> metadata: construction, validation, serialization.
-// =====================================================================================
-
+// Test constructors and access of metadata.
 TEST(MCMeasurement, ConstructFromUserValue) {
     measurement m { counter_meas {}, "m1" };
     EXPECT_EQ(m.name, "m1");
     EXPECT_TRUE(m.is_active);
 }
 
-TEST(MCMeasurement, ConstructFromUserValueExplicitActive) {
+TEST(MCMeasurement, ConstructFromUserValueNonActive) {
     measurement m { counter_meas {}, "m1", false };
     EXPECT_FALSE(m.is_active);
 }
@@ -124,14 +115,7 @@ TEST(MCMeasurement, ConstructorRejectsEmptyName) {
     EXPECT_THROW((measurement { counter_meas {}, "", true }), simplemc_exception);
 }
 
-TEST(MCMeasurement, MeasureForwardsToPayload) {
-    counter_meas src;
-    auto count = src.count;
-    measurement m { src, "m", true };
-    m.measure();
-    EXPECT_EQ(*count, 1);
-}
-
+// Test serialization and deserialization of the wrapper and its metadata.
 TEST(MCMeasurement, SerializationRoundTrip) {
     measurement m { counter_meas {}, "m", false };
 

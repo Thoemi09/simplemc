@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief MC measurement wrapper.
+ * @brief MC measurement wrapper class.
  */
 
 #ifndef SIMPLEMC_MC_MEASUREMENT_HPP
@@ -22,7 +22,7 @@ namespace simplemc {
  */
 
 /**
- * @brief MC measurement wrapper for a user-defined measurement type.
+ * @brief MC measurement wrapper class for a user-defined measurement type.
  *
  * @details It owns a user-defined measurement @ref value of type @ref value_type (satisfying
  * simplemc::mc_measurement) together with its metadata:
@@ -77,7 +77,9 @@ struct measurement {
     }
 
     /**
-     * @brief Perform the measurement by calling the `%measure()` member of the wrapped user type.
+     * @brief Perform the measurement 
+     * 
+     * @details It simply calls the `%measure()` member of the wrapped user type.
      */
     void measure() { value.measure(); }
 };
@@ -86,11 +88,8 @@ struct measurement {
  * @relates simplemc::measurement
  * @brief Serialize a simplemc::measurement.
  *
- * @details It serializes `is_active`, then the wrapped value under `"user"` if the value is
- * serializable by `S` (otherwise the value is skipped).
- *
- * @note The value skip is silent: a missing (or misspelled) ADL `%simplemc_save` overload on the
- * user type does not produce a diagnostic — the `"user"` key is simply absent from the output.
+ * @details It serializes measurement::is_active and, if the wrapped user measurement is serializable
+ * by `S`, measurement::value.
  *
  * @tparam S Serializer type.
  * @tparam M User measurement type.
@@ -109,10 +108,8 @@ void simplemc_save(S& s, const measurement<M>& m) {
  * @relates simplemc::measurement
  * @brief Deserialize a simplemc::measurement.
  *
- * @details Symmetric to simplemc_save(S&, const measurement<M>&).
- *
- * @note If the value is not deserializable by `S` it is silently skipped and keeps its current
- * value; a missing (or misspelled) ADL `%simplemc_load` overload does not produce a diagnostic.
+ * @details It deserializes measurement::is_active and, if the wrapped user measurement is
+ * deserializable by `S`, measurement::value.
  *
  * @tparam S Serializer type.
  * @tparam M User measurement type.
@@ -131,8 +128,8 @@ void simplemc_load(const S& s, measurement<M>& m) {
  * @relates simplemc::measurement
  * @brief Serialize the user-input config of a simplemc::measurement.
  *
- * @details It serializes `is_active` and, if the value has an input-config serialization, the
- * value under `"user"`.
+ * @details It serializes measurement::is_active and, if the wrapped user measurement has an
+ * input-config serialization, measurement::value.
  *
  * @tparam S Serializer type.
  * @tparam M User measurement type.
@@ -152,8 +149,8 @@ void simplemc_save_input_config(S& s, const measurement<M>& m) {
  * @relates simplemc::measurement
  * @brief Deserialize the user-input config of a simplemc::measurement.
  *
- * @details Symmetric to simplemc_save_input_config(S&, const measurement<M>&). The `is_active` flag is
- * optional.
+ * @details It deserializes measurement::is_active and, if the wrapped user measurement has an
+ * input-config deserialization, measurement::value.
  *
  * @tparam S Serializer type.
  * @tparam M User measurement type.
@@ -173,7 +170,8 @@ void simplemc_load_input_config(const S& s, measurement<M>& m) {
  * @relates simplemc::measurement
  * @brief Collect a simplemc::measurement from different MPI processes.
  *
- * @details If the value supports it, reduces the value via its own `%simplemc_mpi_collect`.
+ * @details If the user measurement satisfies simplemc::has_simplemc_mpi_collect, it reduces the value
+ * via the ADL hook `%simplemc_mpi_collect`.
  *
  * @tparam M User measurement type.
  * @param comm simplemc::mpi::communicator object.
