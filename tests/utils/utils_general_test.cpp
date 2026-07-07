@@ -4,6 +4,40 @@
 #include <simplemc/utils.hpp>
 #include <simplemc/utils/fmt_complex.hpp>
 
+#include <array>
+#include <cstdio>
+#include <filesystem>
+#include <string>
+
+namespace {
+
+// Read a whole file into a std::string.
+std::string read_file(const std::filesystem::path& path) {
+    auto file = simplemc::open_file(path.string(), "r");
+    std::string out;
+    std::array<char, 256> buf {};
+    while (auto n = std::fread(buf.data(), 1, buf.size(), file.get())) {
+        out.append(buf.data(), n);
+    }
+    return out;
+}
+
+// Remove and count leftover temp files ("<filename>.tmp*", the suffix carries a PID) next to `path`.
+// Used to verify that a failed atomic_file_write cleans up after itself.
+int remove_tmp_siblings(const std::filesystem::path& path) {
+    const auto prefix = path.filename().string() + ".tmp";
+    int n = 0;
+    for (const auto& e : std::filesystem::directory_iterator { path.parent_path() }) {
+        if (e.path().filename().string().starts_with(prefix)) {
+            std::filesystem::remove(e.path());
+            ++n;
+        }
+    }
+    return n;
+}
+
+} // namespace
+
 // Test if the config header is generated correctly.
 TEST(SimplemcUtils, ConfigHeader) {
     fmt::println("VERSION: {}", SIMPLEMC_VERSION);
@@ -75,6 +109,86 @@ TEST(SimplemcUtils, FileHandleRAII) {
     // test explicit close (and verify no double-close in destructor)
     file2.close();
     ASSERT_EQ(file2.get(), nullptr);
+}
+
+// Test that atomic_file_write produces the file and leaves no temp sibling behind.
+TEST(SimplemcUtils, AtomicFileWriteCreatesFileAndCleansTmp) {
+    const auto path = std::filesystem::temp_directory_path() / "simplemc_test_atomic.txt";
+    std::filesystem::remove(path);
+    remove_tmp_siblings(path);
+
+    simplemc::atomic_file_write(path, [](const std::filesystem::path& tmp) {
+        auto file = simplemc::open_file(tmp.string(), "w");
+        fmt::print(file, "content\n");
+    });
+    ASSERT_TRUE(std::filesystem::exists(path));
+    EXPECT_EQ(read_file(path), "content\n");
+    EXPECT_EQ(remove_tmp_siblings(path), 0);
+
+    std::filesystem::remove(path);
+}
+
+// Test that a failing write leaves the previous file intact and removes the temp file.
+TEST(SimplemcUtils, AtomicFileWriteFailureKeepsPreviousFileAndRemovesTmp) {
+    const auto path = std::filesystem::temp_directory_path() / "simplemc_test_atomic_fail.txt";
+    std::filesystem::remove(path);
+    remove_tmp_siblings(path);
+
+    simplemc::atomic_file_write(path, [](const std::filesystem::path& tmp) {
+        auto file = simplemc::open_file(tmp.string(), "w");
+        fmt::print(file, "old\n");
+    });
+
+    const auto failing_write = [](const std::filesystem::path& tmp) {
+        auto file = simplemc::open_file(tmp.string(), "w");
+        fmt::print(file, "new\n");
+        throw simplemc::simplemc_exception("intentional write failure");
+    };
+    EXPECT_THROW(simplemc::atomic_file_write(path, failing_write), simplemc::simplemc_exception);
+    EXPECT_EQ(read_file(path), "old\n");
+    EXPECT_EQ(remove_tmp_siblings(path), 0);
+
+    std::filesystem::remove(path);
+}
+
+// Test that copy_existing seeds the temp file with the current content (append-style writers).
+TEST(SimplemcUtils, AtomicFileWriteCopyExistingSeedsTmpWithCurrentContent) {
+    const auto path = std::filesystem::temp_directory_path() / "simplemc_test_atomic_copy.txt";
+    std::filesystem::remove(path);
+
+    simplemc::atomic_file_write(path, [](const std::filesystem::path& tmp) {
+        auto file = simplemc::open_file(tmp.string(), "w");
+        fmt::print(file, "old\n");
+    });
+
+    simplemc::atomic_file_write(
+        path,
+        [](const std::filesystem::path& tmp) {
+            EXPECT_EQ(read_file(tmp), "old\n");
+            auto file = simplemc::open_file(tmp.string(), "a");
+            fmt::print(file, "new\n");
+        },
+        /*copy_existing=*/true);
+    EXPECT_EQ(read_file(path), "old\nnew\n");
+
+    std::filesystem::remove(path);
+}
+
+// Test that copy_existing is a no-op when there is no prior file at the target path.
+TEST(SimplemcUtils, AtomicFileWriteCopyExistingWithNoPriorFile) {
+    const auto path = std::filesystem::temp_directory_path() / "simplemc_test_atomic_nofile.txt";
+    std::filesystem::remove(path);
+
+    simplemc::atomic_file_write(
+        path,
+        [](const std::filesystem::path& tmp) {
+            auto file = simplemc::open_file(tmp.string(), "w");
+            fmt::print(file, "content\n");
+        },
+        /*copy_existing=*/true);
+    EXPECT_EQ(read_file(path), "content\n");
+
+    std::filesystem::remove(path);
 }
 
 // Test file_handle construction from existing FILE* pointer.
