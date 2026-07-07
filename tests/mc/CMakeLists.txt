@@ -21,7 +21,7 @@
 add_executable(mc-tuple-set-test mc_tuple_set_test.cpp)
 target_link_libraries(mc-tuple-set-test PRIVATE simplemc-test)
 
-add_executable(mc-stats-and-params-test stats_and_params_test.cpp)
+add_executable(mc-stats-and-params-test mc_stats_and_params_test.cpp)
 target_link_libraries(mc-stats-and-params-test PRIVATE simplemc-test)
 
 add_executable(mc-measurement-test mc_measurement_test.cpp)

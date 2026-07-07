@@ -24,7 +24,7 @@ namespace simplemc {
 
 /**
  * @brief User-set parameters that control a Monte Carlo simulation run.
- * 
+ *
  * @details Parameters are validated by calling simplemc::validate_simulation_params.
  */
 struct simulation_params {
@@ -63,7 +63,7 @@ struct simulation_params {
      * @brief Trigger the `on_checkpoint` callback once this much wall-clock time has elapsed since
      * the last checkpoint.
      */
-    double checkpoint_after_time = std::numeric_limits<double>::infinity();
+    double checkpoint_after_time = std::numeric_limits<double>::max();
 };
 
 /** @} */
@@ -104,10 +104,10 @@ inline void validate_simulation_params(const simulation_params& p) {
  * @relates simplemc::simulation_params
  * @brief Print a simplemc::simulation_params as a human-readable block.
  *
- * @param fp Destination file pointer.
  * @param p Parameters to print.
+ * @param fp Destination file pointer (defaults to stdout).
  */
-inline void print(std::FILE* fp, const simulation_params& p) {
+inline void print(const simulation_params& p, std::FILE* fp = stdout) {
     fmt::print(fp,
         "============================\n"
         "SIMULATION PARAMETERS:\n"
@@ -126,10 +126,10 @@ inline void print(std::FILE* fp, const simulation_params& p) {
 /**
  * @relates simplemc::simulation_params
  * @brief Serialize the persistent fields of simplemc::simulation_params.
- * 
- * @details Persistent fields include 
- * 
- * - simulation_params::steps_per_cycle and 
+ *
+ * @details Persistent fields include
+ *
+ * - simulation_params::steps_per_cycle and
  * - simulation_params::cycles_per_check.
  *
  * @tparam S Serializer type.
@@ -145,7 +145,7 @@ void simplemc_save(S& s, const simulation_params& p) {
 /**
  * @relates simplemc::simulation_params
  * @brief Deserialize the persistent fields of simplemc::simulation_params.
- * 
+ *
  * @details See also simplemc_save(S&, const simulation_params&).
  *
  * @tparam S Serializer type.
@@ -161,7 +161,7 @@ void simplemc_load(const S& s, simulation_params& p) {
 /**
  * @relates simplemc::simulation_params
  * @brief Serialize the user-input config of simplemc::simulation_params.
- * 
+ *
  * @details All fields are part of the user-input conifg.
  *
  * @tparam S Serializer type.
@@ -182,7 +182,7 @@ void simplemc_save_input_config(S& s, const simulation_params& p) {
 /**
  * @relates simplemc::simulation_params
  * @brief Deserialize the user-input config of a simplemc::simulation_params.
- * 
+ *
  * @details See also simplemc_save_input_config(S&, const simulation_params&).
  *
  * @tparam S Serializer type.

@@ -49,8 +49,8 @@ void simplemc_save(S& s, const RNG& rng, const update_set<Us...>& updates, const
 /**
  * @brief Deserialize the persistent run state of a MC simulation.
  *
- * @details Convenience function that deserializes the random number generator, update set, measurement
- * set and simulation statistics in a single call.
+ * @details Convenience function that deserializes the random number generator, update set,
+ * measurement set and simulation statistics in a single call.
  *
  * Update and measurement sets are only deserialized if the destination set is non-empty.
  *

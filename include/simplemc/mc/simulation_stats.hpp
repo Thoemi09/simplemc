@@ -64,10 +64,10 @@ inline void accumulate_simulation_stats(simulation_stats& s, const simulation_ct
  * @relates simplemc::simulation_stats
  * @brief Print a simplemc::simulation_stats as a human-readable block.
  *
- * @param fp Destination file pointer.
  * @param s Statistics to print.
+ * @param fp Destination file pointer (defaults to stdout).
  */
-inline void print(std::FILE* fp, const simulation_stats& s) {
+inline void print(const simulation_stats& s, std::FILE* fp = stdout) {
     fmt::print(fp,
         "============================\n"
         "SIMULATION STATISTICS:\n"
