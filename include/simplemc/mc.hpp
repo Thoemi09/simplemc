@@ -6,7 +6,8 @@
 #ifndef SIMPLEMC_MC_HPP
 #define SIMPLEMC_MC_HPP
 
-#include <simplemc/mc/checkpoint.hpp>
+#include <simplemc/config.hpp>
+
 #include <simplemc/mc/concepts.hpp>
 #include <simplemc/mc/kernels.hpp>
 #include <simplemc/mc/measurement.hpp>

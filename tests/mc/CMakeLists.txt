@@ -10,11 +10,7 @@
 # mc-update-set-test: Test update_set (construction, link_pair, weight, select, serialization).
 # mc-kernel-test: Test the mc_kernel concept.
 # mc-metropolis-kernel-test: Test the default Metropolis step kernel.
-# mc-run-test: Test the free run() driver + run_callbacks + custom kernels.
-# mc-checkpoint-test: Test the free save/load helpers over the run components.
-# mc-input-config-test: Test input-config serialization of params + run components.
-# mc-mixed-backend-test: Test that the checkpoint and input-config channels stay independent.
-# mc-callbacks-test: Test progress_printer and the unified checkpoint API (writer + save/load + deduction).
+# mc-progress-printer-test: Test progress_printer and progress_line.
 # mc-mpi-test: Test MPI reduction helpers on simplemc-mc types (mpirun -n 4).
 
 # create executables
@@ -42,20 +38,8 @@ target_link_libraries(mc-kernel-test PRIVATE simplemc-test)
 add_executable(mc-metropolis-kernel-test metropolis_kernel_test.cpp)
 target_link_libraries(mc-metropolis-kernel-test PRIVATE simplemc-test)
 
-add_executable(mc-run-test run_test.cpp)
-target_link_libraries(mc-run-test PRIVATE simplemc-test)
-
-add_executable(mc-checkpoint-test checkpoint_test.cpp)
-target_link_libraries(mc-checkpoint-test PRIVATE simplemc-test)
-
-add_executable(mc-input-config-test input_config_test.cpp)
-target_link_libraries(mc-input-config-test PRIVATE simplemc-test)
-
-add_executable(mc-mixed-backend-test mixed_backend_test.cpp)
-target_link_libraries(mc-mixed-backend-test PRIVATE simplemc-test)
-
-add_executable(mc-callbacks-test callbacks_test.cpp)
-target_link_libraries(mc-callbacks-test PRIVATE simplemc-test)
+add_executable(mc-progress-printer-test mc_progress_printer_test.cpp)
+target_link_libraries(mc-progress-printer-test PRIVATE simplemc-test)
 
 add_executable(mc-mpi-test mc_mpi_test.cpp)
 target_link_libraries(mc-mpi-test PRIVATE simplemc-test)
@@ -69,9 +53,5 @@ add_test(NAME mc-update-test COMMAND mc-update-test)
 add_test(NAME mc-update-set-test COMMAND mc-update-set-test)
 add_test(NAME mc-kernel-test COMMAND mc-kernel-test)
 add_test(NAME mc-metropolis-kernel-test COMMAND mc-metropolis-kernel-test)
-add_test(NAME mc-run-test COMMAND mc-run-test)
-add_test(NAME mc-checkpoint-test COMMAND mc-checkpoint-test)
-add_test(NAME mc-input-config-test COMMAND mc-input-config-test)
-add_test(NAME mc-mixed-backend-test COMMAND mc-mixed-backend-test)
-add_test(NAME mc-callbacks-test COMMAND mc-callbacks-test)
+add_test(NAME mc-progress-printer-test COMMAND mc-progress-printer-test)
 add_test(NAME mc-mpi-test COMMAND mpirun -n 4 mc-mpi-test)

@@ -36,7 +36,10 @@
  * @ingroup simplemc-utils
  * @brief File I/O utilities.
  *
- * @details
+ * @details Besides the RAII simplemc::file_handle and simplemc::open_file, this group provides
+ * simplemc::atomic_file_write, which writes a file via a sibling temp file plus an atomic rename so
+ * that a failed write never corrupts an existing file (e.g. for checkpointing).
+ *
  * @include utils/doc_file_io.cpp
  *
  * This creates a file `doc_file_io.txt` and outputs:
@@ -1511,9 +1514,8 @@
  * simplemc::run_callbacks satifies the concept and uses no-op hooks as defaults. Users can use this
  * type to set individual hooks.
  *
- * Ready-made callback helpers — e.g. a progress printer and a backend-agnostic checkpoint writer
- * (backend deduced from the file extension, with matching free simplemc::save_checkpoint /
- * simplemc::load_checkpoint helpers) — are provided for common needs.
+ * For example, a ready-made progress printer is provided to show the progress of the current
+ * simulation.
  */
 
 /**
@@ -1589,5 +1591,6 @@
  * @ingroup simplemc-mc
  * @brief Various utilities for the **simplemc-mc** library.
  *
- * @details Library-wide machinery that helps running and managing MC simulations.
+ * @details Library-wide machinery that helps running and managing MC simulations. This includes the
+ * serializer-generic composite save/load functions over MC simulation components.
  */
