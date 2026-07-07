@@ -107,24 +107,32 @@ TEST(SimplemcRandom, Xoshiro256Jump) {
 
 // Test seeding RNGs.
 TEST(SimplemcRandom, SeedRng) {
-    std::mt19937_64 mt1, mt2, mt3, mt4;
+    std::mt19937_64 mt1, mt2, mt3, mt4, mt5;
     simplemc::seed_rng(mt1, 0);
     simplemc::seed_rng(mt2, 0);
-    simplemc::seed_rng(mt3, 0, 10);
+    simplemc::seed_rng(mt3, 0, simplemc::splitmix64::default_seed, 10);
     simplemc::seed_rng(mt4, 2);
+    simplemc::seed_rng(mt5, 0, 0xc0ffee);
     for (int i = 0; i < 1000000; ++i) {
         auto res1 = mt1();
         auto res2 = mt2();
         auto res3 = mt3();
         auto res4 = mt4();
+        auto res5 = mt5();
         ASSERT_EQ(res1, res2);
         ASSERT_NE(res1, res3);
         ASSERT_NE(res1, res4);
+        ASSERT_NE(res1, res5);
     }
     simplemc::xoshiro256pp xop1, xop2;
     simplemc::seed_rng(xop1, 0);
-    simplemc::seed_rng(xop2, 0);
+    simplemc::seed_rng(xop2, 0, simplemc::splitmix64::default_seed);
     ASSERT_EQ(xop1, xop2);
     simplemc::seed_rng(xop2, 1);
+    ASSERT_NE(xop1, xop2);
+    simplemc::seed_rng(xop1, 3, 0xc0ffee);
+    simplemc::seed_rng(xop2, 3, 0xc0ffee);
+    ASSERT_EQ(xop1, xop2);
+    simplemc::seed_rng(xop2, 4, 0xc0ffee);
     ASSERT_NE(xop1, xop2);
 }
