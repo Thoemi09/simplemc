@@ -124,7 +124,7 @@ template <varalg A = varalg::welford, sample_range R>
  * @param acc Variance accumulator to serialize.
  */
 template <serializer S, sample_type T, varalg A>
-void simplemc_save(S& s, const var_acc<T, A>& acc) {
+void simplemc_save(S s, const var_acc<T, A>& acc) {
     s.save_at("count", acc.count());
     s.save_at("mdata", acc.mdata());
     s.save_at("cdata", acc.cdata());

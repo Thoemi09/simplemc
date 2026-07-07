@@ -33,7 +33,7 @@ struct stateful_update {
 };
 
 template <serializer S>
-void simplemc_save(S& s, const stateful_update& u) {
+void simplemc_save(S s, const stateful_update& u) {
     s.save_at("counter", u.counter);
 }
 
@@ -49,7 +49,7 @@ struct stateful_measurement {
 };
 
 template <serializer S>
-void simplemc_save(S& s, const stateful_measurement& m) {
+void simplemc_save(S s, const stateful_measurement& m) {
     s.save_at("tally", m.tally);
 }
 
@@ -91,7 +91,7 @@ struct run_config {
     double beta = 0.0;
 
     template <serializer S>
-    friend void simplemc_save(S& s, const run_config& c) {
+    friend void simplemc_save(S s, const run_config& c) {
         s.save_at("seed", c.seed);
         s.save_at("beta", c.beta);
     }
@@ -105,7 +105,7 @@ struct run_config {
 // Serializable user-state that throws on save.
 struct throwing_config {
     template <serializer S>
-    friend void simplemc_save(S&, const throwing_config&) {
+    friend void simplemc_save(S, const throwing_config&) {
         throw simplemc_exception("intentional save failure");
     }
     template <serializer S>

@@ -431,7 +431,7 @@ private:
  * @param acc Block accumulator to serialize.
  */
 template <serializer S, typename A>
-void simplemc_save(S& s, const block_acc<A>& acc) {
+void simplemc_save(S s, const block_acc<A>& acc) {
     s.save_at("block_size", acc.block_size());
     s.save_at("acc", acc.accumulator());
     s.save_at("block", acc.block());

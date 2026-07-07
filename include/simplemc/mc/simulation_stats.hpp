@@ -91,7 +91,7 @@ inline void print(const simulation_stats& s, std::FILE* fp = stdout) {
  * @param st Stats to serialize.
  */
 template <serializer S>
-void simplemc_save(S& s, const simulation_stats& st) {
+void simplemc_save(S s, const simulation_stats& st) {
     s.save_at("cumulative_steps", st.cumulative_steps);
     s.save_at("cumulative_time", st.cumulative_time);
 }
@@ -100,7 +100,7 @@ void simplemc_save(S& s, const simulation_stats& st) {
  * @relates simplemc::simulation_stats
  * @brief Deserialize the persistent fields of simplemc::simulation_stats.
  *
- * @details See also simplemc::simplemc_save(S&, const simulation_stats&).
+ * @details See also simplemc::simplemc_save(S, const simulation_stats&).
  *
  * @tparam S Serializer type.
  * @param s Serializer handle.

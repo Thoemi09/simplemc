@@ -1349,13 +1349,17 @@
  *
  * ```
  * template <simplemc::serializer S>
- * void simplemc_save(S& s, const T& v);
+ * void simplemc_save(S s, const T& v);
  *
  * template <simplemc::serializer S>
  * void simplemc_load(const S& s, T& v);
  * ```
  *
  * These may be `friend`-declared inside the class when private access is needed.
+ *
+ * Note that `%simplemc_save` takes the serializer **by value**: serializers are cheap handles into a
+ * shared document, so rvalue sub-handles bind directly (e.g. `simplemc_save(s["sub"], v)`).
+ * `%simplemc_load` takes a `const` reference, which binds rvalue sub-handles as well.
  *
  * As described above, `save_at` / `load_at` look up `%simplemc_save` / `%simplemc_load` using ADL. If
  * no matching overload can be found (see simplemc::has_simplemc_save / simplemc::has_simplemc_load),

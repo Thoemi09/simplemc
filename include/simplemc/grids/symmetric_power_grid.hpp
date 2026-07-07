@@ -221,7 +221,7 @@ private:
  * @param g Symmetric power grid to serialize.
  */
 template <serializer S>
-void simplemc_save(S& s, const symmetric_power_grid& g) {
+void simplemc_save(S s, const symmetric_power_grid& g) {
     s.save_at("first", g.first());
     s.save_at("last", g.last());
     s.save_at("size", g.size());

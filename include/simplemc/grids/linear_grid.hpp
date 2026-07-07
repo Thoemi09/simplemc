@@ -191,7 +191,7 @@ private:
  * @param g Linear grid to serialize.
  */
 template <serializer S>
-void simplemc_save(S& s, const linear_grid& g) {
+void simplemc_save(S s, const linear_grid& g) {
     s.save_at("first", g.first());
     s.save_at("last", g.last());
     s.save_at("size", g.size());

@@ -364,7 +364,7 @@ using xoshiro256ss = xoshiro256<xoshiro256_type::starstar>;
  * @param r RNG to serialize.
  */
 template <serializer S, xoshiro256_type X>
-void simplemc_save(S& s, const xoshiro256<X>& r) {
+void simplemc_save(S s, const xoshiro256<X>& r) {
     const auto& st = r.internal_state();
     s.save_at("s0", st[0]);
     s.save_at("s1", st[1]);

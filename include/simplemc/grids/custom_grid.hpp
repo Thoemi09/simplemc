@@ -173,7 +173,7 @@ private:
  * @param g Custom grid to serialize.
  */
 template <serializer S>
-void simplemc_save(S& s, const custom_grid& g) {
+void simplemc_save(S s, const custom_grid& g) {
     s.save_at("x", g.grid_points());
 }
 

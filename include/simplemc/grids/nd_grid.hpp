@@ -298,7 +298,7 @@ private:
  * @param g N-dimensional grid to serialize.
  */
 template <serializer S, grid_1d... Grids>
-void simplemc_save(S& s, const nd_grid<Grids...>& g) {
+void simplemc_save(S s, const nd_grid<Grids...>& g) {
     auto sub = s["grids"];
     [&]<std::size_t... I>(std::index_sequence<I...>) {
         ((sub.save_at(std::to_string(I), std::get<I>(g.grids()))), ...);

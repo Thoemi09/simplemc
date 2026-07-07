@@ -35,7 +35,7 @@ struct my_state {
     std::function<double(double)> f = [](double v) { return std::cos(v); };
 
     template <simplemc::serializer S>
-    friend void simplemc_save(S& s, const my_state& st) {
+    friend void simplemc_save(S s, const my_state& st) {
         s.save_at("x", st.x);
         s.save_at("a", st.a);
         s.save_at("b", st.b);
@@ -71,7 +71,7 @@ struct integral_observer {
     void measure() { acc << s->f(s->x); }
 
     template <simplemc::serializer S>
-    friend void simplemc_save(S& sr, const integral_observer& o) {
+    friend void simplemc_save(S sr, const integral_observer& o) {
         sr.save_at("acc", o.acc);
     }
     template <simplemc::serializer S>

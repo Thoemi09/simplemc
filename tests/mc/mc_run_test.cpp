@@ -36,7 +36,7 @@ struct stateful_update {
 };
 
 template <serializer S>
-void simplemc_save(S& s, const stateful_update& u) {
+void simplemc_save(S s, const stateful_update& u) {
     s.save_at("counter", u.counter);
 }
 

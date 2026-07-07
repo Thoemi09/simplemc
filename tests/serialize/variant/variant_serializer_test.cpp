@@ -110,7 +110,7 @@ struct nested_thing {
     int a = 0;
     double b = 0.0;
 
-    friend void simplemc_save(var_serializer& s, const nested_thing& v) { // NOLINT
+    friend void simplemc_save(var_serializer s, const nested_thing& v) { // NOLINT
         s.save_at("a", v.a);
         s.save_at("b", v.b);
     }

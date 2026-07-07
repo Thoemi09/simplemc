@@ -26,7 +26,7 @@ struct configurable_update {
 };
 
 template <serializer S>
-void simplemc_save_input_config(S& s, const configurable_update& u) {
+void simplemc_save_input_config(S s, const configurable_update& u) {
     s.save_at("threshold", u.threshold);
 }
 
@@ -44,7 +44,7 @@ struct configurable_measurement {
 };
 
 template <serializer S>
-void simplemc_save_input_config(S& s, const configurable_measurement& m) {
+void simplemc_save_input_config(S s, const configurable_measurement& m) {
     s.save_at("bins", m.bins);
 }
 
@@ -64,7 +64,7 @@ struct state_only_update {
 };
 
 template <serializer S>
-void simplemc_save(S& s, const state_only_update& u) {
+void simplemc_save(S s, const state_only_update& u) {
     s.save_at("ticks", u.ticks);
 }
 
@@ -79,7 +79,7 @@ struct run_config {
     double beta = 0.0;
 
     template <serializer S>
-    friend void simplemc_save(S& s, const run_config& c) {
+    friend void simplemc_save(S s, const run_config& c) {
         s.save_at("seed", c.seed);
         s.save_at("beta", c.beta);
     }
@@ -141,6 +141,44 @@ TEST(MCInputConfig, RoundTripPersistsParamsWeightActiveAndUserConfig) {
     // check user-specific state of updates and measurements
     EXPECT_DOUBLE_EQ(dst_updates.get<0>().value().threshold, 0.75);
     EXPECT_EQ(dst_meas.get<0>().value().bins, 64);
+}
+
+// Test that the save hooks take the serializer handle by value, so rvalue sub-handles returned by
+// operator[] bind directly without a named sub-serializer variable.
+TEST(MCInputConfig, SaveHooksBindRvalueSubHandles) {
+    // prepare sources
+    const simulation_params src_params {
+        .max_steps = 42, .max_time = 1.5, .steps_per_cycle = 3, .cycles_per_check = 9
+    };
+    configurable_update src_up;
+    src_up.threshold = 0.25;
+    const run_config src_cfg { .seed = 7, .beta = 0.5 };
+
+    // save each piece through an rvalue sub-handle (both channels)
+    json_serializer w;
+    simplemc_save_input_config(w["params"], src_params);
+    simplemc_save_input_config(w["tunable"], src_up);
+    simplemc_save(w["config"], src_cfg);
+
+    // prepare destinations
+    const json_serializer r { w.root() };
+    simulation_params dst_params;
+    configurable_update dst_up;
+    run_config dst_cfg;
+
+    // load back through rvalue sub-handles as well (const S& binds them on the load side)
+    simplemc_load_input_config(r["params"], dst_params);
+    simplemc_load_input_config(r["tunable"], dst_up);
+    simplemc_load(r["config"], dst_cfg);
+
+    // check the round-trip against the sources
+    EXPECT_EQ(dst_params.max_steps, 42u);
+    EXPECT_DOUBLE_EQ(dst_params.max_time, 1.5);
+    EXPECT_EQ(dst_params.steps_per_cycle, 3u);
+    EXPECT_EQ(dst_params.cycles_per_check, 9u);
+    EXPECT_DOUBLE_EQ(dst_up.threshold, 0.25);
+    EXPECT_EQ(dst_cfg.seed, 7);
+    EXPECT_DOUBLE_EQ(dst_cfg.beta, 0.5);
 }
 
 // Test that the composite save/load input-config routines only expose input-config fields.

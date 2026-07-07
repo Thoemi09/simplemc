@@ -577,7 +577,7 @@ private:
  * @param acc Autocorrelation accumulator to serialize.
  */
 template <serializer S, typename A>
-void simplemc_save(S& s, const autocorr_acc<A>& acc) {
+void simplemc_save(S s, const autocorr_acc<A>& acc) {
     const auto num_levels = acc.num_levels();
     s.save_at("factor", acc.factor());
     s.save_at("min_levels", acc.min_levels());

@@ -285,10 +285,7 @@ protected:
      */
     template <typename S>
     void save_entries(S& s) const {
-        for_each([&](const auto& e) {
-            auto sub = s[e.name()];
-            simplemc_save(sub, e);
-        });
+        for_each([&](const auto& e) { simplemc_save(s[e.name()], e); });
     }
 
     /**
@@ -320,10 +317,7 @@ protected:
      */
     template <typename S>
     void save_input_config_entries(S& s) const {
-        for_each([&](const auto& e) {
-            auto sub = s[e.name()];
-            simplemc_save_input_config(sub, e);
-        });
+        for_each([&](const auto& e) { simplemc_save_input_config(s[e.name()], e); });
     }
 
     /**

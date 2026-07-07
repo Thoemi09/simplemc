@@ -80,7 +80,7 @@ concept json_loadable =
  * The class satisfies the @ref simplemc::serializer concept:
  *
  * - **Save direction**: `save_at(key, value)` (non-const) writes into the shared document via ADL
- * `%simplemc_save(json_serializer&, const T&)` if such an overload is reachable, falling back to
+ * `%simplemc_save(json_serializer, const T&)` if such an overload is reachable, falling back to
  * nlohmann's `to_json` / `adl_serializer<T>` machinery otherwise.
  * - **Load direction**: `load_at(key, value)` and `try_load_at(key, value)` (both const) read from
  * the shared document via ADL `%simplemc_load(const json_serializer&, T&)` if such an overload is
@@ -129,7 +129,7 @@ public:
      *
      * Dispatch rule:
      *
-     * - If an ADL `%simplemc_save(json_serializer&, const T&)` is reachable for `T`, descend into
+     * - If an ADL `%simplemc_save(json_serializer, const T&)` is reachable for `T`, descend into
      * a sub-handle and delegate to it.
      * - Otherwise, assign directly via `nlohmann::json::operator=`, which triggers nlohmann's
      * `to_json` / `adl_serializer<T>` machinery.

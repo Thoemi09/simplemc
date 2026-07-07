@@ -352,7 +352,7 @@ private:
  * @param l Bravais lattice to serialize.
  */
 template <serializer S, int N>
-void simplemc_save(S& s, const bravais_lattice<N>& l) {
+void simplemc_save(S s, const bravais_lattice<N>& l) {
     s.save_at("A", l.real_lattice_vectors());
 }
 

@@ -217,7 +217,7 @@ public:
      * @param us Update set to serialize.
      */
     template <serializer S>
-    friend void simplemc_save(S& s, const update_set& us) {
+    friend void simplemc_save(S s, const update_set& us) {
         us.save_entries(s);
     }
 
@@ -246,7 +246,7 @@ public:
      * @param us Update set to serialize.
      */
     template <serializer S>
-    friend void simplemc_save_input_config(S& s, const update_set& us) {
+    friend void simplemc_save_input_config(S s, const update_set& us) {
         us.save_input_config_entries(s);
     }
 

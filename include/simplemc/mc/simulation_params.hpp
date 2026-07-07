@@ -137,7 +137,7 @@ inline void print(const simulation_params& p, std::FILE* fp = stdout) {
  * @param p Parameters to serialize.
  */
 template <serializer S>
-void simplemc_save(S& s, const simulation_params& p) {
+void simplemc_save(S s, const simulation_params& p) {
     s.save_at("steps_per_cycle", p.steps_per_cycle);
     s.save_at("cycles_per_check", p.cycles_per_check);
 }
@@ -146,7 +146,7 @@ void simplemc_save(S& s, const simulation_params& p) {
  * @relates simplemc::simulation_params
  * @brief Deserialize the persistent fields of simplemc::simulation_params.
  *
- * @details See also simplemc_save(S&, const simulation_params&).
+ * @details See also simplemc_save(S, const simulation_params&).
  *
  * @tparam S Serializer type.
  * @param s Serializer handle.
@@ -169,7 +169,7 @@ void simplemc_load(const S& s, simulation_params& p) {
  * @param p Parameters to serialize.
  */
 template <serializer S>
-void simplemc_save_input_config(S& s, const simulation_params& p) {
+void simplemc_save_input_config(S s, const simulation_params& p) {
     s.save_at("max_steps", p.max_steps);
     s.save_at("max_time", p.max_time);
     s.save_at("steps_per_cycle", p.steps_per_cycle);
@@ -183,7 +183,7 @@ void simplemc_save_input_config(S& s, const simulation_params& p) {
  * @relates simplemc::simulation_params
  * @brief Deserialize the user-input config of a simplemc::simulation_params.
  *
- * @details See also simplemc_save_input_config(S&, const simulation_params&).
+ * @details See also simplemc_save_input_config(S, const simulation_params&).
  *
  * @tparam S Serializer type.
  * @param s Serializer handle.

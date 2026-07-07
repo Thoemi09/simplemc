@@ -80,7 +80,7 @@ public:
     /**
      * @brief Serialize a value at sub-location `key`.
      *
-     * @details If an ADL `%simplemc_save(variant_serializer&, const T&)` is reachable for `T` (i.e.
+     * @details If an ADL `%simplemc_save(variant_serializer, const T&)` is reachable for `T` (i.e.
      * the type's serialization is written against this variant handle itself), descend into a
      * sub-handle and dispatch to it.
      *

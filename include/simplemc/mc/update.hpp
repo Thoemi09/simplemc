@@ -238,7 +238,7 @@ private:
  * @param u Update to serialize.
  */
 template <serializer S, mc_update U>
-void simplemc_save(S& s, const update<U>& u) {
+void simplemc_save(S s, const update<U>& u) {
     s.save_at("inv_name", u.stats().inv_name);
     s.save_at("weight", u.stats().weight);
     s.save_at("ratio", u.stats().ratio);
@@ -289,11 +289,10 @@ void simplemc_load(const S& s, update<U>& u) {
  * @param u Update to serialize.
  */
 template <serializer S, mc_update U>
-void simplemc_save_input_config(S& s, const update<U>& u) {
+void simplemc_save_input_config(S s, const update<U>& u) {
     s.save_at("weight", u.stats().weight);
     if constexpr (has_simplemc_save_input_config<U, S>) {
-        auto sub = s["user"];
-        simplemc_save_input_config(sub, u.value());
+        simplemc_save_input_config(s["user"], u.value());
     }
 }
 
@@ -316,8 +315,7 @@ void simplemc_load_input_config(const S& s, update<U>& u) {
     s.try_load_at("weight", weight);
     u.set_weight(weight);
     if constexpr (has_simplemc_load_input_config<U, S>) {
-        const auto sub = s["user"];
-        simplemc_load_input_config(sub, u.value());
+        simplemc_load_input_config(s["user"], u.value());
     }
 }
 

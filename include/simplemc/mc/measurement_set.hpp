@@ -117,7 +117,7 @@ public:
      * @param ms Measurement set to serialize.
      */
     template <serializer S>
-    friend void simplemc_save(S& s, const measurement_set& ms) {
+    friend void simplemc_save(S s, const measurement_set& ms) {
         ms.save_entries(s);
     }
 
@@ -147,7 +147,7 @@ public:
      * @param ms Measurement set to serialize.
      */
     template <serializer S>
-    friend void simplemc_save_input_config(S& s, const measurement_set& ms) {
+    friend void simplemc_save_input_config(S s, const measurement_set& ms) {
         ms.save_input_config_entries(s);
     }
 

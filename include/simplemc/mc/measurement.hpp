@@ -127,7 +127,7 @@ private:
  * @param m Measurement to serialize.
  */
 template <serializer S, mc_measurement M>
-void simplemc_save(S& s, const measurement<M>& m) {
+void simplemc_save(S s, const measurement<M>& m) {
     s.save_at("is_active", m.is_active());
     if constexpr (save_at_all<M, S>) {
         s.save_at("user", m.value());
@@ -169,11 +169,10 @@ void simplemc_load(const S& s, measurement<M>& m) {
  * @param m Measurement to serialize.
  */
 template <serializer S, mc_measurement M>
-void simplemc_save_input_config(S& s, const measurement<M>& m) {
+void simplemc_save_input_config(S s, const measurement<M>& m) {
     s.save_at("is_active", m.is_active());
     if constexpr (has_simplemc_save_input_config<M, S>) {
-        auto sub = s["user"];
-        simplemc_save_input_config(sub, m.value());
+        simplemc_save_input_config(s["user"], m.value());
     }
 }
 
@@ -195,8 +194,7 @@ void simplemc_load_input_config(const S& s, measurement<M>& m) {
     s.try_load_at("is_active", is_active);
     m.set_active(is_active);
     if constexpr (has_simplemc_load_input_config<M, S>) {
-        const auto sub = s["user"];
-        simplemc_load_input_config(sub, m.value());
+        simplemc_load_input_config(s["user"], m.value());
     }
 }
 

@@ -38,7 +38,7 @@ namespace simplemc {
  * @param stats Simulation statistics to serialize.
  */
 template <serializer S, typename RNG, mc_update... Us, mc_measurement... Ms>
-void simplemc_save(S& s, const RNG& rng, const update_set<Us...>& updates, const measurement_set<Ms...>& meas,
+void simplemc_save(S s, const RNG& rng, const update_set<Us...>& updates, const measurement_set<Ms...>& meas,
     const simulation_stats& stats) {
     s.save_at("rng", rng);
     s.save_at("stats", stats);
@@ -97,15 +97,10 @@ void simplemc_load(
  */
 template <serializer S, mc_update... Us, mc_measurement... Ms>
 void simplemc_save_input_config(
-    S& s, const simulation_params& p, const update_set<Us...>& updates, const measurement_set<Ms...>& meas) {
-    auto params = s["params"];
-    simplemc_save_input_config(params, p);
-
-    auto u = s["updates"];
-    simplemc_save_input_config(u, updates);
-
-    auto m = s["measurements"];
-    simplemc_save_input_config(m, meas);
+    S s, const simulation_params& p, const update_set<Us...>& updates, const measurement_set<Ms...>& meas) {
+    simplemc_save_input_config(s["params"], p);
+    simplemc_save_input_config(s["updates"], updates);
+    simplemc_save_input_config(s["measurements"], meas);
 }
 
 /**

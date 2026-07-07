@@ -23,7 +23,7 @@ public:
     bool operator==(const intrusive_point&) const = default;
 
     template <simplemc::serializer S>
-    friend void simplemc_save(S& s, const intrusive_point& p) {
+    friend void simplemc_save(S s, const intrusive_point& p) {
         s.save_at("x", p.x_);
         s.save_at("y", p.y_);
     }
@@ -43,7 +43,7 @@ struct nonintrusive_box {
 };
 
 template <simplemc::serializer S>
-void simplemc_save(S& s, const nonintrusive_box& b) {
+void simplemc_save(S s, const nonintrusive_box& b) {
     s.save_at("width", b.width);
     s.save_at("height", b.height);
 }
@@ -63,7 +63,7 @@ struct composite {
 };
 
 template <simplemc::serializer S>
-void simplemc_save(S& s, const composite& c) {
+void simplemc_save(S s, const composite& c) {
     s.save_at("pt", c.pt);
     s.save_at("bx", c.bx);
     s.save_at("data", c.data);

@@ -732,7 +732,7 @@ template <varalg A = varalg::welford, sample_range R>
  * @param acc Batch accumulator to serialize.
  */
 template <serializer S, sample_type T, varalg A>
-void simplemc_save(S& s, const batch_acc<T, A>& acc) {
+void simplemc_save(S s, const batch_acc<T, A>& acc) {
     const auto& full_batches = acc.batch_vector_full();
     const auto& acc_batches = acc.batch_vector_accumulating();
     const auto& m_b = full_batches.size();

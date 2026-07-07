@@ -188,7 +188,7 @@ inline std::string h5_parent_path(const std::string& path) {
  * The class satisfies the @ref simplemc::serializer concept:
  *
  * - **Save direction**: `save_at(key, value)` writes into the file via ADL
- * `%simplemc_save(hdf5_serializer&, const T&)` if such an overload is reachable, falling back to
+ * `%simplemc_save(hdf5_serializer, const T&)` if such an overload is reachable, falling back to
  * `HighFive::File::createDataSet` otherwise. The fallback creates an HDF5 **dataset** at
  * `<current location>/<key>`; the ADL path delegates to the user's overload, which typically descends via
  * operator[]() into an HDF5 **group**.
@@ -235,7 +235,7 @@ public:
      *
      * Dispatch rule:
      *
-     * - If an ADL `%simplemc_save(hdf5_serializer&, const T&)` is reachable for `T`, descend into a
+     * - If an ADL `%simplemc_save(hdf5_serializer, const T&)` is reachable for `T`, descend into a
      * sub-handle and delegate to it. The user overload typically writes named sub-keys, which
      * materialize as datasets/groups under `<current location>/<key>`.
      * - Otherwise, create an HDF5 dataset at `<current location>/<key>` containing `value` via

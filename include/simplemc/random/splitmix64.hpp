@@ -218,7 +218,7 @@ private:
  * @param r RNG to serialize.
  */
 template <serializer S>
-void simplemc_save(S& s, const splitmix64& r) {
+void simplemc_save(S s, const splitmix64& r) {
     s.save_at("state", r.internal_state());
 }
 
