@@ -21,6 +21,7 @@
 #include <simplemc/mc/tuple_set.hpp>
 #include <simplemc/mc/update.hpp>
 #include <simplemc/mc/update_set.hpp>
+#include <simplemc/mc/update_stats.hpp>
 #include <simplemc/mc/utils.hpp>
 
 #endif // SIMPLEMC_MC_HPP

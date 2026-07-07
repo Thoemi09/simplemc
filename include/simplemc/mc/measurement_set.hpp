@@ -10,9 +10,6 @@
 #include <simplemc/mc/tuple_set.hpp>
 #include <simplemc/mpi/communicator.hpp>
 #include <simplemc/serialize/concepts.hpp>
-#include <simplemc/utils/simplemc_exception.hpp>
-
-#include <fmt/format.h>
 
 #include <cstddef>
 #include <span>
@@ -32,8 +29,8 @@ namespace simplemc {
  *
  * @details The set inherits from simplemc::tuple_set to store simplemc::measurement entries in a
  * `std::tuple`, so the measurement *types* are fixed at construction. It also holds a cache of
- * indices for those currently flagged active which is rebuilt from the measurement::is_active flags
- * by refresh_active().
+ * indices for those currently flagged active which is rebuilt from the measurement::is_active()
+ * flags by refresh_active().
  *
  * Simulation drivers call measure_all() which invokes `measure()` on every active entry to perform
  * measurements.
@@ -47,8 +44,8 @@ namespace simplemc {
  * };
  * @endcode
  *
- * The measurement::is_active flags stay mutable at runtime via set_active(). Lookup and typed access
- * are provided by the base class simplemc::tuple_set.
+ * The measurement::is_active() flags stay mutable at runtime via set_active(). Names are fixed at
+ * construction. Lookup and typed access are provided by the base class simplemc::tuple_set.
  *
  * @tparam Ms User measurement types (each satisfying simplemc::mc_measurement).
  */
@@ -71,11 +68,7 @@ public:
      * @param is_active New active state.
      */
     void set_active(std::string_view name, bool is_active) {
-        const auto idx = this->find(name);
-        if (!idx) {
-            throw simplemc_exception(fmt::format("measurement '{}' is not registered", name));
-        }
-        this->visit_at(*idx, [&](auto& m) { m.is_active = is_active; });
+        this->visit_at(name, [&](auto& m) { m.set_active(is_active); });
     }
 
     /**
@@ -86,14 +79,14 @@ public:
     [[nodiscard]] std::span<const std::size_t> active_indices() const noexcept { return active_; }
 
     /**
-     * @brief Rebuild the active set cache from the measurement::is_active flags.
+     * @brief Rebuild the active set cache from the measurement::is_active() flags.
      */
     void refresh_active() {
         active_.clear();
         active_.reserve(this->size());
         std::size_t i = 0;
         this->for_each([&](const auto& m) {
-            if (m.is_active) {
+            if (m.is_active()) {
                 active_.push_back(i);
             }
             ++i;

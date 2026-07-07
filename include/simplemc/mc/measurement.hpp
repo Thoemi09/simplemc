@@ -24,38 +24,23 @@ namespace simplemc {
 /**
  * @brief MC measurement wrapper class for a user-defined measurement type.
  *
- * @details It owns a user-defined measurement @ref value of type @ref value_type (satisfying
+ * @details It owns a user-defined measurement of type @ref value_type (satisfying
  * simplemc::mc_measurement) together with its metadata:
  *
- * - a unique @ref name that identifies the measurement, and
- * - a boolean flag indicating whether the measurement @ref is_active during an MC simulation.
+ * - a unique name() that identifies the measurement, and
+ * - a boolean flag indicating whether the measurement is_active() during an MC simulation.
  *
- * All fields are public so the driver and reporting code can read and write them directly. The
- * wrapped type is stored by value and accessed via the public @ref value member.
+ * The wrapped type is stored by value and can be accessed via value().
  *
  * @tparam M User measurement type satisfying simplemc::mc_measurement.
  */
 template <mc_measurement M>
-struct measurement {
+class measurement {
+public:
     /**
      * @brief The concrete wrapped user type.
      */
     using value_type = M;
-
-    /**
-     * @brief The wrapped user measurement.
-     */
-    M value;
-
-    /**
-     * @brief Identifier used in lookups and printed reports.
-     */
-    std::string name;
-
-    /**
-     * @brief Whether the driver invokes measure() during each cycle (see simplemc::run).
-     */
-    bool is_active;
 
     /**
      * @brief Constructor stores a user-defined measurement value.
@@ -68,28 +53,73 @@ struct measurement {
      * @param is_active Initial activation state.
      */
     measurement(M value, std::string name, bool is_active = true) :
-        value { std::move(value) },
-        name { std::move(name) },
-        is_active { is_active } {
-        if (this->name.empty()) {
+        value_ { std::move(value) },
+        name_ { std::move(name) },
+        is_active_ { is_active } {
+        if (name_.empty()) {
             throw simplemc_exception("measurement name must be non-empty");
         }
     }
 
     /**
-     * @brief Perform the measurement 
-     * 
+     * @brief Get the wrapped user measurement.
+     *
+     * @return Reference to the stored user measurement.
+     */
+    [[nodiscard]] M& value() noexcept { return value_; }
+
+    /**
+     * @brief Get the wrapped user measurement.
+     *
+     * @return Const reference to the stored user measurement.
+     */
+    [[nodiscard]] const M& value() const noexcept { return value_; }
+
+    /**
+     * @brief Identifier used in lookups and printed reports. Fixed at construction.
+     *
+     * @return Name of the measurement.
+     */
+    [[nodiscard]] const std::string& name() const noexcept { return name_; }
+
+    /**
+     * @brief Get the activation state.
+     *
+     * @details It determines whether the driver invokes measure() during each cycle (see
+     * simplemc::run).
+     *
+     * @return Current activation state.
+     */
+    [[nodiscard]] bool is_active() const noexcept { return is_active_; }
+
+    /**
+     * @brief Set the activation state.
+     *
+     * @details This is usually called indirectly via measurement_set::set_active().
+     *
+     * @param active New activation state.
+     */
+    void set_active(bool active) noexcept { is_active_ = active; }
+
+    /**
+     * @brief Perform the measurement.
+     *
      * @details It simply calls the `%measure()` member of the wrapped user type.
      */
-    void measure() { value.measure(); }
+    void measure() { value_.measure(); }
+
+private:
+    M value_;
+    std::string name_;
+    bool is_active_;
 };
 
 /**
  * @relates simplemc::measurement
  * @brief Serialize a simplemc::measurement.
  *
- * @details It serializes measurement::is_active and, if the wrapped user measurement is serializable
- * by `S`, measurement::value.
+ * @details It serializes the current activation states and the wrapped user measurement (if it is
+ * serializable by `S`).
  *
  * @tparam S Serializer type.
  * @tparam M User measurement type.
@@ -98,9 +128,9 @@ struct measurement {
  */
 template <serializer S, mc_measurement M>
 void simplemc_save(S& s, const measurement<M>& m) {
-    s.save_at("is_active", m.is_active);
+    s.save_at("is_active", m.is_active());
     if constexpr (save_at_all<M, S>) {
-        s.save_at("user", m.value);
+        s.save_at("user", m.value());
     }
 }
 
@@ -108,8 +138,8 @@ void simplemc_save(S& s, const measurement<M>& m) {
  * @relates simplemc::measurement
  * @brief Deserialize a simplemc::measurement.
  *
- * @details It deserializes measurement::is_active and, if the wrapped user measurement is
- * deserializable by `S`, measurement::value.
+ * @details It deserializes the current activation states and the wrapped user measurement (if it is
+ * deserializable by `S`).
  *
  * @tparam S Serializer type.
  * @tparam M User measurement type.
@@ -118,9 +148,11 @@ void simplemc_save(S& s, const measurement<M>& m) {
  */
 template <serializer S, mc_measurement M>
 void simplemc_load(const S& s, measurement<M>& m) {
-    s.load_at("is_active", m.is_active);
+    bool is_active {};
+    s.load_at("is_active", is_active);
+    m.set_active(is_active);
     if constexpr (load_at_all<M, S>) {
-        s.load_at("user", m.value);
+        s.load_at("user", m.value());
     }
 }
 
@@ -128,8 +160,8 @@ void simplemc_load(const S& s, measurement<M>& m) {
  * @relates simplemc::measurement
  * @brief Serialize the user-input config of a simplemc::measurement.
  *
- * @details It serializes measurement::is_active and, if the wrapped user measurement has an
- * input-config serialization, measurement::value.
+ * @details It serializes the current activation states and the wrapped user measurement (if it has
+ * an input-config serialization).
  *
  * @tparam S Serializer type.
  * @tparam M User measurement type.
@@ -138,10 +170,10 @@ void simplemc_load(const S& s, measurement<M>& m) {
  */
 template <serializer S, mc_measurement M>
 void simplemc_save_input_config(S& s, const measurement<M>& m) {
-    s.save_at("is_active", m.is_active);
+    s.save_at("is_active", m.is_active());
     if constexpr (has_simplemc_save_input_config<M, S>) {
         auto sub = s["user"];
-        simplemc_save_input_config(sub, m.value);
+        simplemc_save_input_config(sub, m.value());
     }
 }
 
@@ -149,8 +181,8 @@ void simplemc_save_input_config(S& s, const measurement<M>& m) {
  * @relates simplemc::measurement
  * @brief Deserialize the user-input config of a simplemc::measurement.
  *
- * @details It deserializes measurement::is_active and, if the wrapped user measurement has an
- * input-config deserialization, measurement::value.
+ * @details It deserializes the current activation states and the wrapped user measurement (if it has
+ * an input-config deserialization).
  *
  * @tparam S Serializer type.
  * @tparam M User measurement type.
@@ -159,10 +191,12 @@ void simplemc_save_input_config(S& s, const measurement<M>& m) {
  */
 template <serializer S, mc_measurement M>
 void simplemc_load_input_config(const S& s, measurement<M>& m) {
-    s.try_load_at("is_active", m.is_active);
+    bool is_active = m.is_active();
+    s.try_load_at("is_active", is_active);
+    m.set_active(is_active);
     if constexpr (has_simplemc_load_input_config<M, S>) {
         const auto sub = s["user"];
-        simplemc_load_input_config(sub, m.value);
+        simplemc_load_input_config(sub, m.value());
     }
 }
 
@@ -180,7 +214,7 @@ void simplemc_load_input_config(const S& s, measurement<M>& m) {
 template <mc_measurement M>
 void simplemc_mpi_collect(const mpi::communicator& comm, measurement<M>& m) {
     if constexpr (has_simplemc_mpi_collect<M>) {
-        m.value = simplemc_mpi_collect(comm, m.value);
+        m.value() = simplemc_mpi_collect(comm, m.value());
     }
 }
 

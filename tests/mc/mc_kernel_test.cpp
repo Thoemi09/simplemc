@@ -24,8 +24,8 @@ static_assert(!mc_kernel<bad_kernel_no_step, xoshiro256ss>);
 static_assert(!mc_kernel<bad_kernel_wrong_arg, xoshiro256ss>);
 static_assert(!mc_kernel<int, xoshiro256ss>);
 
+// The static_asserts above do the work; a dummy runtime test keeps GoogleTest happy.
 TEST(MCKernel, ConceptCompiles) {
-    // The static_asserts above do the work; a dummy runtime test keeps GoogleTest happy.
     good_kernel k;
     xoshiro256ss rng;
     k.step(rng);

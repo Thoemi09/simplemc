@@ -24,18 +24,16 @@ namespace simplemc {
  * @details Implementation of the standard Metropolis algorithm (see step()).
  *
  * It holds a non-owning pointer to a simplemc::update_set which it uses to select and execute updates
- * to advance the Markov chain. Since simplemc::run is not aware of the update set, it is the kernel's
- * responsibility to make sure that the selection distribution is valid (see prepare()) and to also
- * keep track of update statistics (number of proposed, accepted and impossible updates).
+ * to advance the Markov chain.
  *
- * The kernel is templated on the concrete update-set type; a deduction guide lets it be constructed as
- * `metropolis_kernel kernel { updates }` without spelling the type.
+ * Since simplemc::run is not aware of the update set, it is the kernel's responsibility to make sure
+ * that the selection distribution is valid (see prepare()).
  *
  * @note The stored update set is required to outlive the kernel.
  *
- * @tparam UpdateSet Concrete simplemc::update_set instantiation.
+ * @tparam Us User update types (each satisfying simplemc::mc_update) of the driven update set.
  */
-template <typename UpdateSet>
+template <mc_update... Us>
 class metropolis_kernel {
 public:
     /**
@@ -43,7 +41,7 @@ public:
      *
      * @param ups Set of updates.
      */
-    explicit metropolis_kernel(UpdateSet& ups) noexcept : ups_ { &ups } {}
+    explicit metropolis_kernel(update_set<Us...>& ups) noexcept : ups_ { &ups } {}
 
     /**
      * @brief Build the update selection distribution from their weights.
@@ -59,19 +57,16 @@ public:
      *
      * @details Standard implementation of a Metropolis algorithm:
      *
-     * - Select an update from the set with probability proportional to its update::weight.
-     * - Propose a new MC configuration by calling `attempt()` of the selected update and by increasing
-     * the counter for *proposed* updates, update::nprops.
+     * - Select an update from the set with probability proportional to its update_stats::weight.
+     * - Propose a new MC configuration by calling update::attempt() of the selected update.
      * - Calculate the acceptance probability \f$ p \f$ by multiplying the return value of `attempt()`
-     * with the detailed-balance update::ratio.
+     * with the detailed-balance update_stats::ratio.
      * - Acceptance/Rejection step:
      *   - if \f$ p < 0 \f$: The proposed MC configuration is not \f$ \in \f$ the allowed state
-     *   space. The counter for *impossible* updates, update::nimps, is increased and `reject()` is
-     *   called.
+     *   space. update::mark_impossible() and update::reject() are called.
      *   - \f$ p >= u \f$, where \f$ u \f$ is a uniform random number on \f$ [0, 1) \f$: The proposed
-     *   MC configuration is accepted. The counter for *accepted* updates, update::naccs, is increased
-     *   and `accept()` is called.
-     *   - Otherwise, the proposed MC configuration is rejected. `reject()` is called.
+     *   MC configuration is accepted. update::accept() is called.
+     *   - Otherwise, the proposed MC configuration is rejected. update::reject() is called.
      *
      * @tparam RNG Random number generator type.
      * @param rng Random number generator driving the update selection and acceptance/rejection.
@@ -80,16 +75,14 @@ public:
     void step(RNG& rng) {
         const std::size_t idx = ups_->select(rng);
         ups_->visit_at(idx, [&](auto& up) {
-            ++up.nprops;
-            const double p = up.attempt() * up.ratio;
+            const double p = up.attempt() * up.stats().ratio;
             if (p < 0.0) {
                 // impossible --> rejected
-                ++up.nimps;
+                up.mark_impossible();
                 up.reject();
             } else if (p >= uni01_(rng)) {
                 // accepted
                 up.accept();
-                ++up.naccs;
             } else {
                 // rejected
                 up.reject();
@@ -98,13 +91,9 @@ public:
     }
 
 private:
-    UpdateSet* ups_;
+    update_set<Us...>* ups_;
     std::uniform_real_distribution<double> uni01_ { 0.0, 1.0 };
 };
-
-/// Deduction guide: deduce the update-set type from the constructor argument.
-template <typename UpdateSet>
-metropolis_kernel(UpdateSet&) -> metropolis_kernel<UpdateSet>;
 
 /** @} */
 

@@ -18,6 +18,7 @@
 #include <string_view>
 #include <tuple>
 #include <type_traits>
+#include <unordered_set>
 #include <utility>
 
 namespace simplemc {
@@ -32,17 +33,17 @@ namespace simplemc {
  *
  * @details It defines the storage, traversal, lookup and typed-access API common to
  * simplemc::update_set and simplemc::measurement_set. The entries are stored in a `std::tuple`, so
- * the set of entry *types* is fixed at construction. Their metadata (name, weight, active flag, ...)
- * stays mutable at runtime.
+ * the set of entry *types* is fixed at construction.
  *
- * Each entry `e` is required to expose a unique name via `e.name`, the wrapped user value via
- * `e.value`, and its type via the nested alias `e::value_type`. The name is used as the key for
- * lookup and serialization.
+ * Each entry `e` is required to expose a unique name via `e.name()`, the wrapped user value via
+ * `e.value()`, and its type via the nested alias `e::value_type`. The name is used as the key for
+ * lookup and serialization. The constructor enforces its uniqueness across the set.
  *
  * Two traversal primitives carry the whole design:
  *
  * - for_each() applies a callable to *every* entry (a compile-time loop over the tuple), and
- * - visit_at() applies a callable to the *single* entry at a runtime index.
+ * - visit_at() applies a callable to the *single* entry at a runtime index or to the entry with a
+ * given registered name.
  *
  * Both accept a generic callable (e.g. `[](auto& e){ ... }`) since every entry is a different type.
  *
@@ -75,9 +76,11 @@ public:
      *
      * @details The entries are moved into the underlying tuple. With no arguments the set is empty.
      *
+     * It throws a simplemc::simplemc_exception when two entries share a name.
+     *
      * @param es Entries to store, in order.
      */
-    explicit tuple_set(Entries... es) : entries_ { std::move(es)... } {}
+    explicit tuple_set(Entries... es) : entries_ { std::move(es)... } { ensure_unique_names(); }
 
     /**
      * @brief Apply a callable to every entry, in order.
@@ -86,7 +89,7 @@ public:
      * @param f Callable to apply (invocable as `f(entry&)` for every entry type).
      */
     template <typename F>
-    constexpr void for_each(F&& f) { // NOLINT (callable invoked in place, not forwarded)
+    void for_each(F&& f) { // NOLINT (callable invoked in place, not forwarded)
         std::apply([&](auto&... es) { (f(es), ...); }, entries_);
     }
 
@@ -97,7 +100,7 @@ public:
      * @param f Callable to apply (invocable as `f(const entry&)` for every entry type).
      */
     template <typename F>
-    constexpr void for_each(F&& f) const { // NOLINT (callable invoked in place, not forwarded)
+    void for_each(F&& f) const { // NOLINT (callable invoked in place, not forwarded)
         std::apply([&](const auto&... es) { (f(es), ...); }, entries_);
     }
 
@@ -105,23 +108,24 @@ public:
      * @brief Apply a callable to the single entry at a runtime index.
      *
      * @details Only the matching entry is invoked. The dispatch is O(1) through a per-instantiation
-     * function-pointer table. Out-of-range indices invoke nothing. The callable must return `void`.
+     * function-pointer table.
+     *
+     * The index must be in range, i.e. `i < size()`. It is the caller's responsibility to validate
+     * it. The callable must return `void`.
      *
      * @tparam F Callable type.
-     * @param i Entry index.
+     * @param i Entry index (must be `< size()`).
      * @param f Callable to apply to the i-th entry (invocable as `f(entry&)` for every entry type).
      */
     template <typename F>
-    constexpr void visit_at(std::size_t i, F&& f) { // NOLINT (callable invoked in place, not forwarded)
+    void visit_at(std::size_t i, F&& f) { // NOLINT (callable invoked in place, not forwarded)
         using fn_t = void (*)(std::tuple<Entries...>&, F&);
         static constexpr auto table = []<std::size_t... I>(std::index_sequence<I...>) {
             return std::array<fn_t, sizeof...(Entries)> { [](std::tuple<Entries...>& es, F& g) {
                 g(std::get<I>(es));
             }... };
         }(std::index_sequence_for<Entries...> {});
-        if (i < size()) {
-            table[i](entries_, f);
-        }
+        table[i](entries_, f);
     }
 
     /**
@@ -130,21 +134,56 @@ public:
      * @details See the non-const visit_at() overload for details.
      *
      * @tparam F Callable type.
-     * @param i Entry index.
+     * @param i Entry index (must be `< size()`).
      * @param f Callable to apply to the i-th entry (invocable as `f(const entry&)` for every entry
      * type).
      */
     template <typename F>
-    constexpr void visit_at(std::size_t i, F&& f) const { // NOLINT (callable invoked in place, not forwarded)
+    void visit_at(std::size_t i, F&& f) const { // NOLINT (callable invoked in place, not forwarded)
         using fn_t = void (*)(const std::tuple<Entries...>&, F&);
         static constexpr auto table = []<std::size_t... I>(std::index_sequence<I...>) {
             return std::array<fn_t, sizeof...(Entries)> { [](const std::tuple<Entries...>& es, F& g) {
                 g(std::get<I>(es));
             }... };
         }(std::index_sequence_for<Entries...> {});
-        if (i < size()) {
-            table[i](entries_, f);
+        table[i](entries_, f);
+    }
+
+    /**
+     * @brief Apply a callable to the single entry with a given registered name.
+     *
+     * @details It looks up the name via find() and dispatches to the index-based visit_at() overload.
+     * A failed lookup throws a simplemc::simplemc_exception when no entry has the given name.
+     *
+     * @tparam F Callable type.
+     * @param name Entry name.
+     * @param f Callable to apply to the named entry.
+     */
+    template <typename F>
+    void visit_at(std::string_view name, F&& f) { // NOLINT (callable invoked in place, not forwarded)
+        const auto idx = find(name);
+        if (!idx) {
+            throw simplemc_exception(fmt::format("no entry named '{}' in the set", name));
         }
+        visit_at(*idx, f);
+    }
+
+    /**
+     * @brief Apply a callable to the single entry with a registered name.
+     *
+     * @details See the non-const visit_at(std::string_view, F&&) overload for details.
+     *
+     * @tparam F Callable type.
+     * @param name Entry name.
+     * @param f Callable to apply to the named entry.
+     */
+    template <typename F>
+    void visit_at(std::string_view name, F&& f) const { // NOLINT (callable invoked in place, not forwarded)
+        const auto idx = find(name);
+        if (!idx) {
+            throw simplemc_exception(fmt::format("no entry named '{}' in the set", name));
+        }
+        visit_at(*idx, f);
     }
 
     /**
@@ -156,7 +195,7 @@ public:
     [[nodiscard]] std::optional<std::size_t> find(std::string_view name) const noexcept {
         return [&]<std::size_t... I>(std::index_sequence<I...>) -> std::optional<std::size_t> {
             std::optional<std::size_t> idx;
-            (void)(((std::get<I>(entries_).name == name) ? (idx = I, true) : false) || ...);
+            (void)(((std::get<I>(entries_).name() == name) ? (idx = I, true) : false) || ...);
             return idx;
         }(std::index_sequence_for<Entries...> {});
     }
@@ -168,7 +207,7 @@ public:
      * @return Reference to the i-th entry (a concrete entry type).
      */
     template <std::size_t I>
-    [[nodiscard]] constexpr auto& get() noexcept {
+    [[nodiscard]] auto& get() noexcept {
         return std::get<I>(entries_);
     }
 
@@ -179,7 +218,7 @@ public:
      * @return Const reference to the i-th entry (a concrete entry type).
      */
     template <std::size_t I>
-    [[nodiscard]] constexpr const auto& get() const noexcept {
+    [[nodiscard]] const auto& get() const noexcept {
         return std::get<I>(entries_);
     }
 
@@ -197,7 +236,7 @@ public:
         if (const auto idx = find(name)) {
             visit_at(*idx, [&](auto& e) {
                 if constexpr (std::same_as<typename std::remove_cvref_t<decltype(e)>::value_type, T>) {
-                    out = &e.value;
+                    out = &e.value();
                 }
             });
         }
@@ -218,11 +257,23 @@ public:
         if (const auto idx = find(name)) {
             visit_at(*idx, [&](const auto& e) {
                 if constexpr (std::same_as<typename std::remove_cvref_t<decltype(e)>::value_type, T>) {
-                    out = &e.value;
+                    out = &e.value();
                 }
             });
         }
         return out;
+    }
+
+private:
+    // It throws a simplemc::simplemc_exception when two entries share a name.
+    void ensure_unique_names() const {
+        std::unordered_set<std::string_view> names {};
+        names.reserve(size());
+        for_each([&](const auto& e) {
+            if (auto [it, inserted] = names.insert(e.name()); !inserted) {
+                throw simplemc_exception(fmt::format("duplicate entry name '{}' in set", e.name()));
+            }
+        });
     }
 
 protected:
@@ -235,7 +286,7 @@ protected:
     template <typename S>
     void save_entries(S& s) const {
         for_each([&](const auto& e) {
-            auto sub = s[e.name];
+            auto sub = s[e.name()];
             simplemc_save(sub, e);
         });
     }
@@ -253,10 +304,10 @@ protected:
     template <typename S>
     void load_entries(const S& s, std::string_view kind) {
         for_each([&](auto& e) {
-            if (!s.has(e.name)) {
-                throw simplemc_exception(fmt::format("{} '{}' not found in serialized data", kind, e.name));
+            if (!s.has(e.name())) {
+                throw simplemc_exception(fmt::format("{} '{}' not found in serialized data", kind, e.name()));
             }
-            const auto sub = s[e.name];
+            const auto sub = s[e.name()];
             simplemc_load(sub, e);
         });
     }
@@ -270,7 +321,7 @@ protected:
     template <typename S>
     void save_input_config_entries(S& s) const {
         for_each([&](const auto& e) {
-            auto sub = s[e.name];
+            auto sub = s[e.name()];
             simplemc_save_input_config(sub, e);
         });
     }
@@ -288,10 +339,10 @@ protected:
     template <typename S>
     void load_input_config_entries(const S& s, std::string_view kind) {
         for_each([&](auto& e) {
-            if (!s.has(e.name)) {
-                throw simplemc_exception(fmt::format("{} '{}' not found in input config", kind, e.name));
+            if (!s.has(e.name())) {
+                throw simplemc_exception(fmt::format("{} '{}' not found in input config", kind, e.name()));
             }
-            const auto sub = s[e.name];
+            const auto sub = s[e.name()];
             simplemc_load_input_config(sub, e);
         });
     }

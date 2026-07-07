@@ -7,6 +7,7 @@
 #define SIMPLEMC_MC_UPDATE_HPP
 
 #include <simplemc/mc/concepts.hpp>
+#include <simplemc/mc/update_stats.hpp>
 #include <simplemc/mpi/all_reduce.hpp>
 #include <simplemc/mpi/communicator.hpp>
 #include <simplemc/serialize/concepts.hpp>
@@ -14,7 +15,6 @@
 
 #include <fmt/format.h>
 
-#include <cstdint>
 #include <string>
 #include <utility>
 
@@ -25,87 +25,40 @@ namespace simplemc {
  * @{
  */
 
+// Forward declarations.
+template <mc_update U>
+class update;
+
+template <serializer S, mc_update U>
+void simplemc_load(const S& s, update<U>& u);
+
+template <mc_update U>
+void simplemc_mpi_collect(const mpi::communicator& comm, update<U>& u);
+
 /**
  * @brief MC update wrapper class for a user-defined update type.
  *
- * @details It owns a user-defined update @ref value of type @ref value_type (satisfying
- * simplemc::mc_update) together with its metadata:
+ * @details It owns a user-defined update of type @ref value_type (satisfying simplemc::mc_update)
+ * together with its metadata, bundled in a simplemc::update_stats.
  *
- * - a unique @ref name that identifies the update,
- * - the name of the inverse update (see @ref inv_name),
- * - an unnormalized selection @ref weight,
- * - a detailed-balance correction @ref ratio, and
- * - counters tracking the number of proposals, acceptances, and impossible signals over the current
- * run and across multiple runs.
+ * The counters in the update statistics are maintained by the wrapper itself: attempt(), accept() and
+ * mark_impossible() do the bookkeeping, so any kernel driving the wrapper gets correct statistics for
+ * free.
  *
- * All fields are public so kernels and reporting code can read and write them directly. The wrapped
- * type is stored by value and accessed via the public @ref value member.
+ * Some metadata can be set at runtime through the setters set_inv_name(), set_weight() and
+ * set_ratio().
+ *
+ * The wrapped type is stored by value and can be accessed via value().
  *
  * @tparam U User update type satisfying simplemc::mc_update.
  */
 template <mc_update U>
-struct update {
+class update {
+public:
     /**
      * @brief The concrete wrapped user type.
      */
     using value_type = U;
-
-    /**
-     * @brief The wrapped user update.
-     */
-    U value;
-
-    /**
-     * @brief Identifier used in lookups and printed reports.
-     */
-    std::string name;
-
-    /**
-     * @brief Identifier of the inverse update. Equal to @ref name for self-inverse updates.
-     */
-    std::string inv_name;
-
-    /**
-     * @brief Unnormalized selection weight (\f$ w \geq 0 \f$).
-     */
-    double weight;
-
-    /**
-     * @brief Detailed-balance correction multiplier applied by the simplemc::metropolis_kernel.
-     *
-     * @details \f$ 1.0 \f$ for a self-inverse update; \f$ w_{\text{inv}} / w \f$ for a paired update.
-     */
-    double ratio = 1.0;
-
-    /**
-     * @brief Number of times this update has been proposed in the current run.
-     */
-    std::uint64_t nprops = 0;
-
-    /**
-     * @brief Number of times this update has been accepted in the current run.
-     */
-    std::uint64_t naccs = 0;
-
-    /**
-     * @brief Number of times this update has been signaled as impossible in the current run.
-     */
-    std::uint64_t nimps = 0;
-
-    /**
-     * @brief Cumulative number of proposals across runs.
-     */
-    std::uint64_t cumulative_nprops = 0;
-
-    /**
-     * @brief Cumulative number of acceptances across runs.
-     */
-    std::uint64_t cumulative_naccs = 0;
-
-    /**
-     * @brief Cumulative number of impossible signals across runs.
-     */
-    std::uint64_t cumulative_nimps = 0;
 
     /**
      * @brief Constructor stores a user-defined update value.
@@ -113,42 +66,113 @@ struct update {
      * @details It validates that the name is not empty and that the weight is non-negative, throwing
      * a simplemc::simplemc_exception otherwise.
      *
-     * By default, updates are self-inverse, i.e. @ref inv_name is set to @ref name and @ref ratio is
-     * set to \f$ 1.0 \f$. To define a paired update, see update_set::link_pair().
+     * By default, updates are self-inverse, i.e. update_stats::inv_name is set to update_stats::name
+     * and update_stats::ratio is set to \f$ 1.0 \f$. To define a paired update, see
+     * update_set::link_pair().
      *
      * @param value User update value to store.
      * @param name Identifier.
      * @param weight Unnormalized selection weight.
      */
-    update(U value, std::string name, double weight) :
-        value { std::move(value) },
-        name { std::move(name) },
-        inv_name { this->name },
-        weight { weight } {
-        if (this->name.empty()) {
+    update(U value, std::string name, double weight) : value_ { std::move(value) } {
+        if (name.empty()) {
             throw simplemc_exception("update name must be non-empty");
         }
-        if (this->weight < 0.0) {
-            throw simplemc_exception(
-                fmt::format("update weight must be >= 0 (got {} on '{}')", this->weight, this->name));
-        }
+        stats_.name = std::move(name);
+        stats_.inv_name = stats_.name;
+        set_weight(weight);
     }
+
+    /**
+     * @brief Get the wrapped user update.
+     *
+     * @return Reference to the stored user update.
+     */
+    [[nodiscard]] U& value() noexcept { return value_; }
+
+    /**
+     * @brief Get the wrapped user update.
+     *
+     * @return Const reference to the stored user update.
+     */
+    [[nodiscard]] const U& value() const noexcept { return value_; }
+
+    /**
+     * @brief Identifier used in lookups and printed reports. Fixed at construction.
+     *
+     * @return Name of the update.
+     */
+    [[nodiscard]] const std::string& name() const noexcept { return stats_.name; }
+
+    /**
+     * @brief All metadata of the update, bundled in a simplemc::update_stats.
+     *
+     * @return Const reference to the live metadata.
+     */
+    [[nodiscard]] const update_stats& stats() const noexcept { return stats_; }
+
+    /**
+     * @brief Set the identifier of the inverse update.
+     *
+     * @details It throws a simplemc::simplemc_exception when the given name is empty. This is usually
+     * called indirectly via update_set::link_pair().
+     *
+     * @param inv_name Inverse-update identifier.
+     */
+    void set_inv_name(std::string inv_name) {
+        if (inv_name.empty()) {
+            throw simplemc_exception(fmt::format("update inverse name must be non-empty (on '{}')", stats_.name));
+        }
+        stats_.inv_name = std::move(inv_name);
+    }
+
+    /**
+     * @brief Set the unnormalized selection weight.
+     *
+     * @details It throws a simplemc::simplemc_exception when the weight is negative.
+     *
+     * @param weight Selection weight (\f$ w \geq 0 \f$).
+     */
+    void set_weight(double weight) {
+        if (weight < 0.0) {
+            throw simplemc_exception(fmt::format("update weight must be >= 0 (got {} on '{}')", weight, stats_.name));
+        }
+        stats_.weight = weight;
+    }
+
+    /**
+     * @brief Set the detailed-balance correction multiplier.
+     *
+     * @details This is usually called indirectly via update_set::rebuild_distribution(), which
+     * recomputes it from the weight ratio of the update and its inverse.
+     *
+     * @param ratio Detailed-balance correction.
+     */
+    void set_ratio(double ratio) noexcept { stats_.ratio = ratio; }
 
     /**
      * @brief Propose a change to the simulation state.
      *
-     * @details It simply calls the `%attempt()` member of the wrapped user type.
+     * @details It increments the proposal counter update_stats::nprops and calls the `%attempt()`
+     * member of the wrapped user type.
      *
      * @return Acceptance probability of the proposed change.
      */
-    double attempt() { return value.attempt(); }
+    double attempt() {
+        ++stats_.nprops;
+        return value_.attempt();
+    }
 
     /**
      * @brief Commit the proposed change.
      *
-     * @details It simply calls the `%accept()` member of the wrapped user type.
+     * @details It increments the acceptance counter update_stats::naccs and calls the `%accept()`
+     * member of the wrapped user type.
      */
-    void accept() { value.accept(); }
+    void accept() {
+        ++stats_.naccs;
+        value_.accept();
+    }
 
     /**
      * @brief Roll back any speculative state set up by attempt().
@@ -157,37 +181,56 @@ struct update {
      * a no-op.
      */
     void reject() {
-        if constexpr (requires { value.reject(); }) {
-            value.reject();
+        if constexpr (requires { value_.reject(); }) {
+            value_.reject();
         }
     }
+
+    /**
+     * @brief Signal that the last proposal was impossible.
+     *
+     * @details It increments the impossible counter update_stats::nimps. It does *not* call reject();
+     * a kernel rejecting an impossible proposal must still do so explicitly.
+     */
+    void mark_impossible() noexcept { ++stats_.nimps; }
 
     /**
      * @brief Zero the current-run counters but leave the cumulative counters untouched.
      */
     void reset_run_counters() noexcept {
-        nprops = 0;
-        naccs = 0;
-        nimps = 0;
+        stats_.nprops = 0;
+        stats_.naccs = 0;
+        stats_.nimps = 0;
     }
 
     /**
      * @brief Add the current-run counters to the cumulative counters and call reset_run_counters().
      */
     void accumulate_counters() noexcept {
-        cumulative_nprops += nprops;
-        cumulative_naccs += naccs;
-        cumulative_nimps += nimps;
+        stats_.cumulative_nprops += stats_.nprops;
+        stats_.cumulative_naccs += stats_.naccs;
+        stats_.cumulative_nimps += stats_.nimps;
         reset_run_counters();
     }
+
+    // Friend declarations.
+    template <serializer S, mc_update V>
+    friend void simplemc_load(const S& s, update<V>& u);
+
+    template <mc_update V>
+    friend void simplemc_mpi_collect(const mpi::communicator& comm, update<V>& u);
+
+private:
+    U value_;
+    update_stats stats_;
 };
 
 /**
  * @relates simplemc::update
  * @brief Serialize a simplemc::update.
  *
- * @details It serializes all metadata except update::name and the transient current-run counters. If
- * the wrapped user update is serializable by `S`, update::value is also serialized.
+ * @details It serializes all metadata except update_stats::name and the transient current-run
+ * counters. If the wrapped user update is serializable by `S`, update::value() is also serialized.
  *
  * @tparam S Serializer type.
  * @tparam U User update type.
@@ -196,14 +239,14 @@ struct update {
  */
 template <serializer S, mc_update U>
 void simplemc_save(S& s, const update<U>& u) {
-    s.save_at("inv_name", u.inv_name);
-    s.save_at("weight", u.weight);
-    s.save_at("ratio", u.ratio);
-    s.save_at("cumulative_nprops", u.cumulative_nprops);
-    s.save_at("cumulative_naccs", u.cumulative_naccs);
-    s.save_at("cumulative_nimps", u.cumulative_nimps);
+    s.save_at("inv_name", u.stats().inv_name);
+    s.save_at("weight", u.stats().weight);
+    s.save_at("ratio", u.stats().ratio);
+    s.save_at("cumulative_nprops", u.stats().cumulative_nprops);
+    s.save_at("cumulative_naccs", u.stats().cumulative_naccs);
+    s.save_at("cumulative_nimps", u.stats().cumulative_nimps);
     if constexpr (save_at_all<U, S>) {
-        s.save_at("user", u.value);
+        s.save_at("user", u.value());
     }
 }
 
@@ -211,8 +254,9 @@ void simplemc_save(S& s, const update<U>& u) {
  * @relates simplemc::update
  * @brief Deserialize a simplemc::update.
  *
- * @details It deserializes all metadata except update::name and the transient current-run counters.
- * If the wrapped user update is deserializable by `S`, update::value is also deserialized.
+ * @details It deserializes all metadata except update_stats::name and the transient current-run
+ * counters. If the wrapped user update is deserializable by `S`, update::value() is also
+ * deserialized.
  *
  * @tparam S Serializer type.
  * @tparam U User update type.
@@ -221,14 +265,14 @@ void simplemc_save(S& s, const update<U>& u) {
  */
 template <serializer S, mc_update U>
 void simplemc_load(const S& s, update<U>& u) {
-    s.load_at("inv_name", u.inv_name);
-    s.load_at("weight", u.weight);
-    s.load_at("ratio", u.ratio);
-    s.load_at("cumulative_nprops", u.cumulative_nprops);
-    s.load_at("cumulative_naccs", u.cumulative_naccs);
-    s.load_at("cumulative_nimps", u.cumulative_nimps);
+    s.load_at("inv_name", u.stats_.inv_name);
+    s.load_at("weight", u.stats_.weight);
+    s.load_at("ratio", u.stats_.ratio);
+    s.load_at("cumulative_nprops", u.stats_.cumulative_nprops);
+    s.load_at("cumulative_naccs", u.stats_.cumulative_naccs);
+    s.load_at("cumulative_nimps", u.stats_.cumulative_nimps);
     if constexpr (load_at_all<U, S>) {
-        s.load_at("user", u.value);
+        s.load_at("user", u.value());
     }
 }
 
@@ -236,8 +280,8 @@ void simplemc_load(const S& s, update<U>& u) {
  * @relates simplemc::update
  * @brief Serialize the user-input config of a simplemc::update.
  *
- * @details It serializes update::weight and, if the wrapped user update has an input-config
- * serialization, update::value.
+ * @details It serializes update_stats::weight and the wrapped user update (if it has an input-config
+ * serialization).
  *
  * @tparam S Serializer type.
  * @tparam U User update type.
@@ -246,10 +290,10 @@ void simplemc_load(const S& s, update<U>& u) {
  */
 template <serializer S, mc_update U>
 void simplemc_save_input_config(S& s, const update<U>& u) {
-    s.save_at("weight", u.weight);
+    s.save_at("weight", u.stats().weight);
     if constexpr (has_simplemc_save_input_config<U, S>) {
         auto sub = s["user"];
-        simplemc_save_input_config(sub, u.value);
+        simplemc_save_input_config(sub, u.value());
     }
 }
 
@@ -257,8 +301,9 @@ void simplemc_save_input_config(S& s, const update<U>& u) {
  * @relates simplemc::update
  * @brief Deserialize the user-input config of a simplemc::update.
  *
- * @details It deserializes update::weight and, if the wrapped user update has an input-config
- * deserialization, update::value.
+ * @details It deserializes update_stats::weight through update::set_weight(), so a negative weight
+ * in the input config throws a simplemc::simplemc_exception. If the wrapped user update has an
+ * input-config deserialization, update::value() is also deserialized.
  *
  * @tparam S Serializer type.
  * @tparam U User update type.
@@ -267,10 +312,12 @@ void simplemc_save_input_config(S& s, const update<U>& u) {
  */
 template <serializer S, mc_update U>
 void simplemc_load_input_config(const S& s, update<U>& u) {
-    s.try_load_at("weight", u.weight);
+    double weight = u.stats().weight;
+    s.try_load_at("weight", weight);
+    u.set_weight(weight);
     if constexpr (has_simplemc_load_input_config<U, S>) {
         const auto sub = s["user"];
-        simplemc_load_input_config(sub, u.value);
+        simplemc_load_input_config(sub, u.value());
     }
 }
 
@@ -291,14 +338,14 @@ void simplemc_load_input_config(const S& s, update<U>& u) {
  */
 template <mc_update U>
 void simplemc_mpi_collect(const mpi::communicator& comm, update<U>& u) {
-    mpi::all_reduce_in_place(u.nprops, MPI_SUM, comm);
-    mpi::all_reduce_in_place(u.naccs, MPI_SUM, comm);
-    mpi::all_reduce_in_place(u.nimps, MPI_SUM, comm);
-    mpi::all_reduce_in_place(u.cumulative_nprops, MPI_SUM, comm);
-    mpi::all_reduce_in_place(u.cumulative_naccs, MPI_SUM, comm);
-    mpi::all_reduce_in_place(u.cumulative_nimps, MPI_SUM, comm);
+    mpi::all_reduce_in_place(u.stats_.nprops, MPI_SUM, comm);
+    mpi::all_reduce_in_place(u.stats_.naccs, MPI_SUM, comm);
+    mpi::all_reduce_in_place(u.stats_.nimps, MPI_SUM, comm);
+    mpi::all_reduce_in_place(u.stats_.cumulative_nprops, MPI_SUM, comm);
+    mpi::all_reduce_in_place(u.stats_.cumulative_naccs, MPI_SUM, comm);
+    mpi::all_reduce_in_place(u.stats_.cumulative_nimps, MPI_SUM, comm);
     if constexpr (has_simplemc_mpi_collect<U>) {
-        u.value = simplemc_mpi_collect(comm, u.value);
+        u.value() = simplemc_mpi_collect(comm, u.value());
     }
 }
 

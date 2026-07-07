@@ -238,6 +238,7 @@
             <tab type="user" url="@ref simplemc::mc_update" title="mc_update"/>
             <tab type="user" url="@ref simplemc::update" title="update"/>
             <tab type="user" url="@ref simplemc::update_set" title="update_set"/>
+            <tab type="user" url="@ref simplemc::update_stats" title="update_stats"/>
           </tab>
           <tab type="user" url="@ref simplemc::tuple_set" title="tuple_set"/>
         </tab>

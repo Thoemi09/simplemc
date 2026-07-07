@@ -10,6 +10,7 @@
 # mc-update-set-test: Test update_set (construction, link_pair, weight, select, serialization).
 # mc-kernel-test: Test the mc_kernel concept.
 # mc-metropolis-kernel-test: Test the default Metropolis step kernel.
+# mc-run-test: Test the free run() driver + run_callbacks + custom kernels.
 # mc-progress-printer-test: Test progress_printer and progress_line.
 # mc-mpi-test: Test MPI reduction helpers on simplemc-mc types (mpirun -n 4).
 
@@ -29,14 +30,17 @@ target_link_libraries(mc-measurement-set-test PRIVATE simplemc-test)
 add_executable(mc-update-test mc_update_test.cpp)
 target_link_libraries(mc-update-test PRIVATE simplemc-test)
 
-add_executable(mc-update-set-test update_set_test.cpp)
+add_executable(mc-update-set-test mc_update_set_test.cpp)
 target_link_libraries(mc-update-set-test PRIVATE simplemc-test)
 
-add_executable(mc-kernel-test kernel_test.cpp)
+add_executable(mc-kernel-test mc_kernel_test.cpp)
 target_link_libraries(mc-kernel-test PRIVATE simplemc-test)
 
-add_executable(mc-metropolis-kernel-test metropolis_kernel_test.cpp)
+add_executable(mc-metropolis-kernel-test mc_metropolis_kernel_test.cpp)
 target_link_libraries(mc-metropolis-kernel-test PRIVATE simplemc-test)
+
+add_executable(mc-run-test mc_run_test.cpp)
+target_link_libraries(mc-run-test PRIVATE simplemc-test)
 
 add_executable(mc-progress-printer-test mc_progress_printer_test.cpp)
 target_link_libraries(mc-progress-printer-test PRIVATE simplemc-test)
@@ -53,5 +57,6 @@ add_test(NAME mc-update-test COMMAND mc-update-test)
 add_test(NAME mc-update-set-test COMMAND mc-update-set-test)
 add_test(NAME mc-kernel-test COMMAND mc-kernel-test)
 add_test(NAME mc-metropolis-kernel-test COMMAND mc-metropolis-kernel-test)
+add_test(NAME mc-run-test COMMAND mc-run-test)
 add_test(NAME mc-progress-printer-test COMMAND mc-progress-printer-test)
 add_test(NAME mc-mpi-test COMMAND mpirun -n 4 mc-mpi-test)
