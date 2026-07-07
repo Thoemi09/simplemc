@@ -31,6 +31,7 @@
       <tab type="user" url="@ref tut_numeric_1" title="Numeric Tutorial 1: FCC and BCC Bravais lattice"/>
       <tab type="user" url="@ref tut_numeric_2" title="Numeric Tutorial 2: Generalized Fourer series"/>
       <tab type="user" url="@ref tut_accs_1" title="Accumulator Tutorial 1: Estimating errors"/>
+      <tab type="user" url="@ref tut_mc_1" title="MC Tutorial 1: A minimal MC integration"/>
       <tab type="user" url="@ref tut_compilation" title="Compiling the tutorials"/>
     </tab>
     <tab type="usergroup" url="@ref documentation" title="API Documentation">

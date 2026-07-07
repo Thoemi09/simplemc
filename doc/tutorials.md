@@ -18,6 +18,7 @@
 | @ref tut_numeric_1 | Working with @ref simplemc-numeric-lattices |
 | @ref tut_numeric_2 | Approximate a function using @ref simplemc-numeric-poly |
 | @ref tut_accs_1 | Estimating errors with @ref simplemc-accs |
+| @ref tut_mc_1 | A minimal MC integration with @ref simplemc-mc |
 
 @section tut_compilation Compiling the tutorials
 
