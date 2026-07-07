@@ -43,11 +43,17 @@ void write_json_file(const nlohmann::json& json, const std::filesystem::path& fp
 void read_json_file(nlohmann::json& json, const std::filesystem::path& fpath, const json_io_options& opts) {
     if (opts.mode == json_file_mode::text) {
         std::ifstream is(fpath);
+        if (!is.is_open()) {
+            throw simplemc_exception(fmt::format("Opening JSON file {} for reading failed", fpath));
+        }
         if (!(is >> json)) {
             throw simplemc_exception(fmt::format("Reading JSON file {} in text mode failed", fpath));
         }
     } else {
         std::ifstream is(fpath, std::ios_base::binary);
+        if (!is.is_open()) {
+            throw simplemc_exception(fmt::format("Opening JSON file {} for reading failed", fpath));
+        }
         if (opts.mode == json_file_mode::bson) {
             json = nlohmann::json::from_bson(is);
         } else if (opts.mode == json_file_mode::cbor) {
