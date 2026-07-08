@@ -1538,7 +1538,9 @@
  *
  * Live, transient per-run statistics are maintained in simplemc::simulation_ctx.
  *
- * Post-run, persistent run statistics are available in simplemc::simulation_stats.
+ * Post-run, persistent run statistics can be stored in simplemc::simulation_stats. The simulation
+ * context of a previous (or current) run can be folded into the statistics using `operator+=()` and
+ * `operator+()`.
  */
 
 /**

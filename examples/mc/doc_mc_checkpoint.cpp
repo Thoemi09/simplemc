@@ -148,7 +148,7 @@ int main() {
 
     // Fold the run into the cumulative counters, then snapshot the components plus the user state.
     const auto path = std::filesystem::temp_directory_path() / "doc_mc_checkpoint.json";
-    accumulate_simulation_stats(stats, ctx);
+    stats += ctx;
     write_checkpoint(path, rng, updates, meas, stats, state);
     fmt::print("wrote checkpoint to {}\n", path.string());
 

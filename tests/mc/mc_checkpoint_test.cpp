@@ -80,8 +80,7 @@ inline void from_json(const nlohmann::json& j, nlohmann_only_update& u) {
 template <typename U, typename M>
 void run_and_accumulate(U& us, M& ms, simulation_stats& stats, xoshiro256ss& rng, const simulation_params& p) {
     metropolis_kernel kernel { us };
-    const auto ctx = run(rng, kernel, ms, p);
-    accumulate_simulation_stats(stats, ctx);
+    stats += run(rng, kernel, ms, p);
 }
 
 // Serializable user-state.

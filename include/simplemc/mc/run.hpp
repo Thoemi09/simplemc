@@ -56,9 +56,8 @@ namespace simplemc {
  *   - the user-defined `stop_when()` callback returns true.
  *
  * On exit, the returned simplemc::simulation_ctx holds the final simulation_ctx::steps_done and
- * simulation_ctx::runtime of the completed run. Per-update counters are written by the kernel. Users
- * can fold the current simulation context into cumulative (over multiple runs) simulation stats with
- * simplemc::accumulate_simulation_stats.
+ * simulation_ctx::runtime of the completed run. Per-update counters are written by the kernel and the
+ * update wrapper.
  *
  * @note Successful simulations always perform a number of MC steps which is a multiple of
  * simulation_params::cycles_per_check times simulation_params::steps_per_cycle.

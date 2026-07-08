@@ -124,17 +124,38 @@ TEST(MCSimulationStats, PrintSimulationStats) {
     print(s);
 }
 
-// Test accumulating a simulation context into simulation stats.
-TEST(MCSimulationStats, AccumulateFoldsRunIntoCumulative) {
+// Test folding a simulation context into simulation stats via operator+=.
+TEST(MCSimulationStats, AdditionAssignmentFoldsCtx) {
     simulation_stats s { .cumulative_steps = 100, .cumulative_time = 5.25 };
 
     simulation_ctx ctx;
     ctx.steps_done = 42;
     ctx.runtime = 1.5;
-    accumulate_simulation_stats(s, ctx);
+    auto& ref = (s += ctx);
 
+    EXPECT_EQ(&ref, &s);
     EXPECT_EQ(s.cumulative_steps, 142u);
     EXPECT_DOUBLE_EQ(s.cumulative_time, 6.75);
+}
+
+// Test that operator+ returns the totals without mutating the stats.
+TEST(MCSimulationStats, AdditionReturnsTotalsWithoutMutating) {
+    const simulation_stats s { .cumulative_steps = 100, .cumulative_time = 5.25 };
+
+    simulation_ctx ctx;
+    ctx.steps_done = 42;
+    ctx.runtime = 1.5;
+    const auto total = s + ctx;
+
+    EXPECT_EQ(total.cumulative_steps, 142u);
+    EXPECT_DOUBLE_EQ(total.cumulative_time, 6.75);
+    EXPECT_EQ(s.cumulative_steps, 100u); // untouched
+    EXPECT_DOUBLE_EQ(s.cumulative_time, 5.25); // untouched
+
+    // addition is symmetric
+    const auto total2 = ctx + s;
+    EXPECT_EQ(total2.cumulative_steps, total.cumulative_steps);
+    EXPECT_DOUBLE_EQ(total2.cumulative_time, total.cumulative_time);
 }
 
 // Test serialization and deserialization of simulation stats.

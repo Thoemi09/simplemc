@@ -28,9 +28,8 @@ namespace simplemc {
  *
  * @details It holds the total number of MC steps performed and the total runtime (in seconds).
  *
- * After a simplemc::run completes, the returned simplemc::simulation_ctx can be folded into the
- * simulation stats using simplemc::accumulate_simulation_stats. In that way, one can keep track of
- * the cumulative statistics over multiple runs.
+ * A simplemc::simulation_ctx acts as the per-run delta to this cumulative record. After and during a
+ * run, the context should be folded into the statistics using `operator+=()` or `operator+()`.
  */
 struct simulation_stats {
     /**
@@ -48,16 +47,49 @@ struct simulation_stats {
 
 /**
  * @relates simplemc::simulation_stats
- * @brief Accumulate the context of a finished run into simulation statistics.
+ * @brief Addition assignment operator to fold a simulation context into the cumulative simulation
+ * statistics.
  *
- * @details The per-run totals are read from the simplemc::simulation_ctx returned by simplemc::run.
+ * @details This updates the statistics in place. Use it at the end of a simulation to keep track of
+ * the total number of MC steps and the total runtime across multiple runs.
  *
- * @param s Simulation statistics to accumulate into.
- * @param ctx Context of the finished run.
+ * @param s Simulation statistics to fold into.
+ * @param ctx Simulation context.
+ * @return Reference to simulation statistics after the fold.
  */
-inline void accumulate_simulation_stats(simulation_stats& s, const simulation_ctx& ctx) noexcept {
+constexpr simulation_stats& operator+=(simulation_stats& s, const simulation_ctx& ctx) noexcept {
     s.cumulative_steps += ctx.steps_done;
     s.cumulative_time += ctx.runtime;
+    return s;
+}
+
+/**
+ * @relates simplemc::simulation_stats
+ * @brief Addition operator to combine cumulative simulation statistics with a simulation context.
+ *
+ * @details This adds the MC steps and runtimes contained in the context and the statistics and
+ * returns them in a new simplemc::simulation_stats object.
+ *
+ * @param s Simulation statistics.
+ * @param ctx Simulation context.
+ * @return Summed statistics.
+ */
+[[nodiscard]] constexpr simulation_stats operator+(simulation_stats s, const simulation_ctx& ctx) noexcept {
+    return s += ctx;
+}
+
+/**
+ * @relates simplemc::simulation_stats
+ * @brief Addition operator to combine a simulation context with cumulative simulation statistics.
+ *
+ * @details Same as simplemc::operator+(simulation_stats, const simulation_ctx&).
+ *
+ * @param ctx Simulation context.
+ * @param s Simulation statistics.
+ * @return Summed statistics.
+ */
+[[nodiscard]] constexpr simulation_stats operator+(const simulation_ctx& ctx, simulation_stats s) noexcept {
+    return s += ctx;
 }
 
 /**
