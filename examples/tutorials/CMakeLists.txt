@@ -22,6 +22,7 @@
 # tut_numeric_2: Using orthogonal polynomials.
 # tut_accs_1: Estimating MC errors with simplemc-accs accumulators.
 # tut_mc_1: Minimal MC integration with simplemc-mc.
+# tut_mc_2: MC integration with checkpointing and input-config files.
 
 simplemc_add_examples(
     tut_utils_1
@@ -44,4 +45,5 @@ simplemc_add_examples(
     tut_numeric_2
     tut_accs_1
     tut_mc_1
+    tut_mc_2
 )

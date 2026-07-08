@@ -228,8 +228,8 @@ We can see that the MC simulation took about 0.25 seconds to perform one million
 the calculated integral agrees with the exact result to the expected \f$ \mathcal{O}(1/\sqrt{N}) \sim
 10^{-3} \f$ accuracy. 
 
-The next tutorial will show you how to implement a more flexible MC simulation by writing and reading
-checkpoint files and user input files.
+The next tutorial (@ref tut_mc_2) will show you how to implement a more flexible MC simulation by
+writing and reading checkpoint files and user input files.
 
 @section tut_mc_1_code Full code
 
