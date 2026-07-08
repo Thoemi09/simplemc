@@ -125,41 +125,6 @@ inline void print(const simulation_params& p, std::FILE* fp = stdout) {
 
 /**
  * @relates simplemc::simulation_params
- * @brief Serialize the persistent fields of simplemc::simulation_params.
- *
- * @details Persistent fields include
- *
- * - simulation_params::steps_per_cycle and
- * - simulation_params::cycles_per_check.
- *
- * @tparam S Serializer type.
- * @param s Serializer handle.
- * @param p Parameters to serialize.
- */
-template <serializer S>
-void simplemc_save(S s, const simulation_params& p) {
-    s.save_at("steps_per_cycle", p.steps_per_cycle);
-    s.save_at("cycles_per_check", p.cycles_per_check);
-}
-
-/**
- * @relates simplemc::simulation_params
- * @brief Deserialize the persistent fields of simplemc::simulation_params.
- *
- * @details See also simplemc_save(S, const simulation_params&).
- *
- * @tparam S Serializer type.
- * @param s Serializer handle.
- * @param p Parameters to deserialize into.
- */
-template <serializer S>
-void simplemc_load(const S& s, simulation_params& p) {
-    s.load_at("steps_per_cycle", p.steps_per_cycle);
-    s.load_at("cycles_per_check", p.cycles_per_check);
-}
-
-/**
- * @relates simplemc::simulation_params
  * @brief Serialize the user-input config of simplemc::simulation_params.
  *
  * @details All fields are part of the user-input conifg.

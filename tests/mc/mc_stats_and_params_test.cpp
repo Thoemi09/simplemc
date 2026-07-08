@@ -35,22 +35,6 @@ TEST(MCSimulationParams, PrintSimulationParams) {
     print(p);
 }
 
-// Test serialization and deserialization of simulation parameters.
-TEST(MCSimulationParams, JsonStateRoundTrip) {
-    json_serializer j;
-
-    const simulation_params src { .max_steps = 123456, .max_time = 7.5, .steps_per_cycle = 3, .cycles_per_check = 17 };
-    simplemc_save(j, src);
-
-    simulation_params dst;
-    simplemc_load(j, dst);
-
-    EXPECT_EQ(dst.max_steps, simulation_params {}.max_steps);
-    EXPECT_EQ(dst.max_time, simulation_params {}.max_time);
-    EXPECT_EQ(dst.steps_per_cycle, src.steps_per_cycle);
-    EXPECT_EQ(dst.cycles_per_check, src.cycles_per_check);
-}
-
 TEST(MCSimulationParams, JsonInputConfigRoundTrip) {
     json_serializer j;
 
