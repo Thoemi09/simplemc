@@ -109,9 +109,6 @@ inline void validate_simulation_params(const simulation_params& p) {
  */
 inline void print(const simulation_params& p, std::FILE* fp = stdout) {
     fmt::print(fp,
-        "============================\n"
-        "SIMULATION PARAMETERS:\n"
-        "============================\n"
         "Max. steps              = {}\n"
         "Max. time               = {} sec\n"
         "Steps per cycle         = {}\n"

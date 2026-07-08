@@ -96,17 +96,20 @@ constexpr simulation_stats& operator+=(simulation_stats& s, const simulation_ctx
  * @relates simplemc::simulation_stats
  * @brief Print a simplemc::simulation_stats as a human-readable block.
  *
+ * @details It also reports the derived throughput (steps per second).
+ *
  * @param s Statistics to print.
  * @param fp Destination file pointer (defaults to stdout).
  */
 inline void print(const simulation_stats& s, std::FILE* fp = stdout) {
+    const std::string steps_per_sec = s.cumulative_time > 0.0 ?
+        fmt::format("{:.6}", static_cast<double>(s.cumulative_steps) / s.cumulative_time) :
+        "--";
     fmt::print(fp,
-        "============================\n"
-        "SIMULATION STATISTICS:\n"
-        "============================\n"
-        "MC steps done = {}\n"
-        "Runtime       = {} sec\n",
-        s.cumulative_steps, s.cumulative_time);
+        "Runtime        = {} sec\n"
+        "MC steps done  = {}\n"
+        "Steps per sec  = {}\n",
+        s.cumulative_time, s.cumulative_steps, steps_per_sec);
 }
 
 /**

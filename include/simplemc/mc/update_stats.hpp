@@ -130,9 +130,7 @@ inline void print(const std::vector<update_stats>& ss, std::FILE* fp = stdout) {
 
     // print the table
     const std::string header_line = table_line(headers);
-    const std::string banner(header_line.size(), '=');
-    fmt::println(
-        fp, "{}\nUPDATE STATISTICS:\n{}\n{}\n{}", banner, banner, header_line, std::string(header_line.size(), '-'));
+    fmt::println(fp, "{}\n{}", header_line, std::string(header_line.size(), '-'));
     for (const auto& row : rows) {
         fmt::println(fp, "{}", table_line(row));
     }
