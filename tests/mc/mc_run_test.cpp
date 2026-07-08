@@ -269,10 +269,10 @@ TEST(MCRun, CheckpointWriterInsideRunRoundTrips) {
 
     const auto path = std::filesystem::temp_directory_path() / "mc_run_writer_roundtrip.json";
     std::filesystem::remove(path);
-    auto cbs = run_callbacks { .on_checkpoint = [&](const simulation_ctx&) {
+    auto cbs = run_callbacks { .on_checkpoint = [&](const simulation_ctx& c) {
         atomic_file_write(path, [&](const std::filesystem::path& tmp) {
             json_serializer s;
-            simplemc_save(s, rng, us, ms, stats);
+            simplemc_save(s, rng, us, ms, stats + c);
             write_json_file(s.root(), tmp);
         });
     } };
@@ -300,6 +300,9 @@ TEST(MCRun, CheckpointWriterInsideRunRoundTrips) {
     EXPECT_DOUBLE_EQ(dst_us.get<0>().stats().weight, 1.0);
     EXPECT_EQ(dst_counter, 100);
     EXPECT_EQ(dst_counter, us.get<0>().value().counter);
+
+    // the checkpoint carries the mid-run totals via stats + ctx (the last write is at step 100)
+    EXPECT_EQ(dst_stats.cumulative_steps, 100u);
     std::filesystem::remove(path);
 }
 

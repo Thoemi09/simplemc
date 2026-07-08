@@ -9,6 +9,7 @@
 #include <simplemc/config.hpp>
 
 #include <simplemc/mc/concepts.hpp>
+#include <simplemc/mc/json.hpp>
 #include <simplemc/mc/kernels.hpp>
 #include <simplemc/mc/measurement.hpp>
 #include <simplemc/mc/measurement_set.hpp>

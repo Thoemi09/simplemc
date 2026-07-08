@@ -4,11 +4,10 @@
 #include <simplemc/random/xoshiro256.hpp>
 #include <simplemc/serialize/json/file_io.hpp>
 #include <simplemc/serialize/json/json_serializer.hpp>
-#include <simplemc/utils/file_io.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
 #ifdef SIMPLEMC_USE_HDF5
-#include <simplemc/serialize/hdf5/hdf5_serializer.hpp>
+#include <simplemc/mc/hdf5.hpp>
 #endif // SIMPLEMC_USE_HDF5
 
 #include <gtest/gtest.h>
@@ -16,7 +15,6 @@
 
 #include <filesystem>
 #include <fstream>
-#include <utility>
 
 using namespace simplemc;
 
@@ -122,30 +120,6 @@ int remove_tmp_siblings(const std::filesystem::path& path) {
         }
     }
     return n;
-}
-
-// Write/Read JSON checkpoint to file — the composed file idiom the library expects users to copy:
-// atomic_file_write + serialization + write/read_json_file.
-template <typename RNG, mc_update... Us, mc_measurement... Ms, typename F = decltype([](json_serializer&) {})>
-void write_checkpoint(const std::filesystem::path& path, const RNG& rng, const update_set<Us...>& us,
-    const measurement_set<Ms...>& ms, const simulation_stats& stats, json_file_mode mode = json_file_mode::text,
-    F&& f = {}) {
-    atomic_file_write(path, [&](const std::filesystem::path& tmp) {
-        json_serializer s;
-        simplemc_save(s, rng, us, ms, stats);
-        std::forward<F>(f)(s);
-        write_json_file(s.root(), tmp, { .mode = mode });
-    });
-}
-
-template <typename RNG, mc_update... Us, mc_measurement... Ms, typename F = decltype([](const json_serializer&) {})>
-void read_checkpoint(const std::filesystem::path& path, RNG& rng, update_set<Us...>& us, measurement_set<Ms...>& ms,
-    simulation_stats& stats, json_file_mode mode = json_file_mode::text, F&& f = {}) {
-    nlohmann::json doc;
-    read_json_file(doc, path, { .mode = mode });
-    const json_serializer s { std::move(doc) };
-    simplemc_load(s, rng, us, ms, stats);
-    std::forward<F>(f)(s);
 }
 
 } // namespace
@@ -338,7 +312,7 @@ TEST(MCCheckpoint, FileRoundTripViaComposedIdiom) {
 
     // write checkpoint to a temporary file
     const auto path = std::filesystem::temp_directory_path() / "mc_checkpoint_file_roundtrip.json";
-    write_checkpoint(path, rng, updates, meas, stats);
+    save_json_checkpoint(path, rng, updates, meas, stats);
 
     // prepare destinations
     xoshiro256ss dst_rng { 123 };
@@ -347,7 +321,7 @@ TEST(MCCheckpoint, FileRoundTripViaComposedIdiom) {
     measurement_set<> dst_meas;
 
     // read checkpoint from the file
-    read_checkpoint(path, dst_rng, dst_updates, dst_meas, dst_stats);
+    load_json_checkpoint(path, dst_rng, dst_updates, dst_meas, dst_stats);
 
     // check that the round-trip preserved expected fields
     EXPECT_EQ(dst_stats.cumulative_steps, stats.cumulative_steps);
@@ -373,7 +347,7 @@ TEST(MCCheckpoint, LoadThrowsOnCorruptFile) {
     }
 
     // check that reading the file throws an exception
-    EXPECT_ANY_THROW(read_checkpoint(truncated, rng, updates, meas, stats));
+    EXPECT_ANY_THROW(load_json_checkpoint(truncated, rng, updates, meas, stats));
     std::filesystem::remove(truncated);
 
     // write a valid JSON file that is not a valid checkpoint (missing keys)
@@ -408,7 +382,7 @@ TEST(MCCheckpoint, FileRoundTripsAllJsonModes) {
              json_file_mode::ubjson }) {
         // write checkpoint file
         std::filesystem::remove(path);
-        write_checkpoint(path, rng, updates, meas, stats, mode);
+        save_json_checkpoint(path, rng, updates, meas, stats, [](json_serializer&) {}, { .mode = mode });
         ASSERT_TRUE(std::filesystem::exists(path));
 
         // prepare destinations
@@ -418,7 +392,8 @@ TEST(MCCheckpoint, FileRoundTripsAllJsonModes) {
         simulation_stats dst_stats;
 
         // read checkpoint file
-        read_checkpoint(path, dst_rng, dst_updates, dst_meas, dst_stats, mode);
+        load_json_checkpoint(
+            path, dst_rng, dst_updates, dst_meas, dst_stats, [](const json_serializer&) {}, { .mode = mode });
         EXPECT_EQ(dst_stats.cumulative_steps, 77u);
 
         std::filesystem::remove(path);
@@ -439,8 +414,8 @@ TEST(MCCheckpoint, FileRoundTripsExtraConfigKey) {
     const run_config cfg { .seed = 5, .beta = 2.5 };
 
     // write checkpoint file with extra config key
-    write_checkpoint(
-        path, rng, updates, meas, stats, json_file_mode::cbor, [&](json_serializer& s) { s.save_at("config", cfg); });
+    save_json_checkpoint(path, rng, updates, meas, stats, [&](json_serializer& s) { s.save_at("config", cfg); },
+        { .mode = json_file_mode::cbor });
     ASSERT_TRUE(std::filesystem::exists(path));
 
     // prepare destinations
@@ -451,8 +426,8 @@ TEST(MCCheckpoint, FileRoundTripsExtraConfigKey) {
     run_config dst_cfg;
 
     // read checkpoint file with extra config key
-    read_checkpoint(path, dst_rng, dst_updates, dst_meas, dst_stats, json_file_mode::cbor,
-        [&](const json_serializer& s) { s.load_at("config", dst_cfg); });
+    load_json_checkpoint(path, dst_rng, dst_updates, dst_meas, dst_stats,
+        [&](const json_serializer& s) { s.load_at("config", dst_cfg); }, { .mode = json_file_mode::cbor });
 
     // check that the round-trip preserved the checkpoint fields and user config
     EXPECT_EQ(dst_stats.cumulative_steps, 7u);
@@ -462,7 +437,7 @@ TEST(MCCheckpoint, FileRoundTripsExtraConfigKey) {
     std::filesystem::remove(path);
 }
 
-// Test that using atomic_file_write for checkpointing is in fact atomic.
+// Test that saving a checkpoint file is in fact atomic.
 TEST(MCCheckpoint, FileWriteIsAtomic) {
     const auto path = std::filesystem::temp_directory_path() / "mc_checkpoint_atomic.json";
     std::filesystem::remove(path);
@@ -476,14 +451,14 @@ TEST(MCCheckpoint, FileWriteIsAtomic) {
     stats.cumulative_steps = 111;
 
     // write checkpoint file
-    write_checkpoint(path, rng, updates, meas, stats);
+    save_json_checkpoint(path, rng, updates, meas, stats);
     ASSERT_TRUE(std::filesystem::exists(path));
 
     // a failing write should not corrupt the existing checkpoint and should clean up after itself
     stats.cumulative_steps = 222;
     const auto failing_write = [&] {
-        write_checkpoint(path, rng, updates, meas, stats, json_file_mode::text,
-            [](json_serializer& s) { s.save_at("config", throwing_config {}); });
+        save_json_checkpoint(
+            path, rng, updates, meas, stats, [](json_serializer& s) { s.save_at("config", throwing_config {}); });
     };
     EXPECT_THROW(failing_write(), simplemc_exception);
     EXPECT_EQ(remove_tmp_siblings(path), 0);
@@ -495,8 +470,100 @@ TEST(MCCheckpoint, FileWriteIsAtomic) {
     simulation_stats dst_stats;
 
     // read checkpoint file
-    read_checkpoint(path, dst_rng, dst_updates, dst_meas, dst_stats);
+    load_json_checkpoint(path, dst_rng, dst_updates, dst_meas, dst_stats);
     EXPECT_EQ(dst_stats.cumulative_steps, 111u);
+
+    std::filesystem::remove(path);
+}
+
+// Test the file helpers with a free-form document (no MC components involved).
+TEST(MCCheckpoint, SaveLoadJsonFileRoundTripsOpenDocument) {
+    const auto path = std::filesystem::temp_directory_path() / "mc_open_document.cbor";
+    std::filesystem::remove(path);
+
+    // write a free-form document in a binary mode
+    save_json_file(path,
+        [](json_serializer& s) {
+            s.save_at("answer", 42);
+            s.save_at("name", std::string { "open" });
+        },
+        { .mode = json_file_mode::cbor });
+    ASSERT_TRUE(std::filesystem::exists(path));
+
+    // read it back
+    int answer = 0;
+    std::string name;
+    load_json_file(path,
+        [&](const json_serializer& s) {
+            s.load_at("answer", answer);
+            s.load_at("name", name);
+        },
+        { .mode = json_file_mode::cbor });
+
+    EXPECT_EQ(answer, 42);
+    EXPECT_EQ(name, "open");
+    std::filesystem::remove(path);
+}
+
+// Test that a throwing save_json_file callback leaves the previous file intact.
+TEST(MCCheckpoint, SaveJsonFileIsAtomic) {
+    const auto path = std::filesystem::temp_directory_path() / "mc_open_document_atomic.json";
+    std::filesystem::remove(path);
+    remove_tmp_siblings(path);
+
+    save_json_file(path, [](json_serializer& s) { s.save_at("value", 1); });
+    ASSERT_TRUE(std::filesystem::exists(path));
+
+    // a failing write should not corrupt the existing file and should clean up after itself
+    const auto failing_write = [&] {
+        save_json_file(path, [](json_serializer& s) { s.save_at("config", throwing_config {}); });
+    };
+    EXPECT_THROW(failing_write(), simplemc_exception);
+    EXPECT_EQ(remove_tmp_siblings(path), 0);
+
+    int value = 0;
+    load_json_file(path, [&](const json_serializer& s) { s.load_at("value", value); });
+    EXPECT_EQ(value, 1);
+    std::filesystem::remove(path);
+}
+
+// Test the checkpoint cfg overloads: the config lands under the standard "config" key, the strict
+// load throws when it is absent, and cfg + extra hook compose.
+TEST(MCCheckpoint, FileRoundTripsConfigOverload) {
+    const auto path = std::filesystem::temp_directory_path() / "mc_checkpoint_cfg_overload.json";
+    std::filesystem::remove(path);
+
+    // prepare sources
+    xoshiro256ss rng;
+    update_set updates { update { stateful_update {}, "u", 1.0 } };
+    measurement_set<> meas;
+    simulation_stats stats;
+    stats.cumulative_steps = 13;
+    const run_config cfg { .seed = 7, .beta = 0.5 };
+
+    // write checkpoint file with the cfg overload plus an extra key
+    bool extra_flag = false;
+    save_json_checkpoint(path, rng, updates, meas, stats, cfg, [](json_serializer& s) { s.save_at("flag", true); });
+
+    // prepare destinations
+    xoshiro256ss dst_rng;
+    update_set dst_updates { update { stateful_update {}, "u", 1.0 } };
+    measurement_set<> dst_meas;
+    simulation_stats dst_stats;
+    run_config dst_cfg;
+
+    // read it back with the cfg overload plus the extra key
+    load_json_checkpoint(path, dst_rng, dst_updates, dst_meas, dst_stats, dst_cfg,
+        [&](const json_serializer& s) { s.load_at("flag", extra_flag); });
+
+    EXPECT_EQ(dst_stats.cumulative_steps, 13u);
+    EXPECT_EQ(dst_cfg.seed, 7);
+    EXPECT_DOUBLE_EQ(dst_cfg.beta, 0.5);
+    EXPECT_TRUE(extra_flag);
+
+    // the cfg load is strict: a checkpoint written without a config must throw
+    save_json_checkpoint(path, rng, updates, meas, stats);
+    EXPECT_ANY_THROW(load_json_checkpoint(path, dst_rng, dst_updates, dst_meas, dst_stats, dst_cfg));
 
     std::filesystem::remove(path);
 }
@@ -517,12 +584,8 @@ TEST(MCCheckpoint, Hdf5FileRoundTripsComponentsAndConfig) {
     stats.cumulative_time = 12.25;
     const run_config cfg { .seed = 3, .beta = 1.5 };
 
-    // write checkpoint file
-    atomic_file_write(path, [&](const std::filesystem::path& tmp) {
-        hdf5_serializer s { tmp, hdf5_file_mode::truncate };
-        simplemc_save(s, rng, updates, meas, stats);
-        s.save_at("config", cfg);
-    });
+    // write checkpoint file (cfg overload)
+    save_hdf5_checkpoint(path, rng, updates, meas, stats, cfg);
     ASSERT_TRUE(std::filesystem::exists(path));
 
     // prepare destinations
@@ -532,10 +595,8 @@ TEST(MCCheckpoint, Hdf5FileRoundTripsComponentsAndConfig) {
     simulation_stats dst_stats;
     run_config dst_cfg;
 
-    // read checkpoint file
-    const hdf5_serializer s { path, hdf5_file_mode::read };
-    simplemc_load(s, dst_rng, dst_updates, dst_meas, dst_stats);
-    s.load_at("config", dst_cfg);
+    // read checkpoint file (cfg overload)
+    load_hdf5_checkpoint(path, dst_rng, dst_updates, dst_meas, dst_stats, dst_cfg);
 
     // check that the round-trip preserved the checkpoint fields and user config
     EXPECT_EQ(dst_stats.cumulative_steps, 9999u);
@@ -560,20 +621,14 @@ TEST(MCCheckpoint, Hdf5FileWriteIsAtomic) {
     stats.cumulative_steps = 111;
 
     // write checkpoint file
-    atomic_file_write(path, [&](const std::filesystem::path& tmp) {
-        hdf5_serializer s { tmp, hdf5_file_mode::truncate };
-        simplemc_save(s, rng, updates, meas, stats);
-    });
+    save_hdf5_checkpoint(path, rng, updates, meas, stats);
     ASSERT_TRUE(std::filesystem::exists(path));
 
     // a failing write should not corrupt the existing checkpoint and should clean up after itself
     stats.cumulative_steps = 222;
     const auto failing_write = [&] {
-        atomic_file_write(path, [&](const std::filesystem::path& tmp) {
-            hdf5_serializer s { tmp, hdf5_file_mode::truncate };
-            simplemc_save(s, rng, updates, meas, stats);
-            s.save_at("config", throwing_config {});
-        });
+        save_hdf5_checkpoint(
+            path, rng, updates, meas, stats, [](hdf5_serializer& s) { s.save_at("config", throwing_config {}); });
     };
     EXPECT_THROW(failing_write(), simplemc_exception);
     EXPECT_EQ(remove_tmp_siblings(path), 0);
@@ -585,11 +640,16 @@ TEST(MCCheckpoint, Hdf5FileWriteIsAtomic) {
     simulation_stats dst_stats;
 
     // read checkpoint file
-    const hdf5_serializer s { path, hdf5_file_mode::read };
-    simplemc_load(s, dst_rng, dst_updates, dst_meas, dst_stats);
+    load_hdf5_checkpoint(path, dst_rng, dst_updates, dst_meas, dst_stats);
     EXPECT_EQ(dst_stats.cumulative_steps, 111u);
 
     std::filesystem::remove(path);
+}
+
+// Test that saving an HDF5 file in read mode throws.
+TEST(MCCheckpoint, SaveHdf5FileRejectsReadMode) {
+    const auto path = std::filesystem::temp_directory_path() / "mc_checkpoint_read_mode.h5";
+    EXPECT_THROW(save_hdf5_file(path, [](hdf5_serializer&) {}, hdf5_file_mode::read), simplemc_exception);
 }
 
 // Test that appending a checkpoint to an existing HDF5 file preserves unrelated datasets.
@@ -605,19 +665,11 @@ TEST(MCCheckpoint, Hdf5AppendModePreservesSiblingContent) {
     stats.cumulative_steps = 2;
 
     // write to an hdf5 file with an unrelated dataset first
-    atomic_file_write(path, [](const std::filesystem::path& tmp) {
-        hdf5_serializer s { tmp, hdf5_file_mode::truncate };
-        s.save_at("unrelated", 42);
-    });
+    save_hdf5_file(path, [](hdf5_serializer& s) { s.save_at("unrelated", 42); });
 
     // write checkpoint to the same file in append mode
-    atomic_file_write(
-        path,
-        [&](const std::filesystem::path& tmp) {
-            hdf5_serializer s { tmp, hdf5_file_mode::append };
-            simplemc_save(s, rng, updates, meas, stats);
-        },
-        /* copy_existing = */ true);
+    save_hdf5_file(
+        path, [&](hdf5_serializer& s) { simplemc_save(s, rng, updates, meas, stats); }, hdf5_file_mode::append);
 
     // prepare destinations
     xoshiro256ss dst_rng;
@@ -627,9 +679,10 @@ TEST(MCCheckpoint, Hdf5AppendModePreservesSiblingContent) {
     int unrelated = 0;
 
     // read checkpoint file and the unrelated dataset
-    const hdf5_serializer s { path, hdf5_file_mode::read };
-    simplemc_load(s, dst_rng, dst_updates, dst_meas, dst_stats);
-    s.load_at("unrelated", unrelated);
+    load_hdf5_file(path, [&](const hdf5_serializer& s) {
+        simplemc_load(s, dst_rng, dst_updates, dst_meas, dst_stats);
+        s.load_at("unrelated", unrelated);
+    });
 
     // check that the round-trip preserved the checkpoint fields and unrelated dataset
     EXPECT_EQ(dst_stats.cumulative_steps, 2u);

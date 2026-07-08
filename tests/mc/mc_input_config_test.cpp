@@ -73,6 +73,37 @@ void simplemc_load(const S& s, state_only_update& u) {
     s.load_at("ticks", u.ticks);
 }
 
+// Config type with distinct checkpoint and input-config representations: the domain [a, b] is
+// user-configurable, the state x is checkpoint-only.
+struct domain_config {
+    double x = 1.0;
+    double a = 0.0;
+    double b = 2.0;
+
+    template <serializer S>
+    friend void simplemc_save(S s, const domain_config& c) {
+        s.save_at("x", c.x);
+        s.save_at("a", c.a);
+        s.save_at("b", c.b);
+    }
+    template <serializer S>
+    friend void simplemc_load(const S& s, domain_config& c) {
+        s.load_at("x", c.x);
+        s.load_at("a", c.a);
+        s.load_at("b", c.b);
+    }
+    template <serializer S>
+    friend void simplemc_save_input_config(S s, const domain_config& c) {
+        s.save_at("a", c.a);
+        s.save_at("b", c.b);
+    }
+    template <serializer S>
+    friend void simplemc_load_input_config(const S& s, domain_config& c) {
+        s.try_load_at("a", c.a);
+        s.try_load_at("b", c.b);
+    }
+};
+
 // Serializable user-state object attached to an input config via the config overloads.
 struct run_config {
     int seed = 0;
@@ -318,11 +349,7 @@ TEST(MCInputConfig, FileRoundTrip) {
 
     // write to a temporary file
     const auto path = std::filesystem::temp_directory_path() / "mc_input_config_file_roundtrip.json";
-    {
-        json_serializer s;
-        simplemc_save_input_config(s, src_params, updates, meas);
-        write_json_file(s.root(), path, { .indent = 4 });
-    }
+    save_json_input_config(path, src_params, updates, meas);
 
     // prepare destinations
     simulation_params dst_params;
@@ -330,9 +357,7 @@ TEST(MCInputConfig, FileRoundTrip) {
     measurement_set dst_meas { measurement { configurable_measurement {}, "histogram" } };
 
     // read from the file
-    json_serializer r;
-    read_json_file(r.root(), path);
-    simplemc_load_input_config(r, dst_params, dst_updates, dst_meas);
+    load_json_input_config(path, dst_params, dst_updates, dst_meas);
 
     // check that the round-trip preserved the input-config fields
     EXPECT_EQ(dst_params.max_steps, 500u);
@@ -351,33 +376,66 @@ TEST(MCInputConfig, FileRoundTripWithConfig) {
     const simulation_params src_params { .max_steps = 100 };
     update_set updates { update { dummy_update {}, "a", 1.0 } };
     measurement_set<> meas;
-    const run_config src_config { .seed = 42, .beta = 1.5 };
+    const domain_config src_config { .x = 0.5, .a = -1.0, .b = 3.0 };
 
-    // write to a temporary file
+    // write to a temporary file with the cfg overload plus an extra key
     const auto path = std::filesystem::temp_directory_path() / "mc_input_config_file_config.json";
-    {
-        json_serializer s;
-        simplemc_save_input_config(s, src_params, updates, meas);
-        s.save_at("config", src_config);
-        write_json_file(s.root(), path, { .indent = 2 });
-    }
+    save_json_input_config(
+        path, src_params, updates, meas, src_config, [](json_serializer& s) { s.save_at("load_checkpoint", true); });
 
     // prepare destinations
     simulation_params dst_params;
     update_set dst_updates { update { dummy_update {}, "a", 1.0 } };
     measurement_set<> dst_meas;
-    run_config dst_config;
+    domain_config dst_config;
+    bool load_checkpoint = false;
 
-    // read from the file
+    // read from the file with the cfg overload plus the extra key
+    load_json_input_config(path, dst_params, dst_updates, dst_meas, dst_config,
+        [&](const json_serializer& s) { s.try_load_at("load_checkpoint", load_checkpoint); });
+
+    // check that the round-trip preserved the input-config fields and MC configuration
+    EXPECT_EQ(dst_params.max_steps, 100u);
+    EXPECT_DOUBLE_EQ(dst_config.a, -1.0);
+    EXPECT_DOUBLE_EQ(dst_config.b, 3.0);
+    EXPECT_TRUE(load_checkpoint);
+
+    // the cfg load is tolerant: a file without a "config" key leaves the destination untouched
+    save_json_input_config(path, src_params, updates, meas);
+    domain_config untouched { .x = 9.0, .a = 9.0, .b = 9.5 };
+    EXPECT_NO_THROW(load_json_input_config(path, dst_params, dst_updates, dst_meas, untouched));
+    EXPECT_DOUBLE_EQ(untouched.a, 9.0);
+    EXPECT_DOUBLE_EQ(untouched.b, 9.5);
+
+    std::filesystem::remove(path);
+}
+
+// Test that the cfg overload routes through the type's input-config channel when it provides one.
+TEST(MCInputConfig, FileConfigOverloadUsesInputConfigChannel) {
+    const simulation_params src_params {};
+    update_set updates { update { dummy_update {}, "a", 1.0 } };
+    measurement_set<> meas;
+    const domain_config src_config { .x = 0.5, .a = -1.0, .b = 3.0 };
+
+    const auto path = std::filesystem::temp_directory_path() / "mc_input_config_channel.json";
+    save_json_input_config(path, src_params, updates, meas, src_config);
+
+    // the file holds the input-config representation: domain only, no state
     json_serializer r;
     read_json_file(r.root(), path);
-    simplemc_load_input_config(r, dst_params, dst_updates, dst_meas);
-    r.try_load_at("config", dst_config);
+    ASSERT_TRUE(r.root().contains("config"));
+    EXPECT_TRUE(r.root()["config"].contains("a"));
+    EXPECT_FALSE(r.root()["config"].contains("x"));
 
-    // check that the round-trip preserved the input-config fields and user config
-    EXPECT_EQ(dst_params.max_steps, 100u);
-    EXPECT_EQ(dst_config.seed, 42);
-    EXPECT_DOUBLE_EQ(dst_config.beta, 1.5);
+    // read back: the domain is restored, the state member stays untouched
+    simulation_params dst_params;
+    update_set dst_updates { update { dummy_update {}, "a", 1.0 } };
+    measurement_set<> dst_meas;
+    domain_config dst_config;
+    load_json_input_config(path, dst_params, dst_updates, dst_meas, dst_config);
+    EXPECT_DOUBLE_EQ(dst_config.a, -1.0);
+    EXPECT_DOUBLE_EQ(dst_config.b, 3.0);
+    EXPECT_DOUBLE_EQ(dst_config.x, 1.0); // untouched
 
     std::filesystem::remove(path);
 }
