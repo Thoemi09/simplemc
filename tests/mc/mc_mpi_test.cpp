@@ -73,7 +73,6 @@ TEST_F(SimplemcMCMPI, UpdateAllReducesCountersAndDelegatesToWrapper) {
     const auto r = static_cast<std::uint64_t>(rank);
     update u { dummy_update {}, "u", 1.0 };
     drive_counters(u, 20 * (r + 1), 5 * (r + 1), 2 * (r + 1));
-    u.accumulate_counters();
     drive_counters(u, 10 * (r + 1), 3 * (r + 1), (rank == 0) ? 1 : 0);
 
     // collect across ranks
@@ -81,12 +80,9 @@ TEST_F(SimplemcMCMPI, UpdateAllReducesCountersAndDelegatesToWrapper) {
 
     // check the collected values
     const auto s = static_cast<std::uint64_t>(size * (size + 1) / 2);
-    EXPECT_EQ(u.stats().nprops, 10u * s);
-    EXPECT_EQ(u.stats().naccs, 3u * s);
-    EXPECT_EQ(u.stats().nimps, 1u);
-    EXPECT_EQ(u.stats().cumulative_nprops, 20u * s);
-    EXPECT_EQ(u.stats().cumulative_naccs, 5u * s);
-    EXPECT_EQ(u.stats().cumulative_nimps, 2u * s);
+    EXPECT_EQ(u.stats().nprops, 30u * s);
+    EXPECT_EQ(u.stats().naccs, 8u * s);
+    EXPECT_EQ(u.stats().nimps, 2u * s + 1u);
 
     // name / weight are local registration data and must be untouched
     EXPECT_EQ(u.name(), "u");

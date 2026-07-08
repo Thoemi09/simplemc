@@ -195,22 +195,15 @@ public:
     void mark_impossible() noexcept { ++stats_.nimps; }
 
     /**
-     * @brief Zero the current-run counters but leave the cumulative counters untouched.
+     * @brief Zero the counters.
+     *
+     * @details This discards all update statistics gathered so far. The typical use is dropping the 
+     * statistics of a warm-up run before the measurement run starts.
      */
-    void reset_run_counters() noexcept {
+    void reset_counters() noexcept {
         stats_.nprops = 0;
         stats_.naccs = 0;
         stats_.nimps = 0;
-    }
-
-    /**
-     * @brief Add the current-run counters to the cumulative counters and call reset_run_counters().
-     */
-    void accumulate_counters() noexcept {
-        stats_.cumulative_nprops += stats_.nprops;
-        stats_.cumulative_naccs += stats_.naccs;
-        stats_.cumulative_nimps += stats_.nimps;
-        reset_run_counters();
     }
 
     // Friend declarations.
@@ -229,8 +222,8 @@ private:
  * @relates simplemc::update
  * @brief Serialize a simplemc::update.
  *
- * @details It serializes all metadata except update_stats::name and the transient current-run
- * counters. If the wrapped user update is serializable by `S`, update::value() is also serialized.
+ * @details It serializes all metadata except update_stats::name (which serves as the map key). If the
+ * wrapped user update is serializable by `S`, update::value() is also serialized.
  *
  * @tparam S Serializer type.
  * @tparam U User update type.
@@ -242,9 +235,9 @@ void simplemc_save(S s, const update<U>& u) {
     s.save_at("inv_name", u.stats().inv_name);
     s.save_at("weight", u.stats().weight);
     s.save_at("ratio", u.stats().ratio);
-    s.save_at("cumulative_nprops", u.stats().cumulative_nprops);
-    s.save_at("cumulative_naccs", u.stats().cumulative_naccs);
-    s.save_at("cumulative_nimps", u.stats().cumulative_nimps);
+    s.save_at("nprops", u.stats().nprops);
+    s.save_at("naccs", u.stats().naccs);
+    s.save_at("nimps", u.stats().nimps);
     if constexpr (save_at_all<U, S>) {
         s.save_at("user", u.value());
     }
@@ -254,9 +247,8 @@ void simplemc_save(S s, const update<U>& u) {
  * @relates simplemc::update
  * @brief Deserialize a simplemc::update.
  *
- * @details It deserializes all metadata except update_stats::name and the transient current-run
- * counters. If the wrapped user update is deserializable by `S`, update::value() is also
- * deserialized.
+ * @details It deserializes all metadata except update_stats::name (which serves as the map key). If
+ * the wrapped user update is deserializable by `S`, update::value() is also deserialized.
  *
  * @tparam S Serializer type.
  * @tparam U User update type.
@@ -268,9 +260,9 @@ void simplemc_load(const S& s, update<U>& u) {
     s.load_at("inv_name", u.stats_.inv_name);
     s.load_at("weight", u.stats_.weight);
     s.load_at("ratio", u.stats_.ratio);
-    s.load_at("cumulative_nprops", u.stats_.cumulative_nprops);
-    s.load_at("cumulative_naccs", u.stats_.cumulative_naccs);
-    s.load_at("cumulative_nimps", u.stats_.cumulative_nimps);
+    s.load_at("nprops", u.stats_.nprops);
+    s.load_at("naccs", u.stats_.naccs);
+    s.load_at("nimps", u.stats_.nimps);
     if constexpr (load_at_all<U, S>) {
         s.load_at("user", u.value());
     }
@@ -323,12 +315,11 @@ void simplemc_load_input_config(const S& s, update<U>& u) {
  * @relates simplemc::update
  * @brief Collect a simplemc::update from different MPI processes.
  *
- * @details It all-reduces the six counter fields and, if the user update satisfies
+ * @details It all-reduces the three counter fields and, if the user update satisfies
  * simplemc::has_simplemc_mpi_collect, it reduces the value via the ADL hook `%simplemc_mpi_collect`.
  *
- * @note This reduction is **not idempotent**: both the current-run and the cumulative counters are
- * summed, so call it exactly once per run, at a fixed point relative to update::accumulate_counters()
- * (a second call double-counts).
+ * @note This reduction is **not idempotent**: the counters are summed across ranks, so call it
+ * exactly once per collection point (a second call double-counts).
  *
  * @tparam U User update type.
  * @param comm simplemc::mpi::communicator object.
@@ -339,9 +330,6 @@ void simplemc_mpi_collect(const mpi::communicator& comm, update<U>& u) {
     mpi::all_reduce_in_place(u.stats_.nprops, MPI_SUM, comm);
     mpi::all_reduce_in_place(u.stats_.naccs, MPI_SUM, comm);
     mpi::all_reduce_in_place(u.stats_.nimps, MPI_SUM, comm);
-    mpi::all_reduce_in_place(u.stats_.cumulative_nprops, MPI_SUM, comm);
-    mpi::all_reduce_in_place(u.stats_.cumulative_naccs, MPI_SUM, comm);
-    mpi::all_reduce_in_place(u.stats_.cumulative_nimps, MPI_SUM, comm);
     if constexpr (has_simplemc_mpi_collect<U>) {
         u.value() = simplemc_mpi_collect(comm, u.value());
     }

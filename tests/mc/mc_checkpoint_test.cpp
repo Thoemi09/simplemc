@@ -76,13 +76,12 @@ inline void from_json(const nlohmann::json& j, nlohmann_only_update& u) {
     j.at("counter").get_to(u.counter);
 }
 
-// Drive a short run over the assembled components, then fold counters into the cumulative state.
+// Drive a short run over the assembled components, then fold the run into the simulation stats.
 template <typename U, typename M>
 void run_and_accumulate(U& us, M& ms, simulation_stats& stats, xoshiro256ss& rng, const simulation_params& p) {
     metropolis_kernel kernel { us };
     const auto ctx = run(rng, kernel, ms, p);
     accumulate_simulation_stats(stats, ctx);
-    us.accumulate_counters();
 }
 
 // Serializable user-state.
@@ -186,19 +185,19 @@ TEST(MCCheckpoint, JsonRoundTripPersistsCumulativeAndUserState) {
     const json_serializer reader { writer.root() };
     simplemc_load(reader, dst_rng, dst_updates, dst_meas, dst_stats);
 
-    // check that the round-trip preserved cumulative counters, update weights and measurement
-    // activation state
+    // check that the round-trip preserved counters, update weights and measurement activation state
     EXPECT_EQ(dst_stats.cumulative_steps, stats.cumulative_steps);
     EXPECT_DOUBLE_EQ(dst_stats.cumulative_time, stats.cumulative_time);
     EXPECT_DOUBLE_EQ(dst_updates.get<0>().stats().weight, 2.5);
     EXPECT_DOUBLE_EQ(dst_updates.get<1>().stats().weight, 1.0);
-    EXPECT_EQ(dst_updates.get<0>().stats().cumulative_nprops, updates.get<0>().stats().cumulative_nprops);
     EXPECT_EQ(dst_updates.get<0>().stats().inv_name, updates.get<0>().stats().inv_name);
     EXPECT_DOUBLE_EQ(dst_updates.get<0>().stats().ratio, updates.get<0>().stats().ratio);
     EXPECT_EQ(dst_meas.get<0>().is_active(), meas.get<0>().is_active());
 
-    // per-run update counters should be untouched
-    EXPECT_EQ(dst_updates.get<0>().stats().nprops, 0u);
+    // the live counters round-trip without any folding call before the save
+    EXPECT_GT(updates.get<0>().stats().nprops, 0u);
+    EXPECT_EQ(dst_updates.get<0>().stats().nprops, updates.get<0>().stats().nprops);
+    EXPECT_EQ(dst_updates.get<0>().stats().naccs, updates.get<0>().stats().naccs);
 
     // check user-state round-trip
     EXPECT_EQ(dst_updates.get<0>().value().counter, src_counter);

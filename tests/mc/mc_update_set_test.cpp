@@ -189,8 +189,8 @@ TEST(MCUpdateSet, SelectFrequenciesTrackWeights) {
     }
 }
 
-// Test resetting and accumulating the counters of all updates in the set.
-TEST(MCUpdateSet, ResetAndAccumulateCounters) {
+// Test resetting the counters of all updates in the set.
+TEST(MCUpdateSet, ResetCountersZerosEveryUpdate) {
     update_set us { update { dummy_update {}, "a", 1.0 }, update { dummy_update {}, "b", 1.0 } };
     for (int i = 0; i < 10; ++i) {
         us.get<0>().attempt();
@@ -202,18 +202,11 @@ TEST(MCUpdateSet, ResetAndAccumulateCounters) {
         us.get<1>().attempt();
     }
 
-    us.accumulate_counters();
-    EXPECT_EQ(us.get<0>().stats().cumulative_nprops, 10u);
-    EXPECT_EQ(us.get<0>().stats().cumulative_naccs, 6u);
-    EXPECT_EQ(us.get<1>().stats().cumulative_nprops, 4u);
+    us.reset_counters();
     EXPECT_EQ(us.get<0>().stats().nprops, 0u);
+    EXPECT_EQ(us.get<0>().stats().naccs, 0u);
     EXPECT_EQ(us.get<1>().stats().nprops, 0u);
-
-    us.get<0>().attempt();
-    us.get<0>().attempt();
-    us.reset_run_counters();
-    EXPECT_EQ(us.get<0>().stats().nprops, 0u);
-    EXPECT_EQ(us.get<0>().stats().cumulative_nprops, 10u); // untouched
+    EXPECT_DOUBLE_EQ(us.get<0>().stats().weight, 1.0); // untouched
 }
 
 // Test that get<T>(name) returns a typed pointer to the user update, or nullptr if the name is
@@ -242,7 +235,6 @@ TEST(MCUpdateSet, SerializationRoundTrip) {
     for (int i = 0; i < 50; ++i) {
         us.get<1>().accept();
     }
-    us.accumulate_counters();
 
     json_serializer s;
     auto entry = s["updates"];
@@ -259,8 +251,8 @@ TEST(MCUpdateSet, SerializationRoundTrip) {
     EXPECT_DOUBLE_EQ(v.get<1>().stats().weight, 3.0);
     EXPECT_DOUBLE_EQ(v.get<2>().stats().weight, 4.0);
     EXPECT_EQ(v.get<1>().stats().inv_name, "b");
-    EXPECT_EQ(v.get<0>().stats().cumulative_nprops, 100u);
-    EXPECT_EQ(v.get<1>().stats().cumulative_naccs, 50u);
+    EXPECT_EQ(v.get<0>().stats().nprops, 100u);
+    EXPECT_EQ(v.get<1>().stats().naccs, 50u);
 }
 
 TEST(MCUpdateSet, InputConfigRoundTrip) {

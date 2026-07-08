@@ -59,8 +59,7 @@ std::array<std::size_t, N> column_widths(
  * - the name of its inverse update (see @ref inv_name),
  * - the unnormalized selection @ref weight,
  * - the detailed-balance correction @ref ratio, and
- * - the counters tracking the number of proposals, acceptances and impossible signals over the
- * current run and across multiple runs.
+ * - the counters tracking the number of proposals, acceptances and impossible signals.
  */
 struct update_stats {
     /**
@@ -84,34 +83,19 @@ struct update_stats {
     double ratio = 1.0;
 
     /**
-     * @brief Number of proposals in the current run.
+     * @brief Number of proposals. Usually incremented by update::attempt().
      */
     std::uint64_t nprops = 0;
 
     /**
-     * @brief Number of acceptances in the current run.
+     * @brief Number of acceptances. Usually incremented by update::accept().
      */
     std::uint64_t naccs = 0;
 
     /**
-     * @brief Number of impossible signals in the current run.
+     * @brief Number of impossible signals. Usually incremented by update::mark_impossible().
      */
     std::uint64_t nimps = 0;
-
-    /**
-     * @brief Cumulative number of proposals across runs.
-     */
-    std::uint64_t cumulative_nprops = 0;
-
-    /**
-     * @brief Cumulative number of acceptances across runs.
-     */
-    std::uint64_t cumulative_naccs = 0;
-
-    /**
-     * @brief Cumulative number of impossible signals across runs.
-     */
-    std::uint64_t cumulative_nimps = 0;
 };
 
 /** @} */
@@ -125,16 +109,13 @@ struct update_stats {
  */
 inline void print(const update_stats& s, std::FILE* fp = stdout) {
     fmt::println(fp, "update '{}' (inverse '{}'): weight = {}, ratio = {}", s.name, s.inv_name, s.weight, s.ratio);
-    fmt::println(fp, "  current stats: proposed = {}, accepted = {}, impossible = {}", s.nprops, s.naccs, s.nimps);
-    fmt::println(fp, "  cumulative stats: proposed = {}, accepted = {}, impossible = {}", s.cumulative_nprops,
-        s.cumulative_naccs, s.cumulative_nimps);
+    fmt::println(fp, "  proposed = {}, accepted = {} ({}), impossible = {}", s.nprops, s.naccs,
+        detail::acceptance_cell(s.nprops, s.naccs), s.nimps);
 }
 
 /**
  * @relates simplemc::update_stats
  * @brief Print a set of simplemc::update_stats as a human-readable table.
- *
- * @details The current and cumulative counters are summed for each update.
  *
  * @param ss Set of update statistics to print, one row per update.
  * @param fp Destination file pointer (defaults to stdout).
@@ -147,11 +128,9 @@ inline void print(const std::vector<update_stats>& ss, std::FILE* fp = stdout) {
     std::vector<std::array<std::string, 8>> rows;
     rows.reserve(ss.size());
     for (const auto& s : ss) {
-        const std::uint64_t nprops = s.nprops + s.cumulative_nprops;
-        const std::uint64_t naccs = s.naccs + s.cumulative_naccs;
         rows.push_back({ s.name, s.inv_name, fmt::format("{:g}", s.weight), fmt::format("{:g}", s.ratio),
-            fmt::format("{}", nprops), fmt::format("{}", naccs), detail::acceptance_cell(nprops, naccs),
-            fmt::format("{}", s.nimps + s.cumulative_nimps) });
+            fmt::format("{}", s.nprops), fmt::format("{}", s.naccs), detail::acceptance_cell(s.nprops, s.naccs),
+            fmt::format("{}", s.nimps) });
     }
     const auto widths = detail::column_widths(headers, rows);
 

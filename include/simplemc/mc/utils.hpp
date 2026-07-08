@@ -146,9 +146,10 @@ void simplemc_load_input_config(
  * @details Convenience function that collects the update set, measurement set and simulation
  * statistics from different MPI processes in a single call.
  *
- * @note The reduction is **not idempotent**: current-run and cumulative counters are both summed, so
- * call it exactly once per run, at a fixed point relative to update_set::accumulate_counters() and
- * simplemc::accumulate_simulation_stats (a second call double-counts).
+ * @note The reduction is **not idempotent**: all counters are summed across ranks, so call it exactly
+ * once per collection point (a second call double-counts). The simulation statistics must be folded
+ * via simplemc::accumulate_simulation_stats *before* the reduction, or the current run's steps and
+ * time are not summed.
  *
  * @tparam Us User update types.
  * @tparam Ms User measurement types.

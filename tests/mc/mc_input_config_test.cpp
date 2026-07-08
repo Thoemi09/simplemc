@@ -205,9 +205,9 @@ TEST(MCInputConfig, OmitsStateOnlyFields) {
     EXPECT_TRUE(a.contains("weight"));
     EXPECT_FALSE(a.contains("inv_name"));
     EXPECT_FALSE(a.contains("ratio"));
-    EXPECT_FALSE(a.contains("cumulative_nprops"));
-    EXPECT_FALSE(a.contains("cumulative_naccs"));
-    EXPECT_FALSE(a.contains("cumulative_nimps"));
+    EXPECT_FALSE(a.contains("nprops"));
+    EXPECT_FALSE(a.contains("naccs"));
+    EXPECT_FALSE(a.contains("nimps"));
 
     // measurement activation state is input-config
     ASSERT_TRUE(root.contains("measurements"));

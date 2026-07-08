@@ -194,17 +194,13 @@ public:
     }
 
     /**
-     * @brief Zero the current-run counters of every update via update::reset_run_counters().
+     * @brief Zero the counters of every update via update::reset_counters().
+     *
+     * @details This discards all update statistics gathered so far. The typical use is dropping the 
+     * statistics of a warm-up run before the measurement run starts.
      */
-    void reset_run_counters() noexcept {
-        this->for_each([](auto& u) { u.reset_run_counters(); });
-    }
-
-    /**
-     * @brief Accumulate the current-run counters of every update via update::accumulate_counters().
-     */
-    void accumulate_counters() noexcept {
-        this->for_each([](auto& u) { u.accumulate_counters(); });
+    void reset_counters() noexcept {
+        this->for_each([](auto& u) { u.reset_counters(); });
     }
 
     /**

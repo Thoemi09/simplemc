@@ -130,7 +130,7 @@ TEST(MCUpdate, ConstructFromUserValue) {
     EXPECT_DOUBLE_EQ(u.stats().weight, 2.5);
     EXPECT_DOUBLE_EQ(u.stats().ratio, 1.0);
     EXPECT_EQ(u.stats().nprops, 0u);
-    EXPECT_EQ(u.stats().cumulative_naccs, 0u);
+    EXPECT_EQ(u.stats().naccs, 0u);
 }
 
 TEST(MCUpdate, ConstructorRejectsNegativeWeight) {
@@ -181,28 +181,30 @@ TEST(MCUpdate, AttemptAcceptMarkImpossibleBumpCounters) {
     EXPECT_EQ(u.stats().nimps, 1u);
 }
 
-// Test accumulating and resetting the counters.
-TEST(MCUpdate, CountersResetAndAccumulate) {
-    auto check_counters = [](const auto& stats, auto nprops, auto naccs, auto nimps, auto cum_nprops, auto cum_naccs,
-                              auto cum_nimps) {
-        EXPECT_EQ(stats.nprops, nprops);
-        EXPECT_EQ(stats.naccs, naccs);
-        EXPECT_EQ(stats.nimps, nimps);
-        EXPECT_EQ(stats.cumulative_nprops, cum_nprops);
-        EXPECT_EQ(stats.cumulative_naccs, cum_naccs);
-        EXPECT_EQ(stats.cumulative_nimps, cum_nimps);
-    };
+// Test that the counters accumulate across multiple drive rounds.
+TEST(MCUpdate, CountersAccumulateAcrossDrives) {
     update u { dummy_update {}, "u", 1.0 };
 
     drive_counters(u, 7, 3, 1);
-    check_counters(u.stats(), 7u, 3u, 1u, 0u, 0u, 0u);
-    u.accumulate_counters();
-    check_counters(u.stats(), 0u, 0u, 0u, 7u, 3u, 1u);
-
     drive_counters(u, 4, 0, 0);
-    check_counters(u.stats(), 4u, 0u, 0u, 7u, 3u, 1u);
-    u.reset_run_counters();
-    check_counters(u.stats(), 0u, 0u, 0u, 7u, 3u, 1u);
+    EXPECT_EQ(u.stats().nprops, 11u);
+    EXPECT_EQ(u.stats().naccs, 3u);
+    EXPECT_EQ(u.stats().nimps, 1u);
+}
+
+// Test that resetting zeros the counters but leaves the metadata untouched.
+TEST(MCUpdate, ResetCountersZerosCountersOnly) {
+    update u { dummy_update {}, "u", 2.5 };
+    u.set_ratio(0.5);
+
+    drive_counters(u, 7, 3, 1);
+    u.reset_counters();
+    EXPECT_EQ(u.stats().nprops, 0u);
+    EXPECT_EQ(u.stats().naccs, 0u);
+    EXPECT_EQ(u.stats().nimps, 0u);
+    EXPECT_EQ(u.stats().name, "u");
+    EXPECT_DOUBLE_EQ(u.stats().weight, 2.5);
+    EXPECT_DOUBLE_EQ(u.stats().ratio, 0.5);
 }
 
 // Test serialization and deserialization of the wrapper and its metadata.
@@ -211,7 +213,6 @@ TEST(MCUpdate, SerializationRoundTrip) {
     u.set_inv_name("u_inv");
     u.set_ratio(0.5);
     drive_counters(u, 11, 7, 1);
-    u.accumulate_counters();
 
     json_serializer s;
     auto entry = s["entry"];
@@ -224,16 +225,15 @@ TEST(MCUpdate, SerializationRoundTrip) {
     EXPECT_EQ(v.stats().inv_name, "u_inv");
     EXPECT_DOUBLE_EQ(v.stats().weight, u.stats().weight);
     EXPECT_DOUBLE_EQ(v.stats().ratio, u.stats().ratio);
-    EXPECT_EQ(v.stats().cumulative_nprops, u.stats().cumulative_nprops);
-    EXPECT_EQ(v.stats().cumulative_naccs, u.stats().cumulative_naccs);
-    EXPECT_EQ(v.stats().cumulative_nimps, u.stats().cumulative_nimps);
+    EXPECT_EQ(v.stats().nprops, 11u);
+    EXPECT_EQ(v.stats().naccs, 7u);
+    EXPECT_EQ(v.stats().nimps, 1u);
 }
 
 TEST(MCUpdate, InputConfigRoundTripOnlyTouchesWeight) {
     update u { dummy_update {}, "u", 4.0 };
     u.set_ratio(0.5);
     drive_counters(u, 42, 0, 0);
-    u.accumulate_counters();
 
     json_serializer s;
     auto entry = s["entry"];
@@ -246,7 +246,7 @@ TEST(MCUpdate, InputConfigRoundTripOnlyTouchesWeight) {
 
     EXPECT_DOUBLE_EQ(v.stats().weight, u.stats().weight); // updated
     EXPECT_DOUBLE_EQ(v.stats().ratio, 9.0); // untouched
-    EXPECT_EQ(v.stats().cumulative_nprops, 0u); // untouched
+    EXPECT_EQ(v.stats().nprops, 0u); // untouched
 }
 
 // Test the stats() snapshot.
