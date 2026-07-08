@@ -102,19 +102,6 @@ struct update_stats {
 
 /**
  * @relates simplemc::update_stats
- * @brief Print a simplemc::update_stats as a human-readable block.
- *
- * @param s Update statistics to print.
- * @param fp Destination file pointer (defaults to stdout).
- */
-inline void print(const update_stats& s, std::FILE* fp = stdout) {
-    fmt::println(fp, "update '{}' (inverse '{}'): weight = {}, ratio = {}", s.name, s.inv_name, s.weight, s.ratio);
-    fmt::println(fp, "  proposed = {}, accepted = {} ({}), impossible = {}", s.nprops, s.naccs,
-        detail::acceptance_cell(s.nprops, s.naccs), s.nimps);
-}
-
-/**
- * @relates simplemc::update_stats
  * @brief Print a set of simplemc::update_stats as a human-readable table.
  *
  * @param ss Set of update statistics to print, one row per update.
@@ -149,6 +136,20 @@ inline void print(const std::vector<update_stats>& ss, std::FILE* fp = stdout) {
     for (const auto& row : rows) {
         fmt::println(fp, "{}", table_line(row));
     }
+}
+
+/**
+ * @relates simplemc::update_stats
+ * @brief Print a simplemc::update_stats as a single-row table.
+ *
+ * @details Delegates to the vector overload, so a single update renders exactly like one row of the
+ * set-level table.
+ *
+ * @param s Update statistics to print.
+ * @param fp Destination file pointer (defaults to stdout).
+ */
+inline void print(const update_stats& s, std::FILE* fp = stdout) {
+    print(std::vector { s }, fp);
 }
 
 } // namespace simplemc
