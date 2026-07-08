@@ -38,7 +38,11 @@ struct simulation_ctx {
     std::uint64_t steps_done = 0;
 
     /**
-     * @brief Wall-clock time in seconds of the completed run.
+     * @brief Wall-clock time in seconds of the current run.
+     *
+     * @details It is refreshed by simplemc::run every simulation_params::cycles_per_check cycles, so
+     * inside the `on_checkpoint` callback it is always up-to-date. The `on_step` and `on_cycle`
+     * callbacks should use elpased() in case they need the precise wall-clock time.
      */
     double runtime = 0.0;
 

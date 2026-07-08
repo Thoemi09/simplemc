@@ -46,10 +46,11 @@ namespace simplemc {
  * - The middle loop performs simulation_params::cycles_per_check MC cycles. A single cycle executes
  * the inner loop, calls measurement_set::measure_all() on the given set of measurements and invokes
  * the `on_cycle(ctx)` callback (no-op by default).
- * - The outermost loop executes the two inner loops and the `on_checkpoint(ctx)` callback (no-op by
- * default). However, in contrast to previous callbacks, this one is only called periodically, either
- * when simulation_params::checkpoint_after_steps MC steps or simulation_params::checkpoint_after_time
- * seconds have passed since the last call. The (outer) loop stops as soon as
+ * - The outermost loop refreshes simulation_ctx::runtime and executes the two inner loops and the
+ * `on_checkpoint(ctx)` callback (no-op by default). However, in contrast to previous callbacks, this
+ * one is only called periodically, either when simulation_params::checkpoint_after_steps MC steps or
+ * simulation_params::checkpoint_after_time seconds have passed since the last call. The (outer) loop
+ * stops as soon as
  *   - simulation_params::max_steps or more MC steps have been done,
  *   - the run has taken simulation_params::max_time seconds or longer,
  *   - the user-defined `stop_when()` callback returns true.
@@ -98,10 +99,9 @@ template <typename RNG, typename Kernel, mc_measurement... Ms, typename Cbs = ru
     ctx.clk.start();
     std::uint64_t steps_since_ck = 0;
     double time_at_last_ck = 0.0;
-    double last_runtime = 0.0;
 
     // MC loop
-    while (ctx.steps_done < p.max_steps && last_runtime < p.max_time && !cbs.stop_when(ctx)) {
+    while (ctx.steps_done < p.max_steps && ctx.runtime < p.max_time && !cbs.stop_when(ctx)) {
         for (std::uint64_t c = 0; c < p.cycles_per_check; ++c) {
             for (std::uint64_t s = 0; s < p.steps_per_cycle; ++s) {
                 kernel.step(rng);
@@ -111,14 +111,14 @@ template <typename RNG, typename Kernel, mc_measurement... Ms, typename Cbs = ru
             meas.measure_all();
             cbs.on_cycle(ctx);
         }
-        last_runtime = ctx.elapsed();
+        ctx.runtime = ctx.elapsed();
 
         // checkpoint callback
         steps_since_ck += p.steps_per_cycle * p.cycles_per_check;
-        if (steps_since_ck >= p.checkpoint_after_steps || last_runtime - time_at_last_ck >= p.checkpoint_after_time) {
+        if (steps_since_ck >= p.checkpoint_after_steps || ctx.runtime - time_at_last_ck >= p.checkpoint_after_time) {
             cbs.on_checkpoint(ctx);
             steps_since_ck = 0;
-            time_at_last_ck = last_runtime;
+            time_at_last_ck = ctx.runtime;
         }
     }
 
