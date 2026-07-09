@@ -18,7 +18,7 @@ namespace fmt {
  */
 
 /**
- * @brief Specalized **fmt** formatter for `std::complex`.
+ * @brief Specialized **fmt** formatter for `std::complex`.
  *
  * @details The format specifier is simply applied to both the real and imaginary parts:
  *

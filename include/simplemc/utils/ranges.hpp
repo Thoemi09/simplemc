@@ -34,6 +34,6 @@ namespace ranges = ::ranges;
 
 } // namespace simplemc
 
-#endif // SIMPLMEC_USE_STD_RANGES
+#endif // SIMPLEMC_USE_STD_RANGES
 
 #endif // SIMPLEMC_UTILS_RANGES_HPP

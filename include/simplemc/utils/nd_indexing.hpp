@@ -46,9 +46,12 @@ namespace simplemc {
  * -# set \f$ t = M_1 M_2 \ldots M_{N-1} \f$, \f$ f = i_{\mathrm{lin}} \f$ and \f$ d = N \f$
  * -# \f$ i_d = \lfloor \frac{f}{t} \rfloor \f$
  * -# \f$ f \to f - i_d t \f$
- * -# \f$ t \to \frac{t}{M_d} \f$
+ * -# \f$ t \to \frac{t}{M_{d-1}} \f$
  * -# \f$ d \to d - 1 \f$
  * -# go to step 2 and repeat until \f$ d = 1 \f$
+ *
+ * Note that step 4 uses the (not yet decremented) \f$ d \f$ from the current iteration to look up
+ * \f$ M_{d-1} \f$, i.e. the extent of the *next* dimension to be processed.
  */
 struct column_major {};
 
@@ -75,9 +78,12 @@ struct column_major {};
  * -# set \f$ t = M_N M_{N-1} \ldots M_2 \f$, \f$ f = i_{\mathrm{lin}} \f$ and \f$ d = 1 \f$
  * -# \f$ i_d = \lfloor \frac{f}{t} \rfloor \f$
  * -# \f$ f \to f - i_d t \f$
- * -# \f$ t \to \frac{t}{M_{N-d+1}} \f$
+ * -# \f$ t \to \frac{t}{M_{d+1}} \f$
  * -# \f$ d \to d + 1 \f$
  * -# go to step 2 and repeat until \f$ d = N \f$
+ *
+ * Note that step 4 uses the (not yet incremented) \f$ d \f$ from the current iteration to look up
+ * \f$ M_{d+1} \f$, i.e. the extent of the *next* dimension to be processed.
  */
 struct row_major {};
 
@@ -134,7 +140,7 @@ template <std::integral T, std::size_t N>
 }
 
 /**
- * @brief Convert a flat index to a multi-dimensional index w.r.t. to a given shape.
+ * @brief Convert a flat index to a multi-dimensional index w.r.t. a given shape.
  *
  * @details See simplemc::column_major and simplemc::row_major for more information.
  *
@@ -175,7 +181,7 @@ template <std::integral T, nd_order Order = column_major>
 }
 
 /**
- * @brief Convert a flat index to a multi-dimensional index w.r.t. to a given shape.
+ * @brief Convert a flat index to a multi-dimensional index w.r.t. a given shape.
  *
  * @details See simplemc::column_major and simplemc::row_major for more information.
  *
@@ -217,7 +223,7 @@ template <std::integral T, std::size_t N, nd_order Order = column_major>
 }
 
 /**
- * @brief Convert a multi-dimensional index to a flat index w.r.t. to a given shape.
+ * @brief Convert a multi-dimensional index to a flat index w.r.t. a given shape.
  *
  * @details See simplemc::column_major and simplemc::row_major for more information.
  *
@@ -255,7 +261,7 @@ template <std::integral T1, std::integral T2, nd_order Order = column_major>
 }
 
 /**
- * @brief Convert a multi-dimensional index to a flat index w.r.t. to a given shape.
+ * @brief Convert a multi-dimensional index to a flat index w.r.t. a given shape.
  *
  * @details See simplemc::column_major and simplemc::row_major for more information.
  *

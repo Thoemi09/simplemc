@@ -77,7 +77,7 @@
  * @ingroup simplemc-utils
  * @brief Simple timer class for easy performance or runtime measurements.
  *
- * @details Here is a basic example how the simplemc::timer could be used in practice:
+ * @details Here is a basic example of how simplemc::timer could be used in practice:
  *
  * @code{.cpp}
  * simplemc::timer t;
@@ -341,7 +341,7 @@
  *
  * See @ref tut_random_1 for a demonstration of the provided tools.
  *
- * @note We want to emphasize that the @ref simplemc-random-rngs have been tested w.r.t. to their
+ * @note We want to emphasize that the @ref simplemc-random-rngs have been tested w.r.t. their
  * functionality but not their statistical quality. They are quite fast and easy to use but we would
  * recommend to fall back to more established libraries like the
  * <a href="https://en.cppreference.com/w/cpp/numeric/random.html">C++ standard library</a> or

@@ -37,7 +37,7 @@ std::vector<int> data(15);
 std::iota(data.begin(), data.end(), 1);
 ```
 
-`std::vector` objects are guarenteed to be contiguous, so we can use it as our memory block.
+`std::vector` objects are guaranteed to be contiguous, so we can use it as our memory block.
 
 With **fmt** it is easy to print the vector to stdout:
 
@@ -55,7 +55,7 @@ Output:
 Now, let us try to interpret this 1-dimensional vector of size \f$ 15 \f$ as matrices with different
 shapes and memory layouts.
 
-In order to to this, we use the following generic lambda to simply print 2-dimensional arrays:
+In order to do this, we use the following generic lambda to simply print 2-dimensional arrays:
 
 ```cpp
 // generic lambda to print a matrix with a given shape and memory layout
@@ -74,7 +74,7 @@ auto print_matrix = [](const auto& data, const auto& shape, auto mem_layout) {
 The lambda takes 3 parameters:
 - `data`: The container which handles the memory block.
 - `shape`: The shape of the 2-dimensional array we want to print.
-- `mem_order`: The memory layout of the 2-dimensional array. This has to be either an instance of
+- `mem_layout`: The memory layout of the 2-dimensional array. This has to be either an instance of
 simplemc::row_major or simplemc::column_major.
 
 To print the array, we loop over all possible multi-dimensional indices of the given shape and access
@@ -128,7 +128,7 @@ Output:
   5  10  15
 ```
 
-As you can see, the number increase horizontally in row-major ordering and vertically in column-major
+As you can see, the numbers increase horizontally in row-major ordering and vertically in column-major
 ordering.
 
 We could have also interpreted the same memory as a \f$ 3 \times 5 \f$ matrix:
