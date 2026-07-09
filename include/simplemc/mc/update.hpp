@@ -197,7 +197,7 @@ public:
     /**
      * @brief Zero the counters.
      *
-     * @details This discards all update statistics gathered so far. The typical use is dropping the 
+     * @details This discards all update statistics gathered so far. The typical use is dropping the
      * statistics of a warm-up run before the measurement run starts.
      */
     void reset_counters() noexcept {
@@ -318,8 +318,7 @@ void simplemc_load_input_config(const S& s, update<U>& u) {
  * @details It all-reduces the three counter fields and, if the user update satisfies
  * simplemc::has_simplemc_mpi_collect, it reduces the value via the ADL hook `%simplemc_mpi_collect`.
  *
- * @note This reduction is **not idempotent**: the counters are summed across ranks, so call it
- * exactly once per collection point (a second call double-counts).
+ * @note To keep the per-rank state, copy the update first.
  *
  * @tparam U User update type.
  * @param comm simplemc::mpi::communicator object.
@@ -331,7 +330,7 @@ void simplemc_mpi_collect(const mpi::communicator& comm, update<U>& u) {
     mpi::all_reduce_in_place(u.stats_.naccs, MPI_SUM, comm);
     mpi::all_reduce_in_place(u.stats_.nimps, MPI_SUM, comm);
     if constexpr (has_simplemc_mpi_collect<U>) {
-        u.value() = simplemc_mpi_collect(comm, u.value());
+        simplemc_mpi_collect(comm, u.value());
     }
 }
 

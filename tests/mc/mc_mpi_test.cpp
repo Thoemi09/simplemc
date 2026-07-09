@@ -21,9 +21,7 @@ struct mean_meas {
     using acc_t = mean_acc<double>;
     acc_t acc { 1 };
     void measure() {}
-    friend mean_meas simplemc_mpi_collect(const mpi::communicator& comm, const mean_meas& m) {
-        return mean_meas { simplemc_mpi_collect(comm, m.acc) };
-    }
+    friend void simplemc_mpi_collect(const mpi::communicator& comm, mean_meas& m) { simplemc_mpi_collect(comm, m.acc); }
 };
 
 // Read back everything written to a temporary file.

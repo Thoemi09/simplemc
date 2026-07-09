@@ -204,6 +204,8 @@ void simplemc_load_input_config(const S& s, measurement<M>& m) {
  *
  * @details If the user measurement satisfies simplemc::has_simplemc_mpi_collect, it reduces the value
  * via the ADL hook `%simplemc_mpi_collect`.
+ * 
+ * @note To keep the per-rank state, copy the update first.
  *
  * @tparam M User measurement type.
  * @param comm simplemc::mpi::communicator object.
@@ -212,7 +214,7 @@ void simplemc_load_input_config(const S& s, measurement<M>& m) {
 template <mc_measurement M>
 void simplemc_mpi_collect(const mpi::communicator& comm, measurement<M>& m) {
     if constexpr (has_simplemc_mpi_collect<M>) {
-        m.value() = simplemc_mpi_collect(comm, m.value());
+        simplemc_mpi_collect(comm, m.value());
     }
 }
 

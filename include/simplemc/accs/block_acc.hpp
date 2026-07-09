@@ -396,21 +396,20 @@ public:
     /**
      * @brief Collect block accumulators from different MPI processes.
      *
-     * @details It simply calls `%simplemc_mpi_collect` for the wrapped accumulator. Accumulated data 
-     * in current blocks is ignored.
+     * @details It simply calls `%simplemc_mpi_collect` for the wrapped accumulator, which is reduced
+     * **in place**. After the call, the accumulator on every rank holds the combined data (all-reduce
+     * semantics). Accumulated data in current blocks is ignored and the current block is reset.
      *
      * It asserts that the block size \f$ B \f$ and the size \f$ M \f$ of the wrapped accumulator is
      * equal on all processes.
      *
      * @param comm simplemc::mpi::communicator object.
-     * @param acc Block accumulator.
-     * @return Block accumulator with the reduced data from all processes.
+     * @param acc Block accumulator to reduce in place.
      */
-    friend block_acc simplemc_mpi_collect(const mpi::communicator& comm, const block_acc& acc) {
+    friend void simplemc_mpi_collect(const mpi::communicator& comm, block_acc& acc) {
         assert(all_equal(acc.block_size(), comm));
-        block_acc res(acc.blsize_, acc.size());
-        res.acc_ = simplemc_mpi_collect(comm, acc.acc_);
-        return res;
+        simplemc_mpi_collect(comm, acc.acc_);
+        acc.block_.reset();
     }
 
 private:

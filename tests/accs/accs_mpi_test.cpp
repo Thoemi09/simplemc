@@ -41,17 +41,17 @@ TYPED_TEST(SimplemcAccsMPI, MeanAccCollectSingleSample) {
     auto acc = make_empty<acc_t, T>();
     acc << data[this->rank % N];
 
-    auto res = simplemc_mpi_collect(this->comm, acc);
+    simplemc_mpi_collect(this->comm, acc);
 
     auto ref = make_empty<acc_t, T>();
     for (int r = 0; r < this->size; ++r) {
         ref << data[r % N];
     }
-    check_acc_equal(res, ref);
+    check_acc_equal(acc, ref);
 }
 
 // Mean accumulator MPI test.
-// Each rank accumulates strided samples.
+// Each rank accumulates strided samples; the copy-first idiom keeps the per-rank accumulator.
 TYPED_TEST(SimplemcAccsMPI, MeanAccCollectStrided) {
     using T = typename TypeParam::sample_t;
     constexpr auto A = TypeParam::alg;
@@ -63,7 +63,11 @@ TYPED_TEST(SimplemcAccsMPI, MeanAccCollectStrided) {
         acc << data[i];
     }
 
-    auto res = simplemc_mpi_collect(this->comm, acc);
+    // copy first, then collect in place: the per-rank accumulator stays untouched
+    const auto local_count = acc.count();
+    auto res = acc;
+    simplemc_mpi_collect(this->comm, res);
+    EXPECT_EQ(acc.count(), local_count);
 
     auto ref = make_empty<acc_t, T>();
     for (int i = 0; i < N; ++i) {
@@ -87,13 +91,13 @@ TYPED_TEST(SimplemcAccsMPI, MeanAccCollectAsymmetric) {
         }
     }
 
-    auto res = simplemc_mpi_collect(this->comm, acc);
+    simplemc_mpi_collect(this->comm, acc);
 
     auto ref = make_empty<acc_t, T>();
     for (const auto& x : data) {
         ref << x;
     }
-    check_acc_equal(res, ref);
+    check_acc_equal(acc, ref);
 }
 
 // Variance accumulator MPI test.
@@ -107,13 +111,13 @@ TYPED_TEST(SimplemcAccsMPI, VarAccCollectSingleSample) {
     auto acc = make_empty<acc_t, T>();
     acc << data[this->rank % N];
 
-    auto res = simplemc_mpi_collect(this->comm, acc);
+    simplemc_mpi_collect(this->comm, acc);
 
     auto ref = make_empty<acc_t, T>();
     for (int r = 0; r < this->size; ++r) {
         ref << data[r % N];
     }
-    check_acc_equal(res, ref);
+    check_acc_equal(acc, ref);
 }
 
 // Variance accumulator MPI test.
@@ -129,13 +133,13 @@ TYPED_TEST(SimplemcAccsMPI, VarAccCollectStrided) {
         acc << data[i];
     }
 
-    auto res = simplemc_mpi_collect(this->comm, acc);
+    simplemc_mpi_collect(this->comm, acc);
 
     auto ref = make_empty<acc_t, T>();
     for (int i = 0; i < N; ++i) {
         ref << data[i];
     }
-    check_acc_equal(res, ref);
+    check_acc_equal(acc, ref);
 }
 
 // Covariance accumulator MPI test.
@@ -149,13 +153,13 @@ TYPED_TEST(SimplemcAccsMPI, CovarAccCollectSingleSample) {
     auto acc = make_empty<acc_t, T>();
     acc << data[this->rank % N];
 
-    auto res = simplemc_mpi_collect(this->comm, acc);
+    simplemc_mpi_collect(this->comm, acc);
 
     auto ref = make_empty<acc_t, T>();
     for (int r = 0; r < this->size; ++r) {
         ref << data[r % N];
     }
-    check_acc_equal(res, ref);
+    check_acc_equal(acc, ref);
 }
 
 // Covariance accumulator MPI test.
@@ -171,13 +175,13 @@ TYPED_TEST(SimplemcAccsMPI, CovarAccCollectStrided) {
         acc << data[i];
     }
 
-    auto res = simplemc_mpi_collect(this->comm, acc);
+    simplemc_mpi_collect(this->comm, acc);
 
     auto ref = make_empty<acc_t, T>();
     for (int i = 0; i < N; ++i) {
         ref << data[i];
     }
-    check_acc_equal(res, ref);
+    check_acc_equal(acc, ref);
 }
 
 // Block accumulator MPI test.
@@ -194,7 +198,7 @@ TYPED_TEST(SimplemcAccsMPI, BlockVarAccCollect) {
         acc << data[i];
     }
 
-    auto res = simplemc_mpi_collect(this->comm, acc);
+    simplemc_mpi_collect(this->comm, acc);
 
     // build reference: simulate per-rank blocking, then merge inner accumulators
     auto ref = make_empty<inner_t, T>();
@@ -205,7 +209,7 @@ TYPED_TEST(SimplemcAccsMPI, BlockVarAccCollect) {
         }
         ref << local.accumulator();
     }
-    check_acc_equal(res.accumulator(), ref);
+    check_acc_equal(acc.accumulator(), ref);
 }
 
 // Block accumulator MPI test.
@@ -222,7 +226,7 @@ TYPED_TEST(SimplemcAccsMPI, BlockCovarAccCollect) {
         acc << data[i];
     }
 
-    auto res = simplemc_mpi_collect(this->comm, acc);
+    simplemc_mpi_collect(this->comm, acc);
 
     // build reference: simulate per-rank blocking, then merge inner accumulators
     auto ref = make_empty<inner_t, T>();
@@ -233,7 +237,7 @@ TYPED_TEST(SimplemcAccsMPI, BlockCovarAccCollect) {
         }
         ref << local.accumulator();
     }
-    check_acc_equal(res.accumulator(), ref);
+    check_acc_equal(acc.accumulator(), ref);
 }
 
 // Batch accumulator MPI test.

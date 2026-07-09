@@ -397,44 +397,41 @@ public:
     /**
      * @brief Collect mean accumulators from different MPI processes.
      *
-     * @details It constructs a new mean accumulator with the reduced accumulated mean data and counts
-     * from all MPI processes.
+     * @details It reduces the accumulated mean data and counts from all MPI processes **in place**.
+     * After the call, the accumulator on every rank holds the combined data. The sticky index (see
+     * operator[]()) is reset to \f$ 0 \f$.
      *
      * The reduction operation depends on the simplemc::varalg algorithm used to accumulate the data.
      * See operator<<(const mean_acc&) for how it is done in the case of 2 accumulators.
      *
-     * If the reduced count() of all accumulators is zero, no data is collected and the returned
-     * accumulator will be empty().
+     * If the reduced count() of all accumulators is zero, no data is collected and the accumulator
+     * stays empty().
      *
      * It asserts that the size of the accumulator is equal on all processes.
      *
      * @param comm simplemc::mpi::communicator object.
-     * @param acc Mean accumulator.
-     * @return Mean accumulator with the reduced data from all processes.
+     * @param acc Mean accumulator to reduce in place.
      */
-    [[nodiscard]] friend mean_acc simplemc_mpi_collect(const mpi::communicator& comm, const mean_acc& acc) {
+    friend void simplemc_mpi_collect(const mpi::communicator& comm, mean_acc& acc) {
         assert(all_equal(acc.size(), comm));
-        mean_acc res { acc.size() };
+        acc.idx_ = 0;
 
-        // reduce the count
-        mpi::all_reduce(acc.count_, res.count_, MPI_SUM, comm);
+        // reduce the count, keeping the local count for the welford scaling
+        [[maybe_unused]] const auto n1 = acc.count_;
+        mpi::all_reduce_in_place(acc.count_, MPI_SUM, comm);
 
         // early return if the reduced count is zero
-        if (res.count_ == 0) {
-            return res;
+        if (acc.count_ == 0) {
+            return;
         }
 
         // reduce the accumulated data
         if constexpr (mean_acc::varalg() == varalg::standard) {
-            mpi::all_reduce(make_span(acc.mdata_), make_span(res.mdata_), MPI_SUM, comm);
+            mpi::all_reduce_in_place(make_span(acc.mdata_), MPI_SUM, comm);
         } else {
-            const auto n1 = static_cast<double>(acc.count_);
-            const auto n = static_cast<double>(res.count_);
-            const vec_type tmp_mdata = acc.mdata_ * n1 / n;
-            mpi::all_reduce(make_span(tmp_mdata), make_span(res.mdata_), MPI_SUM, comm);
+            acc.mdata_ *= static_cast<double>(n1) / static_cast<double>(acc.count_);
+            mpi::all_reduce_in_place(make_span(acc.mdata_), MPI_SUM, comm);
         }
-
-        return res;
     }
 
 private:

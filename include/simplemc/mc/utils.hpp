@@ -171,8 +171,7 @@ void print(const mpi::communicator& comm, const T& t, std::FILE* fp = stdout, in
  * It simply dispatches to the corresponding ADL `%simplemc_mpi_collect` hooks of the individual
  * components.
  *
- * @note The reduction is **not idempotent**: all counters are summed across ranks, so call it exactly
- * once per collection point (a second call double-counts).
+ * @note To keep the per-rank state, copy the components first.
  *
  * @tparam Us User update types.
  * @tparam Ms User measurement types.

@@ -83,8 +83,8 @@ concept mc_kernel = requires(K& k, RNG& rng) { k.step(rng); };
  * @brief Contract a type must satisfy to be passed as the callback bundle to simplemc::run.
  *
  * @details The run loop supports four callback hooks, each taking the current simulation context
- * `ctx` as an argument (see also simplemc::simulation_ctx). 
- * 
+ * `ctx` as an argument (see also simplemc::simulation_ctx).
+ *
  * Let `c` be an instance of type `C`. The requirements for a type `C` to be a callback bundle are
  *
  * - `c.on_step(ctx)` is a valid expression (called after every kernel step),
@@ -137,18 +137,23 @@ concept has_simplemc_load_input_config = requires(T& t, const S& s) { simplemc_l
 
 /**
  * @ingroup simplemc-mc-utils
- * @brief Check if type `T` can be collected across MPI ranks via a call to `simplemc_mpi_collect`.
+ * @brief Check if type `T` can be in place collected across MPI ranks via a call to
+ * `simplemc_mpi_collect`.
  *
- * @details The overload must take `(const mpi::communicator&, const T&)` and return a `T`.
+ * @details `%simplemc_mpi_collect` is the type-specific ADL customization point for collecting a
+ * value across MPI ranks. Its signature and meaning may vary by type, e.g. simplemc::batch_acc
+ * all-gathers its batches into a `std::vector`, while simplemc::mean_acc all-reduces its data in
+ * place.
  *
- * This is the shape the simplemc::update / simplemc::measurement wrapper hook uses to forward MPI
- * reduction through to the wrapped user value.
+ * This concept checks the latter: Let `t` be an lvalue reference of type `T` and let `comm` be a
+ * simplemc::mpi::communicator. Then `T` satisfies simplemc::has_simplemc_mpi_collect if
+ * `simplemc_mpi_collect(comm, t)` is a valid expression that returns void.
  *
  * @tparam T Type to check.
  */
 template <typename T>
-concept has_simplemc_mpi_collect = requires(const mpi::communicator& c, const T& v) {
-    { simplemc_mpi_collect(c, v) } -> std::same_as<T>;
+concept has_simplemc_mpi_collect = requires(const mpi::communicator& c, T& v) {
+    { simplemc_mpi_collect(c, v) } -> std::same_as<void>;
 };
 
 } // namespace simplemc

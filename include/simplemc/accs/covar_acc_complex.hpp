@@ -602,8 +602,9 @@ public:
     /**
      * @brief Collect covariance accumulators from different MPI processes.
      *
-     * @details It constructs a new covariance accumulator with the reduced accumulated mean data,
-     * (cross-)covariance data and counts from all MPI processes.
+     * @details It reduces the accumulated mean data, (cross-)covariance data and counts from all MPI
+     * processes **in place**. After the call, the accumulator on every rank holds the combined data.
+     * The sticky index (see operator[]()) is reset to \f$ 0 \f$.
      *
      * The reduction operation depends on the simplemc::varalg algorithm used to accumulate the data.
      * See operator<<(const covar_acc&) for how it is done in the case of 2 accumulators.
@@ -611,47 +612,43 @@ public:
      * It asserts that the size of the accumulator is equal on all processes.
      *
      * @param comm simplemc::mpi::communicator object.
-     * @param acc Covariance accumulator.
-     * @return Covariance accumulator with the reduced data from all processes.
+     * @param acc Covariance accumulator to reduce in place.
      */
-    friend covar_acc simplemc_mpi_collect(const mpi::communicator& comm, const covar_acc& acc) {
+    friend void simplemc_mpi_collect(const mpi::communicator& comm, covar_acc& acc) {
         assert(all_equal(acc.size(), comm));
-        covar_acc res(acc.size());
+        acc.idx_ = 0;
 
-        // reduce the count
-        mpi::all_reduce(acc.count_, res.count_, MPI_SUM, comm);
+        // reduce the count, keeping the local count for the welford scaling
+        [[maybe_unused]] const auto nloc = acc.count_;
+        mpi::all_reduce_in_place(acc.count_, MPI_SUM, comm);
 
         // early return if the reduced count is zero
-        if (res.count_ == 0) {
-            return res;
+        if (acc.count_ == 0) {
+            return;
         }
 
         // reduce the accumulated data
         if constexpr (covar_acc::varalg() == varalg::standard) {
-            mpi::all_reduce(make_span(acc.mdata_), make_span(res.mdata_), MPI_SUM, comm);
-            mpi::all_reduce(make_span(acc.rdata_), make_span(res.rdata_), MPI_SUM, comm);
-            mpi::all_reduce(make_span(acc.idata_), make_span(res.idata_), MPI_SUM, comm);
-            mpi::all_reduce(make_span(acc.cdata_), make_span(res.cdata_), MPI_SUM, comm);
+            mpi::all_reduce_in_place(make_span(acc.mdata_), MPI_SUM, comm);
+            mpi::all_reduce_in_place(make_span(acc.rdata_), MPI_SUM, comm);
+            mpi::all_reduce_in_place(make_span(acc.idata_), MPI_SUM, comm);
+            mpi::all_reduce_in_place(make_span(acc.cdata_), MPI_SUM, comm);
         } else {
-            const auto n1 = static_cast<double>(acc.count_);
-            const auto n = static_cast<double>(res.count_);
-            const cplx_vec_type tmp_mdata = acc.mdata_ * n1 / n;
-            mpi::all_reduce(make_span(tmp_mdata), make_span(res.mdata_), MPI_SUM, comm);
-            const dbl_mat_type tmp_cdata =
-                acc.cdata_ + n1 * (acc.mdata_ - res.mdata_).real() * (acc.mdata_ - res.mdata_).imag().transpose();
-            mpi::all_reduce(make_span(tmp_cdata), make_span(res.cdata_), MPI_SUM, comm);
+            const auto n1 = static_cast<double>(nloc);
+            const auto n = static_cast<double>(acc.count_);
+            const cplx_vec_type m1 = acc.mdata_;
+            acc.mdata_ *= n1 / n;
+            mpi::all_reduce_in_place(make_span(acc.mdata_), MPI_SUM, comm);
+            acc.cdata_ += n1 * (m1 - acc.mdata_).real() * (m1 - acc.mdata_).imag().transpose();
+            mpi::all_reduce_in_place(make_span(acc.cdata_), MPI_SUM, comm);
             // we cannot add the triangular view to the full matrix (only when we assign)
-            dbl_mat_type tmp_rdata = acc.rdata_;
-            tmp_rdata += (n1 * (acc.mdata_ - res.mdata_).real() * (acc.mdata_ - res.mdata_).real().transpose())
-                             .template triangularView<Eigen::Lower>();
-            mpi::all_reduce(make_span(tmp_rdata), make_span(res.rdata_), MPI_SUM, comm);
-            dbl_mat_type tmp_idata = acc.idata_;
-            tmp_idata += (n1 * (acc.mdata_ - res.mdata_).imag() * (acc.mdata_ - res.mdata_).imag().transpose())
-                             .template triangularView<Eigen::Lower>();
-            mpi::all_reduce(make_span(tmp_idata), make_span(res.idata_), MPI_SUM, comm);
+            acc.rdata_ += (n1 * (m1 - acc.mdata_).real() * (m1 - acc.mdata_).real().transpose())
+                              .template triangularView<Eigen::Lower>();
+            mpi::all_reduce_in_place(make_span(acc.rdata_), MPI_SUM, comm);
+            acc.idata_ += (n1 * (m1 - acc.mdata_).imag() * (m1 - acc.mdata_).imag().transpose())
+                              .template triangularView<Eigen::Lower>();
+            mpi::all_reduce_in_place(make_span(acc.idata_), MPI_SUM, comm);
         }
-
-        return res;
     }
 
 private:
