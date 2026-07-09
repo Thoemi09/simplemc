@@ -82,8 +82,8 @@ template <typename T>
  *
  * @details We define the relative difference as \f$ | t_1 - t_2 | / \min\{ |t_1|, |t_2| \} \f$.
  *
- * In case that \f$ t_1 = 0 \f$ or \f$ t_2 = 0 \f$, we set the value to the very small number
- * `std::numeric_limits<double>::min()`, respectively.
+ * In case that \f$ t_1 = 0 \f$ or \f$ t_2 = 0 \f$, we set that value to the very small
+ * number `std::numeric_limits<double>::min()`.
  *
  * @tparam T1 Arithmetic type.
  * @tparam T2 Arithmetic type.
@@ -110,8 +110,8 @@ template <typename T1, typename T2>
  *
  * @details We define the relative difference as \f$ | z_1 - z_2 | / \min\{ |z_1|, |z_2| \} \f$.
  *
- * In case that \f$ |z_1| = 0 \f$ or \f$ |z_2| = 0 \f$, we set the value to the very small real number
- * `std::numeric_limits<double>::min()`, respectively.
+ * In case that \f$ |z_1| = 0 \f$ or \f$ |z_2| = 0 \f$, we set that value to the very small real
+ * number `std::numeric_limits<double>::min()`.
  *
  * @tparam T Value type of `std::complex`.
  * @param z1 Complex value \f$ z_1 \f$.

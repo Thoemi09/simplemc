@@ -185,7 +185,7 @@ template <typename D>
  * - \f$ \lVert m_1 - m_2 \rVert_F \f$ for matrices.
  *
  * @tparam D1 Derived Eigen type.
- * @tparam D2 Dervied Eigen type.
+ * @tparam D2 Derived Eigen type.
  * @param m1 `Eigen::MatrixBase` object \f$ m_1 \f$.
  * @param m2 `Eigen::MatrixBase` object \f$ m_2 \f$.
  * @return 2-norm/Frobenius norm of their difference.
@@ -205,11 +205,11 @@ template <typename D1, typename D2>
  * - \f$ \lVert m_1 - m_2 \rVert_F / \min\{ \lVert m_1 \rVert_F, \lVert m_2 \rVert_F \}\f$ for
  * matrices.
  *
- * In case that \f$ \lVert m_1 \rVert_x = 0 \f$ or \f$ \lVert m_2 \rVert_x = 0 \f$, we set the value
- * to the very small real number `std::numeric_limits<double>::min()`, respectively.
+ * In case that \f$ \lVert m_1 \rVert_x = 0 \f$ or \f$ \lVert m_2 \rVert_x = 0 \f$, we set that norm
+ * to the very small real number `std::numeric_limits<double>::min()`.
  *
  * @tparam D1 Derived Eigen type.
- * @tparam D2 Dervied Eigen type.
+ * @tparam D2 Derived Eigen type.
  * @param m1 `Eigen::MatrixBase` object \f$ m_1 \f$.
  * @param m2 `Eigen::MatrixBase` object \f$ m_2 \f$.
  * @return Their absolute difference divided by the norm of the object with the smaller norm.
@@ -334,7 +334,7 @@ template <typename D1, typename D2>
  * \f]
  *
  * @tparam D1 Derived Eigen type.
- * @tparam D2 Dervied Eigen type.
+ * @tparam D2 Derived Eigen type.
  * @param u Vector \f$ \mathbf{u} \f$.
  * @param v Vector \f$ \mathbf{v} \f$.
  * @return Angle \f$ \Theta \f$ between the two vectors.

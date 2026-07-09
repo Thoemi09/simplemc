@@ -1,4 +1,4 @@
-@page tut_numeric_2 Numeric Tutorial 2: Generalized Fourer series
+@page tut_numeric_2 Numeric Tutorial 2: Generalized Fourier series
 
 [TOC]
 
@@ -46,7 +46,7 @@ f(x) = e^x \f$ on the interval \f$ [c, d] = [2, 5] \f$.
 
 @subsection tut_numeric_2_details_coeffs Fourier coefficients
 
-In order to do that, we need to calculate the Fourier coefficiencts \f$ f_l \f$.
+In order to do that, we need to calculate the Fourier coefficients \f$ f_l \f$.
 Using the orthogonality property of our basis functions
 \f[
   \langle p_l, p_k \rangle = \int_a^b p_l(x) p_k(x) W(x) dx = N_l \delta_{lk} \; ,
@@ -213,4 +213,4 @@ As expected, the approximation gets better the more Fourier coefficients we incl
 
 @section tut_numeric_2_code Full code
 
-@include tut_numeric_2.cpp
+@include tutorials/tut_numeric_2.cpp

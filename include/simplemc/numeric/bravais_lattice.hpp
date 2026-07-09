@@ -30,7 +30,7 @@ namespace simplemc {
  * - 1D:
  *   - `linear_1d` (simplemc::make_linear_lattice)
  * - 2D:
- *   - `square_2d` (simplemc::make_square_lattice
+ *   - `square_2d` (simplemc::make_square_lattice)
  *   - `hexagonal_2d` (simplemc::make_hexagonal_lattice)
  *   - `rectangular_2d` (simplemc::make_rectangular_lattice)
  *   - `rectangular_centered_2d` (simplemc::make_rectangular_centered_lattice)
@@ -121,7 +121,7 @@ struct lattice_parameters {
     /// Angle \f$ \alpha \f$ between \f$ \mathbf{b} \f$ and \f$ \mathbf{c} \f$ (only in 3D).
     double alpha { 0.0 };
 
-    /// Angle \f$ \beta \f$ between \f$ \mathbf{a} \f$ and \f$ \mathbf{c} \f$ (only in 3D)
+    /// Angle \f$ \beta \f$ between \f$ \mathbf{a} \f$ and \f$ \mathbf{c} \f$ (only in 3D).
     double beta { 0.0 };
 
     /// Angle \f$ \gamma \f$ between \f$ \mathbf{a} \f$ and \f$ \mathbf{b} \f$ (only in 2D and 3D).

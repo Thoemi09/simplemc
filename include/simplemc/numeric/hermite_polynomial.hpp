@@ -25,7 +25,7 @@ namespace simplemc {
  * @details In the following, we use the notation from @ref simplemc-numeric-poly.
  *
  * Hermite polynomials, \f$ H_l(x) \f$, are defined on the interval \f$ \mathrm{D} = (-\infty, \infty)
- * \f$. Their weight function is \f$ W(x) = e^{-x^2} \f$ and their order depdendent normalization
+ * \f$. Their weight function is \f$ W(x) = e^{-x^2} \f$ and their order dependent normalization
  * factor is \f$ N_l = \sqrt{\pi} 2^l l! \f$:
  * \f[
  *   \langle H_l, H_k \rangle = \int_{-\infty}^\infty H_l(x) H_k(x) e^{-x^2} dx = \sqrt{\pi} 2^l l!

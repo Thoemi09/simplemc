@@ -212,7 +212,7 @@ void check_3d_lattice_parameters(const lattice_parameters& p);
 [[nodiscard]] std::pair<bravais_lattice<3>, lattice_parameters> make_orthorhombic_lattice(double a, double b, double c);
 
 /**
- * @brief Make an orthorombic body-centered Bravais lattice in 3D.
+ * @brief Make an orthorhombic body-centered Bravais lattice in 3D.
  *
  * @details An orthorhombic body-centered Bravais lattice is defined by
  * - the lattice constant \f$ a > 0 \f$,
@@ -240,7 +240,7 @@ void check_3d_lattice_parameters(const lattice_parameters& p);
     double a, double b, double c);
 
 /**
- * @brief Make an orthorombic face-centered Bravais lattice in 3D.
+ * @brief Make an orthorhombic face-centered Bravais lattice in 3D.
  *
  * @details An orthorhombic face-centered Bravais lattice is defined by
  * - the lattice constant \f$ a > 0 \f$,
@@ -268,7 +268,7 @@ void check_3d_lattice_parameters(const lattice_parameters& p);
     double a, double b, double c);
 
 /**
- * @brief Make an orthorombic base-centered Bravais lattice in 3D.
+ * @brief Make an orthorhombic base-centered Bravais lattice in 3D.
  *
  * @details An orthorhombic base-centered Bravais lattice is defined by
  * - the lattice constant \f$ a > 0 \f$,

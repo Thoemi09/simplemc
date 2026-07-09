@@ -505,8 +505,9 @@
  * @ingroup simplemc-numeric
  * @brief Bravais lattices in 1D, 2D and 3D.
  *
- * @details An N-dimensional Bravais lattice is defined by \f$ N \f$ linearly indepdent basis vectors
- * \f$ \{ \mathbf{a}_1, \dots, \mathbf{a}_N \} \f$. One lattice point, \f$ \mathbf{R}^0 \f$, is in the
+ * @details An N-dimensional Bravais lattice is defined by \f$ N \f$ linearly independent basis
+ * vectors \f$ \{ \mathbf{a}_1, \dots, \mathbf{a}_N \} \f$. One lattice point, \f$ \mathbf{R}^0 \f$,
+ * is in the
  * origin and all others are obtained by translating the origin using linear combinations of the
  * basis vectors:
  * \f[
@@ -537,7 +538,7 @@
  * \f]
  * with \f$ \mathbf{m} = (m_1, \dots, m_N) \in \mathbb{Z}^n \f$. To transform a vector \f$ \mathbf{k}
  * \f$ in the reciprocal basis to the standard basis and vice versa, one uses \f$ \mathbf{x} =
- * \mathbf{B} \mathbf{k} \f$. and \f$ \mathbf{k} = \mathbf{B}^{-1} \mathbf{x} \f$, respectively.
+ * \mathbf{B} \mathbf{k} \f$ and \f$ \mathbf{k} = \mathbf{B}^{-1} \mathbf{x} \f$, respectively.
  * Combining the transformation rules, we find \f$ \mathbf{r} = \mathbf{A}^{-1} \mathbf{B} \mathbf{k}
  * \f$ and \f$ \mathbf{k} = \mathbf{B}^{-1} \mathbf{A} \mathbf{r} \f$ which maps vectors from the
  * reciprocal to real space and back.
@@ -581,7 +582,7 @@
  *
  * @details In the following, we use the notation from @ref simplemc-numeric-lattices.
  *
- * Let \f$ \{ \mathbf{a} \} \f$ be the set of basis vectors. The 1 Bravais lattices in 1D is defined
+ * Let \f$ \{ \mathbf{a} \} \f$ be the set of basis vectors. The 1 Bravais lattice in 1D is defined
  * by the parameter
  *  - \f$ a = \lVert \mathbf{a} \rVert > 0 \f$, the lattice constant in direction \f$ \mathbf{a} \f$.
  *

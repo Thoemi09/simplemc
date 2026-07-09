@@ -67,7 +67,7 @@ template <typename Grid>
  *   \begin{cases}
  *     h_0(x) &= a_0 + b_0 (x - x_0) + c_0 (x - x_0)^2 + d_0 (x - x_0)^3 & \text{if } x \in [x_0, x_1]
  *     \\
- *     h_1(x) &= a_1 + b_1 (x - x_1) + c_1 (x - x_1)^2 + d_1 (x - x_1)^3 & \text{if } x \in [x_2, x_3]
+ *     h_1(x) &= a_1 + b_1 (x - x_1) + c_1 (x - x_1)^2 + d_1 (x - x_1)^3 & \text{if } x \in [x_1, x_2]
  *     \\ \vdots \\
  *     h_{M-2}(x) &= a_{M-2} + b_{M-2} (x - x_{M-2}) + c_{M-2} (x - x_{M-2})^2 + d_{M-2} (x -
  *     x_{M-2})^3 & \text{if } x \in [x_{M-2}, x_{M-1}] \\
@@ -100,7 +100,7 @@ template <typename Grid>
  *   \gamma_{i+1}) \right) (x - x_i) + \frac{\gamma_i}{2} (x - x_i)^2 + \frac{\gamma_{i+1} - \gamma_i}
  *   {6 (x_{i+1} - x_i)}(x - x_i)^3 \; ,
  * \f]
- * to evalutate the interpolating polynomials.
+ * to evaluate the interpolating polynomials.
  *
  * The class stores
  * - a simplemc::grid_1d \f$ g \f$ (see @ref simplemc-grids-1d) that determines the grid points \f$

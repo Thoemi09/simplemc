@@ -36,7 +36,7 @@ namespace simplemc {
  *   \pi & \text{if } l = k = 0 \; , \\
  *   \frac{\pi}{2} & \text{if } l = k \neq 0
  *   \end{cases}
- *   = N_l \delta{lk} \; .
+ *   = N_l \delta_{lk} \; .
  * \f]
  *
  * The recurrence relation is given by
@@ -205,7 +205,7 @@ private:
  * dependent normalization factor is \f$ N_l = \pi / 2 \f$:
  * \f[
  *   \langle U_l, U_k \rangle = \int_{-1}^1 U_l(x) U_k(x) \sqrt{1 - x^2} dx = \frac{\pi}{2}
- *   \delta_{lk} = N_l \delta{lk} \; .
+ *   \delta_{lk} = N_l \delta_{lk} \; .
  * \f]
  *
  * The recurrence relation is given by

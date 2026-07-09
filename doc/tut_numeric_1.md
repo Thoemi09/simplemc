@@ -62,13 +62,13 @@ In 3D, there are 14 different Bravais lattices (see @ref simplemc-numeric-lattic
 - the monoclinic base-centered lattice and
 - the triclinic lattice.
 
-**simplemc** provides factory functions for each of those lattices and it is recommended to use them
-whenever possible
+**simplemc** provides factory functions for each of those lattices. It is recommended to use them
+whenever possible.
 
 @subsection tut_numeric_1_fcc Face-centered cubic (FCC) lattice
 
 The first lattice that we create is a face-centered cubic or an FCC lattice.
-Since the FCC lattice belongs to the cubic crystall system, it is defined by the single parameter
+Since the FCC lattice belongs to the cubic crystal system, it is defined by the single parameter
 \f$ a \f$, the lattice constant.
 In our case, we set \f$ a = 1.5 \f$ and pass it to the factory function simplemc::make_fcc_lattice:
 
@@ -107,7 +107,7 @@ fcc_3d lattice parameters:
   gamma = 1.571
 ```
 
-Here, \f$ a \f$, \f$ b \f$ and \f$ c \f$ are the lattice constants, i.e. the lenghts of the lattice
+Here, \f$ a \f$, \f$ b \f$ and \f$ c \f$ are the lattice constants, i.e. the lengths of the lattice
 vectors \f$ \mathbf{a} \f$, \f$ \mathbf{b} \f$ and \f$ \mathbf{c} \f$, and \f$ \alpha =
 \angle(\mathbf{b}, \mathbf{c}) \f$, \f$ \beta = \angle(\mathbf{a}, \mathbf{c}) \f$ and \f$ \gamma =
 \angle(\mathbf{a}, \mathbf{b}) \f$ are the angles between them.

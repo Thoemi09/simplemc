@@ -3,7 +3,7 @@
 #include <simplemc/utils.hpp>
 
 int main() {
-    // create an FCC lattice with a lattic constant of 1.5
+    // create an FCC lattice with a lattice constant of 1.5
     auto [fcc, lattice_params] = simplemc::make_fcc_lattice(1.5);
 
     // print the lattice vectors of the primitive cell

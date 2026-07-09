@@ -175,7 +175,7 @@ private:
  *   h_{y_{j+1}}(x) &=& f(x_i, y_{j+1}) + (x - x_i) \frac{f(x_{i+1}, y_{j+1}) - f(x_i, y_{j+1})}
  *   {x_{i+1} - x_i}
  * \f}
- * - Interpolate a thrid and last time along the second dimension (y-axis) between the two values \f$
+ * - Interpolate a third and last time along the second dimension (y-axis) between the two values \f$
  * h_{y_j}(x) \f$ and \f$ h_{y_{j+1}}(x) \f$:
  * \f[
  *   h(y) = h_{y_j}(x) + (y - y_j) \frac{h_{y_{j+1}}(x) - h_{y_j}(x)}{y_{j+1} - y_j} \; .
