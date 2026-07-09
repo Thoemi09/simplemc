@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Include all relevant header files from simpelmc-accs.
+ * @brief Include all relevant header files from simplemc-accs.
  */
 
 #ifndef SIMPLEMC_ACCS_HPP

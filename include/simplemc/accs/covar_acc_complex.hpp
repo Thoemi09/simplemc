@@ -52,7 +52,8 @@ namespace simplemc {
  *
  * The mean data is accumulated as described in simplemc::mean_acc and the accumulation of the
  * covariance data follows @ref "simplemc::covar_acc< X, A >" "simplemc::covar_acc for real
- * samples".
+ * samples", including the optional constant shift \f$ \mathbf{t} \f$ that can be applied (manually
+ * by the user) to the data samples to increase numerical accuracy.
  *
  * @include accs/doc_covar_acc_cplx.cpp
  *
@@ -323,8 +324,8 @@ public:
      *   - \f$ \mathbf{m}^{(N)} = \mathbf{m}_{1}^{(N_1)} + \mathbf{m}_{2}^{(N_2)} \f$ and
      *   - \f$ \mathbf{C}^{(N)} = \mathbf{C}_{1}^{(N_1)} + \mathbf{C}_{2}^{(N_2)} \f$ .
      *
-     *   Here, \f$ \mathbf{C} \f$ stands for any of the accumulated covariance data, i.e. for \f$
-     *   \mathbf{C}_r^{(N)} \f$, \f$ \mathbf{C}_i^{(N)} \f$ and for \f$ \mathbf{C}_{ri}^{(N)} \f$.
+     *   Here, \f$ \mathbf{C} \f$ stands for any of the accumulated covariance data, i.e. \f$
+     *   \mathbf{C}_r^{(N)} \f$, \f$ \mathbf{C}_i^{(N)} \f$, and \f$ \mathbf{C}_{ri}^{(N)} \f$.
      *
      * - `welford`:
      *   - \f$ \mathbf{n}^{(N)} = \frac{N_1}{N} \mathbf{n}_{1}^{(N_1)} +

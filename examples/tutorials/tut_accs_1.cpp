@@ -9,11 +9,11 @@
 int main() {
     // Part 1: i.i.d. samples from a normal distribution N(mu_x, sigma_x^2)
     const double mu_x = 5.0;
-    const double sigma2_x = 1.0;
+    const double sigma_x = 1.0;
     const long n_x = 100000;
     const auto n_xd = static_cast<double>(n_x);
     std::mt19937_64 rng;
-    std::normal_distribution<double> iid_dist(mu_x, sigma2_x);
+    std::normal_distribution<double> iid_dist(mu_x, sigma_x);
 
     // draw samples from the distribution
     std::vector<double> samples_x(n_x);
@@ -49,7 +49,7 @@ int main() {
     }
 
     // print results side by side: mean and standard error of the mean
-    fmt::println("analytic:   mu_x  = {:<8.1f}, sigma_x_bar = {:.6f}", mu_x, sigma2_x / std::sqrt(n_xd));
+    fmt::println("analytic:   mu_x  = {:<8.1f}, sigma_x_bar = {:.6f}", mu_x, sigma_x / std::sqrt(n_xd));
     fmt::println("reference:  x_bar = {:<8.6f}, s_x_bar     = {:.6f}", x_bar_ref, s_x_bar_ref);
     fmt::println("mean_acc:   x_bar = {:<8.6f}, s_x_bar     = N/A", macc_x.mean());
     fmt::println("var_acc:    x_bar = {:<8.6f}, s_x_bar     = {:.6f}", vacc_x.mean(), simplemc::stderror(vacc_x));
@@ -58,13 +58,13 @@ int main() {
     // parameters of the AR(1) process
     const double mu_y = 0.0;
     const double phi = 0.9;
-    const double sigma2_eps = 1.0;
+    const double sigma_eps = 1.0;
     const long n_y = 1000000;
     const auto n_yd = static_cast<double>(n_y);
-    std::normal_distribution<double> noise(mu_y, sigma2_eps);
+    std::normal_distribution<double> noise(mu_y, sigma_eps);
 
     // analytic reference results for the AR(1) process
-    const double sigma2_y = sigma2_eps * sigma2_eps / (1.0 - phi * phi);
+    const double sigma2_y = sigma_eps * sigma_eps / (1.0 - phi * phi);
     const double tau_int = (1.0 + phi) / (1.0 - phi);
     const double sigma_y_bar = std::sqrt(sigma2_y * tau_int / n_yd);
     fmt::println("AR(1) analytic:");

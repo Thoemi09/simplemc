@@ -1,4 +1,4 @@
-#include <fmt/ranges.h>
+#include <fmt/base.h>
 #include <simplemc/accs.hpp>
 
 #include <random>
@@ -18,13 +18,13 @@ int main() {
         x_t = phi * x_t + normal_dist(rng);
     }
 
-    // inspect how the variance and tau increases with increasing block sizes
+    // inspect how the variance and tau increase with block size
     auto const s0 = acc.accumulators()[0].variance_of_data();
     auto const max_level = acc.find_level(256);
-    fmt::print("{:<15}{:<15}{:<15}{:<15}\n", "Count", "Block size", "Variance", "tau");
+    fmt::println("{:<15}{:<15}{:<15}{:<15}", "Count", "Block size", "Variance", "tau");
     for (std::size_t i = 0; i <= max_level; ++i) {
         const auto& va = acc.accumulators()[i];
-        fmt::print("{:<15}{:<15}{:<15.8f}{:<15.8f}\n", va.count(), acc.block_size(i), va.variance(),
+        fmt::println("{:<15}{:<15}{:<15.8f}{:<15.8f}", va.count(), acc.block_size(i), va.variance(),
             simplemc::accs::tau(s0, va.variance_of_data(), acc.block_size(i)));
     }
 }

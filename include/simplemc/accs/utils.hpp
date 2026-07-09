@@ -93,8 +93,8 @@ template <varalg A, eigen_vector V>
  * simplemc::varalg.
  *
  * Let \f$ S_{\mathbf{X}} \f$ and \f$ S_{\mathbf{Y}} \f$ be two data sets. This function calculates
- * the diagonal of the (cross)-covariance matrix, i.e. \f$ \mathrm{diag}(s_{\mathbf{X}\mathbf{Y}}^2)
- * \f$. In case, the two data sets are the same, this corresponds to the sample variance
+ * the diagonal of the (cross-)covariance matrix, i.e. \f$ \mathrm{diag}(s_{\mathbf{X}\mathbf{Y}}^2)
+ * \f$. If the two data sets are the same, this corresponds to the sample variance
  * \f$ s_{\mathbf{X}}^2 \f$ of the data set.
  *
  * See @ref simplemc-accs-stats-var for some background information and
@@ -134,7 +134,7 @@ template <varalg A, eigen_vector_dbl V>
  * simplemc::varalg.
  *
  * Let \f$ S_{\mathbf{X}} \f$ and \f$ S_{\mathbf{Y}} \f$ be two data sets. This function calculates
- * the full (cross-)covariance matrix \f$ s_{\mathbf{X}\mathbf{Y}}^2 \f$. In case, the two data sets
+ * the full (cross-)covariance matrix \f$ s_{\mathbf{X}\mathbf{Y}}^2 \f$. If the two data sets
  * are the same, this corresponds to the sample covariance matrix \f$ s_{\mathbf{X}\mathbf{X}}^2 \f$
  * of the data set.
  *
@@ -204,9 +204,9 @@ template <eigen_matrix_dbl M>
  *
  * @details Scalar overload of simplemc::accs::tau(const M&, const M&, std::uint64_t).
  *
- * @param s_naive Naive (unblocked) estimate of the sample (cross)-covariance \f$ s_{XY}^2 \f$ or the
+ * @param s_naive Naive (unblocked) estimate of the sample (cross-)covariance \f$ s_{XY}^2 \f$ or the
  * sample variance \f$ s_{X}^2 \f$.
- * @param s_blocked Blocked estimate of the sample (cross)-covariance \f$ s_{\overline{X}^{(B)}
+ * @param s_blocked Blocked estimate of the sample (cross-)covariance \f$ s_{\overline{X}^{(B)}
  * \overline{Y}^{(B)}}^2 \f$ or the sample variance \f$ s_{\overline{X}^{(B)}}^2 \f$.
  * @param b Block size \f$ B \f$ used in the blocked estimate (w.r.t. the naive estimate).
  * @return Integrated autocorrelation time \f$ \tau_{XY} \f$ or \f$ \tau_{X} \f$.

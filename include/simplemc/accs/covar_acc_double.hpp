@@ -65,8 +65,9 @@ namespace simplemc {
  *     s_{\mathbf{X}\mathbf{X}}^2 = \frac{\mathbf{D}^{(N)}}{N - 1} \; .
  *   \f]
  *
- * Here, \f$ \mathbf{t} \f$ is a constant vector that can optionally be applied to the data samples to
- * increase numerical accuracy. See also @ref simplemc-accs-stats-covar.
+ * Here, \f$ \mathbf{t} \f$ is a constant vector/scalar that can optionally (and manually by the user)
+ * be applied to the data samples to increase numerical accuracy. See also
+ * @ref simplemc-accs-stats-covar.
  *
  * @include accs/doc_covar_acc_dbl.cpp
  *

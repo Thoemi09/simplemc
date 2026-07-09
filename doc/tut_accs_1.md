@@ -61,11 +61,11 @@ normal distribution \f$ \mathcal{N}(\mu_X = 5, \sigma^2_X = 1) \f$:
 ```cpp
 // Part 1: i.i.d. samples from a normal distribution N(mu_x, sigma_x^2)
 const double mu_x = 5.0;
-const double sigma2_x = 1.0;
+const double sigma_x = 1.0;
 const long n_x = 100000;
 const auto n_xd = static_cast<double>(n_x);
 std::mt19937_64 rng;
-std::normal_distribution<double> iid_dist(mu_x, sigma2_x);
+std::normal_distribution<double> iid_dist(mu_x, sigma_x);
 
 // draw samples from the distribution
 std::vector<double> samples_x(n_x);
@@ -75,7 +75,7 @@ for (long i = 0; i < n_x; ++i) {
 ```
 
 Then we compute the three estimators directly with a plain two-pass loop. The first pass computes the 
-sum \f$ \sum_{i=1}^{N} x_i \f$ to obtain \f$ \bar{x} \f$, the second pass computes \f$ \sum_{i=1}^{N} 
+sum \f$ \sum_{i=1}^{N} x_i \f$ to obtain \f$ \bar{x} \f$; the second pass computes \f$ \sum_{i=1}^{N} 
 \left( x_i - \bar{x} \right)^2 \f$ to get \f$ s_X^2 \f$ and \f$ s_{\bar{X}} \f$:
 
 ```cpp
@@ -97,7 +97,7 @@ const double s_x_bar_ref = std::sqrt(sum_sq / (n_xd - 1) / n_xd);
 
 > **Note**: this textbook two-pass algorithm is exactly what the equations above say. It is
 > numerically fine for moderate \f$ N \f$ and well-conditioned data, but the difference
-> \f$ x_i - \bar x \f$ can suffer from catastrophic cancellation when the samples cluster far
+> \f$ x_i - \bar{x} \f$ can suffer from catastrophic cancellation when the samples cluster far
 > from the origin relative to their spread. To handle that case, simplemc::var_acc uses a
 > Welford-style update internally; the algorithm is selected by the simplemc::varalg
 > template parameter (see @ref simplemc-accs-utils), with `simplemc::varalg::welford` as the
@@ -109,9 +109,9 @@ estimation:
 
 ```cpp
 // accumulate the same data with a mean accumulator
-simplemc::mean_acc<double> macc;
+simplemc::mean_acc<double> macc_x;
 for (double x : samples_x) {
-    macc << x;
+    macc_x << x;
 }
 ```
 
@@ -122,9 +122,9 @@ To also get a variance estimate and not just the mean, we have to use simplemc::
 
 ```cpp
 // accumulate the same data with a variance accumulator
-simplemc::var_acc<double> vacc;
+simplemc::var_acc<double> vacc_x;
 for (double x : samples_x) {
-    vacc << x;
+    vacc_x << x;
 }
 ```
 
@@ -135,15 +135,15 @@ The variance accumulator exposes two related variance quantities, and it pays to
 \f$ s_{\bar{X}}^2 = s_X^2 / N \f$. To get the standard error \f$ s_{\bar{X}} \f$, we can either take
 the square root manually or make use of simplemc::stderror.
 
-Printing the analytic known results together with the manual reference and both accumulators side by 
+Printing the known analytic results together with the manual reference and both accumulators side by 
 side gives:
 
 ```cpp
 // print results side by side: mean and standard error of the mean
-fmt::println("analytic:   mu_x  = {:<8.1f}, sigma_x_bar = {:.6f}", mu_x, sigma2_x / std::sqrt(n_xd));
+fmt::println("analytic:   mu_x  = {:<8.1f}, sigma_x_bar = {:.6f}", mu_x, sigma_x / std::sqrt(n_xd));
 fmt::println("reference:  x_bar = {:<8.6f}, s_x_bar     = {:.6f}", x_bar_ref, s_x_bar_ref);
-fmt::println("mean_acc:   x_bar = {:<8.6f}, s_x_bar     = N/A", macc.mean());
-fmt::println("var_acc:    x_bar = {:<8.6f}, s_x_bar     = {:.6f}", vacc.mean(), simplemc::stderror(vacc));
+fmt::println("mean_acc:   x_bar = {:<8.6f}, s_x_bar     = N/A", macc_x.mean());
+fmt::println("var_acc:    x_bar = {:<8.6f}, s_x_bar     = {:.6f}", vacc_x.mean(), simplemc::stderror(vacc_x));
 fmt::println("");
 ```
 
@@ -171,7 +171,7 @@ samples.
 
 Monte Carlo simulations rarely produce i.i.d. samples — the output of a Markov chain is correlated
 by construction. To study this regime in a controlled way, we use a first-order autoregressive
-process - AR(1) - defined by the recursion,
+process — AR(1) — defined by the recursion,
 \f[
   y_{t+1} = \phi \, y_t + \varepsilon_t \;, \qquad \varepsilon_t \sim \mathcal{N}(0,
   \sigma_\varepsilon^2) \;,
@@ -179,7 +179,7 @@ process - AR(1) - defined by the recursion,
 with \f$ \phi = 0.9 \f$, \f$ \sigma_\varepsilon = 1 \f$, and \f$ N = 10^6 \f$ steps. The AR(1) is
 useful because its stationary statistics are known in closed form,
 \f[
-  \langle y \rangle = \mu_y 0 \;, \qquad
+  \langle y \rangle = \mu_y = 0 \;, \qquad
   \sigma^2_Y = \frac{\sigma_\varepsilon^2}{1 - \phi^2} \;, \qquad
   \tau_{\mathrm{int}} = \frac{1 + \phi}{1 - \phi} = 19 \;,
 \f]
@@ -194,19 +194,19 @@ Before we start, let's set the process parameters and print the analytic referen
 // parameters of the AR(1) process
 const double mu_y = 0.0;
 const double phi = 0.9;
-const double sigma2_eps = 1.0;
+const double sigma_eps = 1.0;
 const long n_y = 1000000;
 const auto n_yd = static_cast<double>(n_y);
-std::normal_distribution<double> noise(mu_y, sigma2_eps);
+std::normal_distribution<double> noise(mu_y, sigma_eps);
 
 // analytic reference results for the AR(1) process
-const double sigma2_y = sigma2_eps * sigma2_eps / (1.0 - phi * phi);
+const double sigma2_y = sigma_eps * sigma_eps / (1.0 - phi * phi);
 const double tau_int = (1.0 + phi) / (1.0 - phi);
 const double sigma_y_bar = std::sqrt(sigma2_y * tau_int / n_yd);
 fmt::println("AR(1) analytic:");
 fmt::println("  y_bar       = {:.1f}", mu_y);
 fmt::println("  tau_int     = {:.1f}", tau_int);
-fmt::println("  sigma_x_bar = {:.2f}", sigma_y_bar);
+fmt::println("  sigma_y_bar = {:.2f}", sigma_y_bar);
 fmt::println("");
 ```
 
@@ -216,7 +216,7 @@ Output:
 AR(1) analytic:
   y_bar       = 0.0
   tau_int     = 19.0
-  sigma_x_bar = 0.01
+  sigma_y_bar = 0.01
 ```
 
 Then we generate the samples from the AR(1) process:
@@ -240,7 +240,6 @@ Let's see what simplemc::var_acc thinks \f$ \sigma_{\bar{Y}} \f$ is when fed the
 simplemc::var_acc<double> vacc_y;
 for (double y : samples_y) {
     vacc_y << y;
-
 }
 fmt::println("AR(1) var_acc:");
 fmt::println("  y_bar   = {:.6f}", vacc_y.mean());
@@ -292,7 +291,7 @@ AR(1) block_acc:
   s_y_bar = 0.009558
 ```
 
-The mean is unchanged, but \f$ \sigma_{\bar{X}} \f$ jumped from \f$ 0.0023 \f$ to \f$ 0.0096 \f$ —
+The mean is unchanged, but \f$ s_{\bar{Y}} \f$ jumped from \f$ 0.0023 \f$ to \f$ 0.0096 \f$ —
 within a few percent of the analytic \f$ 0.01 \f$. Picking a good \f$ B \f$ requires knowing
 \f$ \tau_{\mathrm{int}} \f$ in advance, which is exactly the problem the next accumulator solves.
 
@@ -331,7 +330,7 @@ fmt::println("AR(1) autocorr_acc:");
 fmt::println("{:<8}{:<14}{:<14}{:<16}{:<14}", "l", "B_l", "N_eff", "s_y_bar", "tau");
 for (std::size_t l = 0; l <= max_level; ++l) {
     const auto& va = aacc_y.accumulators()[l];
-    fmt::println("{:<8}{:<14}{:<14}{:<16.8f}{:<14.4f}", l, aacc_y.block_size(l), va.count(),simplemc::stderror(va),
+    fmt::println("{:<8}{:<14}{:<14}{:<16.8f}{:<14.4f}", l, aacc_y.block_size(l), va.count(), simplemc::stderror(va),
         simplemc::accs::tau(s0, va.variance_of_data(), aacc_y.block_size(l)));
 }
 fmt::println("");
@@ -365,8 +364,9 @@ Reading the table:
 - As the block size grows, both \f$ s_{\bar{Y}} \f$ and \f$ \tau \f$ climb and **plateau** once \f$ 
 B_l \gtrsim \tau_{\mathrm{int}} = 19 \f$. The plateau of the \f$ s_{\bar{Y}} \f$ column near \f$ 
 0.010 \f$ is in good agreement with the analytic value.
-- The \f$ \tau \f$ plateau near \f$ 9.5 \approx (\tau_{\mathrm{int}} - 1)/2 \f$ is the expected value 
-of \f$ \tau \f$ for an AR(1) with \f$ \phi = 0.9 \f$.
+- The \f$ \tau \f$ plateau near \f$ 9.5 \f$ is close to the theoretical value \f$ (\tau_{\mathrm{int}} -
+1)/2 = 9 \f$ expected for an AR(1) with \f$ \phi = 0.9 \f$; the small residual, as in the i.i.d. case,
+is just statistical noise at finite \f$ N \f$.
 
 The plateau is the signal that further blocking is no longer needed and that the blocks have become 
 effectively independent.
@@ -404,13 +404,13 @@ AR(1) batch_acc:
 ```
 
 simplemc::batch_acc settled on a batch size of \f$ 2048 \f$ samples (488 full batches) and reports 
-\f$ \sigma_X \approx 0.0102 \f$, again consistent with the analytic value.
+\f$ s_{\bar{Y}} \approx 0.0102 \f$, again consistent with the analytic value.
 
 @subsection tut_accs_1_summary Comparison
 
 Putting it together, the same AR(1) chain produces:
 
-| Estimator                            | \f$ s_{\bar{Y}}/\sigma_{\bar{Y}} \f$ |
+| Estimator                            | \f$ s_{\bar{Y}} \f$ |
 |--------------------------------------|------------------|
 | Naive simplemc::var_acc              | 0.00229          |
 | simplemc::block_acc                  | 0.00956          |
@@ -420,9 +420,10 @@ Putting it together, the same AR(1) chain produces:
 
 The takeaway: when the samples come from a correlated process — i.e. essentially always in a
 real Monte Carlo simulation — pair simplemc::var_acc with a wrapper that handles the
-correlations. simplemc::block_acc is the cheapest option when a safe block size is known;
-simplemc::autocorr_acc is the right tool when it is not; simplemc::batch_acc is a convenient
-single-pass alternative and in most cases the right balance between the two.
+correlations, or use simplemc::batch_acc as a self-contained alternative that groups the raw
+samples directly. simplemc::block_acc is the cheapest wrapper option when a safe block size is
+known; simplemc::autocorr_acc is the right wrapper when it is not; simplemc::batch_acc is a convenient
+single-pass alternative and in most cases the right balance between the two wrapper-based approaches.
 
 @section tut_accs_1_code Full code
 

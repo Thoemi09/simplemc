@@ -103,7 +103,7 @@ public:
     static constexpr bool is_dynamic = (cplx_vec_type::RowsAtCompileTime == Eigen::Dynamic);
 
     /**
-     * @brief Real vector type for storing accumulated (cross-co)variance data.
+     * @brief Real vector type for storing accumulated variance/cross-covariance data.
      */
     using dbl_vec_type = Eigen::Matrix<double, static_size, 1>;
 
@@ -280,8 +280,8 @@ public:
      *   - \f$ \mathbf{m}^{(N)} = \mathbf{m}_{1}^{(N_1)} + \mathbf{m}_{2}^{(N_2)} \f$ and
      *   - \f$ \mathbf{c}^{(N)} = \mathbf{c}_{1}^{(N_1)} + \mathbf{c}_{2}^{(N_2)} \f$ .
      *
-     *   Here, \f$ \mathbf{c} \f$ stands for any of the accumulated (cross-co)variance data, i.e. for
-     *   \f$ \mathbf{c}_r^{(N)} \f$, \f$ \mathbf{c}_i^{(N)} \f$ and for \f$ \mathbf{c}_{ri}^{(N)} \f$.
+     *   Here, \f$ \mathbf{c} \f$ stands for any of the accumulated variance/cross-covariance data,
+     *   i.e. \f$ \mathbf{c}_r^{(N)} \f$, \f$ \mathbf{c}_i^{(N)} \f$, and \f$ \mathbf{c}_{ri}^{(N)} \f$.
      *
      * - `welford`: Let \f$ \mathbf{a} \odot \mathbf{b} \f$ denote the element-wise (Hadamard) product
      *   of two vectors \f$ \mathbf{a} \f$ and \f$ \mathbf{b} \f$. Then,
@@ -292,7 +292,7 @@ public:
      *     \mathbf{n}^{(N)} \right) + N_2 \Re\left( \mathbf{n}_{2}^{(N_2)} - \mathbf{n}^{(N)} \right)
      *     \odot \Re\left( \mathbf{n}_{2}^{(N_2)} - \mathbf{n}^{(N)} \right) \f$ .
      *
-     *   Similar expressions hold for the other accumulated (cross-co)variance data, \f$
+     *   Similar expressions hold for the other accumulated variance/cross-covariance data, \f$
      *   \mathbf{d}_i^{(N)} \f$ and \f$ \mathbf{d}_{ri}^{(N)} \f$.
      *
      * See also @ref simplemc-accs-accs-how.
@@ -537,7 +537,7 @@ public:
     /**
      * @brief Collect variance accumulators from different MPI processes.
      *
-     * @details It reduces the accumulated mean data, (cross-co)variance data and counts from all MPI
+     * @details It reduces the accumulated mean data, variance/cross-covariance data and counts from all MPI
      * processes **in place**. After the call, the accumulator on every rank holds the combined data.
      * The sticky index (see operator[]()) is reset to \f$ 0 \f$.
      *

@@ -38,7 +38,7 @@ namespace simplemc {
  *
  * @details It takes a vector of \f$ M_b \f$ batches (simplemc::mean_acc) and combines them into \f$
  * M_b' = \lfloor M_b / c \rfloor \f$ new batches, where \f$ c \f$ is the given number of batches that
- * should be merged together. If \f$ c \f$ is not a divisor of \f$ M_b \f$, the left over batches are
+ * should be merged together. If \f$ c \f$ is not a divisor of \f$ M_b \f$, the leftover batches are
  * simply discarded.
  *
  * If \f$ c < 2 \f$ or \f$ c > M_b \f$, no merges are performed and batches are left unchanged.
@@ -210,7 +210,8 @@ public:
     /**
      * @brief Construct a batch accumulator with the given vectors of full and accumulating batches.
      *
-     * @details It calls check_batches() to check the given batches.
+     * @details The current batch size \f$ N_b \f$ and the index \f$ i_b \f$ of the accumulating batch
+     * are inferred from the given vectors. It calls check_batches() to check the given batches.
      *
      * @param full_batches Vector of mean accumulators for storing full batches.
      * @param acc_batches Vector of mean accumulators for accumulating new batches.
@@ -622,7 +623,7 @@ public:
      * @param comm simplemc::mpi::communicator object.
      * @param acc Batch accumulator.
      * @param same_count Should we perform merges to enforce the same count on each process?
-     * @return `std::vector` containing the batches gatherered from all processes.
+     * @return `std::vector` containing the batches gathered from all processes.
      */
     friend std::vector<mean_acc_type> simplemc_mpi_collect(
         const mpi::communicator& comm, const batch_acc& acc, bool same_count) {

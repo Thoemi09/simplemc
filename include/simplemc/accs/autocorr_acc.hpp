@@ -46,15 +46,15 @@ namespace simplemc {
  *   \tau_{\mathbf{X}\mathbf{Y}} \approx \frac{1}{2} \left( \frac{s_{\overline{\mathbf{X}}^{(B)}
  *   \overline{\mathbf{Y}}^{(B)}}^2}{s_{\mathbf{X}\mathbf{Y}}^2} B - 1 \right) \; ,
  * \f]
- * where \f$ s_{\mathbf{X}\mathbf{Y}}^2 \f$ is the naive (unblocked) sample (cross)-covariance matrix
+ * where \f$ s_{\mathbf{X}\mathbf{Y}}^2 \f$ is the naive (unblocked) sample (cross-)covariance matrix
  * and \f$ s_{\overline{\mathbf{X}}^{(B)}\overline{\mathbf{Y}}^{(B)}}^2 =
  * s_{\overline{\mathbf{X}}^{(N)}\overline{\mathbf{Y}}^{(N)}}^2 N_{\mathrm{eff}} \f$ is the sample
- * (cross)-covariance matrix of the blocked samples with block size \f$ B = N / N_{\mathrm{eff}} \f$.
+ * (cross-)covariance matrix of the blocked samples with block size \f$ B = N / N_{\mathrm{eff}} \f$.
  *
  * A similar equation holds for \f$ \tau_{\mathbf{X}} \f$.
  *
  * This class uses blocks of increasing size to decorrelate individual samples. The (co)variance and
- * the integrated autocorrelation time will increase with the block size until it reaches a plateau.
+ * the integrated autocorrelation time will increase with the block size until they reach a plateau.
  * The value at the plateau should give you a good estimate of both quantities.
  *
  * The block sizes are given by \f$ B_{l+1} = B_l * c \f$, where \f$ l \f$ is the level index and \f$
@@ -72,7 +72,7 @@ namespace simplemc {
  * is not supported right now (please use accumulate(R1&&, R2&&) instead).
  *
  * @note The accumulator only groups the data into levels with increasing block sizes. It does not
- * give a final estimate of the integrated autocorrelation time. It is the users responsibility to
+ * give a final estimate of the integrated autocorrelation time. It is the user's responsibility to
  * inspect the blocked data and decide what to do with it.
  *
  * Here is a usual workflow, that
@@ -244,7 +244,7 @@ public:
      * @param accs Vector of (co)variance accumulators for accumulating effective (blocked) samples.
      * @param blocks Vector of mean accumulators for blocking individual samples.
      * @param c Multiplication factor \f$ c \f$.
-     * @param min_levels Minimum number of levels.
+     * @param min_levels Minimum number of levels \f$ L_{\text{min}} \f$.
      */
     explicit autocorr_acc(
         std::vector<acc_type> accs, std::vector<mean_acc_type> blocks, count_type c, std::size_t min_levels) :

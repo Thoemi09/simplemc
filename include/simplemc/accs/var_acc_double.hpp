@@ -64,9 +64,9 @@ namespace simplemc {
  *     s_{\mathbf{X}}^2 = \frac{\mathbf{d}^{(N)}}{N - 1} \; .
  *   \f]
  *
- * Here, \f$ \mathbf{t} \f$ is a constant vector that can optionally be applied to the data samples to
- * increase numerical accuracy and \f$ \mathbf{a} \odot \mathbf{b} \f$ denotes the Hadamard
- * (element-wise) product. See also @ref simplemc-accs-stats-var.
+ * Here, \f$ \mathbf{t} \f$ is a constant vector/scalar that can optionally (and manually by the user)
+ * be applied to the data samples to increase numerical accuracy and \f$ \mathbf{a} \odot \mathbf{b}
+ * \f$ denotes the Hadamard (element-wise) product. See also @ref simplemc-accs-stats-var.
  *
  * @include accs/doc_var_acc_dbl.cpp
  *

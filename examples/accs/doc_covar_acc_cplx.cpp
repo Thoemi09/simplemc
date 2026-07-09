@@ -9,8 +9,8 @@
 
 int main() {
     // complex distribution to be sampled:
-    // - real part: normal distributed with mu = 5 and sigma = 1
-    // - imaginary part: normal distributed with mu = -3 and sigma = 0.5
+    // - real part: normally distributed with mu = 5 and sigma = 1
+    // - imaginary part: normally distributed with mu = -3 and sigma = 0.5
     std::mt19937_64 rng;
     std::normal_distribution<double> normal_dist_r(5.0, 1.0);
     std::normal_distribution<double> normal_dist_i(-3.0, 0.5);

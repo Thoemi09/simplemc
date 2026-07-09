@@ -79,15 +79,15 @@ public:
     /**
      * @brief Subscript operator sets the index \f$ i \f$ of the wrapped accumulator and returns a
      * reference to `this` object.
-     * 
-     * @details The index is *sticky*: it persists until changed by another call to operator[](). For 
+     *
+     * @details The index is *sticky*: it persists until changed by another call to operator[](). For
      * scalar accumulators (size \f$ M = 1 \f$), the index should remain at 0.
      *
-     * @param idx Index \f$ i \f$.
+     * @param i Index \f$ i \f$.
      * @return Reference to `this` object.
      */
-    multivalue_acc& operator[](size_type idx) noexcept {
-        acc_.idx_ = idx;
+    multivalue_acc& operator[](size_type i) noexcept {
+        acc_.idx_ = i;
         return *this;
     }
 

@@ -30,12 +30,12 @@ namespace simplemc {
  * @details It groups the data samples into blocks of a given size \f$ B \f$ before accumulating them
  * into the wrapped accumulator object. This helps to decorrelate consecutive samples.
  *
- * A block is simply a simplemc::mean_acc object. When a new sample is accumlated, it is added to the
+ * A block is simply a simplemc::mean_acc object. When a new sample is accumulated, it is added to the
  * mean accumulator. When the number of samples in the block is equal to \f$ B \f$, the mean of the
  * block is accumulated into the underlying variance/covariance accumulator.
  *
- * Functionality and usage is similar to the supported wrapped accumulators. Results can be obtained
- * from the wrapped accumulators directly by calling accumulator().
+ * Functionality and usage is similar to the wrapped accumulator. Results can be obtained from the
+ * wrapped accumulator directly by calling accumulator().
  *
  * @include accs/doc_block_acc.cpp
  *
@@ -439,8 +439,8 @@ void simplemc_save(S s, const block_acc<A>& acc) {
 /**
  * @brief Deserialize a simplemc::block_acc.
  *
- * @details It first serializes the block size \f$ B \f$ together with the wrapped accumulator and the
- * simplemc::mean_acc holding the current block data. It then uses them to construct the block
+ * @details It first deserializes the block size \f$ B \f$ together with the wrapped accumulator and
+ * the simplemc::mean_acc holding the current block data. It then uses them to construct the block
  * accumulator (see simplemc::block_acc(const acc_type&, const mean_acc_type&, count_type)).
  *
  * @tparam S simplemc::serializer type.
