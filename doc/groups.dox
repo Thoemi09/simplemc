@@ -450,8 +450,9 @@
  *
  * When we think about bins, we can extend the domain of this inverse map to the full interval
  * \f$ [a, b] \f$. In this case, \f$ \tilde{g}^{-1} : [a, b] \to \mathrm{I} \f$ is the function that
- * maps any \f$ x \in [a, b] \f$ to the index \f$ i \f$ such that \f$ x \in b_i \f$. Note that the
- * last grid point should be mapped to the bin \f$ b_{M-1} \nsubseteq [a, b] \f$.
+ * maps any \f$ x \in [a, b] \f$ to the index \f$ i \f$ such that \f$ x \in b_i \f$. Note that
+ * evaluating the inverse map at the last grid point yields the index \f$ M-1 \f$, even though this
+ * does not correspond to an actual bin (since bins only have indices \f$ 0, \ldots, M-2 \f$).
  *
  * For decreasing grids, i.e. in the case that \f$ b < a \f$, the range of the grid is given by \f$
  * [b, a] \f$ and the bins are defined as the intervals \f$ b_i = (g(i+1), g(i)] \f$. Otherwise,

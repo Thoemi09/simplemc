@@ -1,8 +1,3 @@
-/**
- * @file
- * @brief Unit tests for grid_iterator with minimal dummy grid classes.
- */
-
 #include "../test_utils.hpp"
 
 #include <simplemc/grids/concepts.hpp>

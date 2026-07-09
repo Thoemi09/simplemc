@@ -138,7 +138,7 @@ Here,
 - the center of bin \f$ b_{1,0} \f$ is at \f$ (6, 2) \f$ and has volume \f$ 8 \f$ and
 - the center of bin \f$ b_{1,1} \f$ is at \f$ (6, 6) \f$ and has volume \f$ 24 \f$.
 
-This can easily be seen by drawing the grid points on 2 perpendicular axis and by calculating the
+This can easily be seen by drawing the grid points on two perpendicular axes and by calculating the
 areas of the corresponding bins.
 
 At last, we want to check how to find the bin \f$ b_{i_1, i_2} \f$ such that a given point \f$

@@ -32,7 +32,7 @@ namespace simplemc {
  * They correspond to the maps \f$ g : \mathrm{I} \to [a, b] \f$ and \f$ \tilde{g}^{-1} : [a, b] \to
  * \mathrm{I} \f$, respectively.
  *
- * All other methods have reasonable default implementations although they can be overriden if
+ * All other methods have reasonable default implementations although they can be overridden if
  * necessary.
  *
  * @tparam Derived 1-dimensional grid type.

@@ -129,7 +129,7 @@ public:
      *
      * @return `std::vector<value_type>` of grid points \f$ \mathbf{x} \f$.
      */
-    [[nodiscard]] constexpr auto const& grid_points() const noexcept { return x_; }
+    [[nodiscard]] constexpr const auto& grid_points() const noexcept { return x_; }
 
     /**
      * @brief Get an iterator to the first grid point.

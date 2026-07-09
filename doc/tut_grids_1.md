@@ -17,7 +17,7 @@ The following code snippets are all part of the same `main` function:
 #include <string_view>
 #include <vector>
 
-// function definiton goes here
+// function definition goes here
 
 int main() {
     // code snippets go here
@@ -50,7 +50,7 @@ void test_grid(const auto& grid, std::string_view name) {
 }
 ```
 
-The function is fairly straightfoward.
+The function is fairly straightforward.
 It takes the grid that we want to test as its first argument and a given name for the grid as its
 second argument.
 As seen from its implementation, we have split the function into 3 blocks:
@@ -90,7 +90,7 @@ Bin volumes: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 Here we can see that the 11 grid points are evenly distributed on the range \f$ [0, 10] \f$ as we
 expect from a simplemc::linear_grid.
 This implies that all 10 bins are of the same size (\f$ = 1 \f$) and that the bin centers are the
-same distant apart.
+same distance apart.
 
 The last output block shows how for a given value \f$ x \in [0,10] \f$, we can find the bin \f$ b_i
 \f$ such that \f$ x \in b_i \f$:
@@ -230,7 +230,7 @@ That means on the interval \f$ [0, 5] \f$, the bin sizes increase, while on the 
 
 The symmetry is with respect to the center of the grid, i.e. \f$ c = (a + b) / 2 = 5 \f$.
 
-@note Symmetric grids make only sense for odd sizes.
+@note Symmetric grids only make sense for odd sizes.
 
 @subsection tut_grids_1_custom Custom grid
 
@@ -270,8 +270,8 @@ They can be constructed from any ordered array of grid points.
 
 Their drop in performance might become noticeable for large grids when searching for the bin \f$ b_i
 \f$ which contains a given value \f$ x \in [a, b] \f$.
-Since the arrangement of the grid points do not have to follow any specific rule, the best we can do
-is a binary search which has complexity \f$ \mathcal{O}(log M) \f$.
+Since the arrangement of the grid points does not have to follow any specific rule, the best we can do
+is a binary search which has complexity \f$ \mathcal{O}(\log M) \f$.
 
 @note The given array to construct a simplemc::custom_grid has to be ordered w.r.t. to \f$ < \f$
 (increasing grid) or \f$ > \f$ (decreasing grid). Otherwise, the behavior is undefined.

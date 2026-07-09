@@ -251,7 +251,7 @@ public:
      * @brief Equality comparison operator compares the grid pointer and the indices of the two
      * iterators.
      *
-     * @param other Right hand side iterator.
+     * @param other Right-hand side iterator.
      * @return True if iterators point to the same grid and have the same index.
      */
     [[nodiscard]] constexpr bool operator==(const grid_iterator& other) const noexcept {
@@ -264,7 +264,7 @@ public:
      * @details The ordering is the same as that of their indices using `<=>` and only makes sense if
      * both iterators point to the same grid.
      *
-     * @param other Right hand side iterator.
+     * @param other Right-hand side iterator.
      * @return Ordering between the two iterators.
      */
     [[nodiscard]] constexpr auto operator<=>(const grid_iterator& other) const noexcept {

@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Include all relevant header files from simpelmc-grids.
+ * @brief Include all relevant header files from simplemc-grids.
  */
 
 #ifndef SIMPLEMC_GRIDS_HPP

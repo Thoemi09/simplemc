@@ -29,7 +29,7 @@ namespace simplemc {
  *
  * @tparam G1 simplemc::grid_1d type.
  * @param grid 1-dimensional grid \f$ g \f$.
- * @param m Size of the wanted subrange.
+ * @param m Size of the desired subrange.
  * @param x Some value \f$ x \in [a, b] \f$.
  * @return Index of bin \f$ i \f$ such that \f$ x \f$ lies in the middle of \f$ [g(i), g(i+m-1)] \f$
  * (or \f$ [g(i+m-1), g(i)] \f$ for decreasing grids).
@@ -41,14 +41,14 @@ template <grid_1d G1>
 
 /**
  * @ingroup simplemc-grids-nd
- * @brief Find a subvolume of neighbouring bins of an N-dimensional grid \f$ g \f$ which contains a
+ * @brief Find a subvolume of neighboring bins of an N-dimensional grid \f$ g \f$ which contains a
  * given point \f$ \mathbf{x} \f$.
  *
  * @details It calls simplemc::index_subrange for each 1-dimensional grid.
  *
  * @tparam GN simplemc::grid_nd type.
  * @param grid N-dimensional grid \f$ g \f$.
- * @param m Size of the wanted subrange.
+ * @param m Size of the desired subrange.
  * @param x Some point \f$ \mathbf{x} = (x_1, \dots, x_N) \in \mathrm{R} \f$.
  * @return Index array \f$ \mathbf{i} = (i_1, \dots, i_N) \f$ of the bin with the smallest indices in
  * the subvolume.
@@ -60,7 +60,7 @@ template <grid_nd GN>
 
 /**
  * @ingroup simplemc-grids-nd
- * @brief Find a subvolume of neighbouring bins of an N-dimensional grid \f$ g \f$ which contains a
+ * @brief Find a subvolume of neighboring bins of an N-dimensional grid \f$ g \f$ which contains a
  * given point \f$ \mathbf{x} \f$.
  *
  * @details It calls simplemc::index_subrange for each 1-dimensional grid.
@@ -68,7 +68,7 @@ template <grid_nd GN>
  * @tparam GN simplemc::grid_nd type
  * @tparam Vals Value types of 1-dimensional grids.
  * @param grid N-dimensional grid \f$ g \f$.
- * @param m Size of the wanted subrange.
+ * @param m Size of the desired subrange.
  * @param xs 1-dimensional points \f$ x_1, \dots, x_N \f$.
  * @return Index array \f$ \mathbf{i} = (i_1, \dots, i_N) \f$ of the bin with the smallest indices in
  * the subvolume.
