@@ -12,6 +12,7 @@
 #include <simplemc/mpi/environment.hpp>
 #include <simplemc/mpi/group.hpp>
 #include <simplemc/mpi/mpi_type.hpp>
+#include <simplemc/mpi/print.hpp>
 #include <simplemc/mpi/utils.hpp>
 
 #endif // SIMPLEMC_MPI_HPP

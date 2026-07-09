@@ -16,6 +16,7 @@
 # mpi-gatherv-test: Executable to test the supported MPI gatherv operations.
 # mpi-group-test: Executable to test the MPI group wrapper.
 # mpi-no-abort-exception-test: Executable to test the behavior of abort_on_exception == false.
+# mpi-print-test: Executable to test the root-gated print functions.
 # mpi-reduce-test: Executable to test the supported MPI reduce operations.
 # mpi-scatter-test: Executable to test the supported MPI scatter operations.
 # mpi-scatterv-test: Executable to test the supported MPI scatterv operations.
@@ -66,6 +67,9 @@ target_link_libraries(mpi-group-test PRIVATE simplemc-test)
 add_executable(mpi-no-abort-exception-test mpi_no_abort_exception_test.cpp)
 target_link_libraries(mpi-no-abort-exception-test PRIVATE simplemc-test)
 
+add_executable(mpi-print-test mpi_print_test.cpp)
+target_link_libraries(mpi-print-test PRIVATE simplemc-test)
+
 add_executable(mpi-reduce-test mpi_reduce_test.cpp)
 target_link_libraries(mpi-reduce-test PRIVATE simplemc-test)
 
@@ -97,6 +101,7 @@ add_test(NAME mpi-env-test COMMAND mpirun -n 4 ./mpi-env-test)
 add_test(NAME mpi-gather-test COMMAND mpirun -n 4 ./mpi-gather-test)
 add_test(NAME mpi-gatherv-test COMMAND mpirun -n 4 ./mpi-gatherv-test)
 add_test(NAME mpi-group-test COMMAND mpirun -n 4 ./mpi-group-test)
+add_test(NAME mpi-print-test COMMAND mpirun -n 4 ./mpi-print-test)
 add_test(NAME mpi-reduce-test COMMAND mpirun -n 4 ./mpi-reduce-test)
 add_test(NAME mpi-scatter-test COMMAND mpirun -n 4 ./mpi-scatter-test)
 add_test(NAME mpi-scatterv-test COMMAND mpirun -n 4 ./mpi-scatterv-test)
