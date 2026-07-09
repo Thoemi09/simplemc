@@ -14,6 +14,8 @@
 #include <simplemc/mpi/communicator.hpp>
 #include <simplemc/serialize/concepts.hpp>
 
+#include <cstdio>
+
 namespace simplemc {
 
 /**
@@ -137,6 +139,26 @@ void simplemc_load_input_config(
     if (!meas.empty() && s.has("measurements")) {
         const auto m = s["measurements"];
         simplemc_load_input_config(m, meas);
+    }
+}
+
+/**
+ * @brief Print an object on a single MPI rank.
+ *
+ * @details Root-gated variant of the `FILE*`-based `print` overloads: it forwards to `print(v, fp)`
+ * only on rank `root` of the given communicator and is a no-op on all other ranks.
+ *
+ * @tparam T Type to print.
+ * @param comm simplemc::mpi::communicator object.
+ * @param t Object to print.
+ * @param fp Destination file pointer.
+ * @param root Rank that prints.
+ */
+template <typename T>
+    requires requires(const T& t, std::FILE* fp) { print(t, fp); }
+void print(const mpi::communicator& comm, const T& t, std::FILE* fp = stdout, int root = 0) {
+    if (comm.rank() == root) {
+        print(t, fp);
     }
 }
 

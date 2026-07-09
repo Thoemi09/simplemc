@@ -8,6 +8,8 @@
 #include <gtest/gtest.h>
 
 #include <cstdint>
+#include <cstdio>
+#include <string>
 
 using namespace simplemc;
 
@@ -23,6 +25,16 @@ struct mean_meas {
         return mean_meas { simplemc_mpi_collect(comm, m.acc) };
     }
 };
+
+// Read back everything written to a temporary file.
+std::string read_all(std::FILE* fp) {
+    std::rewind(fp); // NOLINT
+    std::string content;
+    for (int c = std::fgetc(fp); c != EOF; c = std::fgetc(fp)) {
+        content.push_back(static_cast<char>(c));
+    }
+    return content;
+}
 
 // Pretend to perform the dummy update so its run counters read (nprops, naccs, nimps).
 void drive_counters(update<dummy_update>& u, std::uint64_t nprops, std::uint64_t naccs, std::uint64_t nimps) {
@@ -159,6 +171,33 @@ TEST_F(SimplemcMCMPI, CompositeReducesAllComponents) {
     }
     EXPECT_EQ(reduced->acc.count(), ref.count());
     EXPECT_NEAR(reduced->acc.mean(), ref.mean(), 1e-12);
+}
+
+// Test that the communicator print overloads emit on the root rank only.
+TEST_F(SimplemcMCMPI, CommPrintOverloadsEmitOnRootOnly) {
+    simulation_stats st;
+    st.cumulative_steps = 10;
+    st.cumulative_time = 1.0;
+    const simulation_params params;
+    update_set us { update { dummy_update {}, "u", 1.0 } };
+
+    // default root (rank 0): every overload prints on the root rank and is silent elsewhere
+    std::FILE* fp = std::tmpfile();
+    ASSERT_NE(fp, nullptr);
+    print(comm, st, fp);
+    print(comm, params, fp);
+    print(comm, us.stats(), fp);
+    print(comm, us.stats().front(), fp);
+    EXPECT_EQ(read_all(fp).empty(), rank != 0);
+    std::fclose(fp);
+
+    // a non-zero root argument moves the emitting rank
+    const int root = size - 1;
+    std::FILE* fp2 = std::tmpfile();
+    ASSERT_NE(fp2, nullptr);
+    print(comm, st, fp2, root);
+    EXPECT_EQ(read_all(fp2).empty(), rank != root);
+    std::fclose(fp2);
 }
 
 // Custom main function for MPI.
