@@ -28,7 +28,7 @@ namespace simplemc::mpi {
  * @param buf Pointer to the buffer to broadcast from (on root) or into (on other ranks).
  * @param count Number of elements to broadcast.
  * @param datatype MPI datatype of the elements.
- * @param root Rank of the broadcasting process.
+ * @param root Root process rank.
  * @param comm MPI communicator.
  */
 inline void broadcast(void* buf, int count, MPI_Datatype datatype, int root, MPI_Comm comm) {
@@ -44,7 +44,7 @@ inline void broadcast(void* buf, int count, MPI_Datatype datatype, int root, MPI
  * @tparam T simplemc::mpi::mpi_compatible type.
  * @param buf Pointer to the buffer to broadcast from (on root) or into (on other ranks).
  * @param count Number of elements to broadcast.
- * @param root Rank of the broadcasting process.
+ * @param root Root process rank.
  * @param comm MPI communicator.
  */
 template <mpi_compatible T>
@@ -59,7 +59,7 @@ void broadcast(T* buf, int count, int root, MPI_Comm comm) {
  *
  * @tparam T simplemc::mpi::mpi_compatible type.
  * @param value Reference to the value to broadcast from (on root) or into (on other ranks).
- * @param root Rank of the broadcasting process.
+ * @param root Root process rank.
  * @param comm MPI communicator.
  */
 template <mpi_compatible T>
@@ -77,11 +77,11 @@ void broadcast(T& value, int root, MPI_Comm comm) {
  *
  * @tparam R simplemc::mpi::mpi_range type.
  * @param rg Range to broadcast from (on root) or into (on other ranks).
- * @param root Rank of the broadcasting process.
+ * @param root Root process rank.
  * @param comm MPI communicator.
  */
 template <mpi_range R>
-void broadcast(R&& rg, int root, MPI_Comm comm) { // NOLINT (forwarding ref used as in/out param)
+void broadcast(R&& rg, int root, MPI_Comm comm) { // NOLINT (forwarding ref as in/out)
     broadcast(ranges::data(rg), ranges::size(rg), root, comm);
 }
 

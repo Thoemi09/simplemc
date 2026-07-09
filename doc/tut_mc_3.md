@@ -297,7 +297,7 @@ In roughly the wall-clock time of the serial run from @ref tut_mc_2, we now coll
 Note that the collected runtime is the *sum* of the per-rank runtimes (about four times the wall-clock 
 time), so the reported rate is the average per-rank rate. 
 
-The working directory now contains  `checkpoint_tut_mc_3_rank_0.json` ... 
+The working directory now contains `checkpoint_tut_mc_3_rank_0.json` ... 
 `checkpoint_tut_mc_3_rank_3.json`.
 
 Finally, we set `"load_checkpoint": true` in the input-config file and run a third time:

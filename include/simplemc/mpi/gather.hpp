@@ -90,8 +90,8 @@ void gather_in_place(T* buf, int count, int root, MPI_Comm comm) {
 /**
  * @brief Gather a single value on the root process.
  *
- * @details It gathers exactly one element per process by calling simplemc::mpi::gather(const T*, T*,
- * int, int, MPI_Comm) with a count of 1.
+ * @details It gathers exactly one element from each process by calling
+ * simplemc::mpi::gather(const T*, T*, int, int, MPI_Comm) with a count of 1.
  *
  * @tparam R simplemc::mpi::mpi_range type.
  * @param in_value Input value to gather.

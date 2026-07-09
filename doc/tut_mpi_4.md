@@ -66,7 +66,7 @@ Rank 0: foo.n = 42, foo.x = 3.14
 Now suppose that we want to broadcast the `foo` object from the root process to all other processes.
 
 In principle, we could simply make two MPI calls, one for the integer `n` and one for the double `x`.
-This can become tedious and quite ineffective if we have a large range of `foo` objects or if we have
+This can become tedious and quite ineffective if we have a large number of `foo` objects or if we have
 to use other MPI collective operations.
 
 Instead, we will show how to create and use a new MPI datatype with the **simplemc-mpi** library.
@@ -143,7 +143,7 @@ collective operations) only work for simplemc::mpi::mpi_compatible and simplemc:
 > struct simplemc::mpi::mpi_type<foo> {
 >     static MPI_Datatype get() {
 >         static MPI_Datatype foo_type = make_foo_type();
->         return foo_type;;
+>         return foo_type;
 >     }
 > };
 > ```

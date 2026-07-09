@@ -41,7 +41,7 @@ namespace simplemc::mpi {
  * @param argc Number of arguments passed to `main()`.
  * @param argv Arguments passed to `main()`.
  */
-void init(int& argc, char**& argv);;
+void init(int& argc, char**& argv);
 
 /**
  * @brief Initialize the MPI environment by calling `MPI_Init`.

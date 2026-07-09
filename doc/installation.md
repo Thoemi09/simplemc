@@ -16,7 +16,7 @@ The minimum dependencies of **simplemc** are as follows:
 
 * a recent g++ OR clang++ compiler (tested with gcc v14.2.0 and clang v19.1.2)
 * a recent CMake version (tested with v3.30.5)
-* a working MPI implementation (tested with openmpi v5.0.1)
+* a working MPI implementation (tested with open-mpi v5.0.1)
 
 Furthermore, **simplemc** depends on some external libraries. They can either be fetched directly by
 **simplemc** or provided by the user:

@@ -76,9 +76,9 @@ Rank 1: Sum of ranks: 6
 
 Here, we called simplemc::mpi::all_reduce with the `MPI_SUM` operation.
 There are many other operations that can be used for reductions.
-For example, to find a maximum value among all process, one can pass `MPI_MAX` to the MPI call.
+For example, to find a maximum value among all processes, one can pass `MPI_MAX` to the MPI call.
 
-Let's use it to find the maximum rank of all process:
+Let's use it to find the maximum rank of all processes:
 
 ```cpp
 // get the max. rank using all_reduce_in_place
@@ -97,7 +97,7 @@ Rank 1: Max. rank: 3
 ```
 
 Since we are running on 4 processes and ranks start at 0, this is exactly what we expect.
-In contrast to the last MPI call, we have used the in place routine
+In contrast to the last MPI call, we have used the in-place routine
 simplemc::mpi::all_reduce_in_place.
 This writes the result of the reduction directly into the provided variable (`max_rank` in our case).
 
@@ -151,8 +151,8 @@ Now all processes have the same content in the vector.
 > **Note**: In practice, one would simply use simplemc::mpi::all_gather instead of
 > simplemc::mpi::gather + simplemc::mpi::broadcast.
 
-Above it was already shown, how to reduce single values across all processes.
-Now, we want to do the same with multiple values by reducing the just broadcasted vector using the
+Above, it was already shown how to reduce single values across all processes.
+Now, we want to do the same with multiple values by reducing the just-broadcasted vector using the
 `MPI_PROD` operation:
 
 ```cpp

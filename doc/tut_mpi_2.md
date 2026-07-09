@@ -84,7 +84,7 @@ However, running the program still results in an abort.
 
 **simplemc-mpi** automatically checks the return codes of MPI functions and throws an exception if an
 error code is returned (see simplemc::mpi::check_mpi_call).
-The reason why we choose to do so is that some functions in **simplemc-mpi** return values of their
+The reason why we chose to do so is that some functions in **simplemc-mpi** return values of their
 own (e.g. simplemc::mpi::comm_rank) or make multiple MPI calls internally.
 In such cases, it is not clear how and which error code(s) to return.
 Since exceptions are the standard way of handling errors in C++, we decided to simply throw whenever
@@ -140,7 +140,7 @@ exactly when Open MPI kills them.
 --------------------------------------------------------------------------
 ```
 
-This result again in an `MPI_Abort`.
+This again results in an `MPI_Abort`.
 The reason is that by default, the destructor of simplemc::mpi::environment checks if there are any
 uncaught exceptions using `std::uncaught_exceptions()` and calls `MPI_Abort` if this is the case.
 
@@ -164,16 +164,16 @@ Caught exception: simplemc exception in MPI_Bcast: MPI error code: 8
 
 In this case, the program finishes without any error messages from MPI.
 The environment object still gets destroyed due to stack unwinding and it still sees an uncaught
-exception in its destructor but since we constructed the environment with
+exception in its destructor, but since we constructed the environment with
 `abort_on_exception = false`, it simply calls `MPI_Finalize`.
 After the MPI environment has been destroyed, the catch block is executed as expected.
 
 @section tut_mpi_2_conclusion Conclusion
 
 We have demonstrated different ways of handling errors in MPI programs using **simplemc-mpi**.
-However, there is no one-fits-all solution and the right choice depends on the specific use case.
+However, there is no one-size-fits-all solution and the right choice depends on the specific use case.
 
-In general, we would recommend to stick to the default behaviour of aborting the program on errors
+In general, we would recommend sticking to the default behaviour of aborting the program on errors
 unless one has a good reason not to do so.
 Handling errors in an MPI program is difficult and can become its own source of bugs and issues if not
 done carefully.

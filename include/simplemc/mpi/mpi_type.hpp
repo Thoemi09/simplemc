@@ -116,7 +116,7 @@ concept mpi_compatible = requires {
 /**
  * @brief A concept that checks if a range type can be used in higher-level @ref simplemc-mpi-coll.
  *
- * @details The range has to be contiguous and sized and the value type has to be
+ * @details The range must be contiguous and sized, and its value type must be
  * simplemc::mpi::mpi_compatible.
  *
  * @tparam R Range type.

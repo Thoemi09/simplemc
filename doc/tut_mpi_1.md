@@ -37,7 +37,7 @@ In order to wrap a different MPI communicator, the user can simply pass the `MPI
 constructor of simplemc::mpi::communicator.
 We will show in a later tutorial how this works in practice.
 
-Now, let us check with how many process we started the program:
+Now, let us check with how many processes we started the program:
 
 ```cpp
 // print the number of processes on process 0

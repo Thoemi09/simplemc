@@ -88,7 +88,7 @@ void check_range_reduce(const R& in, const R& exp, MPI_Op op) {
     }
 }
 
-// Test reduce_in_place a range of type R with a given operation.
+// Test reduce_in_place for a range of type R with a given operation.
 template <typename R>
 void check_range_reduce_in_place(const R& in, const R& exp, MPI_Op op) {
     using namespace simplemc::mpi;
@@ -192,9 +192,9 @@ TEST(SimplemcMPI, ReduceSumSingleValues) {
     perform_single_value_test<long double>();
 
     // complex types
-    perform_single_value_test<float>();
-    perform_single_value_test<double>();
-    perform_single_value_test<long double>();
+    perform_single_value_test<std::complex<float>>();
+    perform_single_value_test<std::complex<double>>();
+    perform_single_value_test<std::complex<long double>>();
 }
 
 TEST(SimplemcMPI, ReduceSumInPlaceSingleValues) {
@@ -216,9 +216,9 @@ TEST(SimplemcMPI, ReduceSumInPlaceSingleValues) {
     perform_single_value_test<long double>(true);
 
     // complex types
-    perform_single_value_test<float>(true);
-    perform_single_value_test<double>(true);
-    perform_single_value_test<long double>(true);
+    perform_single_value_test<std::complex<float>>(true);
+    perform_single_value_test<std::complex<double>>(true);
+    perform_single_value_test<std::complex<long double>>(true);
 }
 
 TEST(SimplemcMPI, ReduceMinMaxSingleValues) {

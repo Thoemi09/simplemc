@@ -29,7 +29,7 @@ namespace simplemc::mpi {
  * @details It performs the following steps:
  *
  * - Broadcast the value from rank 0 to all other processes.
- * - Each process equality compares its local value to the broadcasted value.
+ * - Each process compares its local value to the broadcasted value for equality.
  * - All-reduce the comparison results using `MPI_LAND`.
  *
  * @note This function involves two collective operations, so all processes must call it.
@@ -48,7 +48,7 @@ template <mpi_compatible T>
     // compare local value with broadcasted value
     const int local_equal = (value == root_value);
 
-    // broadcast the comparison result
+    // all-reduce the comparison result
     int all_equal {};
     check_mpi_call(MPI_Allreduce(&local_equal, &all_equal, 1, mpi_type<int>::get(), MPI_LAND, comm), "MPI_Allreduce");
     return all_equal;
@@ -59,9 +59,9 @@ template <mpi_compatible T>
  *
  * @details It performs the following steps:
  *
- * - Check that the ranges sizes are simplemc::mpi::all_equal.
+ * - Check that the range sizes are simplemc::mpi::all_equal.
  * - Broadcast the range from rank 0 to all other processes.
- * - Each process equality compares its local range element-wise to the broadcasted range.
+ * - Each process compares its local range to the broadcasted range element-wise for equality.
  * - All-reduce the comparison results using `MPI_LAND`.
  *
  * @note This function involves three collective operations, so all processes must call it.
@@ -88,7 +88,7 @@ template <mpi_range R>
     // compare local range with broadcasted values
     const int local_equal = std::ranges::equal(rg, root_rg) ? 1 : 0;
 
-    // broadcast the comparison result
+    // all-reduce the comparison result
     int all_equal {};
     check_mpi_call(MPI_Allreduce(&local_equal, &all_equal, 1, mpi_type<int>::get(), MPI_LAND, comm), "MPI_Allreduce");
     return all_equal;

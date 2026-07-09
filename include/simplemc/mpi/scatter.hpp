@@ -91,7 +91,7 @@ void scatter_in_place(T* buf, int count, int root, MPI_Comm comm) {
  * T*, T*, int, int, MPI_Comm) with a count of 1.
  *
  * @tparam R simplemc::mpi::mpi_range type.
- * @param in_rg Input range to scatter (only on root).
+ * @param in_rg Input range to scatter (only valid on root).
  * @param out_value Output value to scatter into.
  * @param root Root process rank.
  * @param comm MPI communicator.
@@ -112,7 +112,7 @@ void scatter(R&& in_rg, ranges::range_value_t<R>& out_value, int root, MPI_Comm 
  *
  * @tparam R1 simplemc::mpi::mpi_range type.
  * @tparam R2 simplemc::mpi::mpi_range type.
- * @param in_rg Input range to be scattered (only on root).
+ * @param in_rg Input range to be scattered (only valid on root).
  * @param out_rg Output range (result of scatter).
  * @param root Root process rank.
  * @param comm MPI communicator.
@@ -129,8 +129,9 @@ void scatter(R1&& in_rg, R2&& out_rg, int root, MPI_Comm comm) { // NOLINT (rang
  * simplemc::mpi::scatter_in_place(T*, int, int, MPI_Comm).
  *
  * The range on the root process is divided evenly among all processes in the communicator. The root
- * process uses the range size divided by the communicator size as the count of elements to send per
- * process, while all other processes use the full range size as the count of elements to receive.
+ * process uses the range size divided by the number of processes in the communicator as the count of
+ * elements to send per process, while all other processes use the full range size as the count of
+ * elements to receive.
  *
  * @tparam R simplemc::mpi::mpi_range type.
  * @param rg Range to scatter (output on all processes, input on root).

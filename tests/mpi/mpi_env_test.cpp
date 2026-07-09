@@ -49,7 +49,7 @@ TEST(SimplemcMPI, MultipleEnvironments) {
     // MPI is already initialized by the main function's environment
     ASSERT_TRUE(simplemc::mpi::initialized());
 
-    // creating another environment should not reinitialize MPI but finalize it
+    // creating another environment should not reinitialize MPI, but its destructor will finalize it
     {
         int argc = 0;
         char** argv = nullptr;

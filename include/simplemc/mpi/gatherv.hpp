@@ -151,7 +151,7 @@ void gatherv(R1&& in_rg, R2&& out_rg, int root, MPI_Comm comm) { // NOLINT (rang
  * Each process has to specify explicitly how many elements it contributes.
  *
  * @tparam R simplemc::mpi::mpi_range type.
- * @param rg Input/Output range to gather (into).
+ * @param rg Range to gather (input on all processes, output on root).
  * @param local_count Number of elements this process contributes.
  * @param root Root process rank.
  * @param comm MPI communicator.

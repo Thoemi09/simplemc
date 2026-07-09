@@ -27,8 +27,8 @@ namespace simplemc::mpi {
 /**
  * @brief Free an `MPI_Group` object.
  *
- * @details It makes a call to `MPI_Group_free` to free the group in case it is not
- * `MPI_GROUP_NULL` or `MPI_GROUP_EMPTY`. Otherwise, it does nothing.
+ * @details It makes a call to `MPI_Group_free` to free the group, unless it is `MPI_GROUP_NULL` or
+ * `MPI_GROUP_EMPTY`, in which case it does nothing.
  *
  * @param grp Reference to the group to free.
  */
@@ -144,8 +144,8 @@ void group_free(MPI_Group& grp);
  * @brief Compare two MPI groups by calling `MPI_Group_compare`.
  *
  * @details The return value is one of:
- * - `MPI_IDENT`: Groups are identical (same members in same order).
- * - `MPI_SIMILAR`: Groups have same members but in different order.
+ * - `MPI_IDENT`: Groups are identical (same members in the same order).
+ * - `MPI_SIMILAR`: Groups have the same members but in different order.
  * - `MPI_UNEQUAL`: Groups have different members.
  *
  * @param grp1 First group.
@@ -162,7 +162,7 @@ void group_free(MPI_Group& grp);
  *
  * The wrapped `MPI_Group` is managed using a `std::shared_ptr` with a custom deleter providing
  * automatic resource management similar to <a href="https://www.boost.org/doc/libs/latest/doc/html/
- * mpi.html">Boost.MPI</a>. The behaviour of the deleter depends on the simplemc::mpi::resource_policy
+ * mpi.html">Boost.MPI</a>. The behavior of the deleter depends on the simplemc::mpi::resource_policy
  * specified during construction:
  * - `take_ownership`: The wrapper is responsible for managing the lifetime of the MPI group, i.e. it
  * calls `MPI_Group_free` when the last reference is destroyed (unless it is `MPI_GROUP_NULL` or
@@ -170,7 +170,7 @@ void group_free(MPI_Group& grp);
  * - `attach`: The lifetime of the MPI group is managed somewhere else and the wrapper just uses it.
  *
  * Implicit conversions to `MPI_Group` are allowed for interoperability with MPI C functions.
- * 
+ *
  * See @ref tut_mpi_5 for examples.
  */
 class group {

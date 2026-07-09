@@ -57,8 +57,8 @@ struct type_extent {
 /**
  * @brief Free an `MPI_Datatype` object.
  *
- * @details It makes a call to `MPI_Type_free` to free the datatype in case it is not
- * `MPI_DATATYPE_NULL` or simplemc::mpi::type_is_predefined. Otherwise, it does nothing.
+ * @details It makes a call to `MPI_Type_free` to free the datatype, unless it is `MPI_DATATYPE_NULL`
+ * or a predefined type (see simplemc::mpi::type_is_predefined), in which case it does nothing.
  *
  * @param dt Reference to the datatype to free.
  */
@@ -70,7 +70,7 @@ void type_free(MPI_Datatype& dt);
  * @details It commits the datatype, which is required before using a derived datatype in
  * communication operations.
  *
- * Committing an already committed datatype is a no-op in MPI and MPI_TYPE_NULL is ignored.
+ * Committing an already committed datatype is a no-op in MPI and `MPI_DATATYPE_NULL` is ignored.
  *
  * @param dt Datatype to commit.
  */
@@ -87,7 +87,7 @@ void type_commit(MPI_Datatype& dt);
 /**
  * @brief Get the lower bound and extent of an MPI datatype by calling `MPI_Type_get_extent`.
  *
- * @details The lower bound is the smallest displacement used in the datatype’s definition (may be
+ * @details The lower bound is the smallest displacement used in the datatype's definition (may be
  * negative or user-defined).
  *
  * The extent is the span from the first (lower bound) to the last byte occupied by entries in the
@@ -179,7 +179,7 @@ void type_commit(MPI_Datatype& dt);
  *
  * The datatype is managed using a `std::shared_ptr` with a custom deleter providing automatic
  * resource management similar to <a href="https://www.boost.org/doc/libs/latest/doc/html/mpi.html">
- * Boost.MPI</a>. The behaviour of the deleter depends on the simplemc::mpi::resource_policy
+ * Boost.MPI</a>. The behavior of the deleter depends on the simplemc::mpi::resource_policy
  * specified during construction:
  * - `take_ownership`: The wrapper is responsible for managing the lifetime of the MPI datatype, i.e.
  * it calls `MPI_Type_free` when the last reference is destroyed (unless it is a predefined type like

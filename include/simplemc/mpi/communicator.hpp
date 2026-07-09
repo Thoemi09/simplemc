@@ -25,8 +25,8 @@ namespace simplemc::mpi {
 /**
  * @brief Free an `MPI_Comm` object.
  *
- * @details It makes a call to `MPI_Comm_free` to free the communicator in case it is not
- * `MPI_COMM_NULL`, `MPI_COMM_WORLD`, or `MPI_COMM_SELF`. Otherwise, it does nothing.
+ * @details It makes a call to `MPI_Comm_free` to free the communicator, unless it is `MPI_COMM_NULL`,
+ * `MPI_COMM_WORLD`, or `MPI_COMM_SELF`, in which case it does nothing.
  *
  * @param comm Reference to the communicator to free.
  */
@@ -144,16 +144,16 @@ void comm_set_errhandler(MPI_Comm comm, MPI_Errhandler errhandler);
  *
  * The wrapped `MPI_Comm` is managed using a `std::shared_ptr` with a custom deleter providing
  * automatic resource management similar to <a href="https://www.boost.org/doc/libs/latest/doc/html/
- * mpi.html">Boost.MPI</a>. The behaviour of the deleter depends on the simplemc::mpi::resource_policy
+ * mpi.html">Boost.MPI</a>. The behavior of the deleter depends on the simplemc::mpi::resource_policy
  * specified during construction:
  * - `take_ownership`: The wrapper is responsible for managing the lifetime of the MPI communicator,
  * i.e. it calls `MPI_Comm_free` when the last reference is destroyed (unless it is `MPI_COMM_NULL`,
- * `MPI_COMM_WORLD` or `MPI_COMM_SELF`).
+ * `MPI_COMM_WORLD`, or `MPI_COMM_SELF`).
  * - `attach`: The lifetime of the MPI communicator is managed somewhere else and the wrapper just
  * uses it.
  *
  * Implicit conversions to `MPI_Comm` are allowed for interoperability with MPI C functions.
- * 
+ *
  * See @ref tut_mpi_5 for examples.
  */
 class communicator {

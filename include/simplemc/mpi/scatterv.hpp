@@ -148,7 +148,7 @@ void scatterv(R1&& in_rg, R2&& out_rg, int root, MPI_Comm comm) { // NOLINT (ran
  * Each process has to specify explicitly how many elements it receives.
  *
  * @tparam R simplemc::mpi::mpi_range type.
- * @param rg Input/Output range to scatter (into).
+ * @param rg Range to scatter (output on all processes, input on root).
  * @param local_count Number of elements this process receives.
  * @param root Root process rank.
  * @param comm MPI communicator.
