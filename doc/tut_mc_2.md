@@ -10,7 +10,7 @@ file I/O:
   recompiling,
 - **checkpoint files** written during and after the simulation, and
 - an optional **continuation**: a `load_checkpoint` flag in the input-config file restores the
-  previous run and keeps going.
+  previous run so the simulation keeps going.
 
 The simulation itself (uniform-resampling update, integral measurement, simplemc::metropolis_kernel,
 free simplemc::run) is unchanged, so this page only walks through the differences to @ref tut_mc_1.

@@ -29,10 +29,10 @@ namespace simplemc {
  *
  * @details The set inherits from simplemc::tuple_set to store simplemc::measurement entries in a
  * `std::tuple`, so the measurement *types* are fixed at construction. It also holds a cache of
- * indices for those currently flagged active which is rebuilt from the measurement::is_active()
- * flags by refresh_active().
+ * indices of the measurements currently flagged active, which is rebuilt from the
+ * measurement::is_active() flags by refresh_active().
  *
- * Simulation drivers call measure_all() which invokes `measure()` on every active entry to perform
+ * Simulation drivers call measure_all(), which invokes `measure()` on every active entry to perform
  * measurements.
  *
  * Measurements are registered at construction-time, e.g.
@@ -64,7 +64,7 @@ public:
      *
      * @details It throws a simplemc::simplemc_exception if the name is not registered.
      *
-     * @param name Name of the measurement to toggle.
+     * @param name Name of the measurement whose active state to set.
      * @param is_active New active state.
      */
     void set_active(std::string_view name, bool is_active) {
@@ -110,7 +110,8 @@ public:
     /**
      * @brief Serialize a simplemc::measurement_set.
      *
-     * @details It dispatches to tuple_set::save_entries which serializes all measurements in the set.
+     * @details It dispatches to tuple_set::save_entries, which serializes all measurements in the
+     * set.
      *
      * @tparam S Serializer type.
      * @param s Serializer handle.
@@ -124,7 +125,7 @@ public:
     /**
      * @brief Deserialize a simplemc::measurement_set.
      *
-     * @details It dispatches to tuple_set::load_entries which deserializes all measurements in the
+     * @details It dispatches to tuple_set::load_entries, which deserializes all measurements in the
      * set.
      *
      * @tparam S Serializer type.
@@ -139,7 +140,7 @@ public:
     /**
      * @brief Serialize the user-input config of a simplemc::measurement_set.
      *
-     * @details It dispatches to tuple_set::save_input_config_entries which serializes the
+     * @details It dispatches to tuple_set::save_input_config_entries, which serializes the
      * input-config of all measurements in the set.
      *
      * @tparam S Serializer type.
@@ -154,7 +155,7 @@ public:
     /**
      * @brief Deserialize the user-input config of a simplemc::measurement_set.
      *
-     * @details It dispatches to tuple_set::load_input_config_entries which deserializes the
+     * @details It dispatches to tuple_set::load_input_config_entries, which deserializes the
      * input-config of all measurements in the set.
      *
      * @tparam S Serializer type.

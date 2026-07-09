@@ -44,7 +44,7 @@ concept mc_measurement = requires(M& m) { m.measure(); };
  * following:
  *
  * - `u.attempt()` proposes a change to the simulation state and returns the acceptance probability
- * as a type convertible to `double`.
+ * of the proposed change as a value convertible to `double`.
  * - `u.accept()` commits the proposed change to the simulation state.
  *
  * @tparam U Type to check.
@@ -59,14 +59,14 @@ concept mc_update = requires(U& u) {
  * @ingroup simplemc-mc-kernels
  * @brief Contract a type must satisfy to drive a Monte Carlo simulation as a kernel.
  *
- * @details A kernel is the algorithm that advances the simulation by one MC step. The free
- * simplemc::run loop accepts any type that exposes a callable `step(rng)` member, where `rng` is some
+ * @details A kernel is the algorithm that advances the simulation by one MC step. The `simplemc::run`
+ * free function accepts any type that exposes a callable `step(rng)` member, where `rng` is some
  * random number generator.
  *
  * The default simplemc::metropolis_kernel implements a standard Metropolis-Hastings step over a
  * simplemc::update_set.
  *
- * Users can implement their own custom kernels (parallel tempering, heat-bath, Wolff cluster, ...) by
+ * Users can implement custom kernels (parallel tempering, heat-bath, Wolff cluster, ...) by
  * satisfying this concept.
  *
  * Kernels may optionally expose a `prepare()` member. If present, simplemc::run calls it once at the
@@ -85,7 +85,7 @@ concept mc_kernel = requires(K& k, RNG& rng) { k.step(rng); };
  * @details The run loop supports four callback hooks, each taking the current simulation context
  * `ctx` as an argument (see also simplemc::simulation_ctx).
  *
- * Let `c` be an instance of type `C`. The requirements for a type `C` to be a callback bundle are
+ * Let `c` be an instance of type `C`. The requirements for a type `C` to be a callback bundle are:
  *
  * - `c.on_step(ctx)` is a valid expression (called after every kernel step),
  * - `c.on_cycle(ctx)` is a valid expression (called after each cycle's measurement sweep),
@@ -114,7 +114,7 @@ concept mc_run_callbacks = requires(C& c, const simulation_ctx& x) {
  * @brief Check if type `T` is serializable by a serializer of type `S` via a call to
  * `simplemc_save_input_config`.
  *
- * @details Parallels simplemc::has_simplemc_save but its intended use is for user-input.
+ * @details Parallels simplemc::has_simplemc_save but its intended use is for user input.
  *
  * @tparam T Type being serialized.
  * @tparam S Serializer type.
@@ -127,7 +127,7 @@ concept has_simplemc_save_input_config = requires(const T& t, S& s) { simplemc_s
  * @brief Check if type `T` is deserializable by a serializer of type `S` via a call to
  * `simplemc_load_input_config`.
  *
- * @details Parallels simplemc::has_simplemc_load but its intended use is for user-input.
+ * @details Parallels simplemc::has_simplemc_load but its intended use is for user input.
  *
  * @tparam T Type being deserialized into.
  * @tparam S Serializer type.
@@ -137,7 +137,7 @@ concept has_simplemc_load_input_config = requires(T& t, const S& s) { simplemc_l
 
 /**
  * @ingroup simplemc-mc-utils
- * @brief Check if type `T` can be in place collected across MPI ranks via a call to
+ * @brief Check if type `T` can be collected in place across MPI ranks via a call to
  * `simplemc_mpi_collect`.
  *
  * @details `%simplemc_mpi_collect` is the type-specific ADL customization point for collecting a

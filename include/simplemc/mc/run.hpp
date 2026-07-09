@@ -46,8 +46,8 @@ namespace simplemc {
  * - The middle loop performs simulation_params::cycles_per_check MC cycles. A single cycle executes
  * the inner loop, calls measurement_set::measure_all() on the given set of measurements and invokes
  * the `on_cycle(ctx)` callback (no-op by default).
- * - The outermost loop refreshes simulation_ctx::runtime and executes the two inner loops and the
- * `on_checkpoint(ctx)` callback (no-op by default). However, in contrast to previous callbacks, this
+ * - The outermost loop executes the two inner loops, refreshes simulation_ctx::runtime, and invokes
+ * the `on_checkpoint(ctx)` callback (no-op by default). However, in contrast to previous callbacks, this
  * one is only called periodically, either when simulation_params::checkpoint_after_steps MC steps or
  * simulation_params::checkpoint_after_time seconds have passed since the last call. The (outer) loop
  * stops as soon as
@@ -57,10 +57,10 @@ namespace simplemc {
  *
  * On exit, the returned simplemc::simulation_ctx holds the final simulation_ctx::steps_done and
  * simulation_ctx::runtime of the completed run. Per-update counters are written by the kernel and the
- * update wrapper.
+ * simplemc::update wrapper.
  *
- * @note Successful simulations always perform a number of MC steps which is a multiple of
- * simulation_params::cycles_per_check times simulation_params::steps_per_cycle.
+ * @note Successful simulations always perform a number of MC steps that is a multiple of
+ * (simulation_params::cycles_per_check × simulation_params::steps_per_cycle).
  *
  * @tparam RNG Random number generator type.
  * @tparam Kernel simplemc::mc_kernel type.

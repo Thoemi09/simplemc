@@ -6,9 +6,9 @@ In this tutorial, we parallelize the MC integration from @ref tut_mc_2 with @ref
 MPI rank runs its own independent Markov chain, and the results of all ranks are combined into a 
 single estimate at the end.
 
-The simulation itself is untouched — the update, the measurement, the kernel, and the whole
-input-config/checkpoint workflow are the ones from @ref tut_mc_2 — so this page only walks through
-the differences.
+The simulation itself is mostly untouched — the update, the kernel, and the whole
+input-config/checkpoint workflow are unchanged from @ref tut_mc_2. The measurement gains one new
+MPI hook, described below — so this page only walks through the differences.
 
 @section tut_mc_3_strategy The parallelization strategy
 

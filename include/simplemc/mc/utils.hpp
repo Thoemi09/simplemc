@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Utilities for **simplemc-mc** library.
+ * @brief Utilities for the **simplemc-mc** library.
  */
 
 #ifndef SIMPLEMC_MC_UTILS_HPP
@@ -145,7 +145,7 @@ void simplemc_load_input_config(
 /**
  * @brief Print an object on a single MPI rank.
  *
- * @details Root-gated variant of the `FILE*`-based `print` overloads: it forwards to `print(v, fp)`
+ * @details Root-gated variant of the `FILE*`-based `print` overloads: it forwards to `print(t, fp)`
  * only on rank `root` of the given communicator and is a no-op on all other ranks.
  *
  * @tparam T Type to print.
@@ -175,7 +175,7 @@ void print(const mpi::communicator& comm, const T& t, std::FILE* fp = stdout, in
  *
  * @tparam Us User update types.
  * @tparam Ms User measurement types.
- * @param comm MPI communicator over which to reduce.
+ * @param comm simplemc::mpi::communicator object to reduce over.
  * @param updates Update set to reduce in place.
  * @param meas Measurement set to reduce in place.
  * @param stats Simulation statistics to reduce in place.

@@ -118,7 +118,7 @@ private:
  * @relates simplemc::measurement
  * @brief Serialize a simplemc::measurement.
  *
- * @details It serializes the current activation states and the wrapped user measurement (if it is
+ * @details It serializes the current activation state and the wrapped user measurement (if it is
  * serializable by `S`).
  *
  * @tparam S Serializer type.
@@ -138,7 +138,7 @@ void simplemc_save(S s, const measurement<M>& m) {
  * @relates simplemc::measurement
  * @brief Deserialize a simplemc::measurement.
  *
- * @details It deserializes the current activation states and the wrapped user measurement (if it is
+ * @details It deserializes the current activation state and the wrapped user measurement (if it is
  * deserializable by `S`).
  *
  * @tparam S Serializer type.
@@ -160,7 +160,7 @@ void simplemc_load(const S& s, measurement<M>& m) {
  * @relates simplemc::measurement
  * @brief Serialize the user-input config of a simplemc::measurement.
  *
- * @details It serializes the current activation states and the wrapped user measurement (if it has
+ * @details It serializes the current activation state and the wrapped user measurement (if it has
  * an input-config serialization).
  *
  * @tparam S Serializer type.
@@ -180,7 +180,7 @@ void simplemc_save_input_config(S s, const measurement<M>& m) {
  * @relates simplemc::measurement
  * @brief Deserialize the user-input config of a simplemc::measurement.
  *
- * @details It deserializes the current activation states and the wrapped user measurement (if it has
+ * @details It deserializes the current activation state and the wrapped user measurement (if it has
  * an input-config deserialization).
  *
  * @tparam S Serializer type.
@@ -205,7 +205,7 @@ void simplemc_load_input_config(const S& s, measurement<M>& m) {
  * @details If the user measurement satisfies simplemc::has_simplemc_mpi_collect, it reduces the value
  * via the ADL hook `%simplemc_mpi_collect`.
  * 
- * @note To keep the per-rank state, copy the update first.
+ * @note To keep the per-rank state, copy the measurement first.
  *
  * @tparam M User measurement type.
  * @param comm simplemc::mpi::communicator object.

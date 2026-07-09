@@ -23,7 +23,7 @@ namespace simplemc {
  *
  * @details Implementation of the standard Metropolis algorithm (see step()).
  *
- * It holds a non-owning pointer to a simplemc::update_set which it uses to select and execute updates
+ * It holds a non-owning pointer to a simplemc::update_set, which it uses to select and execute updates
  * to advance the Markov chain.
  *
  * Since simplemc::run is not aware of the update set, it is the kernel's responsibility to make sure
@@ -44,7 +44,7 @@ public:
     explicit metropolis_kernel(update_set<Us...>& ups) noexcept : ups_ { &ups } {}
 
     /**
-     * @brief Build the update selection distribution from their weights.
+     * @brief Build the update selection distribution from the updates' weights.
      *
      * @details It calls simplemc::update_set::rebuild_distribution on the stored update set.
      *
@@ -62,10 +62,10 @@ public:
      * - Calculate the acceptance probability \f$ p \f$ by multiplying the return value of `attempt()`
      * with the detailed-balance update_stats::ratio.
      * - Acceptance/Rejection step:
-     *   - if \f$ p < 0 \f$: The proposed MC configuration is not \f$ \in \f$ the allowed state
-     *   space. update::mark_impossible() and update::reject() are called.
-     *   - \f$ p >= u \f$, where \f$ u \f$ is a uniform random number on \f$ [0, 1) \f$: The proposed
-     *   MC configuration is accepted. update::accept() is called.
+     *   - if \f$ p < 0 \f$: The proposed MC configuration is not in the allowed state space.
+     *   update::mark_impossible() and update::reject() are called.
+     *   - if \f$ p >= u \f$, where \f$ u \f$ is a uniform random number on \f$ [0, 1) \f$: The
+     *   proposed MC configuration is accepted. update::accept() is called.
      *   - Otherwise, the proposed MC configuration is rejected. update::reject() is called.
      *
      * @tparam RNG Random number generator type.

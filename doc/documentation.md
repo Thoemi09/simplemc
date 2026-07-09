@@ -5,7 +5,7 @@
 **simplemc** is a C++ library that provides various tools to help users develop their own Monte Carlo
 codes.
 It is implemented as several (partially independent) sublibraries, each with its own specific purpose.
-The following provides a detailed reference documentation.
+The following pages provide detailed reference documentation.
 
 If you are looking for a specific function, class, etc., try using the search bar in the top left
 corner.
@@ -26,7 +26,7 @@ also be used in user code.
 - @ref simplemc-utils-indexing to map multi-dimensional indices to flat indices and vice versa.
 - @ref simplemc-utils-other including formatted output for complex numbers and conversion to strings
 for types with an overloaded `operator<<`.
-- A @ref simplemc-utils-timer for easy performance and runtime measurments.
+- A @ref simplemc-utils-timer for easy performance and runtime measurements.
 
 ## MPI library
 
@@ -138,12 +138,12 @@ entirely to the user.
 
 It provides
 
-- @ref simplemc-mc-callbacks, optional per-run hooks that observe a simulation.
-- @ref simplemc-mc-kernels, representing the underlying MC algorithm (defaults to 
-Metropolis-Hastings).
-- @ref simplemc-mc-sim, including the free simplemc::run function that performs a simulation.
 - @ref simplemc-mc-entities, containing the user-extensible @ref simplemc-mc-entities-updates and
 @ref simplemc-mc-entities-measurements that propose moves and sample observables, together with the
 value-semantic wrappers and tuple-backed collections that manage them.
+- @ref simplemc-mc-kernels, representing the underlying MC algorithm (defaults to 
+Metropolis-Hastings).
+- @ref simplemc-mc-sim, including the free simplemc::run function that performs a simulation.
+- @ref simplemc-mc-callbacks, optional per-run hooks that observe a simulation.
 - @ref simplemc-mc-utils, defining the serializer-generic save/load helpers and various other helpers
 to support serialization and MPI communication.

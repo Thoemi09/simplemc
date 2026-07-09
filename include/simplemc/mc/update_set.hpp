@@ -113,7 +113,7 @@ public:
      * @details It validates the correctness of all inverse pairs, recomputes every
      * update_stats::ratio and then initializes the discrete distribution.
      *
-     * It throws a simplemc::simplemc_exception
+     * It throws a simplemc::simplemc_exception:
      *
      * - if an update_stats::inv_name is not registered,
      * - if the inverse pairing is asymmetric,
@@ -206,7 +206,7 @@ public:
     /**
      * @brief Serialize a simplemc::update_set.
      *
-     * @details It dispatches to tuple_set::save_entries which serializes all updates in the set.
+     * @details It dispatches to tuple_set::save_entries, which serializes all updates in the set.
      *
      * @tparam S Serializer type.
      * @param s Serializer handle.
@@ -220,7 +220,7 @@ public:
     /**
      * @brief Deserialize a simplemc::update_set.
      *
-     * @details It dispatches to tuple_set::load_entries which deserializes all updates in the set.
+     * @details It dispatches to tuple_set::load_entries, which deserializes all updates in the set.
      *
      * @tparam S Serializer type.
      * @param s Serializer handle.
@@ -234,7 +234,7 @@ public:
     /**
      * @brief Serialize the user-input config of a simplemc::update_set.
      *
-     * @details It dispatches to tuple_set::save_input_config_entries which serializes the
+     * @details It dispatches to tuple_set::save_input_config_entries, which serializes the
      * input-config of all updates in the set.
      *
      * @tparam S Serializer type.
@@ -249,7 +249,7 @@ public:
     /**
      * @brief Deserialize the user-input config of a simplemc::update_set.
      *
-     * @details It dispatches to tuple_set::load_input_config_entries which deserializes the
+     * @details It dispatches to tuple_set::load_input_config_entries, which deserializes the
      * input-config of all updates in the set.
      *
      * @tparam S Serializer type.

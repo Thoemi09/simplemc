@@ -124,7 +124,7 @@ inline void print(const simulation_params& p, std::FILE* fp = stdout) {
  * @relates simplemc::simulation_params
  * @brief Serialize the user-input config of simplemc::simulation_params.
  *
- * @details All fields are part of the user-input conifg.
+ * @details All fields are part of the user-input config.
  *
  * @tparam S Serializer type.
  * @param s Serializer handle.

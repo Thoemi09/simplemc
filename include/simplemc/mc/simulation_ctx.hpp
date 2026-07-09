@@ -42,7 +42,7 @@ struct simulation_ctx {
      *
      * @details It is refreshed by simplemc::run every simulation_params::cycles_per_check cycles, so
      * inside the `on_checkpoint` callback it is always up-to-date. The `on_step` and `on_cycle`
-     * callbacks should use elpased() in case they need the precise wall-clock time.
+     * callbacks should use elapsed() in case they need the precise wall-clock time.
      */
     double runtime = 0.0;
 

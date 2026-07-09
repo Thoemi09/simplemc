@@ -146,10 +146,10 @@ about error estimation yet.
 
 @subsection tut_mc_1_assembly Assembling the components
 
-In **simplemc-mc**, a MC simulation consists of a set of loose components that are passed to 
+In **simplemc-mc**, an MC simulation consists of a set of loose components that are passed to 
 simplemc::run which drives the simulation.
 
-The driver expects a random number generator, (e.g. from @ref simplemc-random), a simplemc::mc_kernel 
+The driver expects a random number generator (e.g. from @ref simplemc-random), a simplemc::mc_kernel 
 that implements the actual MC algorithm, a simplemc::measurement_set, and simplemc::simulation_params 
 to control the simulation.
 

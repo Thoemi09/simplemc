@@ -59,7 +59,8 @@ std::array<std::size_t, N> column_widths(
  * - the name of its inverse update (see @ref inv_name),
  * - the unnormalized selection @ref weight,
  * - the detailed-balance correction @ref ratio, and
- * - the counters tracking the number of proposals, acceptances and impossible signals.
+ * - the counters tracking the number of proposals (@ref nprops), acceptances (@ref naccs) and
+ * impossible signals (@ref nimps).
  */
 struct update_stats {
     /**

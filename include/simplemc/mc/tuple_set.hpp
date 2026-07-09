@@ -35,9 +35,9 @@ namespace simplemc {
  * simplemc::update_set and simplemc::measurement_set. The entries are stored in a `std::tuple`, so
  * the set of entry *types* is fixed at construction.
  *
- * Each entry `e` is required to expose a unique name via `e.name()`, the wrapped user value via
- * `e.value()`, and its type via the nested alias `e::value_type`. The name is used as the key for
- * lookup and serialization. The constructor enforces its uniqueness across the set.
+ * Each entry `e` is required to expose a name via `e.name()`, the wrapped user value via `e.value()`, 
+ * and its type via the nested alias `decltype(e)::value_type`. The name is used as the key for lookup 
+ * and serialization. The constructor enforces its uniqueness across the set.
  *
  * Two traversal primitives carry the whole design:
  *
@@ -153,7 +153,7 @@ public:
      * @brief Apply a callable to the single entry with a given registered name.
      *
      * @details It looks up the name via find() and dispatches to the index-based visit_at() overload.
-     * A failed lookup throws a simplemc::simplemc_exception when no entry has the given name.
+     * It throws a simplemc::simplemc_exception if no entry has the given name.
      *
      * @tparam F Callable type.
      * @param name Entry name.
@@ -169,7 +169,7 @@ public:
     }
 
     /**
-     * @brief Apply a callable to the single entry with a registered name.
+     * @brief Apply a callable to the single entry with a given registered name.
      *
      * @details See the non-const visit_at(std::string_view, F&&) overload for details.
      *

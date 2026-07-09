@@ -28,7 +28,7 @@ namespace simplemc {
  *
  * @details It holds the total number of MC steps performed and the total runtime (in seconds).
  *
- * A simplemc::simulation_ctx acts as the per-run delta to this cumulative record. After and during a
+ * A simplemc::simulation_ctx acts as the per-run delta to this cumulative record. During and after a
  * run, the context should be folded into the statistics using `operator+=()` or `operator+()`.
  */
 struct simulation_stats {

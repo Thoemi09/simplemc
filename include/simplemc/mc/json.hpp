@@ -68,9 +68,9 @@ void save_json_file(const std::filesystem::path& path, F&& f, const json_io_opti
 /**
  * @brief Read a JSON file through a user callback.
  *
- * @details It first reads the file into an `nlohmann::json` tree via simplemc::read_json_file, then
- * moves the tree into a simplemc::json_serializer. The serializer handle is passed to the callback
- * which is responsible for deserializing the content.
+ * @details It creates a simplemc::json_serializer and reads the file's content directly into it via
+ * simplemc::read_json_file. The serializer handle is then passed to the callback which is
+ * responsible for deserializing the content.
  *
  * @tparam F Callback type.
  * @param path Path to the file.

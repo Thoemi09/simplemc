@@ -48,10 +48,10 @@ struct progress_line {
     /// Optional label prepended to each line (printed verbatim, followed by a space). Empty omits it.
     std::string prefix = "[progress]";
 
-    /// Target number of MC steps to do.
+    /// Step budget: target number of MC steps to perform (0 disables it).
     std::uint64_t max_steps = 0;
 
-    /// Target simulation runtime in seconds.
+    /// Time budget: target simulation runtime in seconds (0 disables it).
     double max_time = 0.0;
 
     /// If `true`, insert an ASCII progress bar (requires a non-zero step or time budget).
@@ -169,8 +169,8 @@ public:
      * @details Convenience constructor for the common case. It builds a default progress_line
      * carrying just the budgets and delegates to the line-generator constructor.
      *
-     * @param max_steps Target number of steps.
-     * @param max_time Target simulation runtime.
+     * @param max_steps Step budget: target number of steps (0 disables it).
+     * @param max_time Time budget: target simulation runtime (0 disables it).
      * @param in_place If `true` (default), redraw intermediate lines in place with `\r`.
      * @param enabled If `false`, the printer emits nothing (caller-side rank gating).
      * @param throttle_frac Minimum fraction to complete between prints (e.g. \f$ 0.01 = 1\% \f$).
@@ -184,7 +184,7 @@ public:
     /**
      * @brief Emit one progress line for the current run state.
      *
-     * @details It behavior depends on the underlying progress_line, the parameters passed to the
+     * @details Its behavior depends on the underlying progress_line, the parameters passed to the
      * constructor and the simulation context.
      *
      * @param ctx Simulation context.

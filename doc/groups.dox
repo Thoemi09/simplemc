@@ -1515,7 +1515,7 @@
  * simplemc::mc_run_callbacks is passed to simplemc::run. The different hooks fire at well-defined
  * points and receive a simplemc::simulation_ctx snapshot.
  *
- * simplemc::run_callbacks satifies the concept and uses no-op hooks as defaults. Users can use this
+ * simplemc::run_callbacks satisfies the concept and uses no-op hooks as defaults. Users can use this
  * type to set individual hooks.
  *
  * For example, a ready-made progress printer is provided to show the progress of the current
@@ -1529,7 +1529,7 @@
  *
  * @details The free simplemc::run is the heart of **simplemc-mc**:
  *
- * - it loops over MC steps by invoking the MC kernel's `step` funcion,
+ * - it loops over MC steps by invoking the MC kernel's `step` function,
  * - it performs measurements via a user-provided simplemc::measurement_set,
  * - it invokes optional callback functions during the simulation, and
  * - it stops when some user-defined criterion fires.
@@ -1554,13 +1554,13 @@
  *
  * **simplemc-mc** does not provide any concrete updates or measurements, since they are highly
  * problem-specific. Instead, it defines the interface that user types must satisfy to be recognized
- * as such. The interfaces are povided as simplemc::mc_update and simplemc::mc_measurement concepts.
+ * as such. The interfaces are provided as simplemc::mc_update and simplemc::mc_measurement concepts.
  *
- * A user simply implements his/her own updates and measurements and provides them to the library.
+ * A user simply implements their own updates and measurements and provides them to the library.
  * Each user value is stored by value, together with some metadata (name, counters, statistics, flags,
  * etc.), in a simplemc::update or simplemc::measurement (templated on the concrete user type).
  *
- * All updates and measurements are then bundled together in an simplemc::update_set and an
+ * All updates and measurements are then bundled together in a simplemc::update_set and a
  * simplemc::measurement_set, respectively. These hold their entries in a `std::tuple` — so their types
  * are fixed at construction — and share common traversal, lookup and typed-access functionality
  * inherited from simplemc::tuple_set.
@@ -1576,7 +1576,7 @@
  *
  * simplemc::measurement stores the user measurement by value together with some metadata.
  *
- * Multiple simplemc::measurement objects are then held in an simplemc::measurement_set.
+ * Multiple simplemc::measurement objects are then held in a simplemc::measurement_set.
  */
 
 /**
@@ -1589,7 +1589,7 @@
  *
  * simplemc::update stores the user update by value together with some metadata.
  *
- * Multiple simplemc::update objects are then held in an simplemc::update_set.
+ * Multiple simplemc::update objects are then held in a simplemc::update_set.
  */
 
 /**

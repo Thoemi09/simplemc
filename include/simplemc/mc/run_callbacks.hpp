@@ -23,7 +23,7 @@ namespace simplemc {
  */
 struct no_op_callback {
     /**
-     * @brief Void returning no-op.
+     * @brief No-op that returns void.
      */
     constexpr void operator()(const simulation_ctx&) const noexcept {}
 };
@@ -35,7 +35,7 @@ struct no_op_callback {
  */
 struct no_op_stop_callback {
     /**
-     * @brief Always `false` returning no-op.
+     * @brief No-op that always returns `false`.
      */
     constexpr bool operator()(const simulation_ctx&) const noexcept { return false; }
 };
