@@ -4,7 +4,7 @@
 #include <random>
 
 int main() {
-    // construct a xoshiro256p RNG and a uniform distribution on [0, 1)
+    // construct a Mersenne Twister RNG and a uniform distribution on [0, 1)
     std::mt19937 rng {};
     std::uniform_real_distribution<double> dist { 0.0, 1.0 };
 

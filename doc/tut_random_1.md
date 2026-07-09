@@ -17,7 +17,7 @@ The following code snippets are all part of the same `main` function:
 #include <random>
 #include <vector>
 
-// histogram definiton goes here
+// histogram definition goes here
 
 int main() {
     // code snippets go here
@@ -144,8 +144,8 @@ y_i            h(i)           f(y_i)
 
 The first column shows the center of the bins at which we evaluate the reference function, the second
 column contains the histogram results and the third column the values of the exact PDF.
-As you can see, the error of our approximation is \f$ \mathcal{O}(10^3) \f$ and should decrease when
-we increase the number of samples.
+As you can see, the error of our approximation is \f$ \mathcal{O}(10^{-3}) \f$ and should decrease
+when we increase the number of samples.
 
 @subsection tut_random_1_exp25 Exponential distribution
 
@@ -190,6 +190,87 @@ PDF at its center.
 For example, the average value of our first bin is \f$ \approx 1.75975 \f$ which is close to the value
 of the histogram there.
 
+@subsection tut_random_1_safeexp25 Safe exponential distribution
+
+simplemc::exponential_sample(double, double, double, double) requires \f$ \lambda \neq 0 \f$.
+simplemc::safe_exponential_sample lifts this restriction: for \f$ \lambda > 0 \f$ it behaves like the
+exponential distribution above, for \f$ \lambda < 0 \f$ it mirrors the exponential distribution so
+that the density grows towards \f$ b \f$ instead of decaying away from \f$ a \f$, and for \f$ \lambda
+= 0 \f$ it falls back to the uniform distribution.
+
+Let's revisit the interval \f$ [2, 5) \f$ from before, this time with \f$ \lambda = -2.5 \f$:
+
+```cpp
+// sample safe exponential distribution on [2, 5) with lambda = -2.5 and print histogram
+lambda = -2.5;
+histogram hist_safe_exp { a, b, nbins };
+for (int i = 0; i < nsamples; ++i) {
+    hist_safe_exp.add(simplemc::safe_exponential_sample(uni01(rng), lambda, a, b));
+}
+hist_safe_exp.print([a, b, lambda](auto x) { return simplemc::safe_exponential_pdf(x, lambda, a, b); });
+```
+
+Output:
+
+```
+y_i            h(i)           f(y_i)         
+2.15000000     0.00217000     0.00201295     
+2.45000000     0.00424667     0.00426141     
+2.75000000     0.00913000     0.00902140     
+3.05000000     0.01942667     0.01909830     
+3.35000000     0.04094000     0.04043110     
+3.65000000     0.08921333     0.08559264     
+3.95000000     0.18453667     0.18119961     
+4.25000000     0.39132000     0.38359958     
+4.55000000     0.83176000     0.81208032     
+4.85000000     1.76059000     1.71917405
+```
+
+As expected, flipping the sign of \f$ \lambda \f$ mirrors the exponential distribution from the
+previous section: the density now grows towards \f$ b = 5 \f$ instead of decaying away from \f$ a = 2
+\f$.
+
+@subsection tut_random_1_normal Normal distribution
+
+simplemc::normal_sample and simplemc::normal_pdf implement the normal distribution. Unlike the
+*sample* functions we have seen so far, simplemc::normal_sample takes the RNG object directly instead
+of a uniform random number, since it is implemented on top of `std::normal_distribution`.
+
+Let's sample a normal distribution with \f$ \mu = 0 \f$ and \f$ \sigma = 1.5 \f$, restricted to the
+histogram domain \f$ [-5, 5] \f$:
+
+```cpp
+// sample normal distribution with mu = 0 and sigma = 1.5 and print histogram on [-5, 5]
+double mu = 0;
+double sigma = 1.5;
+a = -5;
+b = 5;
+histogram hist_normal { a, b, nbins };
+for (int i = 0; i < nsamples; ++i) {
+    hist_normal.add(simplemc::normal_sample(rng, mu, sigma));
+}
+hist_normal.print([mu, sigma](auto x) { return simplemc::normal_pdf(x, mu, sigma); });
+```
+
+Output:
+
+```
+y_i            h(i)           f(y_i)         
+-4.50000000    0.00348400     0.00295457     
+-3.50000000    0.01924900     0.01748126     
+-2.50000000    0.06879900     0.06631809     
+-1.50000000    0.16110900     0.16131382     
+-0.50000000    0.24733400     0.25158882     
+0.50000000     0.24646100     0.25158882     
+1.50000000     0.16167300     0.16131382     
+2.50000000     0.06876900     0.06631809     
+3.50000000     0.01883600     0.01748126     
+4.50000000     0.00338400     0.00295457
+```
+
+As expected, the histogram closely resembles the familiar bell shape of the normal PDF, peaked at
+\f$ \mu = 0 \f$ and symmetric around it.
+
 @subsection tut_random_1_cauchy Cauchy distribution
 
 We can also approximate functions which are defined on the real line \f$ (-\infty, \infty) \f$, e.g.
@@ -211,16 +292,16 @@ hist_cauchy.print([x0, gamma](auto x) { return simplemc::cauchy_pdf(x, x0, gamma
 Output:
 
 ```
--4.70000000    0.05890667     0.05877214     
--4.10000000    0.07500000     0.07465054     
--3.50000000    0.09381500     0.09362055     
--2.90000000    0.11248833     0.11271597     
--2.30000000    0.12443500     0.12551652     
--1.70000000    0.12505833     0.12551652     
--1.10000000    0.11205500     0.11271597     
--0.50000000    0.09376500     0.09362055     
-0.10000000     0.07508667     0.07465054     
-0.70000000     0.05875833     0.05877214
+-4.70000000    0.05917333     0.05877214     
+-4.10000000    0.07510500     0.07465054     
+-3.50000000    0.09297167     0.09362055     
+-2.90000000    0.11299667     0.11271597     
+-2.30000000    0.12512000     0.12551652     
+-1.70000000    0.12555333     0.12551652     
+-1.10000000    0.11275833     0.11271597     
+-0.50000000    0.09305167     0.09362055     
+0.10000000     0.07475667     0.07465054     
+0.70000000     0.05887000     0.05877214
 ```
 
 Of course we need to restrict the histogram to some finite domain, in this case we choose \f$ [-5, 1]
@@ -257,12 +338,12 @@ Output:
 
 ```
 y_i            h(i)           f(y_i)         
-2.00000000     0.20035200     0.20000000     
-3.00000000     0.19944000     0.20000000     
-4.00000000     0.20004000     0.20000000     
+2.00000000     0.19951100     0.20000000     
+3.00000000     0.20021000     0.20000000     
+4.00000000     0.20030300     0.20000000     
 5.00000000     0.00000000     0.00000000     
-6.00000000     0.19954700     0.20000000     
-7.00000000     0.20062100     0.20000000
+6.00000000     0.20046100     0.20000000     
+7.00000000     0.19951500     0.20000000
 ```
 
 The number of bins in the histogram is set to 6 and shifted by 0.5 such that the center of each bin

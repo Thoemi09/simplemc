@@ -186,7 +186,7 @@ namespace simplemc {
  *   \begin{cases}
  *   \frac{\lambda}{1 - e^{-\lambda (b - a)}} e^{-\lambda (x - a)} & \text{if } \lambda > 0 \\
  *   \frac{1}{b - a} & \text{if } \lambda = 0 \\
- *   \frac{\lambda}{1 - e^{\lambda (b - a)}} e^{\lambda (b - x)} & \text{if } \lambda < 0
+ *   \frac{-\lambda}{1 - e^{\lambda (b - a)}} e^{\lambda (b - x)} & \text{if } \lambda < 0
  *   \end{cases}
  *   \; .
  * \f]
@@ -345,6 +345,11 @@ template <typename T>
  *
  * @details It is similar to simplemc::uniform_int_sample but excludes a given integer \f$ y \f$. See
  * simplemc::exclusive_uniform_int_pdf.
+ *
+ * It draws a uniform offset \f$ o \in \{ 1, \dots, b - a \} \f$ and returns \f$ a + ((y - a) + o) \mod
+ * (b - a + 1) \f$, i.e. it steps forward from \f$ y \f$ by a non-zero offset and wraps around within
+ * \f$ \{ a, a + 1, \dots, b \} \f$, which always lands on an integer of \f$ D \f$ with uniform
+ * probability.
  *
  * @note It is assumed that \f$ b > a \f$ and \f$ y \in \{ a, a+1, \dots, b \} \f$.
  *

@@ -64,6 +64,25 @@ int main() {
     }
     hist_exp.print([a, b, lambda](auto x) { return simplemc::exponential_pdf(x, lambda, a, b); });
 
+    // sample safe exponential distribution on [2, 5) with lambda = -2.5 and print histogram
+    lambda = -2.5;
+    histogram hist_safe_exp { a, b, nbins };
+    for (int i = 0; i < nsamples; ++i) {
+        hist_safe_exp.add(simplemc::safe_exponential_sample(uni01(rng), lambda, a, b));
+    }
+    hist_safe_exp.print([a, b, lambda](auto x) { return simplemc::safe_exponential_pdf(x, lambda, a, b); });
+
+    // sample normal distribution with mu = 0 and sigma = 1.5 and print histogram on [-5, 5]
+    double mu = 0;
+    double sigma = 1.5;
+    a = -5;
+    b = 5;
+    histogram hist_normal { a, b, nbins };
+    for (int i = 0; i < nsamples; ++i) {
+        hist_normal.add(simplemc::normal_sample(rng, mu, sigma));
+    }
+    hist_normal.print([mu, sigma](auto x) { return simplemc::normal_pdf(x, mu, sigma); });
+
     // sample Cauchy distribution with x0 = -2 and gamma = 2.5 and print histogram on [-5, 1]
     double x0 = -2;
     double gamma = 2.5;
