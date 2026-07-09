@@ -20,6 +20,7 @@
 | @ref tut_accs_1 | Estimating errors with @ref simplemc-accs |
 | @ref tut_mc_1 | A minimal MC integration with @ref simplemc-mc |
 | @ref tut_mc_2 | MC integration with checkpointing and input-config files |
+| @ref tut_mc_3 | Parallelizing MC simulations with @ref simplemc-mpi |
 
 @section tut_compilation Compiling the tutorials
 
