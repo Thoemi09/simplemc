@@ -51,33 +51,42 @@ struct integral {
 } // namespace
 
 int main() {
-    // the MC configuration and the random number generator driving the simulation
-    mc_config cfg;
-    simplemc::xoshiro256ss rng { 0xc0ffee };
+    // random number generator
+    simplemc::xoshiro256ss rng;
 
-    // register the update with a unique name and a selection weight
+    // MC configuration
+    mc_config cfg;
+
+    // construct the update set with our uniform update
     simplemc::update_set us { simplemc::update { uniform_update { .cfg = &cfg, .rng = &rng }, "uniform", 1.0 } };
 
-    // register the measurement with a unique name
+    // construct the measurement set with our integral measurement
     simplemc::measurement_set ms { simplemc::measurement { integral { .cfg = &cfg }, "integral" } };
 
-    // the kernel implements the Metropolis algorithm on top of the update set
+    // construct the Metropolis kernel and give it access to the update set
     simplemc::metropolis_kernel kernel { us };
 
-    // run the simulation: measurements are taken once per cycle, so steps_per_cycle = 1 measures
-    // after every step
-    const auto ctx = simplemc::run(rng, kernel, ms,
-        { .max_steps = 1'000'000, .max_time = 60.0, .steps_per_cycle = 1, .cycles_per_check = 10'000 });
+    // set the simulation parameters
+    simplemc::simulation_params params {
+        .max_steps = 1'000'000, .max_time = 60.0, .steps_per_cycle = 1, .cycles_per_check = 10'000
+    };
 
-    // fetch the integral measurement by name and rescale the sample mean by the volume to estimate
-    // the integral
+    // run the simulation
+    fmt::println("Running the simulation with the following parameters:");
+    simplemc::print(params);
+
+    simplemc::simulation_stats stats;
+    stats += simplemc::run(rng, kernel, ms, params);
+
+    fmt::println("\nSimulation finished. Final statistics:");
+    simplemc::print(stats);
+
+    // fetch the integral measurement by name and rescale \bar{f} by (b - a) to estimate I_MC
     const auto* m = ms.get<integral>("integral");
-    const double result = m->acc.mean() * (cfg.b - cfg.a);
-    const double exact = std::sin(cfg.b) - std::sin(cfg.a);
+    const double I_MC = m->acc.mean() * (cfg.b - cfg.a);
 
-    // print results
-    fmt::println("runtime: {}", ctx.runtime);
-    fmt::println("steps:   {}", ctx.steps_done);
-    fmt::println("result:  {}", result);
-    fmt::println("exact:   {}", exact);
+    // print results and compare with the exact value
+    fmt::println("\nResults:");
+    fmt::println("I_MC = {}", I_MC);
+    fmt::println("I    = {}", std::sin(cfg.b) - std::sin(cfg.a));
 }

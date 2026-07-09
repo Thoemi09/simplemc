@@ -8,18 +8,16 @@ simple 1-dimensional integral.
 We keep everything as minimal as possible: 
 - a single update with a uniform proposal that is always accepted, 
 - a single measurement that averages the integrand, and 
-- the free simplemc::run function driving the sampling loop. 
+- no callbacks, no checkpointing, no user input, no MPI parallelization.
 
-Error estimation, non-trivial Metropolis sampling, and checkpointing are the topics of the follow-up 
-tutorials.
+Follow-up tutorials will extend this example to show how to implement more complex MC simulations.
 
 @section tut_mc_1_problem The problem
 
 We want to compute the integral
 
 \f[
-  I \;=\; \int_a^b f(x) \, \mathrm{d} x \;, \qquad f(x) = \cos(x) \;, \quad a = 0 \;, \quad b = 2
-  \;,
+  I \;=\; \int_a^b f(x) \, \mathrm{d} x \;, \qquad f(x) = \cos(x) \;, \quad a = 0 \;, \quad b = 2 \;,
 \f]
 
 whose exact value is \f$ I = \sin(2) - \sin(0) \approx 0.9093 \f$. 
@@ -28,11 +26,14 @@ Writing the integral as an expectation value over the uniform distribution \f$ U
 
 \f[
   I \;=\; (b - a) \int_a^b f(x) \, \frac{\mathrm{d} x}{b - a} \;=\; (b - a) \, \langle f
-  \rangle_{U[a,b]} \approx (b - a) \, \bar{f}  \;,
+  \rangle_{U[a,b]} \approx (b - a) \, \bar{f} = I_{MC} \;,
 \f]
 
-turns it into a Monte Carlo problem: draw \f$ N \f$ samples \f$ x_i \sim U[a, b] \f$, calculate the
-sample mean \f$ \bar{f} = 1/N \sum_{i=1}^N f(x_i) \f$, and rescale by the volume \f$ (b - a) \f$.
+lets us approximate \f$ I \f$ using Monte Carlo integration:
+
+- draw \f$ N \f$ samples \f$ x_i \sim U[a, b] \f$, 
+- calculate the sample mean \f$ \bar{f} = 1/N \sum_{i=1}^N f(x_i) \f$, and 
+- rescale by the volume \f$ (b - a) \f$ to obtain \f$ I_{MC} \f$.
 
 @section tut_mc_1_details Step-by-step guide
 
@@ -85,7 +86,8 @@ struct mc_config {
 
 @subsection tut_mc_1_update The update
 
-An update is any type that satisfies the simplemc::mc_update concept: 
+An MC update is any type that satisfies the simplemc::mc_update concept. It must provide
+
 - an `attempt()` method that proposes a new configuration and returns its acceptance probability, and 
 - an `accept()` method that commits the proposal. 
 
@@ -120,8 +122,9 @@ The `accept()` method commits the proposed state by updating the current sample 
 
 @subsection tut_mc_1_measurement The measurement
 
-A measurement is any type that satisfies the simplemc::mc_measurement concept: a single `measure()`
-method:
+A measurement is any type that satisfies the simplemc::mc_measurement concept. It must provide
+
+- a `measure()` method that performs some specific measurement(s):
 
 ```cpp
 // Integral measurement: I = \int_0^2 f(x) dx
@@ -137,35 +140,50 @@ struct integral {
 
 Note that the measurement stores a (const) pointer to the MC configuration.
 
-The `measure()` function streams \f$ f(x) \f$ into a simplemc::mean_acc. We use the mean accumulator
-here since we are only interested in the sample mean \f$ \bar{f} \f$ and don't care about error
-estimation yet.
+In our case, the `measure()` function streams \f$ f(x_i) \f$ into a simplemc::mean_acc. We use the 
+mean accumulator here since we are only interested in the sample mean \f$ \bar{f} \f$ and don't care 
+about error estimation yet.
 
 @subsection tut_mc_1_assembly Assembling the components
 
-A MC simulation is just a set of loose components assembled in the `main` function: the MC 
-configuration, a random number generator (e.g. from @ref simplemc-random), a simplemc::update_set, a 
-simplemc::measurement_set, and a kernel.
+In **simplemc-mc**, a MC simulation consists of a set of loose components that are passed to 
+simplemc::run which drives the simulation.
 
-Updates and measurements are registered at construction, each with a unique name. Updates additionally 
-carry a selection weight \f$ \geq 0 \f$ (which is only relevant when there are multiple updates):
+The driver expects a random number generator, (e.g. from @ref simplemc-random), a simplemc::mc_kernel 
+that implements the actual MC algorithm, a simplemc::measurement_set, and simplemc::simulation_params 
+to control the simulation.
+
+The MC configuration is an implementation detail that is usually shared between the updates and
+measurements. simplemc::run does not need to know about it.
+
+Also note that the simplemc::update_set is not passed to simplemc::run directly, but is instead given
+to the kernel which is responsible for selecting and executing updates.
+
+We can now assemble the components for our MC simulation in `main()`:
 
 ```cpp
-// the MC configuration and the random number generator driving the simulation
-mc_config cfg;
-simplemc::xoshiro256ss rng { 0xc0ffee };
+// random number generator
+simplemc::xoshiro256ss rng;
 
-// register the update with a unique name and a selection weight
+// MC configuration
+mc_config cfg;
+
+// construct the update set with our uniform update
 simplemc::update_set us { simplemc::update { uniform_update { .cfg = &cfg, .rng = &rng }, "uniform", 1.0 } };
 
-// register the measurement with a unique name
+// construct the measurement set with our integral measurement
 simplemc::measurement_set ms { simplemc::measurement { integral { .cfg = &cfg }, "integral" } };
 
-// the kernel implements the Metropolis algorithm on top of the update set
+// construct the Metropolis kernel and give it access to the update set
 simplemc::metropolis_kernel kernel { us };
 ```
 
-Here, we use the provided simplemc::metropolis_kernel which implements the standard Metropolis step: 
+Updates and measurements are specified at construction, each with a unique name. Updates additionally 
+carry a selection weight \f$ \geq 0 \f$ (which is only relevant when there are multiple updates).
+
+Here, we use the provided simplemc::metropolis_kernel which implements the standard Metropolis 
+algorithm:
+
 - select an update with probability proportional to its weight, 
 - call its `attempt()` to propose a new state, and 
 - accept or reject the proposal based on the returned acceptance probability.
@@ -173,27 +191,71 @@ Here, we use the provided simplemc::metropolis_kernel which implements the stand
 Since we only have a single update and it is always accepted, the kernel does not do much in this
 tutorial.
 
-@subsection tut_mc_1_run Running the simulation
+@subsection tut_mc_1_par Controlling the simulation
 
-MC simulations are driven by the free simplemc::run function. It performs a nested loop controlled by 
-simplemc::simulation_params: each *MC cycle* consists of `steps_per_cycle` kernel steps followed by 
-one measurement of all active measurements, and the stopping criteria (`max_steps`, `max_time`) are 
-checked every `cycles_per_check` cycles:
+As already mentioned above, MC simulations are driven by the free simplemc::run function. 
+
+It performs a nested loop controlled by simplemc::simulation_params: each *MC cycle* consists of 
+`steps_per_cycle` kernel steps followed by one measurement of all active measurements. The stopping 
+criteria (`max_steps`, `max_time`) are checked every `cycles_per_check` cycles:
 
 ```cpp
-// run the simulation: measurements are taken once per cycle, so steps_per_cycle = 1 measures
-// after every step
-const auto ctx = simplemc::run(rng, kernel, ms,
-    { .max_steps = 1'000'000, .max_time = 60.0, .steps_per_cycle = 1, .cycles_per_check = 10'000 });
+// set the simulation parameters
+simplemc::simulation_params params {
+    .max_steps = 1'000'000, .max_time = 60.0, .steps_per_cycle = 1, .cycles_per_check = 10'000
+};
 ```
 
-Here, we set
+For our simulation, we set
+
 - `max_steps = 10^6` and `max_time = 60.0` to either stop after one million MC steps or after 60 
 seconds of wall-clock time (whichever comes first),
 - `steps_per_cycle = 1` to take one measurement after every MC step, and
 - `cycles_per_check = 10^4` to check the stopping criteria only once every ten thousand cycles.
 
-simplemc::run returns a simplemc::simulation_ctx with the number of steps done and the runtime.
+@subsection tut_mc_1_run Running the simulation
+
+To run the simulation, we simply call simplemc::run with the assembled components:
+
+```cpp
+// run the simulation
+fmt::println("Running the simulation with the following parameters:");
+simplemc::print(params);
+
+simplemc::simulation_stats stats;
+stats += simplemc::run(rng, kernel, ms, params);
+
+fmt::println("\nSimulation finished. Final statistics:");
+simplemc::print(stats);
+```
+
+simplemc::run returns a simplemc::simulation_ctx with the number of steps done and the runtime of 
+this run. We fold it into the cumulative simplemc::simulation_stats with `operator+=()` — with a 
+single run this makes no difference, but it is the idiom that keeps the total step count and runtime 
+correct across multiple runs (e.g. when restarting from a checkpoint, see @ref tut_mc_2).
+
+The free `print` overloads render the parameters and the statistics as human-readable blocks:
+
+```
+Running the simulation with the following parameters:
+Max. steps              = 1000000
+Max. time               = 60 sec
+Steps per cycle         = 1
+Cycles per check        = 10000
+Skip measurements       = false
+Checkpoint after steps  = 18446744073709551615
+Checkpoint after time   = 1.7976931348623157e+308 sec
+
+Simulation finished. Final statistics:
+Runtime        = 0.268473125 sec
+MC steps done  = 1000000
+Steps per sec  = 3.72477e+06
+```
+
+On our machine, the simulation took about 0.27 seconds to perform one million MC steps, i.e. it
+stopped after reaching simplemc::simulation_params::max_steps.
+
+The simplemc::simulation_params::max_time limit was not reached.
 
 @subsection tut_mc_1_result Reading out the result
 
@@ -202,34 +264,29 @@ name, and rescale the sample mean \f$ \bar{f} \f$ by the volume of the integrati
 \f$ to estimate the integral \f$ I \f$:
 
 ```cpp
-// fetch the integral measurement by name and rescale the sample mean by the volume to estimate 
-// the integral
+// fetch the integral measurement by name and rescale \bar{f} by (b - a) to estimate I_MC
 const auto* m = ms.get<integral>("integral");
-const double result = m->acc.mean() * (cfg.b - cfg.a);
-const double exact = std::sin(cfg.b) - std::sin(cfg.a);
+const double I_MC = m->acc.mean() * (cfg.b - cfg.a);
 
-// print results
-fmt::println("runtime: {}", ctx.runtime);
-fmt::println("steps:   {}", ctx.steps_done);
-fmt::println("result:  {}", result);
-fmt::println("exact:   {}", exact);
+// print results and compare with the exact value
+fmt::println("\nResults:");
+fmt::println("I_MC = {}", I_MC);
+fmt::println("I    = {}", std::sin(cfg.b) - std::sin(cfg.a));
 ```
 
 Output:
 
 ```
-runtime: 0.248824083
-steps:   1000000
-result:  0.9078870389280093
-exact:   0.9092974268256817
+Results:
+I_MC = 0.9092568281756135
+I    = 0.9092974268256817
 ```
 
-We can see that the MC simulation took about 0.25 seconds to perform one million MC steps and that
-the calculated integral agrees with the exact result to the expected \f$ \mathcal{O}(1/\sqrt{N}) \sim
-10^{-3} \f$ accuracy. 
+We can see that the calculated integral agrees with the exact result to the expected \f$ 
+\mathcal{O}(1/\sqrt{N}) \sim 10^{-3} \f$ accuracy. 
 
 The next tutorial (@ref tut_mc_2) will show you how to implement a more flexible MC simulation by
-writing and reading checkpoint files and user input files.
+writing and reading checkpoint and user input files.
 
 @section tut_mc_1_code Full code
 

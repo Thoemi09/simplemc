@@ -1,4 +1,4 @@
-#include <fmt/format.h>
+#include <fmt/base.h>
 #include <simplemc/accs/mean_acc.hpp>
 #include <simplemc/mc.hpp>
 #include <simplemc/random/xoshiro256.hpp>
@@ -15,37 +15,39 @@ double f(double x) {
 }
 
 // MC configuration shared between the update and the measurement:
-// - x: the current sample,
-// - [a, b]: the integration domain.
+// - x: the current sample (chain state, checkpointed),
+// - [a, b]: the integration domain (set via the input-config file; also checkpointed, since it
+//   must not change between a run and its continuation -- a loaded checkpoint overrides the
+//   config file).
 struct mc_config {
     double x = 1.0;
     double a = 0.0;
     double b = 2.0;
 
-    // Checkpoint channel: the domain and the current sample are part of the checkpoint.
+    // Checkpoint channel: all fields are saved/loaded.
     template <simplemc::serializer S>
-    friend void simplemc_save(S s, const mc_config& c) {
-        s.save_at("x", c.x);
-        s.save_at("a", c.a);
-        s.save_at("b", c.b);
+    friend void simplemc_save(S s, const mc_config& cfg) {
+        s.save_at("x", cfg.x);
+        s.save_at("a", cfg.a);
+        s.save_at("b", cfg.b);
     }
     template <simplemc::serializer S>
-    friend void simplemc_load(const S& s, mc_config& c) {
-        s.load_at("x", c.x);
-        s.load_at("a", c.a);
-        s.load_at("b", c.b);
+    friend void simplemc_load(const S& s, mc_config& cfg) {
+        s.load_at("x", cfg.x);
+        s.load_at("a", cfg.a);
+        s.load_at("b", cfg.b);
     }
 
     // Input-config channel: only the domain is user-configurable.
     template <simplemc::serializer S>
-    friend void simplemc_save_input_config(S s, const mc_config& c) {
-        s.save_at("a", c.a);
-        s.save_at("b", c.b);
+    friend void simplemc_save_input_config(S s, const mc_config& cfg) {
+        s.save_at("a", cfg.a);
+        s.save_at("b", cfg.b);
     }
     template <simplemc::serializer S>
-    friend void simplemc_load_input_config(const S& s, mc_config& c) {
-        s.try_load_at("a", c.a);
-        s.try_load_at("b", c.b);
+    friend void simplemc_load_input_config(const S& s, mc_config& cfg) {
+        s.try_load_at("a", cfg.a);
+        s.try_load_at("b", cfg.b);
     }
 };
 
@@ -65,8 +67,10 @@ struct uniform_update {
     void accept() { cfg->x = new_x; }
 };
 
-// Integral measurement (as in tut_mc_1), now with checkpoint hooks for its accumulator so a
-// restored measurement resumes accumulating.
+// Integral measurement: I = \int_a^b f(x) dx
+// - acc: accumulator for the sample mean of f(x), checkpointed so a restored measurement resumes
+//   accumulating.
+// - measure(): evaluates f(x) and accumulates the result.
 struct integral {
     const mc_config* cfg;
     simplemc::mean_acc<double> acc {};
@@ -87,31 +91,36 @@ struct integral {
 } // namespace
 
 int main() {
+    // random number generator
+    simplemc::xoshiro256ss rng;
+
+    // MC configuration
+    mc_config cfg;
+
+    // construct the update set with our uniform update
+    simplemc::update_set us { simplemc::update { uniform_update { .cfg = &cfg, .rng = &rng }, "uniform", 1.0 } };
+
+    // construct the measurement set with our integral measurement
+    simplemc::measurement_set ms { simplemc::measurement { integral { .cfg = &cfg }, "integral" } };
+
+    // construct the Metropolis kernel and give it access to the update set
+    simplemc::metropolis_kernel kernel { us };
+
+    // set the default simulation parameters, now with periodic checkpointing
+    simplemc::simulation_params params { .max_steps = 1'000'000,
+        .max_time = 60.0,
+        .steps_per_cycle = 1,
+        .cycles_per_check = 10'000,
+        .checkpoint_after_steps = 250'000 };
+
+    // cumulative simulation statistics across runs
+    simplemc::simulation_stats stats;
+
+    // paths of the input-config and checkpoint files
     const std::filesystem::path config_path { "input_config_tut_mc_2.json" };
     const std::filesystem::path checkpoint_path { "checkpoint_tut_mc_2.json" };
 
-    // the MC components: MC configuration, RNG, cumulative statistics, updates and measurements,
-    // kernel, simulation parameters, and callbacks for checkpointing
-    mc_config cfg;
-    simplemc::xoshiro256ss rng { 0xc0ffee };
-    simplemc::simulation_stats stats;
-    simplemc::update_set us { simplemc::update { uniform_update { .cfg = &cfg, .rng = &rng }, "uniform", 1.0 } };
-    simplemc::measurement_set ms { simplemc::measurement { integral { .cfg = &cfg }, "integral" } };
-    simplemc::metropolis_kernel kernel { us };
-    simplemc::simulation_params params;
-    // checkpoints carry the standard components plus the MC configuration under "config" (the cfg
-    // overload of save_json_checkpoint); stats + c forms the correct mid-run totals
-    const auto cbs = simplemc::run_callbacks {
-        .on_checkpoint =
-            [&](const simplemc::simulation_ctx& c) {
-                fmt::println("Writing checkpoint at step {}.", c.steps_done);
-                simplemc::save_json_checkpoint(checkpoint_path, rng, us, ms, stats + c, cfg);
-            },
-    };
-
-    // if there is no input-config file, write one with default parameters and exit; the input
-    // config carries params/updates/measurements plus the MC configuration under "config" and a
-    // free-form "load_checkpoint" flag via the extra-keys hook
+    // if there is no input-config file, write one with the default parameters and exit
     if (!std::filesystem::exists(config_path)) {
         fmt::print("No input config file found");
         simplemc::save_json_input_config(config_path, params, us, ms, cfg,
@@ -133,19 +142,35 @@ int main() {
         simplemc::load_json_checkpoint(checkpoint_path, rng, us, ms, stats, cfg);
     }
 
-    // run the simulation and fold it into the cumulative simulation statistics
-    fmt::println("Starting the simulation.");
+    // checkpoint callback
+    const auto cbs = simplemc::run_callbacks {
+        .on_checkpoint =
+            [&](const simplemc::simulation_ctx& c) {
+                fmt::println("Writing checkpoint at step {}.", c.steps_done);
+                simplemc::save_json_checkpoint(checkpoint_path, rng, us, ms, stats + c, cfg);
+            },
+    };
+
+    // run the simulation
+    fmt::println("\nRunning the simulation with the following parameters:");
+    simplemc::print(params);
+    fmt::println("");
+
     stats += simplemc::run(rng, kernel, ms, params, cbs);
 
+    fmt::println("\nSimulation finished. Final statistics:");
+    simplemc::print(stats);
+
     // write the final checkpoint to disk
-    fmt::println("Writing final checkpoint.");
+    fmt::println("\nWriting final checkpoint.");
     simplemc::save_json_checkpoint(checkpoint_path, rng, us, ms, stats, cfg);
 
-    // result readout as in tut_mc_1, plus the cumulative step count across restores
+    // fetch the integral measurement by name and rescale \bar{f} by (b - a) to estimate I_MC
     const auto* m = ms.get<integral>("integral");
-    const double result = m->acc.mean() * (cfg.b - cfg.a);
-    const double exact = std::sin(cfg.b) - std::sin(cfg.a);
-    fmt::println("cumulative steps: {}", stats.cumulative_steps);
-    fmt::println("result:           {}", result);
-    fmt::println("exact:            {}", exact);
+    const double I_MC = m->acc.mean() * (cfg.b - cfg.a);
+
+    // print results and compare with the exact value
+    fmt::println("\nResults:");
+    fmt::println("I_MC = {}", I_MC);
+    fmt::println("I    = {}", std::sin(cfg.b) - std::sin(cfg.a));
 }
