@@ -54,7 +54,8 @@ function(simplemc_fetch_or_find_dependency)
                 # declare package to be fetched if it is not already populated
                 FetchContent_Declare(${ARG_FETCH_CONTENT_NAME}
                     GIT_REPOSITORY ${ARG_GIT_REPO}
-                    GIT_TAG ${ARG_GIT_TAG})
+                    GIT_TAG ${ARG_GIT_TAG}
+                    EXCLUDE_FROM_ALL) # don't install the dependency as part of the main build
 
                 # set cache options as INTERNAL to avoid polluting parent scope
                 foreach(cache_opt ${ARG_CACHE_OPTIONS})
