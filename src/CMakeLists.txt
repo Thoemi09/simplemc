@@ -12,6 +12,7 @@ configure_file(config.hpp.in ${PROJECT_BINARY_DIR}/include/simplemc/config.hpp)
 # add basic interface library
 add_library(simplemc-basic INTERFACE)
 add_library(simplemc::simplemc-basic ALIAS simplemc-basic)
+target_compile_features(simplemc-basic INTERFACE cxx_std_23)
 if(NOT SIMPLEMC_DISABLE_WARNINGS)
     target_compile_options(simplemc-basic
         INTERFACE
