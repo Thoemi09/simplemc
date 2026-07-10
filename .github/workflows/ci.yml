@@ -44,8 +44,15 @@ jobs:
           set -euxo pipefail
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            cmake ninja-build g++ clang openmpi-bin libopenmpi-dev libhdf5-dev doxygen graphviz
-          if [ "${{ matrix.cxx }}" = "g++" ]; then echo "CC=gcc"; else echo "CC=clang"; fi >> "$GITHUB_ENV"
+            cmake ninja-build g++ clang libc++-dev libc++abi-dev \
+            openmpi-bin libopenmpi-dev libhdf5-dev doxygen graphviz
+          if [ "${{ matrix.cxx }}" = "g++" ]; then
+            echo "CC=gcc" >> "$GITHUB_ENV"
+          else
+            echo "CC=clang" >> "$GITHUB_ENV"
+            echo "CXXFLAGS=-stdlib=libc++" >> "$GITHUB_ENV"
+            echo "LDFLAGS=-stdlib=libc++"  >> "$GITHUB_ENV"
+          fi
           echo "CXX=${{ matrix.cxx }}" >> "$GITHUB_ENV"
 
       - name: Set up macOS
