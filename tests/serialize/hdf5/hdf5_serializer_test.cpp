@@ -62,7 +62,6 @@ void roundtrip_hdf5(const T& src, T& dst) {
 TEST(SerializerHdf5, ConceptConformance) {
     using simplemc::serializer;
     using simplemc::hdf5_serializer;
-    using simplemc::serializer;
 
     static_assert(serializer<hdf5_serializer>);
     SUCCEED();
