@@ -14,7 +14,7 @@
 # SIMPLEMC_DISABLE_WARNINGS: Disable stricter compilation warnings.
 # SIMPLEMC_BUILD_STOCHASTIC_PROCESS_TESTS: Build stochastic process tests.
 
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.28)
 project(simplemc
     VERSION 0.1.0
     LANGUAGES CXX)
