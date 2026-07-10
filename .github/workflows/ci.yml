@@ -1,0 +1,127 @@
+name: CI
+
+# Build & test on Ubuntu and macOS with GCC and Clang, with and without HDF5,
+# and build + deploy the Doxygen docs to GitHub Pages (from main only).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.os }} / ${{ matrix.cxx }} / hdf5=${{ matrix.hdf5 }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        os:   [ubuntu-latest, macos-latest]
+        cxx:  [g++, clang++]
+        hdf5: [ON, OFF]
+
+    env:
+      # Allow `mpirun -n 4` (hardcoded in the MPI tests) to run on runners with
+      # fewer than 4 cores. Covers both Open MPI 4 and the Open MPI 5 / PRRTE launcher.
+      OMPI_MCA_rmaps_base_oversubscribe: "1"
+      PRTE_MCA_rmaps_default_mapping_policy: ":oversubscribe"
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Ubuntu
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake ninja-build g++ clang openmpi-bin libopenmpi-dev libhdf5-dev doxygen graphviz
+          if [ "${{ matrix.cxx }}" = "g++" ]; then echo "CC=gcc"; else echo "CC=clang"; fi >> "$GITHUB_ENV"
+          echo "CXX=${{ matrix.cxx }}" >> "$GITHUB_ENV"
+
+      - name: Set up macOS
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          set -euxo pipefail
+          brew update
+          brew install cmake ninja open-mpi hdf5 doxygen graphviz gcc llvm
+          echo "CMAKE_PREFIX_PATH=$(brew --prefix open-mpi);$(brew --prefix hdf5)" >> "$GITHUB_ENV"
+          if [ "${{ matrix.cxx }}" = "g++" ]; then
+            # Homebrew installs versioned binaries (g++-14, ...); pick the newest.
+            GXX="$(basename "$(ls "$(brew --prefix)"/bin/g++-* | sort -V | tail -1)")"
+            echo "CXX=$GXX"          >> "$GITHUB_ENV"
+            echo "CC=${GXX/g++/gcc}" >> "$GITHUB_ENV"
+          else
+            LLVM="$(brew --prefix llvm)"
+            echo "$LLVM/bin" >> "$GITHUB_PATH"
+            echo "CXX=$LLVM/bin/clang++" >> "$GITHUB_ENV"
+            echo "CC=$LLVM/bin/clang"    >> "$GITHUB_ENV"
+            echo "LDFLAGS=-L$LLVM/lib/c++ -L$LLVM/lib -Wl,-rpath,$LLVM/lib/c++" >> "$GITHUB_ENV"
+            echo "CPPFLAGS=-I$LLVM/include" >> "$GITHUB_ENV"
+          fi
+
+      - name: Cache FetchContent dependencies
+        uses: actions/cache@v6
+        with:
+          path: build/_deps
+          key: deps-${{ runner.os }}-${{ matrix.cxx }}-hdf5${{ matrix.hdf5 }}-${{ hashFiles('deps/CMakeLists.txt') }}
+          restore-keys: |
+            deps-${{ runner.os }}-${{ matrix.cxx }}-hdf5${{ matrix.hdf5 }}-
+
+      # SIMPLEMC_BUILD_DOC=ON adds the `doxygen` target to the default (ALL) build, so every
+      # leg also builds the docs -- a cheap cross-platform check that they still generate.
+      - name: Configure
+        run: |
+          set -euxo pipefail
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DSIMPLEMC_ENABLE_INSTALL=OFF \
+            -DSIMPLEMC_BUILD_TESTS=ON \
+            -DSIMPLEMC_BUILD_EXAMPLES=ON \
+            -DSIMPLEMC_BUILD_DOC=ON \
+            -DSIMPLEMC_USE_HDF5=${{ matrix.hdf5 }}
+
+      - name: Build
+        run: cmake --build build -j
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      # Upload the docs from a single canonical leg for the Pages deploy. Use the
+      # HDF5-enabled build so HDF5-specific API docs are included.
+      - name: Upload Pages artifact
+        if: matrix.os == 'ubuntu-latest' && matrix.cxx == 'g++' && matrix.hdf5 == 'ON'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: build/doc/html
+
+  # Deploy the docs to GitHub Pages (main only).
+  # Requires: repo Settings -> Pages -> Source = "GitHub Actions".
+  deploy-pages:
+    name: Deploy docs to Pages
+    needs: build-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - name: Deploy
+        id: deploy
+        uses: actions/deploy-pages@v5
