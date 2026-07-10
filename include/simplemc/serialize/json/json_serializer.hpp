@@ -7,6 +7,7 @@
 #define SIMPLEMC_SERIALIZE_JSON_JSON_SERIALIZER_HPP
 
 #include <simplemc/serialize/concepts.hpp>
+#include <simplemc/serialize/json/concepts.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 
 #include <fmt/format.h>
@@ -23,44 +24,6 @@ namespace simplemc {
  * @addtogroup simplemc-serialize-json
  * @{
  */
-
-// Forward declaration.
-class json_serializer;
-
-/**
- * @brief Concept describing value types that can be written with simplemc::json_serializer::save_at.
- *
- * @details This is satisfied when either
- *
- * - (a) type `T` opts into ADL serialization (simplemc::has_simplemc_save with a
- * simplemc::json_serializer, or
- * - (b) type `T` is writable by nlohmann's internal machinery.
- *
- * The second clause inherits nlohmann's own SFINAE constraints, so this concept tracks exactly what
- * json_serializer::save_at accepts at instantiation.
- *
- * @tparam T Type to check.
- */
-template <typename T>
-concept json_savable = requires(nlohmann::json& j, const T& v) { j = v; } || has_simplemc_save<T, json_serializer>;
-
-/**
- * @brief Concept describing value types that can be read with simplemc::json_serializer::load_at.
- *
- * @details This is satisfied when either
- *
- * - (a) type `T` opts into ADL serialization (simplemc::has_simplemc_load with a
- * simplemc::json_serializer), or
- * - (b) type `T` is readable by nlohmann's internal machinery.
- *
- * The second clause inherits nlohmann's own SFINAE constraints, so this concept tracks exactly what
- * json_serializer::load_at accepts at instantiation.
- *
- * @tparam T Type to check.
- */
-template <typename T>
-concept json_loadable =
-    requires(const nlohmann::json& j, T& v) { j.get_to(v); } || has_simplemc_load<T, json_serializer>;
 
 /**
  * @brief Serializer for the JSON backend.
