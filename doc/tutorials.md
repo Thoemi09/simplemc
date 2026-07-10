@@ -24,23 +24,19 @@
 
 @section tut_compilation Compiling the tutorials
 
-All tutorials have been compiled on a MacBook Pro with an Apple M2 Max chip and clang++ v19.1.6
-together with cmake v3.31.3.
+All tutorials have been compiled on a MacBook Pro with an Apple M2 Max chip and *clang++* v22.1.8
+together with *CMake* v4.3.4.
 
 Furthermore, the following dependencies have been used:
-- [open-mpi](https://www.open-mpi.org/) 5.0.1 (installed with brew)
+- [open-mpi](https://www.open-mpi.org/) 5.0.9 (installed with brew)
+- [hdf5](https://www.hdfgroup.org/solutions/hdf5/) 2.1.1 (installed with brew)
 
 Assuming that the actual tutorial code is in a file `main.cpp`, the following generic `CMakeLists.txt`
 should work for all tutorials:
 
 ```cmake
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.28)
 project(example CXX)
-
-# set required standard
-set(CMAKE_BUILD_TYPE Release)
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # fetch simplemc from github
 include(FetchContent)

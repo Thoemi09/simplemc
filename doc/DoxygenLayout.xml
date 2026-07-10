@@ -6,7 +6,6 @@
     <tab type="usergroup" url="@ref installation" title="Installation">
       <tab type="user" url="@ref dependencies" title="Dependencies"/>
       <tab type="user" url="@ref install_steps" title="Installation steps"/>
-      <tab type="user" url="@ref versions" title="Versions"/>
       <tab type="user" url="@ref cmake_options" title="Custom CMake options"/>
     </tab>
     <tab type="usergroup" url="@ref integration" title="Integration in C++ projects">
@@ -262,7 +261,6 @@
       <tab type="filelist" visible="yes" title="" intro=""/>
     </tab>
     <tab type="user" url="@ref changelog" title="Changelog"/>
-    <tab type="user" url="@ref issues" title="Issues"/>
   </navindex>
 
   <!-- Layout definition for a class page -->
