@@ -1308,42 +1308,40 @@
  * implement their own.
  *
  * It defines the concept that every backend satisfies — simplemc::serializer — and the ADL pattern
- * that lets each user/library type carry its own state-I/O logic without coupling to a specific
- * backend.
+ * that user/library types follow to become serializable.
  *
  * @section simplemc-serialize-model Serialization model
  *
- * **simplemc-serialize** models a hierarchical store — a JSON file, an HDF5 file, a TOML table, etc.
- * — navigated by named keys and read or written at any **location** within it. A type that implements
- * both the read and write directions of this model is a **serializer** (simplemc::serializer).
+ * A **serializer** is a handle into a hierarchical store — think of a JSON file or an HDF5 file as a
+ * tree of named **locations**. A serializer always sits at one location in that tree and reads,
+ * writes, or navigates relative to it.
  *
- * The model defines five basic operations. Let `s` be a serializer object, `key` a
- * `std::string_view`, and `value` an instance of some type `T`:
+ * An instance `s` of a serializer type `S` supports five basic operations (see simplemc::serializer):
  *
- * - `s[key]` returns another serializer of the same type, pointing one level deeper than the current
- * location at the sub-location `key`. The store itself is not duplicated — `s` and the returned
- * instance write into the same underlying file or object.
- * - `s.has(key)` returns true if `key` exists at the current location.
- * - `s.save_at(key, value)` writes `value` into the store at sub-location `key` relative to the
- * current location and returns `s` (or a reference to it). That means calls can be chained:
- * `s.save_at("a", a).save_at("b", b);`.
- * - `s.load_at(key, value)` reads from sub-location `key` into `value` and returns `s` for chaining.
- * Backends typically throw on a missing key — use `has(key)` first when the key is optional.
- * - `s.try_load_at(key, value)` is the optional-read counterpart of `load_at`: it reads from
- * sub-location `key` into `value` if the key exists and returns `true`, or leaves `value` untouched
- * and returns `false` if the key is missing. Useful when loading optional/backwards-compatible state
- * without an explicit `has(key)` check.
+ * | Operation                    | What it does                                               |
+ * |------------------------------|------------------------------------------------------------|
+ * | `s[key]`                     | Creates a new serializer at sub-location `key`.            |
+ * | `s.has(key)`                 | Returns true if `key` exists at the current location.      |
+ * | `s.save_at(key, value)`      | Writes `value` at location `key`, and returns `s` again.   |
+ * | `s.load_at(key, value)`      | Reads `key` into `value`, and returns `s` again. Throws if `key` is missing. |
+ * | `s.try_load_at(key, value)`  | Like `load_at`, but returns `false` if `key` is missing.   |
  *
- * The dispatch rule for `save_at` / `load_at` / `try_load_at` is described in
+ * `s[key]` doesn't copy the underlying store — `s` and the returned serializer just point at
+ * different locations in the same tree.
+ *
+ * Because `save_at` returns `s` again, calls chain: `s.save_at("a", a).save_at("b", b)`. And because
+ * `try_load_at` returns `false` (leaving `value` unchanged) instead of throwing, it's the way to read
+ * optional or backwards-compatible keys.
+ *
+ * How `save_at` / `load_at` / `try_load_at` actually reach a value's data is described in
  * @ref simplemc-serialize-adl.
  *
- * **Examples across backends.** `s["physics"].save_at("temperature", 1.5)` produces:
+ * **The same call, different backends.** `s["physics"].save_at("temperature", 1.5)` produces:
  *
  * - *JSON*: `{"physics": {"temperature": 1.5}}`
  * - *HDF5*: a dataset `/physics/temperature` containing `1.5`
- * - *TOML*: `[physics]\ntemperature = 1.5`
  *
- * The serializer abstracts over these — user code writes the same call regardless of backend.
+ * User code doesn't change — only the backend behind the serializer does.
  *
  * @section simplemc-serialize-adl ADL customization point
  *
@@ -1359,9 +1357,9 @@
  *
  * These may be `friend`-declared inside the class when private access is needed.
  *
- * Note that `%simplemc_save` takes the serializer **by value**: serializers are cheap handles into a
- * shared document, so rvalue sub-handles bind directly (e.g. `simplemc_save(s["sub"], v)`).
- * `%simplemc_load` takes a `const` reference, which binds rvalue sub-handles as well.
+ * Note that `%simplemc_save` takes the serializer **by value**: serializers are lighweight handles
+ * into a shared document. They should be cheap to copy. So rvalue sub-handles bind directly (e.g.
+ * `%simplemc_save(s["sub"], v)` or `%simplemc_load(s["sub"], v)`).
  *
  * As described above, `save_at` / `load_at` look up `%simplemc_save` / `%simplemc_load` using ADL. If
  * no matching overload can be found (see simplemc::has_simplemc_save / simplemc::has_simplemc_load),
@@ -1377,11 +1375,10 @@
  * simplemc::serializer. **simplemc-serialize** ships with the following backends:
  * - @ref simplemc-serialize-json is based on the popular <a href="https://github.com/nlohmann/json">
  * nlohmann_json</a> library and is always available.
- * - @ref simplemc-serialize-hdf5 is based on <a href="https://github.com/BlueBrain/HighFive">
+ * - @ref simplemc-serialize-hdf5 is based on <a href="https://github.com/highfive-devs/highfive">
  * HighFive</a> over a system HDF5 install. It is opt-in via the CMake option `SIMPLEMC_USE_HDF5=ON`.
  * - @ref simplemc-serialize-variant is not a storage backend itself but erases a set of backends
- * behind a `std::variant`, giving a single concrete serializer type whose active backend is chosen at
- * runtime.
+ * behind a `std::variant` which allows users to choose the active backend at runtime.
  */
 
 /**
@@ -1389,34 +1386,37 @@
  * @ingroup simplemc-serialize
  * @brief HDF5 backend on top of `HighFive`.
  *
- * @details simplemc::hdf5_serializer satisfies simplemc::serializer.
- *
- * It owns a shared `HighFive::File` via `std::shared_ptr` and tracks the current position via a
- * POSIX-style HDF5 path (e.g. `/physics/temperature`). Navigation via `operator[]` returns a new
- * instance sharing the file but pointing one level deeper — the operation is purely a "pointer
- * advance" that never touches the file. Copying uses reference semantices, i.e. a copy aliases the
- * same underlying HDF5 file as the original.
- *
- * Per-type customization is via the ADL pattern described in @ref simplemc-serialize-adl. Types
- * without an ADL `simplemc_save` / `simplemc_load` fall through to `HighFive::File::createDataSet` on
- * the save side and `HighFive::DataSet::read` on the load side, writing leaf values directly as HDF5
- * datasets. Group materialization is lazy: the group at `/current/location` is only created on the
- * file when an actual leaf dataset is written through it. This mirrors the auto-create-on-write
- * semantics of the JSON backend.
- *
- * Files can be opened in three modes via simplemc::hdf5_file_mode:
- * - `read` (read-only, throws if the file is missing),
- * - `truncate` (fresh write — the default for the save side), and
- * - `append` (open an existing file for read/write or create it if missing, preserving any
- * pre-existing structure).
- *
- * Path helpers simplemc::h5_join_path and simplemc::h5_parent_path are exposed for working with
- * POSIX-style HDF5 paths outside the serializer.
+ * @details The group provides the simplemc::hdf5_serializer for the HDF5 backend together with some
+ * helper concepts and functions.
  *
  * The HDF5 backend is header-only and only available when the CMake option `SIMPLEMC_USE_HDF5=ON` is
- * set. It depends on HighFive and a system HDF5 installation. `HighFive::Exception` is caught at
- * every public boundary and rethrown as a simplemc::simplemc_exception so callers see a consistent
- * error type.
+ * set.
+ *
+ * @include serialize/hdf5/doc_hdf5_serializer.cpp
+ *
+ * Output:
+ *
+ * ```
+ * temperature: 3.14
+ * ```
+ *
+ * `h5dump` of the generated file:
+ *
+ * ```
+ * HDF5 "doc_hdf5_serializer.h5" {
+ * GROUP "/" {
+ *    GROUP "physics" {
+ *       DATASET "temperature" {
+ *          DATATYPE  H5T_IEEE_F64LE
+ *          DATASPACE  SCALAR
+ *          DATA {
+ *          (0): 3.14
+ *          }
+ *       }
+ *    }
+ * }
+ * }
+ * ```
  */
 
 /**
@@ -1424,21 +1424,33 @@
  * @ingroup simplemc-serialize
  * @brief JSON backend on top of `nlohmann_json`.
  *
- * @details simplemc::json_serializer satisfies simplemc::serializer.
- *
- * It owns a shared `nlohmann::json` tree via `std::shared_ptr` and tracks the current position via a
- * JSON pointer into the tree. Navigation via `operator[]` returns a new instance sharing the tree but
- * pointing at the sub-node — the non-const overload auto-creates (save side) and the const overload
- * throws on missing keys (load side). Copying uses reference semantices, i.e. a copy aliases the same
- * underlying tree as the original.
- *
- * Per-type customization is via the ADL pattern described in @ref simplemc-serialize-adl. Types
- * without an ADL `%simplemc_save` / `%simplemc_load` fall through to nlohmann's internal
- * serialization machinery.
+ * @details The group provides the simplemc::json_serializer for the JSON backend together with some
+ * helper concepts and functions.
  *
  * File I/O helpers (simplemc::read_json_file / simplemc::write_json_file) support both text mode and
  * the four nlohmann binary formats — BSON, CBOR, MessagePack, UBJSON — via the
  * simplemc::json_file_mode enum and the simplemc::json_io_options struct.
+ *
+ * Unlike the HDF5 backend, the JSON backend is a compiled library (built from `file_io.cpp`), not
+ * header-only.
+ *
+ * @include serialize/json/doc_json_serializer.cpp
+ *
+ * Output:
+ *
+ * ```
+ * temperature: 3.14
+ * ```
+ *
+ * Contents of the generated file:
+ *
+ * ```json
+ * {
+ *     "physics": {
+ *         "temperature": 3.14
+ *     }
+ * }
+ * ```
  */
 
 /**
@@ -1447,9 +1459,19 @@
  * @brief Backend-erasing serializer that dispatches to one of several backends at runtime.
  *
  * @details simplemc::variant_serializer holds one of a pack of backend serializers in a
- * `std::variant` and forwards every operation to the active one via `std::visit`. It is itself a
- * concrete type satisfying simplemc::serializer, so it can be passed wherever a single, fixed
- * serializer type is required while keeping the storage backend a runtime choice.
+ * `std::variant` and forwards every operation to the active one via `std::visit`.
+ *
+ * The concrete backend now becomes a runtime choice: the same generic code, written once
+ * against simplemc::variant_serializer, works unchanged no matter which backend is active.
+ *
+ * @include serialize/variant/doc_variant_serializer.cpp
+ *
+ * Output:
+ *
+ * ```
+ * temperature: 3.14
+ * temperature: 3.14
+ * ```
  */
 
 /**

@@ -20,7 +20,7 @@ namespace simplemc {
  */
 
 /**
- * @brief Serialize an input range into a JSON array node.
+ * @brief Serialize an input range into a JSON array.
  *
  * @details Generalization of nlohmann's built-in container support for arbitrary input ranges (e.g.
  * range-v3 or `std::ranges`). Each element is pushed into a JSON array.
@@ -36,7 +36,7 @@ void range_to_json(nlohmann::json& j, ranges::input_range auto&& rg) {
 }
 
 /**
- * @brief Deserialize a JSON array node into an output range.
+ * @brief Deserialize a JSON array into an output range.
  *
  * @details It simply iterates through the JSON array and assigns each element to the output range.
  *

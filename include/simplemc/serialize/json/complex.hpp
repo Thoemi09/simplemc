@@ -30,7 +30,7 @@ namespace nlohmann {
 template <typename T>
 struct adl_serializer<std::complex<T>> {
     /**
-     * @brief Serialize `std::complex<T>` into a JSON array node.
+     * @brief Serialize `std::complex<T>` into a JSON array.
      *
      * @param j `nlohmann::json` object to write into.
      * @param z Complex value to serialize.
@@ -38,9 +38,10 @@ struct adl_serializer<std::complex<T>> {
     static void to_json(json& j, const std::complex<T>& z) { j = json::array({ z.real(), z.imag() }); }
 
     /**
-     * @brief Deserialize a JSON array node into `std::complex<T>`.
+     * @brief Deserialize a JSON array into `std::complex<T>`.
      *
-     * @details It throws an exception if the JSON value is not an array of length 2.
+     * @details It throws a simplemc::simplemc_exception if the JSON value is not an array of length
+     * \f$ 2 \f$.
      *
      * @param j `nlohmann::json` array containing the real and imaginary parts.
      * @param z Complex value to deserialize into.

@@ -42,7 +42,7 @@ namespace simplemc {
  * The file is flushed and closed when the last handle to it goes out of scope.
  * - The **current location** — a POSIX-style HDF5 path (e.g. `/physics/temperature`) recording where
  * inside the file this particular handle is positioned. A freshly constructed serializer is
- * positioned at the root (`/`); a sub-serializer returned by operator[]() is positioned one level
+ * positioned at the root (`/`). A sub-serializer returned by operator[]() is positioned one level
  * deeper.
  *
  * The class satisfies the @ref simplemc::serializer concept:
@@ -50,16 +50,15 @@ namespace simplemc {
  * - **Save direction**: `save_at(key, value)` writes into the file via ADL
  * `%simplemc_save(hdf5_serializer, const T&)` if such an overload is reachable, falling back to
  * `HighFive::File::createDataSet` otherwise. The fallback creates an HDF5 **dataset** at
- * `<current location>/<key>`; the ADL path delegates to the user's overload, which typically descends via
- * operator[]() into an HDF5 **group**.
+ * `<current location>/<key>`. The ADL path delegates to the user's overload, which typically descends
+ * via operator[]() into an HDF5 **group**.
  * - **Load direction**: `load_at(key, value)` and `try_load_at(key, value)` read from the file via
  * ADL `%simplemc_load(const hdf5_serializer&, T&)` if such an overload is reachable, falling back to
  * `HighFive::DataSet::read` otherwise. The two differ only in how they handle a missing key —
  * `load_at` throws, `try_load_at` returns `false`.
  *
  * Group materialization is lazy: operator[]() never touches the file, and `save_at` only creates the
- * parent group when a leaf dataset is actually written. This mirrors the auto-create-on-write
- * semantics of the JSON backend.
+ * parent group when a dataset is actually written.
  *
  * `HighFive::Exception` is caught at every public boundary and rethrown as a
  * simplemc::simplemc_exception so callers see a consistent error type.
@@ -76,7 +75,7 @@ public:
      * Throws simplemc::simplemc_exception if the file cannot be opened in the requested mode.
      *
      * @param fpath Filesystem path of the HDF5 file.
-     * @param mode File open mode; defaults to `hdf5_file_mode::truncate` (fresh write).
+     * @param mode File open mode.
      */
     explicit hdf5_serializer(const std::filesystem::path& fpath, hdf5_file_mode mode = hdf5_file_mode::truncate) {
         try {
@@ -95,8 +94,8 @@ public:
      *
      * Dispatch rule:
      *
-     * - If an ADL `%simplemc_save(hdf5_serializer, const T&)` is reachable for `T`, descend into a
-     * sub-handle and delegate to it. The user overload typically writes named sub-keys, which
+     * - If simplemc::has_simplemc_save<T, hdf5_serializer> is satisfied, descend into a sub-handle
+     * and delegate to `%simplemc_save`. The user overload typically writes named sub-keys, which
      * materialize as datasets/groups under `<current location>/<key>`.
      * - Otherwise, create an HDF5 dataset at `<current location>/<key>` containing `value` via
      * `HighFive::File::createDataSet`. The parent group is auto-created if missing.
@@ -135,9 +134,9 @@ public:
      *
      * Dispatch rule:
      *
-     * - If an ADL `%simplemc_load(const hdf5_serializer&, T&)` is reachable for `T`, descend into a
-     * sub-handle and delegate to it.
-     * - Otherwise, read the HDF5 dataset at `<urrent location>/<key>` into `value` via
+     * - If simplemc::has_simplemc_load<T, hdf5_serializer> is satisfied, descend into a sub-handle
+     * and delegate to `%simplemc_load`.
+     * - Otherwise, read the HDF5 dataset at `<current location>/<key>` into `value` via
      * `HighFive::DataSet::read`.
      *
      * Throws simplemc::simplemc_exception if the key is missing in the file.
@@ -167,8 +166,8 @@ public:
     /**
      * @brief Try to deserialize the file at `<current location>/<key>` into a given value.
      *
-     * @details Same as load_at() except that it silently returns false if `key` is missing,
-     * leaving `value` unchanged.
+     * @details Same as load_at() except that it silently returns false if `key` is missing, leaving
+     * `value` unchanged.
      *
      * @tparam T Value type.
      * @param key Sub-key relative to the current location.
@@ -188,10 +187,12 @@ public:
     /**
      * @brief Return a sub-handle positioned at `<current location>/<key>` (save side).
      *
-     * @details Conceptually, this is a "pointer-advance" operation: the returned handle shares
-     * the same file as `*this`, but its current location is one level deeper. The file is not
-     * modified, and the underlying group at the new location is not materialized eagerly — HDF5
-     * groups are created only when something is actually written through the returned handle.
+     * @details Conceptually, this is a "pointer-advance" operation: the returned handle shares the
+     * same file as `*this`, but its current location is one level deeper. The file is not modified,
+     * and the underlying group at the new location is not materialized eagerly — HDF5 groups are
+     * created only when something is actually written through the returned handle.
+     *
+     * If you never write through the returned handle, the file remains unchanged.
      *
      * @param key Sub-key relative to the current location.
      * @return New sub-handle pointing at `<current location>/<key>`.

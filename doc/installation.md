@@ -27,8 +27,7 @@ are not fully supported by most compilers).
 * [range-v3](https://github.com/ericniebler/range-v3): Range library (as of now the ranges library is
 not complete in the standard library).
 * [Eigen3](https://gitlab.com/libeigen/eigen): Linear algebra libray.
-* [nlohmann_json](https://github.com/nlohmann/json): JSON library for serialization and parsing
-user input and configuration files.
+* [nlohmann_json](https://github.com/nlohmann/json): JSON backend for the simplemc-serialize library.
 * [HighFive](https://github.com/highfive-devs/highfive): C++ HDF5 wrapper used by the optional HDF5
 serialization backend (only required when `SIMPLEMC_USE_HDF5=ON`; needs a working HDF5 C library to be 
 installed on the system).
@@ -97,7 +96,6 @@ $ cmake ../simplemc.src -DOPTION1=value1 -DOPTION2=value2 ...
 | Build examples                          | ``-DSIMPLEMC_BUILD_EXAMPLES=ON``                  |
 | Build documentation with Doxygen        | ``-DSIMPLEMC_BUILD_DOC=ON``                       |
 | Use ranges from standard library        | ``-DSIMPLEMC_USE_STD_RANGES=ON``                  |
-| Use nlohmann_json for JSON support      | ``-DSIMPLEMC_WITH_NLOHMANN_JSON=ON``              |
 | Enable HDF5 backend for serialization   | ``-DSIMPLEMC_USE_HDF5=ON``                        |
 | Fetch fmt from github                   | ``-DSIMPLEMC_FETCH_FMT=ON``                       |
 | Fetch range-v3 from github              | ``-DSIMPLEMC_FETCH_RANGEV3=ON``                   |

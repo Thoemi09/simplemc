@@ -26,25 +26,21 @@ namespace simplemc {
 /**
  * @brief Serializer that erases its backend behind a `std::variant`.
  *
- * @details A simplemc::variant_serializer holds exactly one of the backend handles and forwards every
- * serializer operation to the active one via `std::visit`. It is itself a concrete,
- * non-template-on-use type that models the @ref simplemc::serializer concept, which lets callers
- * choose the storage backend (e.g. JSON, HDF5, etc.) at **runtime** while passing a single fixed
- * serializer type around.
+ * @details A simplemc::variant_serializer stores a variant of given backend serializers. It is itself
+ * a concrete type that models the @ref simplemc::serializer concept, which lets callers choose the
+ * specific storage backend (e.g. JSON, HDF5, etc.) at runtime.
  *
- * **Dispatch.** For a value type with an ADL `%simplemc_save` / `%simplemc_load` written against the
- * variant handle itself, `save_at` / `load_at` / `try_load_at` descend into a sub-handle and dispatch
- * to that overload (the **simplemc-mc** value types rely on this). Otherwise they delegate to the
- * active backend's same-named member.
+ * **Dispatch.** `save_at` / `load_at` / `try_load_at` first try to find a suitable `%simplemc_save` /
+ * `%simplemc_load` ADL hook and dispatch to it. If none is found, they delegate to the active
+ * backend's same-named member.
  *
- * **Capability is the union of the backends.** For the backend-delegating path, the operations are
- * constrained by simplemc::save_at_any / simplemc::load_at_any folded over the whole backend pack: a
- * value type need only be serializable by *at least one* backend. A type serializable by no backend
- * is a compile error; a type unsupported by the *currently-active* backend throws a
- * simplemc::simplemc_exception at runtime (each `std::visit` arm is guarded so incompatible arms
- * throw rather than fail to compile).
+ * **Capability is the union of the backends.** The backend-delegating dispatches are constrained by
+ * simplemc::save_at_any / simplemc::load_at_any folded over the whole backend pack. That means a
+ * value type need only be (de)serializable by the *active* backend. Unsupported types will trigger
+ * either a compile-time error (if no backend can handle it) or a simplemc::simplemc_exception at
+ * runtime (if the active backend cannot handle it).
  *
- * The backend currently held can be inspected via backend(), e.g. with `std::get_if` or `std::visit`.
+ * The backend currently held can be inspected via backend() and `std::get_if` or `std::visit`.
  *
  * @tparam Bs Backend serializer types.
  */
@@ -57,17 +53,18 @@ public:
     using variant_type = std::variant<Bs...>;
 
     /**
-     * @brief Default-construct, holding a default-constructed first backend.
+     * @brief Default construct a variant serializer by default-constructing the first backend in the 
+     * pack.
      *
      * @details Available only if the first backend is default-constructible.
      */
     variant_serializer() = default;
 
     /**
-     * @brief Construct from a concrete backend handle.
+     * @brief Construct a variant serializer from a concrete backend handle.
      *
-     * @details Constrained to the backend alternatives so it never shadows the copy/move
-     * constructors. The variant adopts a copy/move of the given backend as its active alternative.
+     * @details It is constrained to the backend alternatives so it never shadows the copy/move
+     * constructors.
      *
      * @tparam B Backend type.
      * @param backend Backend handle to adopt.
@@ -78,15 +75,14 @@ public:
     variant_serializer(B&& backend) : backend_ { std::forward<B>(backend) } {}
 
     /**
-     * @brief Serialize a value at sub-location `key`.
+     * @brief Serialize a given value at `<current location>/<key>`.
      *
-     * @details If an ADL `%simplemc_save(variant_serializer, const T&)` is reachable for `T` (i.e.
-     * the type's serialization is written against this variant handle itself), descend into a
-     * sub-handle and dispatch to it.
+     * @details If simplemc::has_simplemc_save<T, variant_serializer> is satisfied, descend into a
+     * sub-handle and delegate to `%simplemc_save`. Otherwise dispatch to the active backend's 
+     * `%save_at`.
      *
-     * Otherwise delegate to the active backend's `save_at`, which requires at least one backend to
-     * handle `T` (simplemc::save_at_any). If the active backend cannot serialize `T`,it throws a
-     * simplemc::simplemc_exception.
+     * It throws a simplemc::simplemc_exception if the active backend does not support the
+     * serialization of `T`.
      *
      * @tparam T Value type.
      * @param key Sub-key relative to the current location.
@@ -114,15 +110,14 @@ public:
     }
 
     /**
-     * @brief Deserialize a value at sub-location `key`.
+     * @brief Deserialize from `<current location>/<key>` into a given value.
      *
-     * @details If an ADL `%simplemc_load(const variant_serializer&, T&)` is reachable for `T` (i.e.
-     * the type's deserialization is written against this variant handle itself), descend into a
-     * sub-handle and dispatch to it.
+     * @details If simplemc::has_simplemc_load<T, variant_serializer> is satisfied, descend into a
+     * sub-handle and delegate to `%simplemc_load`. Otherwise dispatch to the active backend's 
+     * `%load_at`.
      *
-     * Otherwise delegate to the active backend's `load_at`, which requires at least one backend to
-     * handle `T` (simplemc::load_at_any). If the active backend cannot deserialize `T`, it throws a
-     * simplemc::simplemc_exception.
+     * It throws a simplemc::simplemc_exception if the active backend does not support the
+     * deserialization of `T`.
      *
      * @tparam T Value type.
      * @param key Sub-key relative to the current location.
@@ -150,17 +145,10 @@ public:
     }
 
     /**
-     * @brief Try to deserialize a value at sub-location `key` through the active backend.
+     * @brief Try to deserialize from `<current location>/<key>` into a given value.
      *
-     * @details If an ADL `%simplemc_load(const variant_serializer&, T&)` is reachable for `T` (i.e.
-     * the type's deserialization is written against this variant handle itself), descend into a
-     * sub-handle and dispatch to it.
-     *
-     * Otherwise delegate to the active backend's `try_load_at`, which requires at least one backend to
-     * handle `T` (simplemc::load_at_any). If the active backend cannot deserialize `T`, it throws a
-     * simplemc::simplemc_exception.
-     *
-     * It leaves `value` untouched and returns false if the key is missing.
+     * @details Same as load_at() except that it silently returns false if `key` is missing, leaving
+     * `value` unchanged.
      *
      * @tparam T Value type.
      * @param key Sub-key relative to the current location.
@@ -193,6 +181,9 @@ public:
     /**
      * @brief Return a sub-handle positioned at `<current location>/<key>` (save side).
      *
+     * @details It simply delegates to the active backend's `operator[]` and wraps the returned handle
+     * in a new variant_serializer.
+     *
      * @param key Sub-key relative to the current location.
      * @return New variant handle wrapping the active backend's sub-handle.
      */
@@ -203,7 +194,8 @@ public:
     /**
      * @brief Return a sub-handle positioned at `<current location>/<key>` (load side).
      *
-     * @details Throws (via the active backend) if the key is missing.
+     * @details It simply delegates to the active backend's `operator[]` and wraps the returned handle
+     * in a new variant_serializer.
      *
      * @param key Sub-key relative to the current location.
      * @return New variant handle wrapping the active backend's sub-handle.
@@ -213,7 +205,7 @@ public:
     }
 
     /**
-     * @brief Test whether the active backend has a sub-location at `key`.
+     * @brief Test whether the active backend has a sub-location at `<current location>/<key>`.
      *
      * @param key Sub-key relative to the current location.
      * @return True if `<current location>/<key>` is present.
@@ -225,14 +217,14 @@ public:
     /**
      * @brief Mutable access to the underlying variant of backends.
      *
-     * @return Reference to the held `std::variant`.
+     * @return Reference to the stored `std::variant`.
      */
     [[nodiscard]] variant_type& backend() noexcept { return backend_; }
 
     /**
      * @brief Read-only access to the underlying variant of backends.
      *
-     * @return Const reference to the held `std::variant`.
+     * @return Const reference to the stored `std::variant`.
      */
     [[nodiscard]] const variant_type& backend() const noexcept { return backend_; }
 

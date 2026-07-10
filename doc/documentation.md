@@ -121,8 +121,8 @@ It currently ships with the following backends:
 - @ref simplemc-serialize-json, implemented on top of [nlohmann_json](https://github.com/nlohmann/
 json) and providing @ref simplemc::json_serializer, text- and binary-mode file I/O helpers, and
 various custom nlohmann adapters. Always available.
-- @ref simplemc-serialize-hdf5, implemented on top of [HighFive](https://github.com/BlueBrain/
-HighFive). It requires a system HDF5 install and provides @ref simplemc::hdf5_serializer with
+- @ref simplemc-serialize-hdf5, implemented on top of [HighFive](https://github.com/highfive-devs/
+highfive). It requires a system HDF5 install and provides @ref simplemc::hdf5_serializer with
 POSIX-style path navigation and lazy group materialization. Header-only and opt-in via the CMake
 option `SIMPLEMC_USE_HDF5=ON`.
 - @ref simplemc-serialize-variant, erases a set of backends behind a `std::variant`, giving a single

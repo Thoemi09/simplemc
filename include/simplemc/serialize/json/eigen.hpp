@@ -31,7 +31,7 @@ namespace nlohmann {
  * as long as both ends use the same Eigen type.
  *
  * Static extents are checked on deserialization and a simplemc::simplemc_exception is thrown on
- * mismatch; dynamic extents are resized to match the JSON payload.
+ * mismatch. Dynamic extents are resized to match the JSON payload.
  *
  * @tparam M Eigen type derived from `Eigen::PlainObjectBase<M>`.
  */
@@ -59,7 +59,7 @@ struct adl_serializer<M> {
     /**
      * @brief Deserialize a JSON object into an Eigen object derived from `Eigen::PlainObjectBase`.
      *
-     * @details Dynamic extents are resized to match the JSON payload; static extents are checked
+     * @details Dynamic extents are resized to match the JSON payload. Static extents are checked
      * against the JSON shape and a simplemc::simplemc_exception is thrown on mismatch.
      *
      * Storage order is not checked as long as the dimensions match.

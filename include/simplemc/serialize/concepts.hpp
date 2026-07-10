@@ -20,8 +20,7 @@ namespace simplemc {
  * @brief Concept that specifies the requirements for a serializer backend.
  *
  * @details A serializer is able to read and write named values/objects in some hierarchical store,
- * navigate the store (downward) to sub-locations, and report the existence of sub-locations. See
- * @ref simplemc-serialize-model for details.
+ * navigate the store (downward) to sub-locations, and check their existence. s
  *
  * Let `s` be an instance of `S`, `cs` an instance of `const S`, `key` a `std::string_view`, `value`
  * an instance of type `const T&`, and `mvalue` an lvalue reference of type `T`. The requirements

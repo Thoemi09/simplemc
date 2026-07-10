@@ -35,20 +35,20 @@ namespace simplemc {
  * document itself is never duplicated. Every copy of a serializer, and every sub-serializer produced
  * by operator[](), points at the same underlying document. Mutations through one handle are visible
  * through all of them. The document is destroyed only when the last handle to it goes out of scope.
- * - The **current location** — a `nlohmann::json::json_pointer` (RFC 6901) recording where inside
+ * - The **current location** — an `nlohmann::json::json_pointer` (RFC 6901) recording where inside
  * the root document this particular handle is positioned. A freshly constructed serializer is
- * positioned at the document root (the empty pointer `""`); a sub-serializer returned by operator[]()
+ * positioned at the document root (the empty pointer `""`). A sub-serializer returned by operator[]()
  * is positioned one level deeper.
  *
  * The class satisfies the @ref simplemc::serializer concept:
  *
- * - **Save direction**: `save_at(key, value)` (non-const) writes into the shared document via ADL
+ * - **Save direction**: `save_at(key, value)` writes into the shared document via ADL
  * `%simplemc_save(json_serializer, const T&)` if such an overload is reachable, falling back to
  * nlohmann's `to_json` / `adl_serializer<T>` machinery otherwise.
- * - **Load direction**: `load_at(key, value)` and `try_load_at(key, value)` (both const) read from
- * the shared document via ADL `%simplemc_load(const json_serializer&, T&)` if such an overload is
- * reachable, falling back to `nlohmann::json::get_to` otherwise. The two differ only in how they
- * handle a missing key — `load_at` throws, `try_load_at` returns `false`.
+ * - **Load direction**: `load_at(key, value)` and `try_load_at(key, value)` read from the shared
+ * document via ADL `%simplemc_load(const json_serializer&, T&)` if such an overload is reachable,
+ * falling back to `nlohmann::json::get_to` otherwise. The two differ only in how they handle a
+ * missing key — `load_at` throws, `try_load_at` returns `false`.
  *
  * Every operation — save_at(), load_at(), try_load_at(), has(), operator[](), get() — is interpreted
  * **relative to the current location**, not relative to the root. For example, given the document
@@ -60,13 +60,12 @@ namespace simplemc {
  * the call `s["physics"].save_at("pressure", 2.0)` proceeds as follows:
  *
  * 1. `s["physics"]` returns a new handle still pointing at the same document, but with its current
- * location advanced from `""` (root) to `"/physics"`. No copying, no materialization of any sub-node;
- * just a pointer-advance operation.
+ * location advanced from `""` (root) to `"/physics"`. No copying, no materialization of any sub-node.
+ * Just a pointer-advance operation.
  * 2. `.save_at("pressure", 2.0)` writes `2.0` into the document at location `<current>/<key>` =
  * `"/physics/pressure"`.
  *
- * After the call, the document reads `{ "physics": { "temperature": 1.5, "pressure": 2.0 } }`,
- * visible through both `s` and the temporary sub-handle (had we kept it).
+ * After the call, the document reads `{ "physics": { "temperature": 1.5, "pressure": 2.0 } }`.
  */
 class json_serializer {
 public:
@@ -87,17 +86,15 @@ public:
      * @brief Serialize a given value into the document at `<current location>/<key>`.
      *
      * @details The write target is always *relative to this handle's current location*, never
-     * relative to the root. On a top-level handle, the target is `/<key>` (immediate child of root);
+     * relative to the root. On a top-level handle, the target is `/<key>` (immediate child of root).
      * on a sub-serializer at `/a/b`, the target is `/a/b/<key>`.
      *
      * Dispatch rule:
      *
-     * - If an ADL `%simplemc_save(json_serializer, const T&)` is reachable for `T`, descend into
-     * a sub-handle and delegate to it.
+     * - If simplemc::has_simplemc_save<T, json_serializer> is satisfied, descend into a sub-handle
+     * and delegate to `%simplemc_save`.
      * - Otherwise, assign directly via `nlohmann::json::operator=`, which triggers nlohmann's
      * `to_json` / `adl_serializer<T>` machinery.
-     *
-     * Both paths will write the value to `<current location>/<key>`.
      *
      * @tparam T Value type.
      * @param key Sub-key relative to the current location.
@@ -125,12 +122,10 @@ public:
      *
      * Dispatch rule:
      *
-     * - If an ADL `%simplemc_load(const json_serializer&, T&)` is reachable for `T`, descend into
-     * a sub-handle and delegate to it.
+     * - If simplemc::has_simplemc_load<T, json_serializer> is satisfied, descend into a sub-handle
+     * and delegate to `%simplemc_load`.
      * - Otherwise, read directly via `nlohmann::json::get_to`, which triggers nlohmann's `from_json`
      * / `adl_serializer<T>` machinery.
-     *
-     * Both paths will try to read from `<current location>/<key>`.
      *
      * It throws an exception if the key is missing in the document.
      *
@@ -154,8 +149,8 @@ public:
     /**
      * @brief Try to deserialize the file at `<current location>/<key>` into a given value.
      *
-     * @details Same as load_at() except that it silently returns false if `key` is missing,
-     * leaving `value` unchanged.
+     * @details Same as load_at() except that it silently returns false if `key` is missing, leaving
+     * `value` unchanged.
      *
      * @tparam T Value type.
      * @param key Sub-key relative to the current location.
@@ -175,11 +170,11 @@ public:
     /**
      * @brief Return a sub-handle positioned at `<current location>/<key>` (save side).
      *
-     * @details Conceptually, this is a "pointer-advance" operation: the returned handle shares
-     * the same root document as `*this`, but its current location is one level deeper. The
-     * document is not modified, and the underlying JSON node at the new location is not
-     * materialized eagerly — nlohmann auto-creates intermediate objects only when something is
-     * actually written through the returned handle.
+     * @details Conceptually, this is a "pointer-advance" operation: the returned handle shares the
+     * same root document as `*this`, but its current location is one level deeper. The document is
+     * not modified, and the underlying JSON node at the new location is not materialized eagerly —
+     * nlohmann auto-creates intermediate objects only when something is actually written through the
+     * returned handle.
      *
      * If you never write through the returned handle, the document remains unchanged.
      *
