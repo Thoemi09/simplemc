@@ -55,3 +55,65 @@ target_link_libraries(simplemc
         simplemc::simplemc-accs
         simplemc::simplemc-serialize
         simplemc::simplemc-mc)
+
+#########################
+# Install rules
+#########################
+if(SIMPLEMC_ENABLE_INSTALL)
+    # refuse to configure an install while any public dependency is being fetched
+    if(SIMPLEMC_FETCH_FMT OR SIMPLEMC_FETCH_EIGEN3 OR SIMPLEMC_FETCH_NLOHMANN_JSON 
+            OR SIMPLEMC_FETCH_RANGEV3 OR SIMPLEMC_FETCH_HIGHFIVE)
+        message(FATAL_ERROR
+            "SIMPLEMC_ENABLE_INSTALL is ON but one or more public dependencies are being fetched. "
+            "Reconfigure with the relevant SIMPLEMC_FETCH_*=OFF, or set SIMPLEMC_ENABLE_INSTALL=OFF.")
+    endif()
+
+    include(CMakePackageConfigHelpers)
+
+    # install all interface + compiled targets into a single export set
+    install(
+        TARGETS
+            simplemc simplemc-basic
+            simplemc-utils simplemc-mpi simplemc-random simplemc-grids
+            simplemc-numeric simplemc-accs simplemc-mc
+            simplemc-serialize-core simplemc-serialize
+            simplemc-serialize-variant simplemc-serialize-json
+        EXPORT simplemc-targets
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+    if(SIMPLEMC_USE_HDF5)
+        install(TARGETS simplemc-serialize-hdf5 EXPORT simplemc-targets)
+    endif()
+
+    # install headers: shipped source tree + generated config.hpp
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../include/simplemc
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+    install(FILES ${PROJECT_BINARY_DIR}/include/simplemc/config.hpp
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/simplemc)
+
+    # install the export set
+    install(EXPORT simplemc-targets
+        FILE simplemc-targets.cmake
+        NAMESPACE simplemc::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/simplemc)
+
+    # generate and install the package config files
+    configure_package_config_file(
+        ${PROJECT_SOURCE_DIR}/cmake/simplemc-config.cmake.in
+        ${PROJECT_BINARY_DIR}/simplemc-config.cmake
+        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/simplemc)
+
+    write_basic_package_version_file(
+        ${PROJECT_BINARY_DIR}/simplemc-config-version.cmake
+        VERSION ${PROJECT_VERSION}
+        COMPATIBILITY SameMajorVersion)
+
+    install(
+        FILES
+            ${PROJECT_BINARY_DIR}/simplemc-config.cmake
+            ${PROJECT_BINARY_DIR}/simplemc-config-version.cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/simplemc)
+endif()
