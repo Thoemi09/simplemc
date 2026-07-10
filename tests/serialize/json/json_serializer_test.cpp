@@ -25,7 +25,6 @@ void roundtrip_json(const T& src, T& dst) {
 TEST(SerializerJson, ConceptConformance) {
     using simplemc::serializer;
     using simplemc::json_serializer;
-    using simplemc::serializer;
 
     static_assert(serializer<json_serializer>);
     SUCCEED();
