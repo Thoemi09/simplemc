@@ -67,7 +67,7 @@ struct mpi_type {};
 #define MAKE_MPI_DATATYPE(__cxx_type__, __mpi_type__) \
     template <> \
     struct mpi_type<__cxx_type__> { \
-        [[nodiscard]] static constexpr MPI_Datatype get() noexcept { return __mpi_type__; } \
+        [[nodiscard]] static MPI_Datatype get() noexcept { return __mpi_type__; } \
     };
 
 // Character type.
