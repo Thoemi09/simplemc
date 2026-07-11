@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Thomas Hahn
+// SPDX-License-Identifier: MIT
+
 #include "../serialize_test_utils.hpp"
 #include "../test_types.hpp"
 

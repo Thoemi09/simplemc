@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Thomas Hahn
+// SPDX-License-Identifier: MIT
+
 /**
  * @file
  * @brief HDF5 serializer for simplemc-serialize-hdf5.

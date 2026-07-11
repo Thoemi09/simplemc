@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Thomas Hahn
+// SPDX-License-Identifier: MIT
+
 /**
  * @file
  * @brief Includes the Eigen library and adds some useful extensions.

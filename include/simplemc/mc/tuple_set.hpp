@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Thomas Hahn
+// SPDX-License-Identifier: MIT
+
 /**
  * @file
  * @brief Base class of simplemc::update_set / simplemc::measurement_set.

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Thomas Hahn
+// SPDX-License-Identifier: MIT
+
 /**
  * @file
  * @brief Forward declarations for simplemc-grids.

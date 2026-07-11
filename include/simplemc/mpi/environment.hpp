@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Thomas Hahn
+// SPDX-License-Identifier: MIT
+
 /**
  * @file
  * @brief RAII wrapper for an MPI environment and other essential MPI functions.

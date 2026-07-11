@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Thomas Hahn
+// SPDX-License-Identifier: MIT
+
 /**
  * @file
  * @brief Linear map from the domain \f$ [a, b] \f$ to the range \f$ [c, d] \f$ (and vice versa).

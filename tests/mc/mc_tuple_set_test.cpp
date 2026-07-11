@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Thomas Hahn
+// SPDX-License-Identifier: MIT
+
 #include <simplemc/mc/tuple_set.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>
 

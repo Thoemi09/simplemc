@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Thomas Hahn
+// SPDX-License-Identifier: MIT
+
 #include <fmt/base.h>
 #include <gtest/gtest.h>
 #include <simplemc/config.hpp>

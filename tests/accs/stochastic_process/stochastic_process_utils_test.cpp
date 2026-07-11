@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Thomas Hahn
+// SPDX-License-Identifier: MIT
+
 #include "./stochastic_process_fixture.hpp"
 
 #include <simplemc/accs/utils.hpp>

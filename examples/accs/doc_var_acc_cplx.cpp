@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Thomas Hahn
+// SPDX-License-Identifier: MIT
+
 #include <fmt/base.h>
 #include <fmt/std.h>
 #include <simplemc/accs.hpp>

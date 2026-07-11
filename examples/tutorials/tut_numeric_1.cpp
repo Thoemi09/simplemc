@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Thomas Hahn
+// SPDX-License-Identifier: MIT
+
 #include <Eigen/Dense>
 #include <fmt/base.h>
 #include <simplemc/numeric.hpp>

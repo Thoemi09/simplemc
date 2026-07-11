@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Thomas Hahn
+// SPDX-License-Identifier: MIT
+
 #include "../gtest-mpi-listener.hpp"
 #include "./mc_test_utils.hpp"
 

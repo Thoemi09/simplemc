@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Thomas Hahn
+// SPDX-License-Identifier: MIT
+
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 #include <simplemc/utils/generic_error.hpp>

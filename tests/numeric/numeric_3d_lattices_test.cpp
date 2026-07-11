@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Thomas Hahn
+// SPDX-License-Identifier: MIT
+
 #include "../test_utils.hpp"
 
 #include <simplemc/numeric/bravais_lattice.hpp>

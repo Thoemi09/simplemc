@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Thomas Hahn
+// SPDX-License-Identifier: MIT
+
 #include <simplemc/mc/concepts.hpp>
 #include <simplemc/random/xoshiro256.hpp>
 

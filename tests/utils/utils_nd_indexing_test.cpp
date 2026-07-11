@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Thomas Hahn
+// SPDX-License-Identifier: MIT
+
 #include <gtest/gtest.h>
 #include <simplemc/utils/nd_indexing.hpp>
 

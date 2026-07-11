@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Thomas Hahn
+// SPDX-License-Identifier: MIT
+
 #include <fmt/ranges.h>
 #include <simplemc/grids.hpp>
 #include <simplemc/numeric/linear_interpolation.hpp>

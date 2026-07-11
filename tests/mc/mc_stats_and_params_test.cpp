@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Thomas Hahn
+// SPDX-License-Identifier: MIT
+
 #include <simplemc/mc.hpp>
 #include <simplemc/serialize/json/json_serializer.hpp>
 #include <simplemc/utils/simplemc_exception.hpp>

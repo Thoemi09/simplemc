@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Thomas Hahn
+// SPDX-License-Identifier: MIT
+
 #include "./accs_test_traits.hpp"
 
 #include <simplemc/accs/batch_acc.hpp>

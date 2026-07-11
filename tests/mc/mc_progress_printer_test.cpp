@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Thomas Hahn
+// SPDX-License-Identifier: MIT
+
 #include <simplemc/mc.hpp>
 #include <simplemc/mc/progress_printer.hpp>
 #include <simplemc/utils/file_io.hpp>

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Thomas Hahn
+// SPDX-License-Identifier: MIT
+
 #ifndef SIMPLEMC_TESTS_ACCS_TEST_TRAITS_HPP
 #define SIMPLEMC_TESTS_ACCS_TEST_TRAITS_HPP
 
