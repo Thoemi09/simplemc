@@ -104,9 +104,10 @@ jobs:
         run: ctest --test-dir build --output-on-failure
 
       # Upload the docs from a single canonical leg for the Pages deploy. Use the
-      # HDF5-enabled build so HDF5-specific API docs are included.
+      # macOS/clang leg, which has Homebrew's newer Doxygen, and the HDF5-enabled
+      # build so HDF5-specific API docs are included.
       - name: Upload Pages artifact
-        if: matrix.os == 'ubuntu-latest' && matrix.cxx == 'g++' && matrix.hdf5 == 'ON'
+        if: matrix.os == 'macos-latest' && matrix.cxx == 'clang++' && matrix.hdf5 == 'ON'
         uses: actions/upload-pages-artifact@v5
         with:
           path: build/doc/html
