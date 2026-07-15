@@ -69,10 +69,10 @@ TEST_F(SimplemcAccsStochasticProcess, CovarAccSingle) {
     // factory function
     auto dview = simplemc::ranges::transform_view(sp_d.samples, [](const auto& s) { return s(0); });
     auto acc_std_d3 = make_covar_acc<standard>(dview);
-    auto acc_wel_d3 = make_covar_acc(dview);
+    auto acc_wel_d3 = make_covar_acc<welford>(dview);
     auto cview = simplemc::ranges::transform_view(sp_c.samples, [](const auto& s) { return s(0); });
     auto acc_std_c3 = make_covar_acc<standard>(cview);
-    auto acc_wel_c3 = make_covar_acc(cview);
+    auto acc_wel_c3 = make_covar_acc<welford>(cview);
 
     // check mean and variance
     const auto m_d = sample_mean(sp_d);
@@ -150,10 +150,10 @@ TEST_F(SimplemcAccsStochasticProcess, CovarAccVector) {
     // factory function
     auto dview = simplemc::ranges::transform_view(sp_d.samples, [](const auto& s) { return Eigen::Vector3d(s); });
     auto acc_std_d3 = make_covar_acc<standard>(dview);
-    auto acc_wel_d3 = make_covar_acc(dview);
+    auto acc_wel_d3 = make_covar_acc<welford>(dview);
     auto cview = simplemc::ranges::transform_view(sp_c.samples, [](const auto& s) { return Eigen::Vector3cd(s); });
     auto acc_std_c3 = make_covar_acc<standard>(cview);
-    auto acc_wel_c3 = make_covar_acc(cview);
+    auto acc_wel_c3 = make_covar_acc<welford>(cview);
 
     // check mean and variance
     using simplemc::make_span;
@@ -308,7 +308,7 @@ TEST_F(SimplemcAccsStochasticProcess, CovarAccBlocked) {
 
     // factory function
     auto dview = simplemc::ranges::transform_view(sp_d.samples, [](const auto& s) { return Eigen::Vector3d(s); });
-    auto acc_wel_d3 = make_block_covar_acc(dview, block_size);
+    auto acc_wel_d3 = make_block_covar_acc<welford>(dview, block_size);
 
     // check mean and variance
     using simplemc::make_span;
@@ -340,7 +340,7 @@ TEST_F(SimplemcAccsStochasticProcess, CovarAccAutocorrelation) {
 
     // factory function
     auto dview = simplemc::ranges::transform_view(sp_d.samples, [](const auto& s) { return Eigen::VectorXd(s); });
-    auto acc_vec2 = make_autocorr_covar_acc(dview);
+    auto acc_vec2 = make_autocorr_covar_acc<welford>(dview);
 
     // check block variance accumulators with increasing block sizes and autocorrelation times
     using simplemc::make_span;

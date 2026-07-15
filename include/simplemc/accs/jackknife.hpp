@@ -336,7 +336,7 @@ auto jackknife_make_acc(auto&& f, Rs&&... rgs) { // NOLINT (ranges need not be f
  * @param rgs One or more ranges \f$ S_{\mathbf{Z}_i} \f$ containing the data samples.
  * @return simplemc::jackknife_result wrapping a simplemc::covar_acc of the jackknife estimates.
  */
-template <varalg A = varalg::welford, typename F, sample_range... Rs>
+template <varalg A = varalg::standard, typename F, sample_range... Rs>
     requires(sizeof...(Rs) >= 1 && std::invocable<F, ranges::range_value_t<Rs>...>)
 [[nodiscard]] auto jackknife(F&& f, Rs&&... rgs) {
     return detail::jackknife_make_acc<A>(std::forward<F>(f), std::forward<Rs>(rgs)...);
@@ -364,7 +364,7 @@ template <varalg A = varalg::welford, typename F, sample_range... Rs>
  * @param baccs One or more batch accumulators containing the data for each observable.
  * @return simplemc::jackknife_result wrapping a simplemc::covar_acc of the jackknife estimates.
  */
-template <varalg A = varalg::welford, typename F, batch_accumulator... Bs>
+template <varalg A = varalg::standard, typename F, batch_accumulator... Bs>
     requires(sizeof...(Bs) >= 1 && std::invocable<F, typename Bs::sample_type...>)
 [[nodiscard]] auto jackknife(F&& f, const Bs&... baccs) {
     // get the batch means of each accumulator and store them in a tuple as a vector of means

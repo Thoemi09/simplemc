@@ -100,14 +100,14 @@ void merge_batches(std::size_t c, std::vector<mean_acc<T, A>>& batches) {
  * Output:
  *
  * ```
- * Mean: 0.002150529703893513
- * Variance: 0.00010741776938402936
+ * Mean: 0.0021505297038934904
+ * Variance: 0.00010741776938402915
  * ```
  *
  * @tparam T simplemc::sample_type to accumulate.
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  */
-template <sample_type T, varalg A = varalg::welford>
+template <sample_type T, varalg A = varalg::standard>
 class batch_acc {
 public:
     /**
@@ -726,7 +726,7 @@ private:
  * @tparam M Size of the accumulator.
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  */
-template <double_or_complex T, int M, varalg A = varalg::welford>
+template <double_or_complex T, int M, varalg A = varalg::standard>
     requires(M >= 1)
 using batch_acc_static = batch_acc<Eigen::Matrix<T, M, 1>, A>;
 
@@ -736,7 +736,7 @@ using batch_acc_static = batch_acc<Eigen::Matrix<T, M, 1>, A>;
  * @tparam T Underlying scalar type of accumulated values (simplemc::double_or_complex).
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  */
-template <double_or_complex T, varalg A = varalg::welford>
+template <double_or_complex T, varalg A = varalg::standard>
 using batch_acc_dynamic = batch_acc<Eigen::Matrix<T, Eigen::Dynamic, 1>, A>;
 
 /**
@@ -755,7 +755,7 @@ using batch_acc_dynamic = batch_acc<Eigen::Matrix<T, Eigen::Dynamic, 1>, A>;
  * data.
  * @return simplemc::batch_acc containing the accumulated data from the given range.
  */
-template <varalg A = varalg::welford, sample_range R>
+template <varalg A = varalg::standard, sample_range R>
 [[nodiscard]] auto make_batch_acc(R&& rg, std::size_t m_b, // NOLINT (ranges need not be forwarded)
     std::optional<ranges::range_value_t<R>> t = std::nullopt) {
     using value_type = ranges::range_value_t<R>;

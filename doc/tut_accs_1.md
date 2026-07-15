@@ -100,7 +100,7 @@ const double s_x_bar_ref = std::sqrt(sum_sq / (n_xd - 1) / n_xd);
 > \f$ x_i - \bar{x} \f$ can suffer from catastrophic cancellation when the samples cluster far
 > from the origin relative to their spread. To handle that case, simplemc::var_acc uses a
 > Welford-style update internally; the algorithm is selected by the simplemc::varalg
-> template parameter (see @ref simplemc-accs-utils), with `simplemc::varalg::welford` as the
+> template parameter (see @ref simplemc-accs-utils), with `simplemc::varalg::standard` as the
 > default.
 
 Now let's use the accumulators from @ref simplemc-accs. The simplest and fastest accumulator is

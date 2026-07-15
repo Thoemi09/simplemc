@@ -231,18 +231,18 @@ TEST_F(SimplemcAccsMPIStochasticProcess, BatchAccumulator) {
     }
 
     // gather all batches regardless of their count
-    auto coll_diff_size = simplemc_mpi_collect(comm, bacc, false);
+    auto coll_diff_size = gather_batches(comm, bacc, false);
     EXPECT_EQ(coll_diff_size.size(), size * nbatches);
     for (int i = 0; i < size; ++i) {
         for (int j = 0; j < nbatches; ++j) {
             const auto idx = i * nbatches + j;
-            EXPECT_DOUBLE_EQ(coll_diff_size[idx].mdata()[0], i);
+            EXPECT_DOUBLE_EQ(coll_diff_size[idx].mean(), i);
             EXPECT_EQ(coll_diff_size[idx].count(), (1 << (i + 1)));
         }
     }
 
     // gather only batches with the same count
-    auto coll_same_size = simplemc_mpi_collect(comm, bacc, true);
+    auto coll_same_size = gather_batches(comm, bacc, true);
     auto gathered_batches = 0;
     for (const auto& x : nsamples) {
         gathered_batches += x / max_count;
@@ -252,7 +252,7 @@ TEST_F(SimplemcAccsMPIStochasticProcess, BatchAccumulator) {
     for (int i = 0; i < comm.size(); ++i) {
         const auto contributed = nsamples[i] / max_count;
         for (int j = 0; j < contributed; ++j) {
-            EXPECT_DOUBLE_EQ(coll_same_size[idx].mdata()[0], i);
+            EXPECT_DOUBLE_EQ(coll_same_size[idx].mean(), i);
             EXPECT_EQ(coll_same_size[idx].count(), max_count);
             ++idx;
         }

@@ -33,7 +33,7 @@ namespace simplemc {
  * @tparam T simplemc::sample_type to accumulate.
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  */
-template <sample_type T, varalg A = varalg::welford>
+template <sample_type T, varalg A = varalg::standard>
 class var_acc;
 
 /**
@@ -43,7 +43,7 @@ class var_acc;
  * @tparam M Size of the accumulator.
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  */
-template <double_or_complex T, int M, varalg A = varalg::welford>
+template <double_or_complex T, int M, varalg A = varalg::standard>
     requires(M >= 1)
 using var_acc_static = var_acc<Eigen::Matrix<T, M, 1>, A>;
 
@@ -53,7 +53,7 @@ using var_acc_static = var_acc<Eigen::Matrix<T, M, 1>, A>;
  * @tparam T Underlying scalar type of accumulated values (simplemc::double_or_complex).
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  */
-template <double_or_complex T, varalg A = varalg::welford>
+template <double_or_complex T, varalg A = varalg::standard>
 using var_acc_dynamic = var_acc<Eigen::Matrix<T, Eigen::Dynamic, 1>, A>;
 
 /** @} */
