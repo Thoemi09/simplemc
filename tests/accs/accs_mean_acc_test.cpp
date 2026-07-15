@@ -220,6 +220,95 @@ TYPED_TEST(SimplemcAccsMean, AccumulateConsecutive) {
     }
 }
 
+// Test sticky-index accumulation that INTERLEAVES different indices across calls.
+// Reference: accumulate full vectors, zero except for the single touched component.
+TYPED_TEST(SimplemcAccsMean, IndexBasedInterleaved) {
+    using T = typename TypeParam::sample_t;
+    constexpr auto A = TypeParam::alg;
+    using acc_t = mean_acc<T, A>;
+
+    if constexpr (!is_scalar_sample_v<T>) {
+        constexpr long M = vec_size_v<T>;
+        auto data = make_data<T>();
+        auto acc = make_empty<acc_t, T>();
+        auto acc_ref = make_empty<acc_t, T>();
+        long i = 0;
+        for (const auto& v : data) {
+            const long idx = i % M;
+            acc[idx] << v[idx];
+            T ref = make_zero_sample<T>();
+            ref[idx] = v[idx];
+            acc_ref << ref;
+            ++i;
+        }
+        check_acc_equal(acc, acc_ref);
+    }
+}
+
+// Test accumulate(rg, idxs) with an INTERLEAVED (alternating) index subset across calls.
+// Reference: full vectors with zeros in non-touched positions.
+TYPED_TEST(SimplemcAccsMean, AccumulateInterleavedIndices) {
+    using T = typename TypeParam::sample_t;
+    constexpr auto A = TypeParam::alg;
+    using acc_t = mean_acc<T, A>;
+
+    if constexpr (!is_scalar_sample_v<T>) {
+        auto data = make_data<T>();
+        auto acc = make_empty<acc_t, T>();
+        auto acc_ref = make_empty<acc_t, T>();
+        long i = 0;
+        for (const auto& v : data) {
+            T ref = make_zero_sample<T>();
+            if (i % 2 == 0) {
+                std::vector<long> idxs = { 0, 1 };
+                std::vector<typename T::Scalar> sub = { v[0], v[1] };
+                acc.accumulate(sub, idxs);
+                ref[0] = v[0];
+                ref[1] = v[1];
+            } else {
+                std::vector<long> idxs = { 2 };
+                std::vector<typename T::Scalar> sub = { v[2] };
+                acc.accumulate(sub, idxs);
+                ref[2] = v[2];
+            }
+            acc_ref << ref;
+            ++i;
+        }
+        check_acc_equal(acc, acc_ref);
+    }
+}
+
+// Test accumulate(rg, i) (consecutive) with an INTERLEAVED start/length across calls.
+// Reference: full vectors with zeros in non-touched positions.
+TYPED_TEST(SimplemcAccsMean, AccumulateInterleavedConsecutive) {
+    using T = typename TypeParam::sample_t;
+    constexpr auto A = TypeParam::alg;
+    using acc_t = mean_acc<T, A>;
+
+    if constexpr (!is_scalar_sample_v<T>) {
+        auto data = make_data<T>();
+        auto acc = make_empty<acc_t, T>();
+        auto acc_ref = make_empty<acc_t, T>();
+        long i = 0;
+        for (const auto& v : data) {
+            T ref = make_zero_sample<T>();
+            if (i % 2 == 0) {
+                std::vector<typename T::Scalar> sub = { v[0], v[1] };
+                acc.accumulate(sub, 0);
+                ref[0] = v[0];
+                ref[1] = v[1];
+            } else {
+                std::vector<typename T::Scalar> sub = { v[2] };
+                acc.accumulate(sub, 2);
+                ref[2] = v[2];
+            }
+            acc_ref << ref;
+            ++i;
+        }
+        check_acc_equal(acc, acc_ref);
+    }
+}
+
 // Test multivalue_acc wrapper: element-by-element accumulation.
 TYPED_TEST(SimplemcAccsMean, Multivalue) {
     using T = typename TypeParam::sample_t;

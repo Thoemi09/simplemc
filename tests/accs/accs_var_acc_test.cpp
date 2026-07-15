@@ -229,6 +229,121 @@ TYPED_TEST(SimplemcAccsVar, AccumulateConsecutive) {
     }
 }
 
+// Test sticky-index accumulation that INTERLEAVES different indices across calls.
+// Reference: accumulate full vectors, zero except for the single touched component.
+TYPED_TEST(SimplemcAccsVar, IndexBasedInterleaved) {
+    using T = typename TypeParam::sample_t;
+    constexpr auto A = TypeParam::alg;
+    using acc_t = var_acc<T, A>;
+
+    if constexpr (!is_scalar_sample_v<T>) {
+        constexpr long M = vec_size_v<T>;
+        auto data = make_data<T>();
+        auto acc = make_empty<acc_t, T>();
+        auto acc_ref = make_empty<acc_t, T>();
+        long i = 0;
+        for (const auto& v : data) {
+            const long idx = i % M;
+            acc[idx] << v[idx];
+            T ref = make_zero_sample<T>();
+            ref[idx] = v[idx];
+            acc_ref << ref;
+            ++i;
+        }
+        check_acc_equal(acc, acc_ref);
+    }
+}
+
+// Test accumulate(rg, idxs) with an INTERLEAVED (alternating) index subset across calls.
+TYPED_TEST(SimplemcAccsVar, AccumulateInterleavedIndices) {
+    using T = typename TypeParam::sample_t;
+    constexpr auto A = TypeParam::alg;
+    using acc_t = var_acc<T, A>;
+
+    if constexpr (!is_scalar_sample_v<T>) {
+        auto data = make_data<T>();
+        auto acc = make_empty<acc_t, T>();
+        auto acc_ref = make_empty<acc_t, T>();
+        long i = 0;
+        for (const auto& v : data) {
+            T ref = make_zero_sample<T>();
+            if (i % 2 == 0) {
+                std::vector<long> idxs = { 0, 1 };
+                std::vector<typename T::Scalar> sub = { v[0], v[1] };
+                acc.accumulate(sub, idxs);
+                ref[0] = v[0];
+                ref[1] = v[1];
+            } else {
+                std::vector<long> idxs = { 2 };
+                std::vector<typename T::Scalar> sub = { v[2] };
+                acc.accumulate(sub, idxs);
+                ref[2] = v[2];
+            }
+            acc_ref << ref;
+            ++i;
+        }
+        check_acc_equal(acc, acc_ref);
+    }
+}
+
+// Test accumulate(rg, i) (consecutive) with an INTERLEAVED start/length across calls.
+TYPED_TEST(SimplemcAccsVar, AccumulateInterleavedConsecutive) {
+    using T = typename TypeParam::sample_t;
+    constexpr auto A = TypeParam::alg;
+    using acc_t = var_acc<T, A>;
+
+    if constexpr (!is_scalar_sample_v<T>) {
+        auto data = make_data<T>();
+        auto acc = make_empty<acc_t, T>();
+        auto acc_ref = make_empty<acc_t, T>();
+        long i = 0;
+        for (const auto& v : data) {
+            T ref = make_zero_sample<T>();
+            if (i % 2 == 0) {
+                std::vector<typename T::Scalar> sub = { v[0], v[1] };
+                acc.accumulate(sub, 0);
+                ref[0] = v[0];
+                ref[1] = v[1];
+            } else {
+                std::vector<typename T::Scalar> sub = { v[2] };
+                acc.accumulate(sub, 2);
+                ref[2] = v[2];
+            }
+            acc_ref << ref;
+            ++i;
+        }
+        check_acc_equal(acc, acc_ref);
+    }
+}
+
+// Test autocorr_acc wrapping var_acc with INTERLEAVED sticky-index pushes. Level 0 forwards each
+// raw sample straight into the wrapped var_acc's sparse path, so this exercises the transitive fix.
+// Reference: an identical autocorr_acc fed the equivalent dense (implicit-zero) vectors.
+TYPED_TEST(SimplemcAccsVar, AutocorrInterleaved) {
+    using T = typename TypeParam::sample_t;
+    constexpr auto A = TypeParam::alg;
+
+    if constexpr (!is_scalar_sample_v<T>) {
+        constexpr long M = vec_size_v<T>;
+        auto data = make_data<T>();
+        auto aacc = make_empty_autocorr<autocorr_acc<var_acc<T, A>>, T>(2);
+        auto aacc_ref = make_empty_autocorr<autocorr_acc<var_acc<T, A>>, T>(2);
+        long i = 0;
+        for (const auto& v : data) {
+            const long idx = i % M;
+            aacc[idx] << v[idx];
+            T ref = make_zero_sample<T>();
+            ref[idx] = v[idx];
+            aacc_ref << ref;
+            ++i;
+        }
+        ASSERT_EQ(aacc.num_levels(), aacc_ref.num_levels());
+        for (std::size_t l = 0; l < aacc.num_levels(); ++l) {
+            check_acc_equal(aacc.accumulators()[l], aacc_ref.accumulators()[l]);
+        }
+    }
+}
+
 // Test multivalue_acc wrapper: element-by-element accumulation.
 TYPED_TEST(SimplemcAccsVar, Multivalue) {
     using T = typename TypeParam::sample_t;
