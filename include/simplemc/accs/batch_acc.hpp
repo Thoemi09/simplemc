@@ -101,7 +101,7 @@ void merge_batches(std::size_t c, std::vector<mean_acc<T, A>>& batches) {
  *
  * ```
  * Mean: 0.002150529703893513
- * Variance: 0.00010741776938402939
+ * Variance: 0.00010741776938402936
  * ```
  *
  * @tparam T simplemc::sample_type to accumulate.
@@ -340,10 +340,10 @@ public:
      * @brief Create a multi-value accumulator.
      *
      * @note The user is responsible for calling simplemc::multivalue_acc::commit as well as 
-     * check_and_advance() after all values have been added, otherwise the number of samples will not 
+     * check_and_advance() after all values have been added, otherwise the number of samples will not
      * be correct.
      *
-     * @return Multi-value accumulator wrapping `this` object.
+     * @return Multi-value accumulator wrapping the current accumulating batch's mean accumulator.
      */
     [[nodiscard]] auto make_mva() noexcept { return acc_batches_[bidx_].make_mva(); }
 
