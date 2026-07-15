@@ -613,7 +613,7 @@ public:
     }
 
     /**
-     * @brief Collect batch accumulators from different MPI processes.
+     * @brief Gather batch accumulators from different MPI processes.
      *
      * @details Batches from different processes are not merged together. Instead, they are simply
      * gathered into a vector.
@@ -628,7 +628,7 @@ public:
      * @param same_count Should we perform merges to enforce the same count on each process?
      * @return `std::vector` containing the batches gathered from all processes.
      */
-    friend std::vector<mean_acc_type> simplemc_mpi_collect(
+    friend std::vector<mean_acc_type> gather_batches(
         const mpi::communicator& comm, const batch_acc& acc, bool same_count) {
         assert(all_equal(acc.size(), comm));
 
@@ -669,6 +669,47 @@ public:
             prev_idx += vec_sz[i];
         }
         return res;
+    }
+
+    /**
+     * @brief Collect batch accumulators from different MPI processes in place.
+     *
+     * @details It first gathers all processes' full batches via gather_batches() and requests equal
+     * per-batch sample counts for all gathered batches. The batches are then used to reconstruct the
+     * accumulator in place.
+     *
+     * Let \f$ \tilde{M}_b \f$ be the total number of gathered batches.
+     *
+     * - If \f$ \tilde{M}_b \f$ is even, the accumulator will be reconstructed with \f$ M_b =
+     * \tilde{M}_b \f$ batches.
+     * - If \f$ \tilde{M}_b \f$ is odd, the accumulator will be reconstructed with \f$ M_b =
+     * \tilde{M}_b - 1 \f$ batches, and the remaining batch will be moved into the first accumulating
+     * batch such that no gathered data is lost.
+     *
+     * It throws a simplemc::simplemc_exception if \f$ \tilde{M}_b < 2 \f$.
+     *
+     * @param comm simplemc::mpi::communicator object.
+     * @param acc Batch accumulator to collect into, in place.
+     */
+    friend void simplemc_mpi_collect(const mpi::communicator& comm, batch_acc& acc) {
+        // gather batches from all processes and enforce equal counts
+        auto batches = gather_batches(comm, acc, true);
+        auto const tilde_m_b = batches.size();
+        if (tilde_m_b < 2) {
+            throw simplemc_exception("Not enough full batches to collect");
+        }
+
+        // initialize full and accumulating batches with the gathered batches
+        const auto m_b = tilde_m_b - (tilde_m_b % 2);
+        std::vector<mean_acc_type> full_batches(
+            std::make_move_iterator(batches.begin()), std::make_move_iterator(batches.begin() + m_b));
+        std::vector<mean_acc_type> acc_batches(m_b, mean_acc_type { acc.size() });
+        if (tilde_m_b > m_b) {
+            acc_batches[0] = std::move(batches.back());
+        }
+
+        // reconstruct the accumulator in place
+        acc = batch_acc { std::move(full_batches), std::move(acc_batches) };
     }
 
 private:

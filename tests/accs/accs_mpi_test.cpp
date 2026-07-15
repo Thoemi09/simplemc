@@ -243,9 +243,9 @@ TYPED_TEST(SimplemcAccsMPI, BlockCovarAccCollect) {
     check_acc_equal(acc.accumulator(), ref);
 }
 
-// Batch accumulator MPI test.
-// Each rank adds 4 rank-specific samples, collect and compare.
-TYPED_TEST(SimplemcAccsMPI, BatchAccCollect) {
+// Batch accumulator MPI gather test.
+// Each rank adds 4 rank-specific samples, gather and compare.
+TYPED_TEST(SimplemcAccsMPI, BatchAccGather) {
     using T = typename TypeParam::sample_t;
     constexpr auto A = TypeParam::alg;
     using acc_t = batch_acc<T, A>;
@@ -256,7 +256,7 @@ TYPED_TEST(SimplemcAccsMPI, BatchAccCollect) {
         acc << make_sample<T>(this->rank * 4 + i);
     }
 
-    auto res = simplemc_mpi_collect(this->comm, acc, false);
+    auto res = gather_batches(this->comm, acc, false);
 
     // build reference: simulate each rank's batch_acc and collect all batches
     std::vector<macc_t> ref_batches;
@@ -273,6 +273,52 @@ TYPED_TEST(SimplemcAccsMPI, BatchAccCollect) {
     ASSERT_EQ(res.size(), ref_batches.size());
     for (std::size_t i = 0; i < res.size(); ++i) {
         check_acc_equal(res[i], ref_batches[i]);
+    }
+}
+
+// Batch accumulator in-place MPI collect test.
+// The last rank accumulates fewer samples than the others, so that after forcing an equal
+// per-batch sample count across ranks (same_count = true) the *total* number of gathered batches
+// is odd -- exercising the "keep, don't discard" leftover-batch logic.
+TYPED_TEST(SimplemcAccsMPI, BatchAccCollectInPlace) {
+    using T = typename TypeParam::sample_t;
+    constexpr auto A = TypeParam::alg;
+    using acc_t = batch_acc<T, A>;
+    using macc_t = typename acc_t::mean_acc_type;
+
+    const bool is_last = (this->rank == this->size - 1);
+    const int n_samples = is_last ? 2 : 4;
+
+    auto acc = make_empty_batch<acc_t, T>(2);
+    for (int i = 0; i < n_samples; ++i) {
+        acc << make_sample<T>(this->rank * 4 + i);
+    }
+
+    simplemc_mpi_collect(this->comm, acc);
+
+    // build reference: simulate each rank's batch_acc, merging down any rank whose own batch
+    // count is below the four-sample maximum, mirroring gather_batches's same_count behavior
+    std::vector<macc_t> ref_batches;
+    for (int r = 0; r < this->size; ++r) {
+        const bool r_is_last = (r == this->size - 1);
+        const int r_n_samples = r_is_last ? 2 : 4;
+        auto local = make_empty_batch<acc_t, T>(2);
+        for (int i = 0; i < r_n_samples; ++i) {
+            local << make_sample<T>(r * 4 + i);
+        }
+        auto batches = local.batches();
+        if (r_is_last) {
+            merge_batches(2, batches);
+        }
+        for (const auto& b : batches) {
+            ref_batches.push_back(b);
+        }
+    }
+
+    ASSERT_EQ(ref_batches.size() % 2, 1U);
+    ASSERT_EQ(acc.batches().size(), ref_batches.size());
+    for (std::size_t i = 0; i < ref_batches.size(); ++i) {
+        check_acc_equal(acc.batches()[i], ref_batches[i]);
     }
 }
 
