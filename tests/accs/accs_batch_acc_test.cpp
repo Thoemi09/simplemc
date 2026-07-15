@@ -209,7 +209,7 @@ TYPED_TEST(SimplemcAccsBatch, Multivalue) {
                 for (long i = 0; i < vec_size_v<T>; ++i) {
                     mva[i] << component(v, i);
                 }
-                mva.increment_count();
+                mva.commit();
                 acc.check_and_advance();
             }
 

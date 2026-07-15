@@ -119,29 +119,7 @@ public:
      */
     static constexpr auto varalg() noexcept { return A; }
 
-    /* Friend declarations. */
-    friend class multivalue_acc<var_acc>;
-
 private:
-    // Add a single value to the accumulator without increasing the count (the given count is assumed
-    // to be already increased by one).
-    void add_value(value_type val, size_type idx, count_type count) {
-        assert(idx >= 0 && idx < size());
-        if constexpr (varalg() == varalg::standard) {
-            mdata_(idx) += val;
-            rdata_(idx) += std::real(val) * std::real(val);
-            idata_(idx) += std::imag(val) * std::imag(val);
-            cdata_(idx) += std::real(val) * std::imag(val);
-        } else {
-            const auto tmp = val - mdata_(idx);
-            mdata_(idx) += tmp / static_cast<double>(count);
-            const auto tmp2 = val - mdata_(idx);
-            rdata_(idx) += std::real(tmp) * std::real(tmp2);
-            idata_(idx) += std::imag(tmp) * std::imag(tmp2);
-            cdata_(idx) += std::real(tmp) * std::imag(tmp2);
-        }
-    }
-
     // Add one dense sample (all components) to the accumulator without increasing the count (the
     // given count is assumed to be already increased by one).
     template <typename V>

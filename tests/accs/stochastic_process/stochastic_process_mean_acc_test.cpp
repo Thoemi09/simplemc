@@ -173,8 +173,8 @@ TEST_F(SimplemcAccsStochasticProcess, MeanAccIndividualIndices) {
             mva_d[idx] << sp_d.samples[i](idx);
             mva_c[idx] << sp_c.samples[i](idx);
         }
-        mva_d.increment_count();
-        mva_c.increment_count();
+        mva_d.commit();
+        mva_c.commit();
     }
 
     // check count

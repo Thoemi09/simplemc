@@ -278,8 +278,8 @@ public:
     /**
      * @brief Create a multi-value accumulator (only for variance accumulators).
      *
-     * @note The user is responsible for calling simplemc::multivalue_acc::increment_count as well
-     * as check_and_add_block() after all values have been added, otherwise the number of samples will
+     * @note The user is responsible for calling simplemc::multivalue_acc::commit as well as 
+     * check_and_add_block() after all values have been added, otherwise the number of samples will
      * not be correct.
      *
      * @return Multi-value accumulator wrapping `this` object.

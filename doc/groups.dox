@@ -1023,11 +1023,11 @@
  * mva[i_1] << v_i_1;
  * // ...
  * mva[i_n] << v_i_n;
- * mva.increment_count();
+ * mva.commit();
  * @endcode
  * This is equivalent to adding a full vector \f$ \mathbf{v} \f$ to the samples, where only elements
  * \f$ v_{i_1}, \dots v_{i_n} \f$ with indices \f$ i_1, \dots, i_n \f$, etc. are possibly non-zero.
- * @note It is the user's responsibility to call simplemc::multivalue_acc::increment_count of the
+ * @note It is the user's responsibility to call simplemc::multivalue_acc::commit of the
  * multi-value accumulator once after all values have been added. In addition, if the wrapped
  * accumulator is a simplemc::block_acc or simplemc::batch_acc, the user has to call
  * simplemc::block_acc::check_and_add_block or simplemc::batch_acc::check_and_advance as well.
