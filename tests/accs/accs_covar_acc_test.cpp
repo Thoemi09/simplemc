@@ -345,6 +345,105 @@ TYPED_TEST(SimplemcAccsCovar, AutocorrInterleaved) {
     }
 }
 
+// Test multivalue_acc wrapper: element-by-element accumulation. The buffered commit forms one
+// sample per data point, so the off-diagonal cross terms must match a plain acc << v.
+TYPED_TEST(SimplemcAccsCovar, Multivalue) {
+    using T = typename TypeParam::sample_t;
+    constexpr auto A = TypeParam::alg;
+    using acc_t = covar_acc<T, A>;
+
+    if constexpr (!is_scalar_sample_v<T>) {
+        auto data = make_data<T>();
+        auto acc = make_empty<acc_t, T>();
+
+        for (const auto& v : data) {
+            auto mva = acc.make_mva();
+            for (long i = 0; i < vec_size_v<T>; ++i) {
+                mva[i] << component(v, i);
+            }
+            mva.commit();
+        }
+
+        check_acc_results<T>(acc);
+    }
+}
+
+// Test multivalue_acc driven with INTERLEAVED indices across samples (a different index each sample).
+// Reference: accumulate full vectors, zero except for the single touched component.
+TYPED_TEST(SimplemcAccsCovar, MultivalueInterleaved) {
+    using T = typename TypeParam::sample_t;
+    constexpr auto A = TypeParam::alg;
+    using acc_t = covar_acc<T, A>;
+
+    if constexpr (!is_scalar_sample_v<T>) {
+        constexpr long M = vec_size_v<T>;
+        auto data = make_data<T>();
+        auto acc = make_empty<acc_t, T>();
+        auto acc_ref = make_empty<acc_t, T>();
+        long i = 0;
+        for (const auto& v : data) {
+            const long idx = i % M;
+            auto mva = acc.make_mva();
+            mva[idx] << v[idx];
+            mva.commit();
+            T ref = make_zero_sample<T>();
+            ref[idx] = v[idx];
+            acc_ref << ref;
+            ++i;
+        }
+        check_acc_equal(acc, acc_ref);
+    }
+}
+
+// Test multivalue_acc vector stream operator.
+TYPED_TEST(SimplemcAccsCovar, MultivalueVectorStream) {
+    using T = typename TypeParam::sample_t;
+    constexpr auto A = TypeParam::alg;
+    using acc_t = covar_acc<T, A>;
+
+    if constexpr (!is_scalar_sample_v<T>) {
+        auto data = make_data<T>();
+        auto acc = make_empty<acc_t, T>();
+
+        for (const auto& v : data) {
+            auto mva = acc.make_mva();
+            mva << v;
+            mva.commit();
+        }
+
+        check_acc_results<T>(acc);
+    }
+}
+
+// Test multivalue_acc accessors.
+TYPED_TEST(SimplemcAccsCovar, MultivalueAccessors) {
+    using T = typename TypeParam::sample_t;
+    constexpr auto A = TypeParam::alg;
+    using acc_t = covar_acc<T, A>;
+
+    auto acc = make_empty<acc_t, T>();
+    auto mva = acc.make_mva();
+
+    ASSERT_EQ(mva.size(), vec_size_v<T>);
+    ASSERT_EQ(mva.count(), 0);
+    ASSERT_TRUE(mva.empty());
+    ASSERT_EQ(&mva.accumulator(), &acc);
+
+    const auto& mva_const = mva;
+    ASSERT_EQ(&mva_const.accumulator(), &acc);
+
+    mva[0] << component(make_data<T>()[0], 0);
+    mva.commit();
+    ASSERT_EQ(mva.count(), 1);
+    ASSERT_FALSE(mva.empty());
+
+    mva[0] << component(make_data<T>()[1], 0);
+    mva.commit();
+    mva[0] << component(make_data<T>()[2], 0);
+    mva.commit();
+    ASSERT_EQ(mva.count(), 3);
+}
+
 // Test block_acc wrapping var_acc for different block sizes.
 TYPED_TEST(SimplemcAccsCovar, Block) {
     using T = typename TypeParam::sample_t;

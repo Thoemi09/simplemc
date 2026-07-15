@@ -19,8 +19,7 @@ namespace simplemc {
 
 /**
  * @ingroup simplemc-accs-wrappers
- * @brief Wrapper for simplemc::mean_acc, simplemc::var_acc, simplemc::block_acc and
- * simplemc::batch_acc to add multiple values at once.
+ * @brief Wrapper for various accumulators to add multiple values at once.
  *
  * @details It holds a reference to an accumulator and can be used to add multiple data points to the
  * accumulator that together form a single sample. The values are buffered and only committed to the
@@ -34,6 +33,7 @@ namespace simplemc {
  * current accumulator object and returns a simplemc::multivalue_acc object:
  * - simplemc::mean_acc::make_mva(),
  * - simplemc::var_acc<X, A>::make_mva() and simplemc::var_acc<Z, A>::make_mva(),
+ * - simplemc::covar_acc<X, A>::make_mva() and simplemc::covar_acc<Z, A>::make_mva(),
  * - simplemc::block_acc::make_mva(),
  * - simplemc::batch_acc::make_mva().
  *
@@ -191,9 +191,11 @@ public:
     /**
      * @brief Commit the buffered values as a single sample to the wrapped accumulator.
      *
-     * @details All values streamed since the last commit() call form one sample (the values at the
+     * @details All values accumulated since the last commit() call form one sample (the values at the
      * touched indices, with implicit zeros elsewhere). They are flushed into the wrapped accumulator
-     * as a single sample, increasing its count by one, and the buffer is cleared.
+     * as a single sample by calling its `accumulate()` function with the buffered values and indices.
+     * 
+     * The buffer is cleared.
      *
      * Committing an empty buffer contributes an all-zero sample.
      */
