@@ -23,6 +23,7 @@
 
 #include <Eigen/Dense>
 
+#include <array>
 #include <cassert>
 #include <complex>
 #include <concepts>
@@ -140,6 +141,42 @@ private:
         }
     }
 
+    // Add one dense sample (all components) to the accumulator without increasing the count (the
+    // given count is assumed to be already increased by one).
+    template <typename V>
+    void add_dense(const V& v, [[maybe_unused]] count_type count) {
+        if constexpr (varalg() == varalg::standard) {
+            mdata_ += v;
+            rdata_ += v.real().cwiseProduct(v.real());
+            idata_ += v.imag().cwiseProduct(v.imag());
+            cdata_ += v.real().cwiseProduct(v.imag());
+        } else {
+            const auto tmp = (v - mdata_).eval();
+            mdata_ += tmp / static_cast<double>(count);
+            const auto tmp2 = v - mdata_;
+            rdata_ += tmp.real().cwiseProduct(tmp2.real());
+            idata_ += tmp.imag().cwiseProduct(tmp2.imag());
+            cdata_ += tmp.real().cwiseProduct(tmp2.imag());
+        }
+    }
+
+    // Add one sparse sample given as parallel (value, index) ranges to the accumulator without
+    // increasing the count (the given count is assumed to be already increased by one).
+    template <ranges::input_range R1, ranges::input_range R2>
+    void add_sparse(R1&& vals, R2&& idxs, [[maybe_unused]] count_type count) { // NOLINT (ranges need not be forwarded)
+        if constexpr (varalg() == varalg::standard) {
+            for (auto [val, idx] : ranges::views::zip(vals, idxs)) {
+                assert(idx >= 0 && idx < size());
+                mdata_(idx) += val;
+                rdata_(idx) += std::real(val) * std::real(val);
+                idata_(idx) += std::imag(val) * std::imag(val);
+                cdata_(idx) += std::real(val) * std::imag(val);
+            }
+        } else {
+            add_dense(detail::make_dense_vec<cplx_vec_type>(size(), vals, idxs), count);
+        }
+    }
+
 public:
     /**
      * @brief Construct a variance accumulator with a given number of elements \f$ M \f$.
@@ -240,7 +277,7 @@ public:
         requires std::convertible_to<U, value_type>
     var_acc& operator<<(const U& z) {
         ++count_;
-        add_value(z, idx_, count_);
+        add_sparse(std::array<value_type, 1> { static_cast<value_type>(z) }, std::array<size_type, 1> { idx_ }, count_);
         return *this;
     }
 
@@ -257,19 +294,7 @@ public:
     var_acc& operator<<(const W& v) {
         assert(v.size() == size());
         ++count_;
-        if constexpr (varalg() == varalg::standard) {
-            mdata_ += v.matrix();
-            rdata_ += v.matrix().real().cwiseProduct(v.matrix().real());
-            idata_ += v.matrix().imag().cwiseProduct(v.matrix().imag());
-            cdata_ += v.matrix().real().cwiseProduct(v.matrix().imag());
-        } else {
-            const auto tmp = (v.matrix() - mdata_).eval();
-            mdata_ += tmp / static_cast<double>(count_);
-            const auto tmp2 = v.matrix() - mdata_;
-            rdata_ += tmp.real().cwiseProduct(tmp2.real());
-            idata_ += tmp.imag().cwiseProduct(tmp2.imag());
-            cdata_ += tmp.real().cwiseProduct(tmp2.imag());
-        }
+        add_dense(v.matrix(), count_);
         return *this;
     }
 
@@ -350,10 +375,7 @@ public:
     template <ranges::input_range R>
     void accumulate(R&& rg, size_type i = 0) { // NOLINT (ranges need not be forwarded)
         ++count_;
-        for (auto val : rg) {
-            add_value(val, i, count_);
-            ++i;
-        }
+        add_sparse(rg, ranges::views::iota(i), count_);
     }
 
     /**
@@ -373,9 +395,7 @@ public:
     template <ranges::input_range R1, ranges::input_range R2>
     void accumulate(R1&& rg, R2&& idxs) { // NOLINT (ranges need not be forwarded)
         ++count_;
-        for (auto [val, idx] : ranges::views::zip(rg, idxs)) {
-            add_value(val, idx, count_);
-        }
+        add_sparse(rg, idxs, count_);
     }
 
     /**
