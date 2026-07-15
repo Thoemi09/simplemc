@@ -282,7 +282,7 @@ public:
      * check_and_add_block() after all values have been added, otherwise the number of samples will
      * not be correct.
      *
-     * @return Multi-value accumulator wrapping `this` object.
+     * @return Multi-value accumulator wrapping the internal block mean accumulator (see block()).
      */
     [[nodiscard]] auto make_mva() noexcept { return block_.make_mva(); }
 

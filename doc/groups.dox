@@ -935,9 +935,9 @@
  * needed.
  *
  * Every accumulator satisfies one of the accumulator concepts (simplemc::basic_accumulator,
- * simplemc::mean_accumulator, simplemc::variance_accumulator, simplemc::covariance_accumulator),
- * which form a refinement hierarchy. This allows generic code to work with any accumulator that
- * provides the required statistics.
+ * simplemc::mean_accumulator, simplemc::variance_accumulator, simplemc::covariance_accumulator,
+ * simplemc::batch_accumulator), which form a refinement hierarchy. This allows generic code to work 
+ * with any accumulator that provides the required statistics.
  *
  * In the following, we use the notation from @ref simplemc-accs-stats.
  *
@@ -949,8 +949,9 @@
  * and element-wise variance.
  * - @ref simplemc-accs-accs-covar satisfies simplemc::covariance_accumulator and computes the sample
  * mean and the full covariance matrix.
- * - @ref simplemc-accs-accs-batch satisfies simplemc::mean_accumulator and computes the sample mean
- * via batches; individual batches are accessible for @ref simplemc-accs-resampling.
+ * - @ref simplemc-accs-accs-batch satisfies simplemc::batch_accumulator (and therefore
+ * simplemc::covariance_accumulator) and computes the sample mean via batches. Individual batches are
+ * accessible for @ref simplemc-accs-resampling.
  *
  * The first three form a hierarchy of increasing statistical output. The variance and covariance
  * estimates provided by simplemc::var_acc and simplemc::covar_acc are *naive* (non-blocking), meaning

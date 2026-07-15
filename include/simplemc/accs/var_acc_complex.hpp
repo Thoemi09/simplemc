@@ -186,7 +186,8 @@ public:
      * \f$ N \f$.
      *
      * @details For dynamically sized accumulators, the size \f$ M \f$ of the data storages must be
-     * \f$ \geq 1 \f$. Otherwise, it throws a simplemc::simplemc_exception.
+     * \f$ \geq 1 \f$ and all data storages must have matching size. Otherwise, it throws a
+     * simplemc::simplemc_exception.
      *
      * @param md Accumulated mean data \f$ \mathbf{m}^{(N)}/\mathbf{n}^{(N)} \f$.
      * @param rd Accumulated variance data \f$ \mathbf{c}_r^{(N)}/\mathbf{d}_r^{(N)} \f$.

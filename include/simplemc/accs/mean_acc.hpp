@@ -398,6 +398,9 @@ public:
      * \mathbf{n}^{(N)} \f$ and the count \f$ N \f$.
      *
      * @return Sample mean \f$ \overline{\mathbf{z}}^{(N)} \f$.
+     *
+     * @note A nonzero shift \f$ \mathbf{t} \f$ subtracted while accumulating (see the class
+     * description) is not added back, so the result is then shifted by \f$ -\mathbf{t} \f$.
      */
     [[nodiscard]] auto mean() const {
         return detail::scalar_or_matrix<sample_scalar<sample_type>>(accs::mean<varalg()>(mdata_, count_));

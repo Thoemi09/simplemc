@@ -29,8 +29,8 @@ namespace simplemc {
  * has to call simplemc::block_acc::check_and_add_block or simplemc::batch_acc::check_and_advance as
  * well.
  *
- * All accumulator types mentioned above provide a factory function, `make_mva()`, that wraps the
- * current accumulator object and returns a simplemc::multivalue_acc object:
+ * All accumulator types mentioned above provide a factory function, `make_mva()`, that returns a
+ * simplemc::multivalue_acc object:
  * - simplemc::mean_acc::make_mva(),
  * - simplemc::var_acc<X, A>::make_mva() and simplemc::var_acc<Z, A>::make_mva(),
  * - simplemc::covar_acc<X, A>::make_mva() and simplemc::covar_acc<Z, A>::make_mva(),
@@ -194,7 +194,7 @@ public:
      * @details All values accumulated since the last commit() call form one sample (the values at the
      * touched indices, with implicit zeros elsewhere). They are flushed into the wrapped accumulator
      * as a single sample by calling its `accumulate()` function with the buffered values and indices.
-     * 
+     *
      * The buffer is cleared.
      *
      * Committing an empty buffer contributes an all-zero sample.

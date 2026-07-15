@@ -288,9 +288,9 @@ public:
     /**
      * @brief Stream operator for accumulating a single (scalar) value \f$ x \f$.
      *
-     * @details The value is first added to all levels with \f$ l < L_{\text{min}} \f$ using
-     * simplemc::mean_acc::operator<<(const U&). If the block in level \f$ L_{\text{min}} - 1 \f$ is
-     * full, it is recursively propagated to higher levels.
+     * @details The value is first added to the level-0 (co)variance accumulator and to the mean
+     * accumulator blocks of levels \f$ 1 \leq l < L_{\text{min}} \f$. If the block in level \f$
+     * L_{\text{min}} - 1 \f$ is full, it is recursively propagated to higher levels.
      *
      * See also @ref simplemc-accs-accs-how.
      *
@@ -309,9 +309,9 @@ public:
     /**
      * @brief Stream operator for accumulating a vector \f$ \mathbf{v} \f$.
      *
-     * @details The vector is first added to all levels with \f$ l < L_{\text{min}} \f$ using
-     * simplemc::mean_acc::operator<<(const W&). If the block in level \f$ L_{\text{min}} - 1 \f$ is
-     * full, it is recursively propagated to higher levels.
+     * @details The vector is first added to the level-0 (co)variance accumulator and to the mean
+     * accumulator blocks of levels \f$ 1 \leq l < L_{\text{min}} \f$. If the block in level \f$
+     * L_{\text{min}} - 1 \f$ is full, it is recursively propagated to higher levels.
      *
      * See also @ref simplemc-accs-accs-how.
      *
@@ -330,9 +330,9 @@ public:
     /**
      * @brief Accumulate a range of values to consecutive elements in the accumulator.
      *
-     * @details The values are first added to all levels with \f$ l < L_{\text{min}} \f$ using
-     * simplemc::mean_acc::accumulate(). If the block in level \f$ L_{\text{min}} - 1 \f$ is full, it
-     * is recursively propagated to higher levels.
+     * @details The values are first added to the level-0 (co)variance accumulator and to the mean
+     * accumulator blocks of levels \f$ 1 \leq l < L_{\text{min}} \f$. If the block in level \f$
+     * L_{\text{min}} - 1 \f$ is full, it is recursively propagated to higher levels.
      *
      * See also @ref simplemc-accs-accs-how.
      *
@@ -349,9 +349,9 @@ public:
     /**
      * @brief Accumulate a range of values to arbitrary elements with the given indices.
      *
-     * @details The values are first added to all levels with \f$ l < L_{\text{min}} \f$ using
-     * simplemc::mean_acc::accumulate(R1 &&, R2 &&). If the block in level \f$ L_{\text{min}} - 1 \f$
-     * is full, it is recursively propagated to higher levels.
+     * @details The values are first added to the level-0 (co)variance accumulator and to the mean
+     * accumulator blocks of levels \f$ 1 \leq l < L_{\text{min}} \f$. If the block in level \f$
+     * L_{\text{min}} - 1 \f$ is full, it is recursively propagated to higher levels.
      *
      * See also @ref simplemc-accs-accs-how.
      *
