@@ -78,8 +78,8 @@ namespace simplemc {
  * Output:
  *
  * ```
- * Mean: 5.002072302074473
- * Variance: 1.0037814573268022
+ * Mean: 5.002072302074485
+ * Variance: 1.0037814573267465
  * ```
  *
  * @tparam X Real simplemc::sample_type.

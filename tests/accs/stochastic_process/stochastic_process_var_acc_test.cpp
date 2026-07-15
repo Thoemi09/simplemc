@@ -68,10 +68,10 @@ TEST_F(SimplemcAccsStochasticProcess, VarAccSingle) {
     // factory function
     auto dview = simplemc::ranges::transform_view(sp_d.samples, [](const auto& s) { return s(0); });
     auto acc_std_d3 = make_var_acc<standard>(dview);
-    auto acc_wel_d3 = make_var_acc(dview);
+    auto acc_wel_d3 = make_var_acc<welford>(dview);
     auto cview = simplemc::ranges::transform_view(sp_c.samples, [](const auto& s) { return s(0); });
     auto acc_std_c3 = make_var_acc<standard>(cview);
-    auto acc_wel_c3 = make_var_acc(cview);
+    auto acc_wel_c3 = make_var_acc<welford>(cview);
 
     // check mean and variance
     const auto m_d = sample_mean(sp_d);
@@ -149,10 +149,10 @@ TEST_F(SimplemcAccsStochasticProcess, VarAccVector) {
     // factory function
     auto dview = simplemc::ranges::transform_view(sp_d.samples, [](const auto& s) { return Eigen::Vector3d(s); });
     auto acc_std_d3 = make_var_acc<standard>(dview);
-    auto acc_wel_d3 = make_var_acc(dview);
+    auto acc_wel_d3 = make_var_acc<welford>(dview);
     auto cview = simplemc::ranges::transform_view(sp_c.samples, [](const auto& s) { return Eigen::Vector3cd(s); });
     auto acc_std_c3 = make_var_acc<standard>(cview);
-    auto acc_wel_c3 = make_var_acc(cview);
+    auto acc_wel_c3 = make_var_acc<welford>(cview);
 
     // check mean and variance
     const auto m_d = sample_mean(sp_d);
@@ -303,7 +303,7 @@ TEST_F(SimplemcAccsStochasticProcess, VarAccBlocked) {
 
     // factory function
     auto dview = simplemc::ranges::transform_view(sp_d.samples, [](const auto& s) { return Eigen::Vector3d(s); });
-    auto acc_wel_d3 = make_block_var_acc(dview, block_size);
+    auto acc_wel_d3 = make_block_var_acc<welford>(dview, block_size);
 
     // check mean and variance
     auto bsp_d = block_samples(sp_d, block_size);
@@ -334,7 +334,7 @@ TEST_F(SimplemcAccsStochasticProcess, VarAccAutocorrelation) {
 
     // factory function
     auto dview = simplemc::ranges::transform_view(sp_d.samples, [](const auto& s) { return Eigen::VectorXd(s); });
-    auto acc_vec2 = make_autocorr_var_acc(dview);
+    auto acc_vec2 = make_autocorr_var_acc<welford>(dview);
 
     // check block variance accumulators with increasing block sizes and autocorrelation times
     using simplemc::accs::tau;

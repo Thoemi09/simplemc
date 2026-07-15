@@ -64,10 +64,10 @@ TEST_F(SimplemcAccsStochasticProcess, MeanAccSingle) {
     // factory function
     auto dview = simplemc::ranges::transform_view(sp_d.samples, [](const auto& s) { return s(0); });
     auto acc_std_d3 = make_mean_acc<standard>(dview);
-    auto acc_wel_d3 = make_mean_acc(dview);
+    auto acc_wel_d3 = make_mean_acc<welford>(dview);
     auto cview = simplemc::ranges::transform_view(sp_c.samples, [](const auto& s) { return s(0); });
     auto acc_std_c3 = make_mean_acc<standard>(cview);
-    auto acc_wel_c3 = make_mean_acc(cview);
+    auto acc_wel_c3 = make_mean_acc<welford>(cview);
 
     // check mean
     const auto m_d = sample_mean(sp_d);
@@ -127,10 +127,10 @@ TEST_F(SimplemcAccsStochasticProcess, MeanAccVector) {
     // factory function
     auto dview = simplemc::ranges::transform_view(sp_d.samples, [](const auto& s) { return Eigen::Vector3d(s); });
     auto acc_std_d3 = make_mean_acc<standard>(dview);
-    auto acc_wel_d3 = make_mean_acc(dview);
+    auto acc_wel_d3 = make_mean_acc<welford>(dview);
     auto cview = simplemc::ranges::transform_view(sp_c.samples, [](const auto& s) { return Eigen::Vector3cd(s); });
     auto acc_std_c3 = make_mean_acc<standard>(cview);
-    auto acc_wel_c3 = make_mean_acc(cview);
+    auto acc_wel_c3 = make_mean_acc<welford>(cview);
 
     // check mean
     const auto m_d = sample_mean(sp_d);

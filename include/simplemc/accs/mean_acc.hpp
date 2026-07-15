@@ -94,7 +94,7 @@ class batch_acc;
  * @tparam T simplemc::sample_type to accumulate.
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  */
-template <sample_type T, varalg A = varalg::welford>
+template <sample_type T, varalg A = varalg::standard>
 class mean_acc {
 public:
     /**
@@ -459,7 +459,7 @@ private:
  * @tparam M Size of the accumulator.
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  */
-template <double_or_complex T, int M, varalg A = varalg::welford>
+template <double_or_complex T, int M, varalg A = varalg::standard>
     requires(M >= 1)
 using mean_acc_static = mean_acc<Eigen::Matrix<T, M, 1>, A>;
 
@@ -469,7 +469,7 @@ using mean_acc_static = mean_acc<Eigen::Matrix<T, M, 1>, A>;
  * @tparam T Underlying scalar type of accumulated values (simplemc::double_or_complex).
  * @tparam A simplemc::varalg algorithm used to accumulate the data.
  */
-template <double_or_complex T, varalg A = varalg::welford>
+template <double_or_complex T, varalg A = varalg::standard>
 using mean_acc_dynamic = mean_acc<Eigen::Matrix<T, Eigen::Dynamic, 1>, A>;
 
 /**
@@ -487,7 +487,7 @@ using mean_acc_dynamic = mean_acc<Eigen::Matrix<T, Eigen::Dynamic, 1>, A>;
  * data.
  * @return simplemc::mean_acc containing the accumulated data samples from the given range.
  */
-template <varalg A = varalg::welford, sample_range R>
+template <varalg A = varalg::standard, sample_range R>
 [[nodiscard]] auto make_mean_acc(R&& rg, // NOLINT (ranges need not be forwarded)
     std::optional<ranges::range_value_t<R>> t = std::nullopt) {
     using value_type = ranges::range_value_t<R>;

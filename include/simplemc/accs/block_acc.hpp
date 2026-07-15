@@ -45,8 +45,8 @@ namespace simplemc {
  * Output:
  *
  * ```
- * Mean: 5.002072302074504
- * Variance: 0.10090101293580174
+ * Mean: 5.002072302074484
+ * Variance: 0.10090101293592464
  * ```
  *
  * @tparam A Accumulator type.

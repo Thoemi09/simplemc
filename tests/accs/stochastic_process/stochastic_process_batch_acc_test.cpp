@@ -123,7 +123,7 @@ TEST_F(SimplemcAccsStochasticProcess, BatchAccVec) {
 
     // factory function
     auto cview = simplemc::ranges::transform_view(sp_c.samples, [](const auto& s) { return Eigen::VectorXcd(s); });
-    auto acc_vec2 = make_batch_acc(cview, 256);
+    auto acc_vec2 = make_batch_acc<welford>(cview, 256);
     acc_vec.push_back(std::move(acc_vec2));
     num_vec.push_back(256);
 

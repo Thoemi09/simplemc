@@ -973,7 +973,7 @@
  * integrated autocorrelation time \f$ \tau \f$.
  *
  * All accumulators support the `standard` and the numerically more stable `welford` algorithm for
- * accumulating data (see simplemc::varalg). The `welford` algorithm is the default.
+ * accumulating data (see simplemc::varalg). The `standard` algorithm is the default.
  *
  * @section simplemc-accs-accs-how How to accumulate data
  *
