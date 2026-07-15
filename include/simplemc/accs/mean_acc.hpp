@@ -23,6 +23,7 @@
 
 #include <Eigen/Dense>
 
+#include <array>
 #include <cassert>
 #include <concepts>
 #include <cstdint>
@@ -153,6 +154,31 @@ private:
         }
     }
 
+    // Add one dense sample (all components) to the accumulator without increasing the count (the
+    // given count is assumed to be already increased by one).
+    template <typename V>
+    void add_dense(const V& v, [[maybe_unused]] count_type count) {
+        if constexpr (varalg() == varalg::standard) {
+            mdata_ += v;
+        } else {
+            mdata_ += (v - mdata_) / static_cast<double>(count);
+        }
+    }
+
+    // Add one sparse sample given as parallel (value, index) ranges to the accumulator without
+    // increasing the count (the given count is assumed to be already increased by one).
+    template <ranges::input_range R1, ranges::input_range R2>
+    void add_sparse(R1&& vals, R2&& idxs, [[maybe_unused]] count_type count) { // NOLINT (ranges need not be forwarded)
+        if constexpr (varalg() == varalg::standard) {
+            for (auto [val, idx] : ranges::views::zip(vals, idxs)) {
+                assert(idx >= 0 && idx < size());
+                mdata_(idx) += val;
+            }
+        } else {
+            add_dense(detail::make_dense_vec<vec_type>(size(), vals, idxs), count);
+        }
+    }
+
     // Broadcast into/from the current mean accumulator (used in simplemc_mpi_collect with batch_acc).
     void broadcast(int root, const mpi::communicator& comm) {
         mpi::broadcast(make_span(mdata_), root, comm);
@@ -236,7 +262,7 @@ public:
         requires std::convertible_to<U, value_type>
     mean_acc& operator<<(const U& x) {
         ++count_;
-        add_value(x, idx_, count_);
+        add_sparse(std::array<value_type, 1> { static_cast<value_type>(x) }, std::array<size_type, 1> { idx_ }, count_);
         return *this;
     }
 
@@ -253,11 +279,7 @@ public:
     mean_acc& operator<<(const W& v) {
         assert(v.size() == size());
         ++count_;
-        if constexpr (varalg() == varalg::standard) {
-            mdata_ += v.matrix();
-        } else {
-            mdata_ += (v.matrix() - mdata_) / static_cast<double>(count_);
-        }
+        add_dense(v.matrix(), count_);
         return *this;
     }
 
@@ -319,10 +341,7 @@ public:
     template <ranges::input_range R>
     void accumulate(R&& rg, size_type i = 0) { // NOLINT (ranges need not be forwarded)
         ++count_;
-        for (auto val : rg) {
-            add_value(val, i, count_);
-            ++i;
-        }
+        add_sparse(rg, ranges::views::iota(i), count_);
     }
 
     /**
@@ -342,9 +361,7 @@ public:
     template <ranges::input_range R1, ranges::input_range R2>
     void accumulate(R1&& rg, R2&& idxs) { // NOLINT (ranges need not be forwarded)
         ++count_;
-        for (auto [val, idx] : ranges::views::zip(rg, idxs)) {
-            add_value(val, idx, count_);
-        }
+        add_sparse(rg, idxs, count_);
     }
 
     /**

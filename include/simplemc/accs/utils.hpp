@@ -245,6 +245,17 @@ long random_sample_size([[maybe_unused]] const T& sample) noexcept {
     }
 }
 
+// Build a dense vector that's zero everywhere except at the given indices.
+template <typename V, ranges::input_range R1, ranges::input_range R2>
+[[nodiscard]] V make_dense_vec(long size, R1&& rg, R2&& idxs) { // NOLINT (ranges need not be forwarded)
+    V v = V::Zero(size);
+    for (auto [val, idx] : ranges::views::zip(rg, idxs)) {
+        assert(idx >= 0 && idx < size);
+        v(idx) = val;
+    }
+    return v;
+}
+
 // Get a zero scalar/vector depending on the given sample type.
 template <sample_type T>
 auto zero_sample([[maybe_unused]] const T& sample) {
