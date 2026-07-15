@@ -130,25 +130,45 @@ private:
     // Real vector type for storing real/imaginary parts of the mean data.
     using dbl_vec_type = Eigen::Matrix<double, cplx_vec_type::RowsAtCompileTime, 1>;
 
-    // Add values to the accumulator without increasing the count (the given count is assumed to be
-    // already increased by one).
-    // The range of indices is assumed to be sorted and that each index is unique.
-    // Only the lower triangular part of the rdata_ and idata_ matrices are updated.
-    template <ranges::input_range R1, ranges::input_range R2>
-    void add_values(R1&& rg, R2&& idxs, count_type count) { // NOLINT (ranges need not be forwarded)
-        int drop = 1;
+    // Add one dense sample (all components) to the accumulator without increasing the count (the given
+    // count is assumed to be already increased by one). Only the lower triangular parts of rdata_ and
+    // idata_ are updated; cdata_ (real-imag cross covariance) is a full matrix.
+    template <typename V>
+    void add_dense(const V& v, [[maybe_unused]] count_type count) {
         if constexpr (varalg() == varalg::standard) {
-            for (auto [idx1, val1] : ranges::views::zip(idxs, rg)) {
+            mdata_ += v;
+            rdata_ += (v.real() * v.real().transpose()).template triangularView<Eigen::Lower>();
+            idata_ += (v.imag() * v.imag().transpose()).template triangularView<Eigen::Lower>();
+            cdata_ += (v.real() * v.imag().transpose());
+        } else {
+            const auto tmp = (v - mdata_).eval();
+            mdata_ += tmp / static_cast<double>(count);
+            const auto tmp2 = v - mdata_;
+            rdata_ += (tmp.real() * tmp2.real().transpose()).template triangularView<Eigen::Lower>();
+            idata_ += (tmp.imag() * tmp2.imag().transpose()).template triangularView<Eigen::Lower>();
+            cdata_ += (tmp.real() * tmp2.imag().transpose());
+        }
+    }
+
+    // Add one sparse sample given as parallel (value, index) ranges to the accumulator without
+    // increasing the count (the given count is assumed to be already increased by one). The standard
+    // branch updates only the touched cross terms (indices assumed sorted and unique; lower triangular
+    // for rdata_/idata_); the welford branch applies the sample densely so untouched components and
+    // their cross terms are decayed correctly.
+    template <ranges::input_range R1, ranges::input_range R2>
+    void add_sparse(R1&& vals, R2&& idxs, [[maybe_unused]] count_type count) { // NOLINT (ranges need not be forwarded)
+        if constexpr (varalg() == varalg::standard) {
+            int drop = 1;
+            for (auto [idx1, val1] : ranges::views::zip(idxs, vals)) {
                 assert(idx1 >= 0 && idx1 < size());
                 // mean data and diagonal elements of (cross-)covariance matrices
                 mdata_(idx1) += val1;
                 rdata_(idx1, idx1) += std::real(val1) * std::real(val1);
                 idata_(idx1, idx1) += std::imag(val1) * std::imag(val1);
                 cdata_(idx1, idx1) += std::real(val1) * std::imag(val1);
-                // off-diagonal elements of (cross-)covariance matrices
-                for (auto [idx2, val2] : ranges::views::drop(ranges::views::zip(idxs, rg), drop)) {
+                // off-diagonal elements of (cross-)covariance matrices (idx2 > idx1)
+                for (auto [idx2, val2] : ranges::views::drop(ranges::views::zip(idxs, vals), drop)) {
                     assert(idx2 > idx1 && idx2 < size());
-                    // idx2 > idx1 for sorted indices -> only lower triangular matrix
                     rdata_(idx2, idx1) += std::real(val1) * std::real(val2);
                     idata_(idx2, idx1) += std::imag(val1) * std::imag(val2);
                     // the first index corresponds to the real part, the second to the imaginary part
@@ -158,28 +178,7 @@ private:
                 ++drop;
             }
         } else {
-            for (auto [idx1, val1] : ranges::views::zip(idxs, rg)) {
-                assert(idx1 >= 0 && idx1 < size());
-                // mean data and diagonal elements of covariance matrices
-                const auto tmp_old = val1 - mdata_(idx1);
-                mdata_(idx1) += tmp_old / static_cast<double>(count);
-                const auto tmp = val1 - mdata_(idx1);
-                rdata_(idx1, idx1) += std::real(tmp_old) * std::real(tmp);
-                idata_(idx1, idx1) += std::imag(tmp_old) * std::imag(tmp);
-                cdata_(idx1, idx1) += std::real(tmp_old) * std::imag(tmp);
-                // off-diagonal elements of (cross-)covariance matrices
-                for (auto [idx2, val2] : ranges::views::drop(ranges::views::zip(idxs, rg), drop)) {
-                    assert(idx2 > idx1 && idx2 < size());
-                    // idx2 > idx1 for sorted indices -> only lower triangular matrix
-                    const auto other_tmp = val2 - mdata_(idx2);
-                    rdata_(idx2, idx1) += std::real(tmp) * std::real(other_tmp);
-                    idata_(idx2, idx1) += std::imag(tmp) * std::imag(other_tmp);
-                    // the first index corresponds to the real part, the second to the imaginary part
-                    cdata_(idx1, idx2) += std::real(tmp) * std::imag(other_tmp);
-                    cdata_(idx2, idx1) += std::imag(tmp) * std::real(other_tmp);
-                }
-                ++drop;
-            }
+            add_dense(detail::make_dense_vec<cplx_vec_type>(size(), vals, idxs), count);
         }
     }
 
@@ -284,7 +283,7 @@ public:
         requires std::convertible_to<U, value_type>
     covar_acc& operator<<(const U& z) {
         ++count_;
-        add_values(std::array<value_type, 1> { z }, std::array<size_type, 1> { idx_ }, count_);
+        add_sparse(std::array<value_type, 1> { static_cast<value_type>(z) }, std::array<size_type, 1> { idx_ }, count_);
         return *this;
     }
 
@@ -301,19 +300,7 @@ public:
     covar_acc& operator<<(const W& v) {
         assert(v.size() == size());
         ++count_;
-        if constexpr (varalg() == varalg::standard) {
-            mdata_ += v.matrix();
-            rdata_ += (v.matrix().real() * v.matrix().real().transpose()).template triangularView<Eigen::Lower>();
-            idata_ += (v.matrix().imag() * v.matrix().imag().transpose()).template triangularView<Eigen::Lower>();
-            cdata_ += (v.matrix().real() * v.matrix().imag().transpose());
-        } else {
-            const auto tmp = (v.matrix() - mdata_).eval();
-            mdata_ += tmp / static_cast<double>(count_);
-            const auto tmp2 = v.matrix() - mdata_;
-            rdata_ += (tmp.real() * tmp2.real().transpose()).template triangularView<Eigen::Lower>();
-            idata_ += (tmp.imag() * tmp2.imag().transpose()).template triangularView<Eigen::Lower>();
-            cdata_ += (tmp.real() * tmp2.imag().transpose());
-        }
+        add_dense(v.matrix(), count_);
         return *this;
     }
 
@@ -395,7 +382,7 @@ public:
     template <ranges::input_range R>
     void accumulate(R&& rg, size_type i = 0) {
         ++count_;
-        add_values(std::forward<R>(rg), ranges::views::iota(i), count_);
+        add_sparse(std::forward<R>(rg), ranges::views::iota(i), count_);
     }
 
     /**
@@ -417,7 +404,7 @@ public:
     template <ranges::input_range R1, ranges::input_range R2>
     void accumulate(R1&& rg, R2&& idxs) {
         ++count_;
-        add_values(std::forward<R1>(rg), std::forward<R2>(idxs), count_);
+        add_sparse(std::forward<R1>(rg), std::forward<R2>(idxs), count_);
     }
 
     /**

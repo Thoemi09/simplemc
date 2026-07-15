@@ -28,6 +28,7 @@
 #include <concepts>
 #include <cstdint>
 #include <type_traits>
+#include <utility>
 
 namespace simplemc {
 
@@ -148,7 +149,7 @@ private:
         }
     }
 
-    // Add one dense sample (all components) to the accumulator without increasing the count (the 
+    // Add one dense sample (all components) to the accumulator without increasing the count (the
     // given count is assumed to be already increased by one).
     template <typename V>
     void add_dense(const V& v, [[maybe_unused]] count_type count) {
@@ -347,9 +348,9 @@ public:
      * @param i Index \f$ i \f$ of the first element in the accumulator that a value will be added to.
      */
     template <ranges::input_range R>
-    void accumulate(R&& rg, size_type i = 0) { // NOLINT (ranges need not be forwarded)
+    void accumulate(R&& rg, size_type i = 0) {
         ++count_;
-        add_sparse(rg, ranges::views::iota(i), count_);
+        add_sparse(std::forward<R>(rg), ranges::views::iota(i), count_);
     }
 
     /**
@@ -367,9 +368,9 @@ public:
      * @param idxs Range of indices at which the values should be accumulated.
      */
     template <ranges::input_range R1, ranges::input_range R2>
-    void accumulate(R1&& rg, R2&& idxs) { // NOLINT (ranges need not be forwarded)
+    void accumulate(R1&& rg, R2&& idxs) {
         ++count_;
-        add_sparse(rg, idxs, count_);
+        add_sparse(std::forward<R1>(rg), std::forward<R2>(idxs), count_);
     }
 
     /**

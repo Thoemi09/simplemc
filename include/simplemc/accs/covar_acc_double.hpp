@@ -138,44 +138,44 @@ public:
     static constexpr auto varalg() noexcept { return A; }
 
 private:
-    // Add values to the accumulator without increasing the count (the given count is assumed to be
-    // already increased by one).
-    // The range of indices is assumed to be sorted and that each index is unique.
-    // Only the lower triangular part of the covariance matrix is updated.
-    template <ranges::input_range R1, ranges::input_range R2>
-    void add_values(R1&& rg, R2&& idxs, count_type count) { // NOLINT (ranges need not be forwarded)
-        int drop = 1;
+    // Add one dense sample (all components) to the accumulator without increasing the count (the
+    // given count is assumed to be already increased by one). Only the lower triangular part of the
+    // covariance matrix is updated.
+    template <typename V>
+    void add_dense(const V& v, [[maybe_unused]] count_type count) {
         if constexpr (varalg() == varalg::standard) {
-            for (auto [idx1, val1] : ranges::views::zip(idxs, rg)) {
+            mdata_ += v;
+            cdata_ += (v * v.transpose()).template triangularView<Eigen::Lower>();
+        } else {
+            const auto tmp = (v - mdata_).eval();
+            mdata_ += tmp / static_cast<double>(count);
+            cdata_ += (tmp * (v - mdata_).transpose()).template triangularView<Eigen::Lower>();
+        }
+    }
+
+    // Add one sparse sample given as parallel (value, index) ranges to the accumulator without
+    // increasing the count (the given count is assumed to be already increased by one). The standard
+    // branch updates only the touched cross terms (indices assumed sorted and unique, lower
+    // triangular only). The welford branch applies the sample densely so untouched components and
+    // their cross terms are decayed correctly.
+    template <ranges::input_range R1, ranges::input_range R2>
+    void add_sparse(R1&& vals, R2&& idxs, [[maybe_unused]] count_type count) { // NOLINT (ranges need not be forwarded)
+        if constexpr (varalg() == varalg::standard) {
+            int drop = 1;
+            for (auto [idx1, val1] : ranges::views::zip(idxs, vals)) {
                 assert(idx1 >= 0 && idx1 < size());
                 // mean data and diagonal elements of covariance matrix
                 mdata_(idx1) += val1;
                 cdata_(idx1, idx1) += val1 * val1;
-                // off-diagonal elements of covariance matrix
-                for (auto [idx2, val2] : ranges::views::drop(ranges::views::zip(idxs, rg), drop)) {
+                // off-diagonal elements of covariance matrix (idx2 > idx1 -> lower triangular)
+                for (auto [idx2, val2] : ranges::views::drop(ranges::views::zip(idxs, vals), drop)) {
                     assert(idx2 > idx1 && idx2 < size());
-                    // idx2 > idx1 for sorted indices -> only lower triangular matrix
                     cdata_(idx2, idx1) += val1 * val2;
                 }
                 ++drop;
             }
         } else {
-            for (auto [idx1, val1] : ranges::views::zip(idxs, rg)) {
-                assert(idx1 >= 0 && idx1 < size());
-                // mean data and diagonal elements of covariance matrix
-                const auto tmp_old = val1 - mdata_(idx1);
-                mdata_(idx1) += tmp_old / static_cast<double>(count);
-                const auto tmp = val1 - mdata_(idx1);
-                cdata_(idx1, idx1) += tmp_old * tmp;
-                // off-diagonal elements of covariance matrix
-                for (auto [idx2, val2] : ranges::views::drop(ranges::views::zip(idxs, rg), drop)) {
-                    assert(idx2 > idx1 && idx2 < size());
-                    // idx2 > idx1 for sorted indices -> only lower triangular matrix
-                    // mdata_(idx2) has not been updated yet
-                    cdata_(idx2, idx1) += tmp * (val2 - mdata_(idx2));
-                }
-                ++drop;
-            }
+            add_dense(detail::make_dense_vec<dbl_vec_type>(size(), vals, idxs), count);
         }
     }
 
@@ -269,7 +269,7 @@ public:
         requires std::convertible_to<U, value_type>
     covar_acc& operator<<(const U& x) {
         ++count_;
-        add_values(std::array<value_type, 1> { x }, std::array<size_type, 1> { idx_ }, count_);
+        add_sparse(std::array<value_type, 1> { static_cast<value_type>(x) }, std::array<size_type, 1> { idx_ }, count_);
         return *this;
     }
 
@@ -286,14 +286,7 @@ public:
     covar_acc& operator<<(const W& v) {
         assert(v.size() == size());
         ++count_;
-        if constexpr (varalg() == varalg::standard) {
-            mdata_ += v.matrix();
-            cdata_ += (v.matrix() * v.matrix().transpose()).template triangularView<Eigen::Lower>();
-        } else {
-            const auto tmp = (v.matrix() - mdata_).eval();
-            mdata_ += tmp / static_cast<double>(count_);
-            cdata_ += (tmp * (v.matrix() - mdata_).transpose()).template triangularView<Eigen::Lower>();
-        }
+        add_dense(v.matrix(), count_);
         return *this;
     }
 
@@ -362,7 +355,7 @@ public:
     template <ranges::input_range R>
     void accumulate(R&& rg, size_type i = 0) {
         ++count_;
-        add_values(std::forward<R>(rg), ranges::views::iota(i), count_);
+        add_sparse(std::forward<R>(rg), ranges::views::iota(i), count_);
     }
 
     /**
@@ -384,7 +377,7 @@ public:
     template <ranges::input_range R1, ranges::input_range R2>
     void accumulate(R1&& rg, R2&& idxs) {
         ++count_;
-        add_values(std::forward<R1>(rg), std::forward<R2>(idxs), count_);
+        add_sparse(std::forward<R1>(rg), std::forward<R2>(idxs), count_);
     }
 
     /**
