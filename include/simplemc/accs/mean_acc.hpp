@@ -140,21 +140,9 @@ public:
     static constexpr auto varalg() noexcept { return A; }
 
     /* Friend declarations. */
-    friend class multivalue_acc<mean_acc>;
     friend class batch_acc<sample_type, varalg()>;
 
 private:
-    // Add a single value to the accumulator without increasing the count (the given count is assumed
-    // to be already increased by one).
-    void add_value(value_type val, size_type idx, count_type count) {
-        assert(idx >= 0 && idx < size());
-        if constexpr (varalg() == varalg::standard) {
-            mdata_(idx) += val;
-        } else {
-            mdata_(idx) += (val - mdata_(idx)) / static_cast<double>(count);
-        }
-    }
-
     // Add one dense sample (all components) to the accumulator without increasing the count (the
     // given count is assumed to be already increased by one).
     template <typename V>

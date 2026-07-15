@@ -172,7 +172,7 @@ TEST_F(SimplemcAccsStochasticProcess, BatchAccIndividualIndices) {
             for (auto j : idxs) {
                 mva[j] << sp_c.samples[i](j);
             }
-            mva.increment_count();
+            mva.commit();
             acc.check_and_advance();
         }
         acc_autocorr.accumulate(sp_c.samples[i](idxs), idxs);

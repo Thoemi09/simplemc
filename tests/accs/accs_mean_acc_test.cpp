@@ -324,10 +324,37 @@ TYPED_TEST(SimplemcAccsMean, Multivalue) {
             for (long i = 0; i < vec_size_v<T>; ++i) {
                 mva[i] << component(v, i);
             }
-            mva.increment_count();
+            mva.commit();
         }
 
         check_acc_results<T>(acc);
+    }
+}
+
+// Test multivalue_acc driven with INTERLEAVED indices across samples (a different index each sample).
+// Reference: accumulate full vectors, zero except for the single touched component.
+TYPED_TEST(SimplemcAccsMean, MultivalueInterleaved) {
+    using T = typename TypeParam::sample_t;
+    constexpr auto A = TypeParam::alg;
+    using acc_t = mean_acc<T, A>;
+
+    if constexpr (!is_scalar_sample_v<T>) {
+        constexpr long M = vec_size_v<T>;
+        auto data = make_data<T>();
+        auto acc = make_empty<acc_t, T>();
+        auto acc_ref = make_empty<acc_t, T>();
+        long i = 0;
+        for (const auto& v : data) {
+            const long idx = i % M;
+            auto mva = acc.make_mva();
+            mva[idx] << v[idx];
+            mva.commit();
+            T ref = make_zero_sample<T>();
+            ref[idx] = v[idx];
+            acc_ref << ref;
+            ++i;
+        }
+        check_acc_equal(acc, acc_ref);
     }
 }
 
@@ -344,7 +371,7 @@ TYPED_TEST(SimplemcAccsMean, MultivalueVectorStream) {
         for (const auto& v : data) {
             auto mva = acc.make_mva();
             mva << v;
-            mva.increment_count();
+            mva.commit();
         }
 
         check_acc_results<T>(acc);
@@ -369,13 +396,14 @@ TYPED_TEST(SimplemcAccsMean, MultivalueAccessors) {
     ASSERT_EQ(&mva_const.accumulator(), &acc);
 
     mva[0] << component(make_data<T>()[0], 0);
-    mva.increment_count();
+    mva.commit();
     ASSERT_EQ(mva.count(), 1);
     ASSERT_FALSE(mva.empty());
 
     mva[0] << component(make_data<T>()[1], 0);
+    mva.commit();
     mva[0] << component(make_data<T>()[2], 0);
-    mva.increment_count(2);
+    mva.commit();
     ASSERT_EQ(mva.count(), 3);
 }
 

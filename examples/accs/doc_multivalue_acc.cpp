@@ -17,7 +17,7 @@ int main() {
         auto mva = acc.make_mva();
         mva[0] << val;
         mva[2] << val;
-        mva.increment_count();
+        mva.commit();
     }
 
     // print the mean of the accumulated data

@@ -11,7 +11,9 @@
 
 #include <simplemc/utils/ranges.hpp>
 
+#include <cassert>
 #include <concepts>
+#include <vector>
 
 namespace simplemc {
 
@@ -21,10 +23,12 @@ namespace simplemc {
  * simplemc::batch_acc to add multiple values at once.
  *
  * @details It holds a reference to an accumulator and can be used to add multiple data points to the
- * accumulator without increasing the count automatically. This has to be done manually by the user
- * by calling the multivalue_acc::increment_count function. In addition, if the wrapped accumulator is
- * a simplemc::block_acc or simplemc::batch_acc, the user has to call
- * simplemc::block_acc::check_and_add_block or simplemc::batch_acc::check_and_advance as well.
+ * accumulator that together form a single sample. The values are buffered and only committed to the
+ * accumulator (as one sample) when the user calls the multivalue_acc::commit function.
+ *
+ * In addition, if the wrapped accumulator is a simplemc::block_acc or simplemc::batch_acc, the user
+ * has to call simplemc::block_acc::check_and_add_block or simplemc::batch_acc::check_and_advance as
+ * well.
  *
  * All accumulator types mentioned above provide a factory function, `make_mva()`, that wraps the
  * current accumulator object and returns a simplemc::multivalue_acc object:
@@ -80,8 +84,7 @@ public:
     multivalue_acc(acc_type& acc) : acc_(acc) {}
 
     /**
-     * @brief Subscript operator sets the index \f$ i \f$ of the wrapped accumulator and returns a
-     * reference to `this` object.
+     * @brief Subscript operator sets the index \f$ i \f$ and returns a reference to `this` object.
      *
      * @details The index is *sticky*: it persists until changed by another call to operator[](). For
      * scalar accumulators (size \f$ M = 1 \f$), the index should remain at 0.
@@ -90,7 +93,7 @@ public:
      * @return Reference to `this` object.
      */
     multivalue_acc& operator[](size_type i) noexcept {
-        acc_.idx_ = i;
+        idx_ = i;
         return *this;
     }
 
@@ -102,7 +105,7 @@ public:
      *
      * See also @ref simplemc-accs-accs-how.
      *
-     * @note The sample count is not incremented. Manually use increment_count().
+     * @note The value is buffered. Call commit() to finalize the sample.
      *
      * @tparam U Type of the value to be accumulated.
      * @param x Value \f$ x \f$ to be accumulated.
@@ -111,7 +114,8 @@ public:
     template <typename U>
         requires std::convertible_to<U, value_type>
     multivalue_acc& operator<<(const U& x) {
-        acc_.add_value(x, acc_.idx_, acc_.count_ + 1);
+        buffered_vals_.push_back(static_cast<value_type>(x));
+        buffered_idxs_.push_back(idx_);
         return *this;
     }
 
@@ -120,7 +124,7 @@ public:
      *
      * @details See also @ref simplemc-accs-accs-how.
      *
-     * @note The sample count is not incremented. Manually use increment_count().
+     * @note The components of the vector are buffered. Call commit() to finalize the sample.
      *
      * @tparam W Eigen vector/array/expression type.
      * @param v Vector/Array/Expression \f$ \mathbf{v} \f$ to be accumulated.
@@ -128,8 +132,11 @@ public:
      */
     template <typename W>
     multivalue_acc& operator<<(const W& v) {
-        acc_ << v;
-        --acc_.count_;
+        assert(v.size() == size());
+        for (size_type j = 0; j < size(); ++j) {
+            buffered_vals_.push_back(v(j));
+            buffered_idxs_.push_back(j);
+        }
         return *this;
     }
 
@@ -142,7 +149,7 @@ public:
      *
      * See also @ref simplemc-accs-accs-how.
      *
-     * @note The sample count is not incremented. Manually use increment_count().
+     * @note The values in range are buffered. Call commit() to finalize the sample.
      *
      * @tparam R Input range of values.
      * @param rg Range of values to be accumulated.
@@ -151,7 +158,8 @@ public:
     template <ranges::input_range R>
     void accumulate(R&& rg, size_type i = 0) { // NOLINT (ranges need not be forwarded)
         for (auto val : rg) {
-            acc_.add_value(val, i, acc_.count_ + 1);
+            buffered_vals_.push_back(val);
+            buffered_idxs_.push_back(i);
             ++i;
         }
     }
@@ -165,7 +173,7 @@ public:
      *
      * See also @ref simplemc-accs-accs-how.
      *
-     * @note The sample count is not incremented. Manually use increment_count().
+     * @note The values in range are buffered. Call commit() to finalize the sample.
      *
      * @tparam R1 Input range of values.
      * @tparam R2 Input range of indices.
@@ -175,16 +183,25 @@ public:
     template <ranges::input_range R1, ranges::input_range R2>
     void accumulate(R1&& rg, R2&& idxs) { // NOLINT (ranges need not be forwarded)
         for (auto [val, idx] : ranges::views::zip(rg, idxs)) {
-            acc_.add_value(val, idx, acc_.count_ + 1);
+            buffered_vals_.push_back(val);
+            buffered_idxs_.push_back(idx);
         }
     }
 
     /**
-     * @brief Increment the count of the wrapped accumulator by a given increment.
+     * @brief Commit the buffered values as a single sample to the wrapped accumulator.
      *
-     * @param inc Increment.
+     * @details All values streamed since the last commit() call form one sample (the values at the
+     * touched indices, with implicit zeros elsewhere). They are flushed into the wrapped accumulator
+     * as a single sample, increasing its count by one, and the buffer is cleared.
+     *
+     * Committing an empty buffer contributes an all-zero sample.
      */
-    void increment_count(count_type inc = 1) noexcept { acc_.count_ += inc; }
+    void commit() {
+        acc_.accumulate(buffered_vals_, buffered_idxs_);
+        buffered_vals_.clear();
+        buffered_idxs_.clear();
+    }
 
     /**
      * @brief Get the size \f$ M \f$ of the wrapped accumulator.
@@ -223,6 +240,9 @@ public:
 
 private:
     acc_type& acc_; // NOLINT (reference is wanted here)
+    size_type idx_ = 0;
+    std::vector<value_type> buffered_vals_;
+    std::vector<size_type> buffered_idxs_;
 };
 
 } // namespace simplemc
