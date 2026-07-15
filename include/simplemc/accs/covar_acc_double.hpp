@@ -11,6 +11,7 @@
 
 #include <simplemc/accs/concepts.hpp>
 #include <simplemc/accs/covar_acc_fwd.hpp>
+#include <simplemc/accs/multivalue_acc.hpp>
 #include <simplemc/accs/utils.hpp>
 #include <simplemc/accs/varalg.hpp>
 #include <simplemc/mpi.hpp>
@@ -379,6 +380,15 @@ public:
         ++count_;
         add_sparse(std::forward<R1>(rg), std::forward<R2>(idxs), count_);
     }
+
+    /**
+     * @brief Create a multi-value accumulator.
+     *
+     * @details See simplemc::multivalue_acc.
+     *
+     * @return Multi-value accumulator wrapping `this` object.
+     */
+    [[nodiscard]] auto make_mva() noexcept { return multivalue_acc<covar_acc>(*this); }
 
     /**
      * @brief Get the size \f$ M \f$ of the accumulator.
